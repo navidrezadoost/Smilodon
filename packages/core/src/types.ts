@@ -18,7 +18,9 @@ export interface RemoteConfig {
 export interface SelectEventDetail<T = unknown> {
   item: T;
   index: number;
-  value?: unknown;
+  value: unknown;
+  label: string;
+  selected: boolean;
   multi?: boolean;
 }
 
@@ -27,6 +29,13 @@ export interface CloseEventDetail { }
 export interface SearchEventDetail { query: string }
 export interface PageLoadedEventDetail { page: number; count: number }
 export interface ErrorEventDetail { message: string; cause?: unknown }
+export interface ChangeEventDetail { 
+  selectedItems: unknown[]; 
+  selectedValues: unknown[];
+  selectedIndices: number[];
+}
+export interface LoadMoreEventDetail { page: number; items: unknown[] }
+export interface RemoveEventDetail { item: unknown; index: number }
 
 export interface SelectEventsDetailMap {
   select: SelectEventDetail;
@@ -35,6 +44,9 @@ export interface SelectEventsDetailMap {
   search: SearchEventDetail;
   pageLoaded: PageLoadedEventDetail;
   error: ErrorEventDetail;
+  change: ChangeEventDetail;
+  loadMore: LoadMoreEventDetail;
+  remove: RemoveEventDetail;
 }
 
 export type SelectEventName = keyof SelectEventsDetailMap;

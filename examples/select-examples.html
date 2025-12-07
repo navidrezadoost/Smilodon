@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Select Component - Examples</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 40px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      color: #333;
+    }
+
+    h2 {
+      margin: 40px 0 20px;
+      color: #555;
+      border-bottom: 2px solid #1976d2;
+      padding-bottom: 8px;
+    }
+
+    .example {
+      background: white;
+      padding: 24px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .example-title {
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .example-description {
+      color: #666;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .example-demo {
+      margin-bottom: 16px;
+    }
+
+    .example-output {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #333;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .example-output-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    /* Custom theme example */
+    .dark-theme {
+      --select-border-color: #555;
+      --select-border-focus-color: #4caf50;
+      --select-border-radius: 8px;
+      --select-shadow-focus-color: rgba(76, 175, 80, 0.2);
+      --select-dropdown-bg: #2c2c2c;
+      --select-dropdown-border: #555;
+      --select-option-hover-bg: #383838;
+      --select-option-selected-bg: #4caf50;
+      --select-option-selected-color: white;
+    }
+
+    .custom-select {
+      width: 100%;
+    }
+
+    button {
+      padding: 8px 16px;
+      margin: 4px;
+      border: 1px solid #1976d2;
+      background: white;
+      color: #1976d2;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #1976d2;
+      color: white;
+    }
+
+    .controls {
+      margin: 16px 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Enhanced Select Component - Interactive Examples</h1>
+
+    <h2>Example 1: Basic Single Select</h2>
+    <div class="example">
+      <div class="example-title">Simple single-select dropdown</div>
+      <div class="example-description">
+        Basic usage with single selection mode. Click to select an option.
+      </div>
+      <div class="example-demo">
+        <div id="example1"></div>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output1"></div>
+      </div>
+    </div>
+
+    <h2>Example 2: Multi-Select with Remove Buttons</h2>
+    <div class="example">
+      <div class="example-title">Multi-select with removable options</div>
+      <div class="example-description">
+        Select multiple options and remove them using the × button. Maximum 5 selections.
+      </div>
+      <div class="example-demo">
+        <div id="example2"></div>
+      </div>
+      <div class="controls">
+        <button onclick="clearExample2()">Clear All</button>
+        <button onclick="selectExample2([1, 2, 3])">Select First 3</button>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output2"></div>
+      </div>
+    </div>
+
+    <h2>Example 3: Load More Functionality</h2>
+    <div class="example">
+      <div class="example-title">Incremental loading</div>
+      <div class="example-description">
+        Start with 5 items, click "Load More" to add 3 more at a time.
+      </div>
+      <div class="example-demo">
+        <div id="example3"></div>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output3"></div>
+      </div>
+    </div>
+
+    <h2>Example 4: Server-Side Selection</h2>
+    <div class="example">
+      <div class="example-title">Pre-selected items from server</div>
+      <div class="example-description">
+        Simulates loading pre-selected items that aren't in the initial dataset.
+      </div>
+      <div class="example-demo">
+        <div id="example4"></div>
+      </div>
+      <div class="controls">
+        <button onclick="simulateServerLoad()">Simulate Server Load</button>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output4"></div>
+      </div>
+    </div>
+
+    <h2>Example 5: Infinite Scroll</h2>
+    <div class="example">
+      <div class="example-title">Infinite scroll with pagination</div>
+      <div class="example-description">
+        Scroll to the bottom to automatically load the next page. Caches loaded pages.
+      </div>
+      <div class="example-demo">
+        <div id="example5"></div>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output5"></div>
+      </div>
+    </div>
+
+    <h2>Example 6: Custom Styling</h2>
+    <div class="grid">
+      <div class="example">
+        <div class="example-title">Default Theme</div>
+        <div class="example-demo">
+          <div id="example6a"></div>
+        </div>
+      </div>
+      <div class="example dark-theme">
+        <div class="example-title">Dark Theme</div>
+        <div class="example-demo">
+          <div id="example6b"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Example 7: Searchable Select</h2>
+    <div class="example">
+      <div class="example-title">Search/filter options</div>
+      <div class="example-description">
+        Type to filter options in real-time.
+      </div>
+      <div class="example-demo">
+        <div id="example7"></div>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Search queries:</div>
+        <div id="output7"></div>
+      </div>
+    </div>
+
+    <h2>Example 8: Scroll to Selected</h2>
+    <div class="example">
+      <div class="example-title">Auto-scroll to selected item</div>
+      <div class="example-description">
+        When opened, dropdown automatically scrolls to the selected item (or first selected in multi-mode).
+      </div>
+      <div class="example-demo">
+        <div id="example8"></div>
+      </div>
+      <div class="controls">
+        <button onclick="selectExample8([40])">Select Item #40</button>
+        <button onclick="selectExample8([1, 50, 80])">Select Items #1, #50, #80</button>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output8"></div>
+      </div>
+    </div>
+
+    <h2>Example 9: Busy State Indicator</h2>
+    <div class="example">
+      <div class="example-title">Loading state with spinner</div>
+      <div class="example-description">
+        Shows loading indicator when fetching data. Minimum display time prevents flashing.
+      </div>
+      <div class="example-demo">
+        <div id="example9"></div>
+      </div>
+      <div class="controls">
+        <button onclick="triggerBusyState()">Trigger Loading (2s)</button>
+      </div>
+      <div class="example-output">
+        <div class="example-output-title">Output:</div>
+        <div id="output9"></div>
+      </div>
+    </div>
+
+    <h2>Example 10: Global Configuration</h2>
+    <div class="example">
+      <div class="example-title">Global defaults with component override</div>
+      <div class="example-description">
+        Set global defaults once, override at component level when needed.
+      </div>
+      <div class="example-demo">
+        <div style="margin-bottom: 16px;">
+          <strong>Global config: Single select, no remove button</strong>
+          <div id="example10a"></div>
+        </div>
+        <div>
+          <strong>Component override: Multi-select with remove button</strong>
+          <div id="example10b"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { configureSelect } from './packages/core/src/config/global-config.js';
+    import { EnhancedSelect } from './packages/core/src/components/enhanced-select.js';
+
+    // Helper to generate sample data
+    function generateItems(count, prefix = 'Option') {
+      return Array.from({ length: count }, (_, i) => ({
+        value: i + 1,
+        label: `${prefix} ${i + 1}`,
+      }));
+    }
+
+    // Helper to log output
+    function log(id, message) {
+      const output = document.getElementById(id);
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      output.insertBefore(entry, output.firstChild);
+      
+      // Keep only last 10 entries
+      while (output.children.length > 10) {
+        output.removeChild(output.lastChild);
+      }
+    }
+
+    // Example 1: Basic Single Select
+    const select1 = new EnhancedSelect();
+    select1.updateConfig({
+      selection: { mode: 'single', closeOnSelect: true },
+      callbacks: {
+        onSelect: (data) => log('output1', `Selected: ${data.label} (value: ${data.value})`),
+      },
+    });
+    select1.setItems(generateItems(10));
+    document.getElementById('example1').appendChild(select1);
+
+    // Example 2: Multi-Select
+    const select2 = new EnhancedSelect();
+    select2.updateConfig({
+      selection: {
+        mode: 'multi',
+        maxSelections: 5,
+        showRemoveButton: true,
+      },
+      callbacks: {
+        onSelect: (data) => log('output2', `${data.selected ? 'Selected' : 'Removed'}: ${data.label}`),
+        onChange: (items, values) => log('output2', `Total selected: ${values.length}`),
+      },
+    });
+    select2.setItems(generateItems(20));
+    document.getElementById('example2').appendChild(select2);
+
+    window.clearExample2 = () => select2.clear();
+    window.selectExample2 = (values) => select2.setSelectedValues(values);
+
+    // Example 3: Load More
+    let example3Items = generateItems(5);
+    const select3 = new EnhancedSelect();
+    select3.updateConfig({
+      loadMore: {
+        enabled: true,
+        itemsPerLoad: 3,
+      },
+      callbacks: {
+        onLoadMore: (page) => {
+          log('output3', `Loading page ${page}...`);
+          setTimeout(() => {
+            const newItems = generateItems(3, `Page ${page} Option`);
+            example3Items = [...example3Items, ...newItems];
+            select3.setItems(example3Items);
+            log('output3', `Loaded ${newItems.length} items. Total: ${example3Items.length}`);
+          }, 500);
+        },
+      },
+    });
+    select3.setItems(example3Items);
+    document.getElementById('example3').appendChild(select3);
+
+    // Example 4: Server-Side Selection
+    const select4 = new EnhancedSelect();
+    select4.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: async (values) => {
+          log('output4', `Fetching items for values: ${values.join(', ')}`);
+          // Simulate server delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Return items that weren't in initial set
+          return values.map(v => ({ value: v, label: `Server Item ${v}` }));
+        },
+      },
+      callbacks: {
+        onChange: (items, values) => log('output4', `Selected: ${values.join(', ')}`),
+      },
+    });
+    select4.setItems(generateItems(10));
+    document.getElementById('example4').appendChild(select4);
+
+    window.simulateServerLoad = () => {
+      select4.setSelectedValues([15, 23, 42]);
+    };
+
+    // Example 5: Infinite Scroll
+    const select5 = new EnhancedSelect();
+    let currentPage5 = 1;
+    select5.updateConfig({
+      infiniteScroll: {
+        enabled: true,
+        pageSize: 20,
+        cachePages: true,
+      },
+      callbacks: {
+        onLoadMore: (page) => {
+          log('output5', `Loading page ${page}...`);
+          setTimeout(() => {
+            const items = select5.getSelectedItems();
+            const newItems = generateItems(20, `Page ${page} Item`);
+            select5.setItems([...items, ...newItems]);
+            log('output5', `Loaded page ${page}`);
+          }, 500);
+        },
+      },
+    });
+    select5.setItems(generateItems(20, 'Page 1 Item'));
+    document.getElementById('example5').appendChild(select5);
+
+    // Example 6a: Default Theme
+    const select6a = new EnhancedSelect();
+    select6a.setItems(generateItems(5));
+    document.getElementById('example6a').appendChild(select6a);
+
+    // Example 6b: Dark Theme
+    const select6b = new EnhancedSelect();
+    select6b.setItems(generateItems(5));
+    document.getElementById('example6b').appendChild(select6b);
+
+    // Example 7: Searchable
+    const select7 = new EnhancedSelect();
+    select7.updateConfig({
+      searchable: true,
+      callbacks: {
+        onSearch: (query) => log('output7', `Search: "${query}"`),
+      },
+    });
+    select7.setItems(generateItems(50));
+    document.getElementById('example7').appendChild(select7);
+
+    // Example 8: Scroll to Selected
+    const select8 = new EnhancedSelect();
+    select8.updateConfig({
+      selection: { mode: 'multi' },
+      scrollToSelected: {
+        enabled: true,
+        multiSelectTarget: 'first',
+        behavior: 'smooth',
+      },
+      callbacks: {
+        onOpen: () => log('output8', 'Dropdown opened - scrolling to selected'),
+        onChange: (items, values) => log('output8', `Selected: ${values.join(', ')}`),
+      },
+    });
+    select8.setItems(generateItems(100));
+    document.getElementById('example8').appendChild(select8);
+
+    window.selectExample8 = (values) => {
+      select8.setSelectedValues(values);
+      log('output8', `Programmatically selected: ${values.join(', ')}`);
+    };
+
+    // Example 9: Busy State
+    const select9 = new EnhancedSelect();
+    select9.updateConfig({
+      busyBucket: {
+        enabled: true,
+        showSpinner: true,
+        message: 'Loading options...',
+        minDisplayTime: 300,
+      },
+    });
+    select9.setItems(generateItems(10));
+    document.getElementById('example9').appendChild(select9);
+
+    window.triggerBusyState = () => {
+      log('output9', 'Loading started...');
+      select9.setItems([]);
+      setTimeout(() => {
+        select9.setItems(generateItems(10, 'New Option'));
+        log('output9', 'Loading complete');
+      }, 2000);
+    };
+
+    // Example 10: Global Configuration
+    configureSelect({
+      selection: { mode: 'single', showRemoveButton: false },
+      placeholder: 'Global default config...',
+    });
+
+    const select10a = new EnhancedSelect();
+    select10a.setItems(generateItems(5));
+    document.getElementById('example10a').appendChild(select10a);
+
+    const select10b = new EnhancedSelect();
+    select10b.updateConfig({
+      selection: { mode: 'multi', showRemoveButton: true },
+      placeholder: 'Component override...',
+    });
+    select10b.setItems(generateItems(5));
+    document.getElementById('example10b').appendChild(select10b);
+  </script>
+</body>
+</html>

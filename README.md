@@ -1,6 +1,6 @@
-# @native-select
+# Smilodon Select Components
 
-High-performance native select component with extreme-scale virtualization.
+High-performance select components with extreme-scale virtualization and advanced features.
 
 **6.6KB gzipped** • **1M+ items at 60 FPS** • **Zero dependencies** • **Tree-shakeable** • **CSP-compliant**
 
@@ -8,6 +8,7 @@ High-performance native select component with extreme-scale virtualization.
 
 ## ✨ Features
 
+### Core Features
 - 🚀 **Extreme Performance**: Handles 1M+ items with 60 FPS scrolling
 - 📦 **Tiny Bundle**: 6.6KB gzipped core + <1KB adapters
 - ⚡ **Virtual Scrolling**: Only renders visible items
@@ -19,32 +20,51 @@ High-performance native select component with extreme-scale virtualization.
 - 🎨 **Customizable**: CSS variables, custom templates
 - 📊 **Performance Monitoring**: Built-in telemetry
 
+### Enhanced Features (NEW!)
+- 🔧 **Global Configuration**: Set defaults once, use everywhere
+- 🔄 **Infinite Scroll**: Built-in pagination with caching
+- 📥 **Load More**: Incremental loading with custom batch sizes
+- ⏳ **Busy State**: Smart loading indicators
+- 🌐 **Server-Side Selection**: Pre-select items not yet loaded
+- 📍 **Scroll-to-Selected**: Auto-scroll to selected items
+- ❌ **Removable Options**: Multi-select with remove buttons
+- 🎨 **Full Customization**: Every visual detail is customizable
+- 🔌 **High Cohesion/Low Coupling**: Independent option components
+- 📞 **Rich Callbacks**: User-defined functions for all events
+
 ---
 
 ## 📦 Packages
 
 | Package | Size | Description |
 |---------|------|-------------|
-| [@native-select/core](./packages/core) | 6.6 KB | Core Web Component |
-| [@native-select/react](./packages/react) | +787 B | React wrapper |
-| [@native-select/vue](./packages/vue) | +668 B | Vue 3 wrapper |
-| [@native-select/svelte](./packages/svelte) | +1.2 KB | Svelte wrapper |
-| [@native-select/angular](./packages/angular) | +892 B | Angular wrapper |
+| [@smilodon/core](./packages/core) | 6.6 KB | Core Web Components |
+| [@smilodon/react](./packages/react) | +787 B | React wrapper |
+| [@smilodon/vue](./packages/vue) | +668 B | Vue 3 wrapper |
+| [@smilodon/svelte](./packages/svelte) | +1.2 KB | Svelte wrapper |
+| [@smilodon/angular](./packages/angular) | +892 B | Angular wrapper |
 
 ---
 
 ## 🚀 Quick Start
 
-### React
+### Choose Your Component
+
+We offer two powerful select components:
+
+1. **NativeSelect**: Lightweight, high-performance basic select
+2. **EnhancedSelect** (NEW!): Full-featured with infinite scroll, server-side selection, and more
+
+### React - Basic NativeSelect
 
 ```bash
-npm install @native-select/core @native-select/react
+npm install @smilodon/core @smilodon/react
 ```
 
 **Basic Usage**:
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function App() {
   const items = [
@@ -58,6 +78,48 @@ function App() {
       items={items}
       onSelect={({ indices, items }) => {
         console.log('Selected:', items[indices[0]]);
+      }}
+    />
+  );
+}
+```
+
+### React - Enhanced Select (NEW!)
+
+```tsx
+import { Select, configureSelect } from '@smilodon/react';
+
+// Optional: Set global defaults
+configureSelect({
+  selection: { mode: 'multi' },
+  scrollToSelected: { enabled: true },
+  busyBucket: { enabled: true },
+});
+
+function App() {
+  const items = [
+    { value: 1, label: 'Option 1' },
+    { value: 2, label: 'Option 2' },
+    { value: 3, label: 'Option 3' },
+  ];
+
+  return (
+    <Select
+      items={items}
+      onOptionSelect={(data) => {
+        console.log('Selected:', data.value, data.label);
+      }}
+      config={{
+        selection: { mode: 'multi', showRemoveButton: true },
+        loadMore: { enabled: true, itemsPerLoad: 3 },
+        serverSide: {
+          enabled: true,
+          fetchSelectedItems: async (values) => {
+            // Fetch pre-selected items from server
+            const response = await fetch(`/api/items?ids=${values.join(',')}`);
+            return response.json();
+          },
+        },
       }}
     />
   );
@@ -579,6 +641,106 @@ packages/
 | `selectAll()` | `void` | Select all items (multi-select) |
 
 [See complete API reference →](./docs/API-REFERENCE.md)
+
+---
+
+## 🎯 Enhanced Select Component (NEW!)
+
+The Enhanced Select component provides advanced features for complex use cases:
+
+### Key Features
+
+- **Global Configuration**: Set defaults once, use everywhere
+- **Infinite Scroll**: Built-in pagination with intelligent caching
+- **Server-Side Selection**: Pre-select items not yet loaded
+- **Load More**: Incremental loading with custom batch sizes
+- **Busy State**: Smart loading indicators with minimum display time
+- **Scroll-to-Selected**: Auto-scroll to selected items on open
+- **Independent Options**: High cohesion, low coupling architecture
+- **Full Customization**: Every detail is customizable via CSS or config
+
+### Quick Examples
+
+#### Global Configuration
+```typescript
+import { configureSelect } from '@smilodon/core';
+
+// Set defaults once
+configureSelect({
+  selection: { mode: 'multi', showRemoveButton: true },
+  scrollToSelected: { enabled: true },
+  busyBucket: { enabled: true },
+  infiniteScroll: { enabled: true, pageSize: 20 },
+});
+```
+
+#### Server-Side Selection
+```tsx
+<Select
+  items={currentPageItems}
+  config={{
+    serverSide: {
+      enabled: true,
+      initialSelectedValues: [5, 12, 23], // From server
+      fetchSelectedItems: async (values) => {
+        const response = await fetch(`/api/items?ids=${values.join(',')}`);
+        return response.json();
+      },
+    },
+  }}
+/>
+```
+
+#### Infinite Scroll with Selected Item on Distant Page
+```tsx
+<Select
+  items={items}
+  config={{
+    infiniteScroll: {
+      enabled: true,
+      pageSize: 20,
+      cachePages: true,
+      scrollRestoration: 'auto',
+    },
+    serverSide: {
+      enabled: true,
+      fetchSelectedItems: async (values) => {
+        // Fetch specific items without loading all pages
+        return await fetchItemsByIds(values);
+      },
+    },
+  }}
+  onLoadMore={(page) => {
+    fetchPage(page).then(newItems => {
+      setItems([...items, ...newItems]);
+    });
+  }}
+/>
+```
+
+#### Multi-Select with Remove Buttons
+```tsx
+<Select
+  items={items}
+  config={{
+    selection: {
+      mode: 'multi',
+      maxSelections: 10,
+      showRemoveButton: true,
+    },
+  }}
+  onOptionSelect={(data) => {
+    console.log(`${data.label}: ${data.selected ? 'selected' : 'removed'}`);
+  }}
+/>
+```
+
+### Complete Documentation
+
+- [📖 Enhanced Select Guide](./docs/SELECT-COMPONENT.md) - Complete feature documentation
+- [🔧 Implementation Details](./docs/SELECT-IMPLEMENTATION.md) - Architecture and solutions
+- [🚀 Migration Guide](./docs/SELECT-MIGRATION.md) - Migrate from other libraries
+- [💡 Interactive Examples](./examples/select-examples.html) - Live demos
 
 ---
 
