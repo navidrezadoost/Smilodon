@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Showcase - @native-select</title>
+  
+  <!-- Import core + all theme packs -->
+  <link rel="stylesheet" href="../packages/core/src/themes/variables.css">
+  <link rel="stylesheet" href="../packages/core/src/themes/material.css">
+  <link rel="stylesheet" href="../packages/core/src/themes/fluent.css">
+  <link rel="stylesheet" href="../packages/core/src/themes/apple.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 2rem;
+      background: #f5f5f5;
+      color: #333;
+    }
+    
+    h1 {
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .theme-card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .theme-card h2 {
+      margin-bottom: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .theme-card p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .theme-card native-select {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    
+    .variant-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .variant-section h3 {
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .controls {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .controls input[type="checkbox"] {
+      width: 1.25rem;
+      height: 1.25rem;
+      cursor: pointer;
+    }
+    
+    code {
+      background: #f0f0f0;
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.875em;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Theme Showcase</h1>
+  
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="dark-mode-toggle">
+      Toggle Dark Mode (all themes)
+    </label>
+  </div>
+  
+  <div class="theme-grid">
+    <!-- Material Design 3 -->
+    <div class="theme-card">
+      <h2>Material Design 3</h2>
+      <p>Google's Material You design system with dynamic color and state layers.</p>
+      
+      <native-select theme="material" id="material-select">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+        <option value="orange">🍊 Orange</option>
+        <option value="strawberry">🍓 Strawberry</option>
+      </native-select>
+      
+      <div class="variant-section">
+        <h3>Features</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.875rem; color: #666;">
+          <li>Material Purple (#6750a4)</li>
+          <li>Filled text field style</li>
+          <li>Elevation shadows (0-5)</li>
+          <li>4dp grid spacing</li>
+          <li>State layer interactions</li>
+          <li>Roboto font family</li>
+        </ul>
+      </div>
+      
+      <div class="variant-section">
+        <h3>Usage</h3>
+        <code>theme="material"</code>
+      </div>
+    </div>
+    
+    <!-- Fluent UI 2 -->
+    <div class="theme-card">
+      <h2>Fluent UI 2</h2>
+      <p>Microsoft's Windows 11 design language with neutral palette and Mica effects.</p>
+      
+      <native-select theme="fluent" id="fluent-select">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+        <option value="orange">🍊 Orange</option>
+        <option value="strawberry">🍓 Strawberry</option>
+      </native-select>
+      
+      <div class="variant-section">
+        <h3>Features</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.875rem; color: #666;">
+          <li>Microsoft Blue (#0078d4)</li>
+          <li>Underline input style</li>
+          <li>Fluent elevation (2-64)</li>
+          <li>Neutral foreground/background</li>
+          <li>Fluent motion curves</li>
+          <li>Segoe UI font family</li>
+        </ul>
+      </div>
+      
+      <div class="variant-section">
+        <h3>Usage</h3>
+        <code>theme="fluent"</code>
+      </div>
+    </div>
+    
+    <!-- Apple HIG -->
+    <div class="theme-card">
+      <h2>Apple HIG</h2>
+      <p>iOS/macOS design system with San Francisco font and spring animations.</p>
+      
+      <native-select theme="apple" id="apple-select">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+        <option value="orange">🍊 Orange</option>
+        <option value="strawberry">🍓 Strawberry</option>
+      </native-select>
+      
+      <div class="variant-section">
+        <h3>Features</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.875rem; color: #666;">
+          <li>iOS Blue (#007aff)</li>
+          <li>Fill color backgrounds</li>
+          <li>Continuous corner radius</li>
+          <li>44pt touch targets</li>
+          <li>Spring-based animations</li>
+          <li>San Francisco font</li>
+        </ul>
+      </div>
+      
+      <div class="variant-section">
+        <h3>Usage</h3>
+        <code>theme="apple"</code>
+      </div>
+    </div>
+  </div>
+  
+  <h2 style="margin-top: 3rem; margin-bottom: 1.5rem;">Dark Mode Variants</h2>
+  
+  <div class="theme-grid">
+    <!-- Material Dark -->
+    <div class="theme-card" style="background: #1c1b1f; color: #e6e1e5;">
+      <h2 style="color: #e6e1e5;">Material Dark</h2>
+      <p style="color: #cac4d0;">Material Design 3 dark theme with elevated surfaces.</p>
+      
+      <native-select theme="material-dark">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+      </native-select>
+      
+      <div class="variant-section" style="border-color: #49454f;">
+        <h3 style="color: #938f99;">Usage</h3>
+        <code style="background: #2b2930; color: #e6e1e5;">theme="material-dark"</code>
+      </div>
+    </div>
+    
+    <!-- Fluent Dark -->
+    <div class="theme-card" style="background: #1e1e1e; color: #ffffff;">
+      <h2 style="color: #ffffff;">Fluent Dark</h2>
+      <p style="color: #f5f5f5;">Windows 11 dark mode with neutral dark palette.</p>
+      
+      <native-select theme="fluent-dark">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+      </native-select>
+      
+      <div class="variant-section" style="border-color: #424242;">
+        <h3 style="color: #bdbdbd;">Usage</h3>
+        <code style="background: #2e2e2e; color: #ffffff;">theme="fluent-dark"</code>
+      </div>
+    </div>
+    
+    <!-- Apple Dark -->
+    <div class="theme-card" style="background: #000000; color: #ffffff;">
+      <h2 style="color: #ffffff;">Apple Dark</h2>
+      <p style="color: rgba(235, 235, 245, 0.6);">iOS/macOS dark mode with true black backgrounds.</p>
+      
+      <native-select theme="apple-dark">
+        <option value="">Select a fruit...</option>
+        <option value="apple">🍎 Apple</option>
+        <option value="banana">🍌 Banana</option>
+        <option value="cherry">🍒 Cherry</option>
+        <option value="grape">🍇 Grape</option>
+      </native-select>
+      
+      <div class="variant-section" style="border-color: rgba(84, 84, 88, 0.65);">
+        <h3 style="color: rgba(235, 235, 245, 0.6);">Usage</h3>
+        <code style="background: #1c1c1e; color: #ffffff;">theme="apple-dark"</code>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module">
+    // Dark mode toggle
+    const toggle = document.getElementById('dark-mode-toggle');
+    const selects = ['material-select', 'fluent-select', 'apple-select'];
+    
+    toggle.addEventListener('change', (e) => {
+      selects.forEach(id => {
+        const select = document.getElementById(id);
+        const currentTheme = select.getAttribute('theme');
+        
+        if (e.target.checked) {
+          select.setAttribute('theme', `${currentTheme}-dark`);
+        } else {
+          select.setAttribute('theme', currentTheme.replace('-dark', ''));
+        }
+      });
+    });
+    
+    // Selection handlers
+    document.querySelectorAll('native-select').forEach(select => {
+      select.addEventListener('select', (e) => {
+        console.log(`[${select.getAttribute('theme')}] Selected:`, e.detail.items[0]);
+      });
+    });
+  </script>
+</body>
+</html>

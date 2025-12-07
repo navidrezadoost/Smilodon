@@ -1,0 +1,42 @@
+{
+  "name": "@native-select/svelte",
+  "version": "0.0.1",
+  "description": "Svelte adapter for @native-select/core",
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "svelte": "./dist/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c && tsc --emitDeclarationOnly --outDir dist/types",
+    "size": "gzip -c dist/index.js | wc -c"
+  },
+  "peerDependencies": {
+    "@native-select/core": "^0.0.1",
+    "svelte": ">=3.0.0 || >=4.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.9.0",
+    "typescript": "^5.6.2",
+    "svelte": "^4.2.0"
+  },
+  "keywords": [
+    "svelte",
+    "select",
+    "dropdown",
+    "virtualization"
+  ],
+  "license": "MIT",
+  "sideEffects": false
+}

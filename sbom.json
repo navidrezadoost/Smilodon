@@ -1,0 +1,141 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2025-12-07T12:00:00Z",
+    "tools": [
+      {
+        "vendor": "Smilodon",
+        "name": "SBOM Generator",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "library",
+      "bom-ref": "pkg:npm/smilodon@1.0.0",
+      "supplier": {
+        "name": "Smilodon",
+        "url": ["https://github.com/navidrezadoost/smilodon"]
+      },
+      "author": "Smilodon Team",
+      "publisher": "NPM",
+      "group": "smilodon",
+      "name": "core",
+      "version": "1.0.0",
+      "description": "Zero-dependency, accessible, high-performance select component. Supports React, Vue, Svelte, Angular, and Vanilla JS.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/smilodon@1.0.0",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/navidrezadoost/smilodon"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/navidrezadoost/smilodon/issues"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/navidrezadoost/smilodon"
+        },
+        {
+          "type": "documentation",
+          "url": "https://github.com/navidrezadoost/smilodon#readme"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/smilodon@1.0.0",
+      "name": "smilodon",
+      "version": "1.0.0",
+      "description": "Core component library (zero dependencies)",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/smilodon@1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "alg": "SHA-512",
+          "content": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce"
+        }
+      ],
+      "properties": [
+        {
+          "name": "bundle:size:minified",
+          "value": "8.4 KB"
+        },
+        {
+          "name": "bundle:size:gzipped",
+          "value": "3.2 KB"
+        },
+        {
+          "name": "dependencies:count",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "dependencies": [],
+  "services": [],
+  "vulnerabilities": [],
+  "annotations": [
+    {
+      "subjects": ["pkg:npm/@native-select/core@1.0.0"],
+      "annotator": {
+        "organization": {
+          "name": "@native-select Security Team"
+        }
+      },
+      "timestamp": "2025-12-07T12:00:00Z",
+      "text": "Zero runtime dependencies. All functionality is self-contained. No known vulnerabilities."
+    }
+  ],
+  "compositions": [
+    {
+      "aggregate": "complete",
+      "dependencies": []
+    }
+  ],
+  "properties": [
+    {
+      "name": "slsa:build-level",
+      "value": "3"
+    },
+    {
+      "name": "security:audit-date",
+      "value": "2025-12-07"
+    },
+    {
+      "name": "security:audit-status",
+      "value": "PASS"
+    },
+    {
+      "name": "license:compliance",
+      "value": "MIT"
+    },
+    {
+      "name": "supply-chain:verified",
+      "value": "true"
+    }
+  ]
+}

@@ -1,0 +1,540 @@
+/**
+ * @native-select/core - CSS Variable Dictionary
+ * 
+ * 150+ CSS variables for pixel-perfect enterprise UI theming
+ * No JavaScript overrides required — pure CSS customization
+ * 
+ * Architecture:
+ * - Native CSS custom properties
+ * - :host, :host-context() for scoping
+ * - @media queries for responsive/adaptive theming
+ * - Theme inheritance via CSS cascade
+ * 
+ * Categories:
+ * 1. Color Tokens (60+ vars)
+ * 2. Typography (25+ vars)
+ * 3. Spacing & Sizing (30+ vars)
+ * 4. Borders & Shadows (20+ vars)
+ * 5. Animation & Transitions (15+ vars)
+ * 6. Component-Specific (40+ vars)
+ * 7. State Variants (20+ vars)
+ */
+
+:host,
+native-select {
+  /* ============================================
+     1. COLOR TOKENS (60+ variables)
+     ============================================ */
+  
+  /* --- Base Colors --- */
+  --ns-color-primary: #3b82f6;
+  --ns-color-primary-hover: #2563eb;
+  --ns-color-primary-active: #1d4ed8;
+  --ns-color-primary-rgb: 59, 130, 246;
+  
+  --ns-color-secondary: #64748b;
+  --ns-color-secondary-hover: #475569;
+  --ns-color-secondary-active: #334155;
+  --ns-color-secondary-rgb: 100, 116, 139;
+  
+  --ns-color-success: #10b981;
+  --ns-color-success-hover: #059669;
+  --ns-color-success-active: #047857;
+  
+  --ns-color-warning: #f59e0b;
+  --ns-color-warning-hover: #d97706;
+  --ns-color-warning-active: #b45309;
+  
+  --ns-color-error: #ef4444;
+  --ns-color-error-hover: #dc2626;
+  --ns-color-error-active: #b91c1c;
+  
+  --ns-color-info: #3b82f6;
+  --ns-color-info-hover: #2563eb;
+  --ns-color-info-active: #1d4ed8;
+  
+  /* --- Surface Colors --- */
+  --ns-color-background: #ffffff;
+  --ns-color-background-rgb: 255, 255, 255;
+  --ns-color-surface: #f8fafc;
+  --ns-color-surface-hover: #f1f5f9;
+  --ns-color-surface-active: #e2e8f0;
+  
+  /* --- Text Colors --- */
+  --ns-color-text-primary: #0f172a;
+  --ns-color-text-secondary: #475569;
+  --ns-color-text-tertiary: #94a3b8;
+  --ns-color-text-disabled: #cbd5e1;
+  --ns-color-text-inverse: #ffffff;
+  --ns-color-text-link: var(--ns-color-primary);
+  
+  /* --- Border Colors --- */
+  --ns-color-border: #e2e8f0;
+  --ns-color-border-hover: #cbd5e1;
+  --ns-color-border-active: #94a3b8;
+  --ns-color-border-focus: var(--ns-color-primary);
+  --ns-color-border-error: var(--ns-color-error);
+  
+  /* --- Focus Ring Colors --- */
+  --ns-color-focus-ring: rgba(var(--ns-color-primary-rgb), 0.2);
+  --ns-color-focus-ring-error: rgba(239, 68, 68, 0.2);
+  
+  /* --- Overlay Colors --- */
+  --ns-color-overlay: rgba(0, 0, 0, 0.5);
+  --ns-color-overlay-light: rgba(0, 0, 0, 0.05);
+  --ns-color-backdrop: rgba(0, 0, 0, 0.3);
+  
+  /* --- Selection Colors --- */
+  --ns-color-selected: rgba(var(--ns-color-primary-rgb), 0.1);
+  --ns-color-selected-hover: rgba(var(--ns-color-primary-rgb), 0.15);
+  --ns-color-selected-active: rgba(var(--ns-color-primary-rgb), 0.2);
+  
+  /* --- Multi-select Chip Colors --- */
+  --ns-color-chip-background: #e2e8f0;
+  --ns-color-chip-text: #334155;
+  --ns-color-chip-border: #cbd5e1;
+  --ns-color-chip-remove-hover: #ef4444;
+  
+  /* --- Scroll Colors --- */
+  --ns-color-scrollbar-track: transparent;
+  --ns-color-scrollbar-thumb: #cbd5e1;
+  --ns-color-scrollbar-thumb-hover: #94a3b8;
+  
+  
+  /* ============================================
+     2. TYPOGRAPHY (25+ variables)
+     ============================================ */
+  
+  /* --- Font Families --- */
+  --ns-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 
+                    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --ns-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                         Consolas, 'Courier New', monospace;
+  
+  /* --- Font Sizes --- */
+  --ns-font-size-xs: 0.75rem;      /* 12px */
+  --ns-font-size-sm: 0.875rem;     /* 14px */
+  --ns-font-size-base: 1rem;       /* 16px */
+  --ns-font-size-lg: 1.125rem;     /* 18px */
+  --ns-font-size-xl: 1.25rem;      /* 20px */
+  
+  /* --- Font Weights --- */
+  --ns-font-weight-light: 300;
+  --ns-font-weight-normal: 400;
+  --ns-font-weight-medium: 500;
+  --ns-font-weight-semibold: 600;
+  --ns-font-weight-bold: 700;
+  
+  /* --- Line Heights --- */
+  --ns-line-height-tight: 1.25;
+  --ns-line-height-normal: 1.5;
+  --ns-line-height-relaxed: 1.75;
+  
+  /* --- Letter Spacing --- */
+  --ns-letter-spacing-tight: -0.025em;
+  --ns-letter-spacing-normal: 0;
+  --ns-letter-spacing-wide: 0.025em;
+  
+  /* --- Component Typography --- */
+  --ns-input-font-size: var(--ns-font-size-base);
+  --ns-input-font-weight: var(--ns-font-weight-normal);
+  --ns-input-line-height: var(--ns-line-height-normal);
+  
+  --ns-option-font-size: var(--ns-font-size-sm);
+  --ns-option-font-weight: var(--ns-font-weight-normal);
+  --ns-option-line-height: var(--ns-line-height-normal);
+  
+  --ns-label-font-size: var(--ns-font-size-sm);
+  --ns-label-font-weight: var(--ns-font-weight-medium);
+  
+  --ns-helper-font-size: var(--ns-font-size-xs);
+  --ns-helper-font-weight: var(--ns-font-weight-normal);
+  
+  
+  /* ============================================
+     3. SPACING & SIZING (30+ variables)
+     ============================================ */
+  
+  /* --- Base Spacing Scale (0-10) --- */
+  --ns-space-0: 0;
+  --ns-space-1: 0.25rem;   /* 4px */
+  --ns-space-2: 0.5rem;    /* 8px */
+  --ns-space-3: 0.75rem;   /* 12px */
+  --ns-space-4: 1rem;      /* 16px */
+  --ns-space-5: 1.25rem;   /* 20px */
+  --ns-space-6: 1.5rem;    /* 24px */
+  --ns-space-8: 2rem;      /* 32px */
+  --ns-space-10: 2.5rem;   /* 40px */
+  --ns-space-12: 3rem;     /* 48px */
+  
+  /* --- Component Spacing --- */
+  --ns-input-padding-x: var(--ns-space-3);
+  --ns-input-padding-y: var(--ns-space-2);
+  --ns-input-gap: var(--ns-space-2);
+  
+  --ns-option-padding-x: var(--ns-space-3);
+  --ns-option-padding-y: var(--ns-space-2);
+  --ns-option-gap: var(--ns-space-2);
+  
+  --ns-chip-padding-x: var(--ns-space-2);
+  --ns-chip-padding-y: var(--ns-space-1);
+  --ns-chip-gap: var(--ns-space-1);
+  
+  --ns-dropdown-padding: var(--ns-space-1);
+  --ns-group-padding: var(--ns-space-2);
+  
+  /* --- Sizing --- */
+  --ns-input-height: 2.5rem;       /* 40px - Base */
+  --ns-input-height-sm: 2rem;      /* 32px - Small */
+  --ns-input-height-lg: 3rem;      /* 48px - Large */
+  
+  --ns-option-height: 2.25rem;     /* 36px - Base */
+  --ns-option-height-sm: 2rem;     /* 32px - Small */
+  --ns-option-height-lg: 2.75rem;  /* 44px - Large */
+  
+  --ns-chip-height: 1.75rem;       /* 28px */
+  --ns-chip-max-width: 12rem;      /* 192px */
+  
+  --ns-dropdown-max-height: 20rem; /* 320px */
+  --ns-dropdown-min-width: 100%;
+  --ns-dropdown-max-width: 30rem;  /* 480px */
+  
+  /* --- Icon Sizing --- */
+  --ns-icon-size: 1.25rem;         /* 20px */
+  --ns-icon-size-sm: 1rem;         /* 16px */
+  --ns-icon-size-lg: 1.5rem;       /* 24px */
+  
+  
+  /* ============================================
+     4. BORDERS & SHADOWS (20+ variables)
+     ============================================ */
+  
+  /* --- Border Widths --- */
+  --ns-border-width: 1px;
+  --ns-border-width-thick: 2px;
+  
+  /* --- Border Radius --- */
+  --ns-radius-none: 0;
+  --ns-radius-sm: 0.25rem;   /* 4px */
+  --ns-radius-base: 0.375rem; /* 6px */
+  --ns-radius-md: 0.5rem;    /* 8px */
+  --ns-radius-lg: 0.75rem;   /* 12px */
+  --ns-radius-xl: 1rem;      /* 16px */
+  --ns-radius-full: 9999px;
+  
+  /* --- Component Radius --- */
+  --ns-input-radius: var(--ns-radius-base);
+  --ns-dropdown-radius: var(--ns-radius-md);
+  --ns-chip-radius: var(--ns-radius-base);
+  --ns-option-radius: var(--ns-radius-sm);
+  
+  /* --- Shadows --- */
+  --ns-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ns-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --ns-shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --ns-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --ns-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --ns-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* --- Component Shadows --- */
+  --ns-input-shadow: var(--ns-shadow-xs);
+  --ns-input-shadow-focus: 0 0 0 3px var(--ns-color-focus-ring);
+  --ns-dropdown-shadow: var(--ns-shadow-lg);
+  --ns-chip-shadow: var(--ns-shadow-xs);
+  
+  /* --- Focus Ring --- */
+  --ns-focus-ring-width: 3px;
+  --ns-focus-ring-offset: 2px;
+  --ns-focus-ring-color: var(--ns-color-focus-ring);
+  
+  
+  /* ============================================
+     5. ANIMATION & TRANSITIONS (15+ variables)
+     ============================================ */
+  
+  /* --- Timing Functions --- */
+  --ns-ease-linear: linear;
+  --ns-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ns-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ns-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ns-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* --- Durations --- */
+  --ns-duration-instant: 0ms;
+  --ns-duration-fast: 150ms;
+  --ns-duration-base: 200ms;
+  --ns-duration-slow: 300ms;
+  --ns-duration-slower: 500ms;
+  
+  /* --- Component Transitions --- */
+  --ns-transition-colors: color var(--ns-duration-fast) var(--ns-ease-out),
+                          background-color var(--ns-duration-fast) var(--ns-ease-out),
+                          border-color var(--ns-duration-fast) var(--ns-ease-out);
+  
+  --ns-transition-transform: transform var(--ns-duration-base) var(--ns-ease-out);
+  --ns-transition-opacity: opacity var(--ns-duration-base) var(--ns-ease-out);
+  --ns-transition-shadow: box-shadow var(--ns-duration-base) var(--ns-ease-out);
+  
+  --ns-transition-all: all var(--ns-duration-base) var(--ns-ease-in-out);
+  
+  /* --- Dropdown Animations --- */
+  --ns-dropdown-enter-duration: var(--ns-duration-base);
+  --ns-dropdown-exit-duration: var(--ns-duration-fast);
+  --ns-dropdown-enter-easing: var(--ns-ease-out);
+  --ns-dropdown-exit-easing: var(--ns-ease-in);
+  
+  
+  /* ============================================
+     6. COMPONENT-SPECIFIC (40+ variables)
+     ============================================ */
+  
+  /* --- Input Field --- */
+  --ns-input-background: var(--ns-color-background);
+  --ns-input-background-hover: var(--ns-color-surface);
+  --ns-input-background-focus: var(--ns-color-background);
+  --ns-input-background-disabled: var(--ns-color-surface);
+  
+  --ns-input-border-color: var(--ns-color-border);
+  --ns-input-border-color-hover: var(--ns-color-border-hover);
+  --ns-input-border-color-focus: var(--ns-color-border-focus);
+  --ns-input-border-color-error: var(--ns-color-border-error);
+  
+  --ns-input-text-color: var(--ns-color-text-primary);
+  --ns-input-text-color-disabled: var(--ns-color-text-disabled);
+  --ns-input-placeholder-color: var(--ns-color-text-tertiary);
+  
+  /* --- Dropdown --- */
+  --ns-dropdown-background: var(--ns-color-background);
+  --ns-dropdown-border-color: var(--ns-color-border);
+  --ns-dropdown-z-index: 1000;
+  
+  /* --- Option --- */
+  --ns-option-background: transparent;
+  --ns-option-background-hover: var(--ns-color-surface-hover);
+  --ns-option-background-active: var(--ns-color-surface-active);
+  --ns-option-background-selected: var(--ns-color-selected);
+  --ns-option-background-selected-hover: var(--ns-color-selected-hover);
+  
+  --ns-option-text-color: var(--ns-color-text-primary);
+  --ns-option-text-color-selected: var(--ns-color-primary);
+  --ns-option-text-color-disabled: var(--ns-color-text-disabled);
+  
+  /* --- Group --- */
+  --ns-group-label-color: var(--ns-color-text-secondary);
+  --ns-group-label-font-size: var(--ns-font-size-xs);
+  --ns-group-label-font-weight: var(--ns-font-weight-semibold);
+  --ns-group-label-text-transform: uppercase;
+  --ns-group-label-letter-spacing: 0.05em;
+  
+  /* --- Checkbox (Multi-select) --- */
+  --ns-checkbox-size: 1rem;
+  --ns-checkbox-border-color: var(--ns-color-border-active);
+  --ns-checkbox-background: var(--ns-color-background);
+  --ns-checkbox-background-checked: var(--ns-color-primary);
+  --ns-checkbox-border-radius: var(--ns-radius-sm);
+  --ns-checkbox-checkmark-color: var(--ns-color-text-inverse);
+  
+  /* --- Multi-select Chip --- */
+  --ns-chip-background: var(--ns-color-chip-background);
+  --ns-chip-text-color: var(--ns-color-chip-text);
+  --ns-chip-border-color: var(--ns-color-chip-border);
+  --ns-chip-remove-color: var(--ns-color-text-secondary);
+  --ns-chip-remove-hover-color: var(--ns-color-chip-remove-hover);
+  
+  /* --- Loading Spinner --- */
+  --ns-spinner-size: 1rem;
+  --ns-spinner-border-width: 2px;
+  --ns-spinner-color: var(--ns-color-primary);
+  --ns-spinner-track-color: var(--ns-color-border);
+  
+  /* --- Scrollbar --- */
+  --ns-scrollbar-width: 8px;
+  --ns-scrollbar-track-background: var(--ns-color-scrollbar-track);
+  --ns-scrollbar-thumb-background: var(--ns-color-scrollbar-thumb);
+  --ns-scrollbar-thumb-hover-background: var(--ns-color-scrollbar-thumb-hover);
+  --ns-scrollbar-thumb-radius: var(--ns-radius-full);
+  
+  /* --- Clear Button --- */
+  --ns-clear-button-size: 1.25rem;
+  --ns-clear-button-color: var(--ns-color-text-secondary);
+  --ns-clear-button-hover-color: var(--ns-color-text-primary);
+  --ns-clear-button-background-hover: var(--ns-color-surface-hover);
+  
+  /* --- Arrow Icon --- */
+  --ns-arrow-size: 1rem;
+  --ns-arrow-color: var(--ns-color-text-secondary);
+  --ns-arrow-transform-open: rotate(180deg);
+  
+  
+  /* ============================================
+     7. STATE VARIANTS (20+ variables)
+     ============================================ */
+  
+  /* --- Disabled State --- */
+  --ns-disabled-opacity: 0.5;
+  --ns-disabled-cursor: not-allowed;
+  --ns-disabled-pointer-events: none;
+  
+  /* --- Focus State --- */
+  --ns-focus-outline: 2px solid var(--ns-color-border-focus);
+  --ns-focus-outline-offset: 2px;
+  
+  /* --- Error State --- */
+  --ns-error-border-color: var(--ns-color-error);
+  --ns-error-text-color: var(--ns-color-error);
+  --ns-error-focus-ring: rgba(239, 68, 68, 0.2);
+  
+  /* --- Loading State --- */
+  --ns-loading-opacity: 0.6;
+  --ns-loading-cursor: wait;
+  
+  /* --- Read-only State --- */
+  --ns-readonly-background: var(--ns-color-surface);
+  --ns-readonly-cursor: default;
+  
+  /* --- Size Variants --- */
+  --ns-size-sm-scale: 0.875;
+  --ns-size-lg-scale: 1.25;
+  
+  /* --- Density Variants --- */
+  --ns-density-comfortable: 1;
+  --ns-density-compact: 0.75;
+  --ns-density-spacious: 1.5;
+}
+
+
+/* ============================================
+   DARK THEME OVERRIDES
+   ============================================ */
+
+:host([theme="dark"]),
+native-select[theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :host(:not([theme="light"])),
+  native-select:not([theme="light"]) {
+    /* Surface Colors */
+    --ns-color-background: #0f172a;
+    --ns-color-background-rgb: 15, 23, 42;
+    --ns-color-surface: #1e293b;
+    --ns-color-surface-hover: #334155;
+    --ns-color-surface-active: #475569;
+    
+    /* Text Colors */
+    --ns-color-text-primary: #f1f5f9;
+    --ns-color-text-secondary: #cbd5e1;
+    --ns-color-text-tertiary: #64748b;
+    --ns-color-text-disabled: #475569;
+    
+    /* Border Colors */
+    --ns-color-border: #334155;
+    --ns-color-border-hover: #475569;
+    --ns-color-border-active: #64748b;
+    
+    /* Chip Colors */
+    --ns-color-chip-background: #334155;
+    --ns-color-chip-text: #e2e8f0;
+    --ns-color-chip-border: #475569;
+    
+    /* Scrollbar */
+    --ns-color-scrollbar-thumb: #475569;
+    --ns-color-scrollbar-thumb-hover: #64748b;
+    
+    /* Shadows (darker) */
+    --ns-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --ns-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+    --ns-shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+    --ns-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+    --ns-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+    --ns-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+
+/* ============================================
+   HIGH CONTRAST THEME
+   ============================================ */
+
+:host([theme="high-contrast"]),
+native-select[theme="high-contrast"],
+@media (prefers-contrast: more) {
+  :host,
+  native-select {
+    /* Enhanced contrast ratios (WCAG AAA) */
+    --ns-color-text-primary: #000000;
+    --ns-color-text-secondary: #1a1a1a;
+    --ns-color-background: #ffffff;
+    --ns-color-border: #000000;
+    --ns-border-width: 2px;
+    
+    /* Remove subtle effects */
+    --ns-shadow-xs: none;
+    --ns-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.3);
+    --ns-shadow-base: 0 0 0 2px rgba(0, 0, 0, 0.3);
+    
+    /* Higher opacity for disabled */
+    --ns-disabled-opacity: 0.7;
+    
+    /* Stronger focus indicators */
+    --ns-focus-ring-width: 4px;
+    --ns-input-shadow-focus: 0 0 0 4px #000000;
+  }
+}
+
+:host([theme="high-contrast-dark"]),
+native-select[theme="high-contrast-dark"] {
+  --ns-color-text-primary: #ffffff;
+  --ns-color-text-secondary: #e5e5e5;
+  --ns-color-background: #000000;
+  --ns-color-border: #ffffff;
+  --ns-border-width: 2px;
+  
+  --ns-shadow-xs: none;
+  --ns-shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.3);
+  --ns-shadow-base: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  
+  --ns-disabled-opacity: 0.7;
+  --ns-focus-ring-width: 4px;
+  --ns-input-shadow-focus: 0 0 0 4px #ffffff;
+}
+
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  native-select {
+    --ns-duration-instant: 0ms;
+    --ns-duration-fast: 0ms;
+    --ns-duration-base: 0ms;
+    --ns-duration-slow: 0ms;
+    --ns-duration-slower: 0ms;
+    
+    --ns-transition-colors: none;
+    --ns-transition-transform: none;
+    --ns-transition-opacity: none;
+    --ns-transition-shadow: none;
+    --ns-transition-all: none;
+  }
+}
+
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  :host,
+  native-select {
+    --ns-color-background: #ffffff;
+    --ns-color-text-primary: #000000;
+    --ns-color-border: #000000;
+    --ns-shadow-xs: none;
+    --ns-shadow-sm: none;
+    --ns-shadow-base: none;
+    --ns-shadow-md: none;
+    --ns-shadow-lg: none;
+    --ns-shadow-xl: none;
+  }
+}

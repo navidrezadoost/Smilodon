@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandbox - @native-select Playground</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: white;
+    }
+    
+    #app {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .demo-container {
+      margin: 20px 0;
+    }
+    
+    .console {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 150px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      overflow-y: auto;
+      padding: 10px;
+      border-top: 1px solid #333;
+      display: none;
+    }
+    
+    .console.visible {
+      display: block;
+    }
+    
+    .console-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+    }
+    
+    .console-log { color: #d4d4d4; }
+    .console-warn { color: #dcdcaa; }
+    .console-error { color: #f48771; }
+    .console-info { color: #4fc1ff; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="console" class="console"></div>
+  
+  <script type="module">
+    // Intercept console methods
+    const originalConsole = { ...console };
+    const consoleEl = document.getElementById('console');
+    
+    function addConsoleEntry(type, args) {
+      const entry = document.createElement('div');
+      entry.className = `console-entry console-${type}`;
+      entry.textContent = `[${type.toUpperCase()}] ${args.map(a => 
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+      ).join(' ')}`;
+      consoleEl.appendChild(entry);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+      consoleEl.classList.add('visible');
+      
+      // Send to parent
+      window.parent.postMessage({
+        type: 'console',
+        level: type,
+        args: args.map(a => String(a))
+      }, '*');
+    }
+    
+    ['log', 'warn', 'error', 'info'].forEach(method => {
+      console[method] = (...args) => {
+        originalConsole[method](...args);
+        addConsoleEntry(method, args);
+      };
+    });
+    
+    // Listen for code execution requests
+    window.addEventListener('message', async (event) => {
+      if (event.data.type === 'execute') {
+        try {
+          // Clear previous content
+          document.getElementById('app').innerHTML = '';
+          consoleEl.innerHTML = '';
+          
+          // Mark execution start
+          const startTime = performance.now();
+          window.parent.postMessage({ type: 'execution-start' }, '*');
+          
+          // Import @native-select modules
+          const modules = {
+            '@native-select/core': await import('@native-select/core'),
+            '@native-select/react': await import('@native-select/react'),
+            '@native-select/vue': await import('@native-select/vue'),
+            '@native-select/svelte': await import('@native-select/svelte')
+          };
+          
+          // Create execution context
+          const context = {
+            document,
+            window,
+            console,
+            performance,
+            setTimeout,
+            setInterval,
+            clearTimeout,
+            clearInterval,
+            requestAnimationFrame,
+            cancelAnimationFrame,
+            ...modules
+          };
+          
+          // Execute code with context
+          const fn = new Function(...Object.keys(context), event.data.code);
+          const result = await fn(...Object.values(context));
+          
+          const endTime = performance.now();
+          const execTime = endTime - startTime;
+          
+          window.parent.postMessage({
+            type: 'execution-complete',
+            executionTime: execTime,
+            result: result
+          }, '*');
+          
+          console.log(`✓ Execution completed in ${execTime.toFixed(2)}ms`);
+          
+        } catch (error) {
+          console.error('Execution error:', error.message);
+          window.parent.postMessage({
+            type: 'execution-error',
+            error: {
+              message: error.message,
+              stack: error.stack
+            }
+          }, '*');
+        }
+      }
+      
+      // Handle metrics requests
+      if (event.data.type === 'get-metrics') {
+        const metrics = {
+          memory: performance.memory ? {
+            used: (performance.memory.usedJSHeapSize / 1048576).toFixed(2),
+            total: (performance.memory.totalJSHeapSize / 1048576).toFixed(2),
+            limit: (performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)
+          } : null,
+          timing: performance.timing ? {
+            domContentLoaded: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
+            load: performance.timing.loadEventEnd - performance.timing.navigationStart
+          } : null
+        };
+        
+        window.parent.postMessage({
+          type: 'metrics',
+          data: metrics
+        }, '*');
+      }
+    });
+    
+    // Signal ready
+    window.parent.postMessage({ type: 'sandbox-ready' }, '*');
+  </script>
+</body>
+</html>

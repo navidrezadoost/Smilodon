@@ -1,0 +1,215 @@
+# Smilodon Component Library
+# Project-specific gitignore
+
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+.pnp
+.pnp.js
+
+# ============================================
+# Build Outputs
+# ============================================
+dist/
+build/
+out/
+*.tsbuildinfo
+.tsbuildinfo
+
+# Package builds
+packages/*/dist/
+packages/*/build/
+packages/*/*.tsbuildinfo
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ============================================
+# Environment & Secrets
+# ============================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+
+# ============================================
+# IDE & Editors
+# ============================================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================
+# Operating System
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# ============================================
+# Cache & Temporary Files
+# ============================================
+.cache/
+.temp/
+.tmp/
+*.tmp
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# ============================================
+# Package Managers
+# ============================================
+# npm
+package-lock.json
+npm-debug.log*
+
+# yarn
+yarn.lock
+yarn-error.log
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# pnpm
+pnpm-lock.yaml
+
+# ============================================
+# Documentation Build
+# ============================================
+.docusaurus/
+docs/.vuepress/dist/
+site/
+
+# ============================================
+# Development Phase Files (Keep for history)
+# ============================================
+# Uncomment these if you want to ignore phase files
+# .azure/phase*.md
+# .azure/*-summary.md
+# .azure/*-guide.md
+
+# ============================================
+# Security & Compliance (Keep committed)
+# ============================================
+# DO NOT ignore these:
+# sbom.json
+# docs/compliance/*.md
+# SECURITY.md
+
+# ============================================
+# Examples & Playground
+# ============================================
+# Uncomment to ignore playground builds
+# playground/dist/
+# playground/.cache/
+
+# ============================================
+# Miscellaneous
+# ============================================
+*.bak
+*.orig
+*.rej
+*~.nib
+local.properties
+.loadpath
+.recommenders
+.externalToolBuilders/
+.cproject
+.settings/
+
+# ============================================
+# Optional: Large Files
+# ============================================
+# Uncomment if you have large assets
+# *.zip
+# *.tar.gz
+# *.rar
+# *.7z
+
+# ============================================
+# Optional: Video/Media
+# ============================================
+# *.mp4
+# *.mov
+# *.avi
+# *.webm
+
+# ============================================
+# End of .gitignore
+# ============================================

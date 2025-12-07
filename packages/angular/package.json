@@ -1,0 +1,50 @@
+{
+  "name": "@native-select/angular",
+  "version": "0.0.1",
+  "description": "Angular adapter for @native-select/core",
+  "type": "module",
+  "main": "./dist/fesm2022/native-select-angular.mjs",
+  "module": "./dist/fesm2022/native-select-angular.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "esm": "./dist/fesm2022/native-select-angular.mjs",
+      "default": "./dist/fesm2022/native-select-angular.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "ng-packagr -p ng-package.json",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "peerDependencies": {
+    "@angular/common": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0",
+    "@angular/core": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0",
+    "@native-select/core": "^0.0.1"
+  },
+  "devDependencies": {
+    "@angular/common": "^17.0.0",
+    "@angular/core": "^17.0.0",
+    "@angular/compiler": "^17.0.0",
+    "@angular/compiler-cli": "^17.0.0",
+    "ng-packagr": "^17.0.0",
+    "typescript": "~5.2.0",
+    "rxjs": "^7.8.0",
+    "tslib": "^2.6.0",
+    "zone.js": "^0.14.0"
+  },
+  "keywords": [
+    "angular",
+    "select",
+    "dropdown",
+    "virtualization",
+    "performance",
+    "web-component"
+  ],
+  "license": "MIT",
+  "sideEffects": false
+}

@@ -1,0 +1,42 @@
+export * from './types.js';
+export * from './renderers/contracts.js';
+export * from './components/native-select.js';
+export { FenwickTree } from './utils/fenwick-tree.js';
+export { DOMPool } from './utils/dom-pool.js';
+export { WorkerManager, getWorkerManager } from './utils/worker-manager.js';
+export { PerformanceTelemetry, getTelemetry, measureAsync, measureSync } from './utils/telemetry.js';
+export { Virtualizer } from './utils/virtualizer.js';
+
+// Security & CSP utilities
+export { 
+  setHTMLSanitizer, 
+  getHTMLSanitizer, 
+  sanitizeHTML,
+  createElement,
+  setCSSProperties,
+  CSPFeatures,
+  detectEnvironment,
+  containsSuspiciousPatterns,
+  escapeHTML,
+  escapeAttribute,
+  validateTemplate,
+  createTextNode,
+  setTextContent
+} from './utils/security.js';
+
+export {
+  applyClasses,
+  toggleClass,
+  setCustomProperties,
+  getCustomProperty,
+  removeCustomProperty,
+  defaultTheme,
+  applyDefaultTheme,
+  shadowDOMStyles,
+  injectShadowStyles,
+  hasOverflowHiddenAncestor,
+  warnCSPViolation
+} from './utils/csp-styles.js';
+
+export type { HTMLSanitizer, EnvironmentCapabilities } from './utils/security.js';
+

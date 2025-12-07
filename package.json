@@ -1,0 +1,44 @@
+{
+  "name": "@native-select/monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:core": "npm run build -w @native-select/core",
+    "build:react": "npm run build -w @native-select/react",
+    "build:vue": "npm run build -w @native-select/vue",
+    "build:svelte": "npm run build -w @native-select/svelte",
+    "test": "vitest run --config packages/core/vitest.config.ts",
+    "test:watch": "vitest --config packages/core/vitest.config.ts",
+    "test:stress": "vitest run packages/core/tests/stress.spec.ts --config packages/core/vitest.config.ts",
+    "lint": "eslint .",
+    "size": "npm run size --workspaces --if-present",
+    "perf": "npm run build:core && node scripts/perf.js",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.0",
+    "esbuild": "^0.21.0",
+    "eslint": "^8.57.0",
+    "jsdom": "^24.1.3",
+    "playwright": "^1.46.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rollup": "^4.9.0",
+    "rollup-plugin-svelte": "7.2.3",
+    "svelte": "^4.2.0",
+    "svelte-preprocess": "6.0.3",
+    "tslib": "2.8.1",
+    "typescript": "^5.6.2",
+    "vitest": "^1.6.0",
+    "vue": "^3.4.0"
+  }
+}

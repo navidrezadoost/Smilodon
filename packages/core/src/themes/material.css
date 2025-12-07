@@ -1,0 +1,386 @@
+/**
+ * Material Design 3 Theme Pack
+ * Pixel-perfect recreation of Material You design system
+ * 
+ * Based on:
+ * - Material Design 3 (2021+)
+ * - Material You dynamic color
+ * - Elevation system
+ * - State layers
+ * 
+ * Usage:
+ *   <native-select theme="material"></native-select>
+ *   OR
+ *   import '@native-select/core/themes/material.css';
+ */
+
+:host([theme="material"]),
+native-select[theme="material"] {
+  /* ============================================
+     MATERIAL DESIGN 3 - COLOR SYSTEM
+     ============================================ */
+  
+  /* --- Primary Colors (Material Purple) --- */
+  --ns-color-primary: #6750a4;
+  --ns-color-primary-hover: #7965af;
+  --ns-color-primary-active: #4f378b;
+  --ns-color-primary-rgb: 103, 80, 164;
+  
+  --ns-color-on-primary: #ffffff;
+  --ns-color-primary-container: #eaddff;
+  --ns-color-on-primary-container: #21005d;
+  
+  /* --- Secondary Colors --- */
+  --ns-color-secondary: #625b71;
+  --ns-color-secondary-hover: #7a7289;
+  --ns-color-secondary-active: #4a4458;
+  --ns-color-secondary-rgb: 98, 91, 113;
+  
+  --ns-color-on-secondary: #ffffff;
+  --ns-color-secondary-container: #e8def8;
+  --ns-color-on-secondary-container: #1d192b;
+  
+  /* --- Tertiary Colors --- */
+  --ns-color-tertiary: #7d5260;
+  --ns-color-on-tertiary: #ffffff;
+  --ns-color-tertiary-container: #ffd8e4;
+  --ns-color-on-tertiary-container: #31111d;
+  
+  /* --- Surface Colors (Material surfaces) --- */
+  --ns-color-background: #fffbfe;
+  --ns-color-background-rgb: 255, 251, 254;
+  --ns-color-on-background: #1c1b1f;
+  
+  --ns-color-surface: #fffbfe;
+  --ns-color-surface-variant: #e7e0ec;
+  --ns-color-on-surface: #1c1b1f;
+  --ns-color-on-surface-variant: #49454f;
+  
+  --ns-color-surface-hover: #f6f2f7;
+  --ns-color-surface-active: #ece8ed;
+  
+  /* --- Outline Colors --- */
+  --ns-color-outline: #79747e;
+  --ns-color-outline-variant: #cac4d0;
+  
+  /* --- State Layer Colors (Material ripple/hover) --- */
+  --ns-state-layer-opacity-hover: 0.08;
+  --ns-state-layer-opacity-focus: 0.12;
+  --ns-state-layer-opacity-press: 0.12;
+  --ns-state-layer-opacity-drag: 0.16;
+  
+  /* --- Error Colors --- */
+  --ns-color-error: #b3261e;
+  --ns-color-error-hover: #c5302b;
+  --ns-color-error-active: #8c1d18;
+  --ns-color-on-error: #ffffff;
+  --ns-color-error-container: #f9dedc;
+  --ns-color-on-error-container: #410e0b;
+  
+  /* --- Text Colors (Material typography) --- */
+  --ns-color-text-primary: var(--ns-color-on-surface);
+  --ns-color-text-secondary: var(--ns-color-on-surface-variant);
+  --ns-color-text-tertiary: var(--ns-color-outline);
+  --ns-color-text-disabled: rgba(28, 27, 31, 0.38);
+  
+  /* --- Border Colors --- */
+  --ns-color-border: var(--ns-color-outline-variant);
+  --ns-color-border-hover: var(--ns-color-outline);
+  --ns-color-border-active: var(--ns-color-primary);
+  --ns-color-border-focus: var(--ns-color-primary);
+  --ns-color-border-error: var(--ns-color-error);
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - TYPOGRAPHY
+     ============================================ */
+  
+  /* Material uses Roboto by default */
+  --ns-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+                    Helvetica, Arial, sans-serif;
+  
+  /* Material Type Scale */
+  --ns-font-size-xs: 0.6875rem;    /* 11px - Label Small */
+  --ns-font-size-sm: 0.875rem;     /* 14px - Body Small */
+  --ns-font-size-base: 1rem;       /* 16px - Body Medium */
+  --ns-font-size-lg: 1.125rem;     /* 18px - Title Small */
+  
+  /* Material weights */
+  --ns-font-weight-normal: 400;    /* Regular */
+  --ns-font-weight-medium: 500;    /* Medium */
+  --ns-font-weight-bold: 700;      /* Bold */
+  
+  /* Material line heights */
+  --ns-line-height-tight: 1.25;    /* 125% */
+  --ns-line-height-normal: 1.5;    /* 150% */
+  --ns-line-height-relaxed: 1.6;   /* 160% */
+  
+  /* Component typography */
+  --ns-input-font-size: var(--ns-font-size-base);
+  --ns-input-font-weight: var(--ns-font-weight-normal);
+  --ns-option-font-size: var(--ns-font-size-sm);
+  --ns-label-font-size: 0.75rem;   /* 12px - Label Medium */
+  --ns-label-font-weight: var(--ns-font-weight-medium);
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - ELEVATION (SHADOWS)
+     ============================================ */
+  
+  /* Material elevation tokens */
+  --ns-elevation-0: none;
+  --ns-elevation-1: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+                    0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --ns-elevation-2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 
+                    0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --ns-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 
+                    0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+  --ns-elevation-4: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 
+                    0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+  --ns-elevation-5: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 
+                    0px 4px 4px 0px rgba(0, 0, 0, 0.3);
+  
+  /* Component elevations */
+  --ns-input-shadow: var(--ns-elevation-0);
+  --ns-dropdown-shadow: var(--ns-elevation-2);
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - SHAPES
+     ============================================ */
+  
+  /* Material shape scale */
+  --ns-shape-corner-none: 0px;
+  --ns-shape-corner-extra-small: 4px;
+  --ns-shape-corner-small: 8px;
+  --ns-shape-corner-medium: 12px;
+  --ns-shape-corner-large: 16px;
+  --ns-shape-corner-extra-large: 28px;
+  --ns-shape-corner-full: 9999px;
+  
+  /* Component shapes */
+  --ns-input-radius: var(--ns-shape-corner-extra-small);
+  --ns-dropdown-radius: var(--ns-shape-corner-extra-small);
+  --ns-chip-radius: var(--ns-shape-corner-small);
+  --ns-option-radius: var(--ns-shape-corner-none);
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - SPACING
+     ============================================ */
+  
+  /* Material 4dp grid system */
+  --ns-space-1: 0.25rem;   /* 4dp */
+  --ns-space-2: 0.5rem;    /* 8dp */
+  --ns-space-3: 0.75rem;   /* 12dp */
+  --ns-space-4: 1rem;      /* 16dp */
+  --ns-space-5: 1.25rem;   /* 20dp */
+  --ns-space-6: 1.5rem;    /* 24dp */
+  --ns-space-8: 2rem;      /* 32dp */
+  
+  /* Component spacing */
+  --ns-input-padding-x: 1rem;      /* 16dp */
+  --ns-input-padding-y: 0.5rem;    /* 8dp */
+  --ns-option-padding-x: 1rem;     /* 16dp */
+  --ns-option-padding-y: 0.75rem;  /* 12dp */
+  --ns-chip-padding-x: 0.75rem;    /* 12dp */
+  --ns-chip-padding-y: 0.375rem;   /* 6dp */
+  
+  /* Sizing */
+  --ns-input-height: 3.5rem;       /* 56dp - Material filled */
+  --ns-option-height: 3rem;        /* 48dp - Touch target */
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - MOTION
+     ============================================ */
+  
+  /* Material motion tokens */
+  --ns-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ns-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ns-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ns-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  
+  /* Duration tokens */
+  --ns-duration-short1: 50ms;
+  --ns-duration-short2: 100ms;
+  --ns-duration-short3: 150ms;
+  --ns-duration-short4: 200ms;
+  --ns-duration-medium1: 250ms;
+  --ns-duration-medium2: 300ms;
+  --ns-duration-medium3: 350ms;
+  --ns-duration-medium4: 400ms;
+  --ns-duration-long1: 450ms;
+  --ns-duration-long2: 500ms;
+  
+  /* Component transitions */
+  --ns-duration-fast: var(--ns-duration-short3);
+  --ns-duration-base: var(--ns-duration-short4);
+  --ns-duration-slow: var(--ns-duration-medium2);
+  
+  --ns-ease-in-out: var(--ns-motion-easing-standard);
+  --ns-ease-out: var(--ns-motion-easing-emphasized-decelerate);
+  --ns-ease-in: var(--ns-motion-easing-emphasized-accelerate);
+  
+  
+  /* ============================================
+     MATERIAL DESIGN 3 - COMPONENT TOKENS
+     ============================================ */
+  
+  /* --- Filled Text Field (Material style) --- */
+  --ns-input-background: var(--ns-color-surface-variant);
+  --ns-input-background-hover: rgba(var(--ns-color-primary-rgb), 0.08);
+  --ns-input-background-focus: var(--ns-color-surface-variant);
+  --ns-input-background-disabled: rgba(28, 27, 31, 0.04);
+  
+  --ns-input-border-color: var(--ns-color-outline);
+  --ns-input-border-color-hover: var(--ns-color-on-surface);
+  --ns-input-border-color-focus: var(--ns-color-primary);
+  --ns-input-border-color-error: var(--ns-color-error);
+  
+  --ns-input-text-color: var(--ns-color-on-surface);
+  --ns-input-placeholder-color: var(--ns-color-on-surface-variant);
+  
+  /* Material has thick bottom border */
+  --ns-border-width: 1px;
+  --ns-input-border-bottom-width: 2px;
+  
+  /* --- Menu (Dropdown) --- */
+  --ns-dropdown-background: var(--ns-color-surface);
+  --ns-dropdown-border-color: transparent;
+  
+  /* --- Menu Item (Option) --- */
+  --ns-option-background: transparent;
+  --ns-option-background-hover: rgba(var(--ns-color-primary-rgb), var(--ns-state-layer-opacity-hover));
+  --ns-option-background-active: rgba(var(--ns-color-primary-rgb), var(--ns-state-layer-opacity-press));
+  --ns-option-background-selected: rgba(var(--ns-color-primary-rgb), var(--ns-state-layer-opacity-focus));
+  --ns-option-background-selected-hover: rgba(var(--ns-color-primary-rgb), calc(var(--ns-state-layer-opacity-focus) + var(--ns-state-layer-opacity-hover)));
+  
+  --ns-option-text-color: var(--ns-color-on-surface);
+  --ns-option-text-color-selected: var(--ns-color-primary);
+  --ns-option-text-color-disabled: var(--ns-color-text-disabled);
+  
+  /* --- Chip (Input chip variant) --- */
+  --ns-chip-background: var(--ns-color-surface-variant);
+  --ns-chip-text-color: var(--ns-color-on-surface-variant);
+  --ns-chip-border-color: var(--ns-color-outline);
+  --ns-chip-remove-color: var(--ns-color-on-surface-variant);
+  --ns-chip-remove-hover-color: var(--ns-color-error);
+  
+  /* --- Checkbox (Material 3 style) --- */
+  --ns-checkbox-size: 1.125rem;    /* 18px */
+  --ns-checkbox-border-color: var(--ns-color-on-surface-variant);
+  --ns-checkbox-background: transparent;
+  --ns-checkbox-background-checked: var(--ns-color-primary);
+  --ns-checkbox-border-radius: 2px;
+  --ns-checkbox-checkmark-color: var(--ns-color-on-primary);
+  
+  /* --- Focus Ring (Material ripple-based) --- */
+  --ns-focus-ring-width: 0;
+  --ns-input-shadow-focus: 0 0 0 0 transparent;
+  
+  /* Material uses state layers instead of focus rings */
+  --ns-focus-state-layer: rgba(var(--ns-color-primary-rgb), var(--ns-state-layer-opacity-focus));
+  
+  /* --- Scrollbar (Material style) --- */
+  --ns-scrollbar-width: 8px;
+  --ns-scrollbar-thumb-background: var(--ns-color-outline-variant);
+  --ns-scrollbar-thumb-hover-background: var(--ns-color-outline);
+  --ns-scrollbar-thumb-radius: 4px;
+}
+
+
+/* ============================================
+   MATERIAL DESIGN 3 - DARK THEME
+   ============================================ */
+
+:host([theme="material-dark"]),
+native-select[theme="material-dark"],
+:host([theme="material"]:is(.dark, [data-theme="dark"])),
+native-select[theme="material"]:is(.dark, [data-theme="dark"]) {
+  /* --- Primary Colors (Dark) --- */
+  --ns-color-primary: #d0bcff;
+  --ns-color-primary-hover: #dcccff;
+  --ns-color-primary-active: #beadff;
+  --ns-color-primary-rgb: 208, 188, 255;
+  
+  --ns-color-on-primary: #381e72;
+  --ns-color-primary-container: #4f378b;
+  --ns-color-on-primary-container: #eaddff;
+  
+  /* --- Secondary Colors (Dark) --- */
+  --ns-color-secondary: #ccc2dc;
+  --ns-color-on-secondary: #332d41;
+  --ns-color-secondary-container: #4a4458;
+  --ns-color-on-secondary-container: #e8def8;
+  
+  /* --- Tertiary Colors (Dark) --- */
+  --ns-color-tertiary: #efb8c8;
+  --ns-color-on-tertiary: #492532;
+  --ns-color-tertiary-container: #633b48;
+  --ns-color-on-tertiary-container: #ffd8e4;
+  
+  /* --- Surface Colors (Dark) --- */
+  --ns-color-background: #1c1b1f;
+  --ns-color-background-rgb: 28, 27, 31;
+  --ns-color-on-background: #e6e1e5;
+  
+  --ns-color-surface: #1c1b1f;
+  --ns-color-surface-variant: #49454f;
+  --ns-color-on-surface: #e6e1e5;
+  --ns-color-on-surface-variant: #cac4d0;
+  
+  --ns-color-surface-hover: #2b2930;
+  --ns-color-surface-active: #3b3842;
+  
+  /* --- Outline Colors (Dark) --- */
+  --ns-color-outline: #938f99;
+  --ns-color-outline-variant: #49454f;
+  
+  /* --- Error Colors (Dark) --- */
+  --ns-color-error: #f2b8b5;
+  --ns-color-on-error: #601410;
+  --ns-color-error-container: #8c1d18;
+  --ns-color-on-error-container: #f9dedc;
+  
+  /* --- Text Colors (Dark) --- */
+  --ns-color-text-primary: var(--ns-color-on-surface);
+  --ns-color-text-secondary: var(--ns-color-on-surface-variant);
+  --ns-color-text-tertiary: var(--ns-color-outline);
+  --ns-color-text-disabled: rgba(230, 225, 229, 0.38);
+  
+  /* --- Border Colors (Dark) --- */
+  --ns-color-border: var(--ns-color-outline-variant);
+  --ns-color-border-hover: var(--ns-color-outline);
+  
+  /* --- Component Backgrounds (Dark) --- */
+  --ns-input-background: var(--ns-color-surface-variant);
+  --ns-dropdown-background: var(--ns-color-surface);
+  --ns-chip-background: var(--ns-color-surface-variant);
+}
+
+
+/* ============================================
+   MATERIAL DESIGN 3 - DYNAMIC COLOR SUPPORT
+   ============================================ */
+
+/* 
+ * Material You dynamic color can be enabled via JavaScript:
+ * 
+ * const themer = new MaterialDynamicColor(sourceColor);
+ * const tokens = themer.generateTokens();
+ * applyTokens(nativeSelectElement, tokens);
+ */
+
+:host([dynamic-color]),
+native-select[dynamic-color] {
+  /* Placeholders for dynamic color injection */
+  --ns-dynamic-primary: var(--ns-color-primary);
+  --ns-dynamic-secondary: var(--ns-color-secondary);
+  --ns-dynamic-tertiary: var(--ns-color-tertiary);
+  
+  /* Override static colors */
+  --ns-color-primary: var(--ns-dynamic-primary);
+  --ns-color-secondary: var(--ns-dynamic-secondary);
+  --ns-color-tertiary: var(--ns-dynamic-tertiary);
+}

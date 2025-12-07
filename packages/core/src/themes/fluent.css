@@ -1,0 +1,418 @@
+/**
+ * Fluent UI 2 (Fluent 2) Theme Pack
+ * Pixel-perfect recreation of Microsoft Fluent Design System
+ * 
+ * Based on:
+ * - Fluent UI 2 (2023+)
+ * - Windows 11 design language
+ * - Fluent Design System principles
+ * - Mica material effects
+ * 
+ * Usage:
+ *   <native-select theme="fluent"></native-select>
+ *   OR
+ *   import '@native-select/core/themes/fluent.css';
+ */
+
+:host([theme="fluent"]),
+native-select[theme="fluent"] {
+  /* ============================================
+     FLUENT UI 2 - COLOR SYSTEM
+     ============================================ */
+  
+  /* --- Brand Colors (Fluent Blue) --- */
+  --ns-color-primary: #0078d4;
+  --ns-color-primary-hover: #106ebe;
+  --ns-color-primary-active: #005a9e;
+  --ns-color-primary-rgb: 0, 120, 212;
+  
+  --ns-color-primary-foreground: #ffffff;
+  
+  /* --- Secondary Colors --- */
+  --ns-color-secondary: #605e5c;
+  --ns-color-secondary-hover: #484644;
+  --ns-color-secondary-active: #323130;
+  
+  /* --- Neutral Palette (Fluent Gray) --- */
+  --ns-neutral-foreground-1: #242424;
+  --ns-neutral-foreground-2: #424242;
+  --ns-neutral-foreground-3: #616161;
+  --ns-neutral-foreground-4: #757575;
+  --ns-neutral-foreground-disabled: #bdbdbd;
+  
+  --ns-neutral-background-1: #ffffff;
+  --ns-neutral-background-2: #fafafa;
+  --ns-neutral-background-3: #f5f5f5;
+  --ns-neutral-background-4: #f0f0f0;
+  --ns-neutral-background-5: #e0e0e0;
+  --ns-neutral-background-6: #d6d6d6;
+  
+  --ns-neutral-stroke-1: #e0e0e0;
+  --ns-neutral-stroke-2: #d1d1d1;
+  --ns-neutral-stroke-accessible: #616161;
+  
+  /* --- Surface Colors --- */
+  --ns-color-background: var(--ns-neutral-background-1);
+  --ns-color-background-rgb: 255, 255, 255;
+  --ns-color-surface: var(--ns-neutral-background-2);
+  --ns-color-surface-hover: var(--ns-neutral-background-3);
+  --ns-color-surface-active: var(--ns-neutral-background-4);
+  
+  /* --- Text Colors --- */
+  --ns-color-text-primary: var(--ns-neutral-foreground-1);
+  --ns-color-text-secondary: var(--ns-neutral-foreground-2);
+  --ns-color-text-tertiary: var(--ns-neutral-foreground-3);
+  --ns-color-text-disabled: var(--ns-neutral-foreground-disabled);
+  --ns-color-text-inverse: #ffffff;
+  
+  /* --- Border Colors --- */
+  --ns-color-border: var(--ns-neutral-stroke-1);
+  --ns-color-border-hover: var(--ns-neutral-stroke-2);
+  --ns-color-border-active: var(--ns-color-primary);
+  --ns-color-border-focus: var(--ns-color-primary);
+  
+  /* --- Semantic Colors --- */
+  --ns-color-success: #107c10;
+  --ns-color-success-hover: #0e700e;
+  --ns-color-success-foreground: #ffffff;
+  
+  --ns-color-warning: #fce100;
+  --ns-color-warning-hover: #e3ca00;
+  --ns-color-warning-foreground: #242424;
+  
+  --ns-color-error: #d13438;
+  --ns-color-error-hover: #a4262c;
+  --ns-color-error-active: #8a1c21;
+  --ns-color-error-foreground: #ffffff;
+  
+  --ns-color-info: var(--ns-color-primary);
+  
+  /* --- Selection Colors --- */
+  --ns-color-selected: rgba(var(--ns-color-primary-rgb), 0.1);
+  --ns-color-selected-hover: rgba(var(--ns-color-primary-rgb), 0.15);
+  
+  
+  /* ============================================
+     FLUENT UI 2 - TYPOGRAPHY
+     ============================================ */
+  
+  /* Fluent uses Segoe UI on Windows, San Francisco on macOS */
+  --ns-font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, 
+                    BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', sans-serif;
+  
+  /* Fluent type ramp */
+  --ns-font-size-100: 0.625rem;    /* 10px - Caption 2 */
+  --ns-font-size-200: 0.75rem;     /* 12px - Caption 1 */
+  --ns-font-size-300: 0.8125rem;   /* 13px - Body 2 */
+  --ns-font-size-400: 0.875rem;    /* 14px - Body 1 */
+  --ns-font-size-500: 1rem;        /* 16px - Subtitle 2 */
+  --ns-font-size-600: 1.125rem;    /* 18px - Subtitle 1 */
+  
+  --ns-font-size-xs: var(--ns-font-size-200);
+  --ns-font-size-sm: var(--ns-font-size-300);
+  --ns-font-size-base: var(--ns-font-size-400);
+  --ns-font-size-lg: var(--ns-font-size-500);
+  
+  /* Fluent weights */
+  --ns-font-weight-regular: 400;
+  --ns-font-weight-semibold: 600;
+  --ns-font-weight-bold: 700;
+  
+  --ns-font-weight-normal: var(--ns-font-weight-regular);
+  --ns-font-weight-medium: var(--ns-font-weight-semibold);
+  
+  /* Line heights */
+  --ns-line-height-100: 1.2;       /* 120% */
+  --ns-line-height-200: 1.3333;    /* 133% */
+  --ns-line-height-300: 1.4286;    /* 143% */
+  --ns-line-height-400: 1.4286;    /* 143% */
+  --ns-line-height-500: 1.375;     /* 137.5% */
+  
+  --ns-line-height-normal: var(--ns-line-height-400);
+  
+  /* Component typography */
+  --ns-input-font-size: var(--ns-font-size-400);
+  --ns-option-font-size: var(--ns-font-size-400);
+  --ns-label-font-size: var(--ns-font-size-300);
+  --ns-label-font-weight: var(--ns-font-weight-semibold);
+  
+  
+  /* ============================================
+     FLUENT UI 2 - SHADOWS (ELEVATION)
+     ============================================ */
+  
+  /* Fluent elevation tokens */
+  --ns-shadow-2: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
+  --ns-shadow-4: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
+  --ns-shadow-8: 0 0 2px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.14);
+  --ns-shadow-16: 0 0 2px rgba(0, 0, 0, 0.12), 0 16px 32px rgba(0, 0, 0, 0.14);
+  --ns-shadow-28: 0 0 8px rgba(0, 0, 0, 0.12), 0 28px 48px rgba(0, 0, 0, 0.18);
+  --ns-shadow-64: 0 0 8px rgba(0, 0, 0, 0.12), 0 64px 128px rgba(0, 0, 0, 0.24);
+  
+  /* Component shadows */
+  --ns-input-shadow: none;
+  --ns-dropdown-shadow: var(--ns-shadow-16);
+  --ns-chip-shadow: var(--ns-shadow-2);
+  
+  
+  /* ============================================
+     FLUENT UI 2 - BORDER RADIUS
+     ============================================ */
+  
+  /* Fluent corner radius tokens */
+  --ns-border-radius-none: 0;
+  --ns-border-radius-small: 2px;
+  --ns-border-radius-medium: 4px;
+  --ns-border-radius-large: 6px;
+  --ns-border-radius-xlarge: 8px;
+  --ns-border-radius-circular: 9999px;
+  
+  /* Component radius */
+  --ns-input-radius: var(--ns-border-radius-medium);
+  --ns-dropdown-radius: var(--ns-border-radius-large);
+  --ns-chip-radius: var(--ns-border-radius-medium);
+  --ns-option-radius: var(--ns-border-radius-small);
+  
+  
+  /* ============================================
+     FLUENT UI 2 - SPACING
+     ============================================ */
+  
+  /* Fluent spacing tokens (4px base) */
+  --ns-spacing-none: 0;
+  --ns-spacing-xxs: 0.125rem;  /* 2px */
+  --ns-spacing-xs: 0.25rem;    /* 4px */
+  --ns-spacing-sNudge: 0.375rem; /* 6px */
+  --ns-spacing-s: 0.5rem;      /* 8px */
+  --ns-spacing-mNudge: 0.625rem; /* 10px */
+  --ns-spacing-m: 0.75rem;     /* 12px */
+  --ns-spacing-l: 1rem;        /* 16px */
+  --ns-spacing-xl: 1.25rem;    /* 20px */
+  --ns-spacing-xxl: 1.5rem;    /* 24px */
+  --ns-spacing-xxxl: 2rem;     /* 32px */
+  
+  /* Component spacing */
+  --ns-input-padding-x: var(--ns-spacing-m);
+  --ns-input-padding-y: var(--ns-spacing-s);
+  --ns-option-padding-x: var(--ns-spacing-m);
+  --ns-option-padding-y: var(--ns-spacing-sNudge);
+  --ns-chip-padding-x: var(--ns-spacing-s);
+  --ns-chip-padding-y: var(--ns-spacing-xxs);
+  
+  /* Sizing */
+  --ns-input-height: 2rem;         /* 32px - Medium */
+  --ns-input-height-sm: 1.5rem;    /* 24px - Small */
+  --ns-input-height-lg: 2.5rem;    /* 40px - Large */
+  
+  --ns-option-height: 2rem;        /* 32px */
+  --ns-option-height-sm: 1.75rem;  /* 28px */
+  
+  
+  /* ============================================
+     FLUENT UI 2 - ANIMATION
+     ============================================ */
+  
+  /* Fluent motion tokens */
+  --ns-curve-accelerate-max: cubic-bezier(1, 0, 1, 1);
+  --ns-curve-accelerate-mid: cubic-bezier(0.7, 0, 1, 0.5);
+  --ns-curve-accelerate-min: cubic-bezier(0.8, 0, 1, 1);
+  --ns-curve-decelerate-max: cubic-bezier(0, 0, 0, 1);
+  --ns-curve-decelerate-mid: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --ns-curve-decelerate-min: cubic-bezier(0.33, 0, 0.1, 1);
+  --ns-curve-easy-ease-max: cubic-bezier(0.8, 0, 0.1, 1);
+  --ns-curve-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
+  --ns-curve-linear: linear;
+  
+  /* Duration tokens */
+  --ns-duration-ultra-fast: 50ms;
+  --ns-duration-faster: 100ms;
+  --ns-duration-fast: 150ms;
+  --ns-duration-normal: 200ms;
+  --ns-duration-gentle: 250ms;
+  --ns-duration-slow: 300ms;
+  --ns-duration-slower: 400ms;
+  --ns-duration-ultra-slow: 500ms;
+  
+  /* Component motion */
+  --ns-duration-base: var(--ns-duration-normal);
+  --ns-ease-in-out: var(--ns-curve-easy-ease);
+  --ns-ease-out: var(--ns-curve-decelerate-mid);
+  --ns-ease-in: var(--ns-curve-accelerate-mid);
+  
+  --ns-transition-colors: color var(--ns-duration-fast) var(--ns-ease-out),
+                          background-color var(--ns-duration-fast) var(--ns-ease-out),
+                          border-color var(--ns-duration-fast) var(--ns-ease-out);
+  
+  
+  /* ============================================
+     FLUENT UI 2 - COMPONENT TOKENS
+     ============================================ */
+  
+  /* --- Input Field --- */
+  --ns-input-background: var(--ns-neutral-background-1);
+  --ns-input-background-hover: var(--ns-neutral-background-1);
+  --ns-input-background-focus: var(--ns-neutral-background-1);
+  --ns-input-background-disabled: var(--ns-neutral-background-6);
+  
+  --ns-input-border-color: var(--ns-neutral-stroke-accessible);
+  --ns-input-border-color-hover: var(--ns-neutral-foreground-3);
+  --ns-input-border-color-focus: var(--ns-color-primary);
+  --ns-input-border-color-error: var(--ns-color-error);
+  
+  --ns-input-text-color: var(--ns-neutral-foreground-1);
+  --ns-input-text-color-disabled: var(--ns-neutral-foreground-disabled);
+  --ns-input-placeholder-color: var(--ns-neutral-foreground-4);
+  
+  /* Fluent uses underline instead of full border */
+  --ns-border-width: 0;
+  --ns-input-border-bottom-width: 1px;
+  --ns-input-border-bottom-width-focus: 2px;
+  
+  /* --- Dropdown --- */
+  --ns-dropdown-background: var(--ns-neutral-background-1);
+  --ns-dropdown-border-color: var(--ns-neutral-stroke-1);
+  --ns-dropdown-backdrop: rgba(0, 0, 0, 0.4);
+  
+  /* --- Option --- */
+  --ns-option-background: transparent;
+  --ns-option-background-hover: var(--ns-neutral-background-3);
+  --ns-option-background-active: var(--ns-neutral-background-4);
+  --ns-option-background-selected: var(--ns-color-selected);
+  --ns-option-background-selected-hover: var(--ns-color-selected-hover);
+  
+  --ns-option-text-color: var(--ns-neutral-foreground-1);
+  --ns-option-text-color-selected: var(--ns-color-primary);
+  --ns-option-text-color-disabled: var(--ns-neutral-foreground-disabled);
+  
+  /* --- Chip --- */
+  --ns-chip-background: var(--ns-neutral-background-5);
+  --ns-chip-text-color: var(--ns-neutral-foreground-2);
+  --ns-chip-border-color: transparent;
+  --ns-chip-remove-color: var(--ns-neutral-foreground-3);
+  --ns-chip-remove-hover-color: var(--ns-color-error);
+  
+  /* --- Checkbox --- */
+  --ns-checkbox-size: 1rem;        /* 16px */
+  --ns-checkbox-border-color: var(--ns-neutral-stroke-accessible);
+  --ns-checkbox-background: var(--ns-neutral-background-1);
+  --ns-checkbox-background-checked: var(--ns-color-primary);
+  --ns-checkbox-border-radius: var(--ns-border-radius-small);
+  --ns-checkbox-checkmark-color: var(--ns-color-primary-foreground);
+  
+  /* --- Focus Indicator (Fluent style) --- */
+  --ns-focus-ring-width: 2px;
+  --ns-focus-ring-offset: 0px;
+  --ns-focus-ring-color: var(--ns-color-primary);
+  --ns-input-shadow-focus: inset 0 0 0 1px var(--ns-color-primary);
+  
+  /* --- Scrollbar (Fluent style) --- */
+  --ns-scrollbar-width: 12px;
+  --ns-scrollbar-track-background: transparent;
+  --ns-scrollbar-thumb-background: var(--ns-neutral-background-5);
+  --ns-scrollbar-thumb-hover-background: var(--ns-neutral-background-6);
+  --ns-scrollbar-thumb-radius: 6px;
+  
+  /* --- Divider --- */
+  --ns-divider-color: var(--ns-neutral-stroke-2);
+  --ns-divider-thickness: 1px;
+}
+
+
+/* ============================================
+   FLUENT UI 2 - DARK THEME
+   ============================================ */
+
+:host([theme="fluent-dark"]),
+native-select[theme="fluent-dark"],
+:host([theme="fluent"]:is(.dark, [data-theme="dark"])),
+native-select[theme="fluent"]:is(.dark, [data-theme="dark"]) {
+  /* --- Brand Colors (Dark) --- */
+  --ns-color-primary: #60cdff;
+  --ns-color-primary-hover: #8edbff;
+  --ns-color-primary-active: #3ec1ff;
+  --ns-color-primary-rgb: 96, 205, 255;
+  
+  --ns-color-primary-foreground: #003d5c;
+  
+  /* --- Neutral Palette (Dark) --- */
+  --ns-neutral-foreground-1: #ffffff;
+  --ns-neutral-foreground-2: #f5f5f5;
+  --ns-neutral-foreground-3: #e0e0e0;
+  --ns-neutral-foreground-4: #bdbdbd;
+  --ns-neutral-foreground-disabled: #616161;
+  
+  --ns-neutral-background-1: #1e1e1e;
+  --ns-neutral-background-2: #292929;
+  --ns-neutral-background-3: #2e2e2e;
+  --ns-neutral-background-4: #333333;
+  --ns-neutral-background-5: #424242;
+  --ns-neutral-background-6: #484848;
+  
+  --ns-neutral-stroke-1: #424242;
+  --ns-neutral-stroke-2: #525252;
+  --ns-neutral-stroke-accessible: #e0e0e0;
+  
+  /* --- Surface Colors (Dark) --- */
+  --ns-color-background: var(--ns-neutral-background-1);
+  --ns-color-background-rgb: 30, 30, 30;
+  --ns-color-surface: var(--ns-neutral-background-2);
+  --ns-color-surface-hover: var(--ns-neutral-background-3);
+  --ns-color-surface-active: var(--ns-neutral-background-4);
+  
+  /* --- Text Colors (Dark) --- */
+  --ns-color-text-primary: var(--ns-neutral-foreground-1);
+  --ns-color-text-secondary: var(--ns-neutral-foreground-2);
+  --ns-color-text-tertiary: var(--ns-neutral-foreground-3);
+  --ns-color-text-disabled: var(--ns-neutral-foreground-disabled);
+  
+  /* --- Border Colors (Dark) --- */
+  --ns-color-border: var(--ns-neutral-stroke-1);
+  --ns-color-border-hover: var(--ns-neutral-stroke-2);
+  
+  /* --- Semantic Colors (Dark) --- */
+  --ns-color-success: #6bb700;
+  --ns-color-success-foreground: #1a2e00;
+  
+  --ns-color-warning: #fce100;
+  --ns-color-warning-foreground: #3d3800;
+  
+  --ns-color-error: #ff6b6b;
+  --ns-color-error-hover: #ff8787;
+  --ns-color-error-foreground: #ffffff;
+  
+  /* --- Shadows (Dark - more prominent) --- */
+  --ns-shadow-2: 0 0 2px rgba(0, 0, 0, 0.24), 0 2px 4px rgba(0, 0, 0, 0.28);
+  --ns-shadow-4: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
+  --ns-shadow-8: 0 0 2px rgba(0, 0, 0, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
+  --ns-shadow-16: 0 0 2px rgba(0, 0, 0, 0.24), 0 16px 32px rgba(0, 0, 0, 0.36);
+  --ns-shadow-28: 0 0 8px rgba(0, 0, 0, 0.24), 0 28px 48px rgba(0, 0, 0, 0.44);
+  --ns-shadow-64: 0 0 8px rgba(0, 0, 0, 0.24), 0 64px 128px rgba(0, 0, 0, 0.56);
+}
+
+
+/* ============================================
+   FLUENT UI 2 - HIGH CONTRAST
+   ============================================ */
+
+:host([theme="fluent-hc"]),
+native-select[theme="fluent-hc"],
+@media (prefers-contrast: more) {
+  :host([theme="fluent"]),
+  native-select[theme="fluent"] {
+    /* High contrast overrides */
+    --ns-color-text-primary: #000000;
+    --ns-color-background: #ffffff;
+    --ns-color-border: #000000;
+    --ns-border-width: 2px;
+    
+    /* Remove subtle effects */
+    --ns-shadow-2: none;
+    --ns-shadow-4: 0 0 0 1px #000000;
+    --ns-shadow-8: 0 0 0 2px #000000;
+    --ns-shadow-16: 0 0 0 2px #000000;
+    
+    /* Stronger focus */
+    --ns-focus-ring-width: 3px;
+    --ns-input-shadow-focus: inset 0 0 0 2px #000000;
+  }
+}
