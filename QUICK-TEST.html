@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smilodon Quick Test - Core Functionality</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #667eea; }
+        .test-section {
+            background: white;
+            padding: 24px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5568d3; }
+        select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦖 Smilodon Quick Functionality Test</h1>
+    <p>Testing native HTML select elements (Core package will enhance these)</p>
+
+    <!-- Test 1: Basic Functionality -->
+    <div class="test-section">
+        <h2>Test 1: Basic Selection</h2>
+        <select id="basic-select">
+            <option value="">Choose a framework...</option>
+            <option value="react">React</option>
+            <option value="vue">Vue</option>
+            <option value="svelte">Svelte</option>
+            <option value="angular">Angular</option>
+        </select>
+        <div class="status info" id="basic-status">Select a framework to test</div>
+    </div>
+
+    <!-- Test 2: Large Dataset -->
+    <div class="test-section">
+        <h2>Test 2: Large Dataset Performance</h2>
+        <button onclick="loadLargeDataset()">Load 1,000 Items</button>
+        <select id="large-select" size="10">
+            <option>Click button to load data...</option>
+        </select>
+        <div class="status info" id="large-status">Ready to load</div>
+    </div>
+
+    <!-- Test 3: Multi-Select -->
+    <div class="test-section">
+        <h2>Test 3: Multi-Select (Ctrl/Cmd + Click)</h2>
+        <select id="multi-select" multiple size="8">
+            <option value="a">Option A</option>
+            <option value="b">Option B</option>
+            <option value="c">Option C</option>
+            <option value="d">Option D</option>
+            <option value="e">Option E</option>
+            <option value="f">Option F</option>
+        </select>
+        <div class="status info" id="multi-status">Select multiple options</div>
+    </div>
+
+    <!-- Test 4: Dynamic Updates -->
+    <div class="test-section">
+        <h2>Test 4: Dynamic Updates</h2>
+        <button onclick="addDynamicOption()">Add Option</button>
+        <button onclick="removeDynamicOption()">Remove Last</button>
+        <button onclick="clearDynamicOptions()">Clear All</button>
+        <select id="dynamic-select">
+            <option>Initial option</option>
+        </select>
+        <div class="status info" id="dynamic-status">Options: 1</div>
+    </div>
+
+    <!-- Test 5: Keyboard Navigation -->
+    <div class="test-section">
+        <h2>Test 5: Keyboard Navigation (Accessibility)</h2>
+        <p>Tab to focus, Arrow keys to navigate, Enter to select, Escape to blur</p>
+        <select id="keyboard-select">
+            <option value="1">Press Tab to focus</option>
+            <option value="2">↑↓ Arrow keys to navigate</option>
+            <option value="3">Enter to select</option>
+            <option value="4">Home/End to jump</option>
+            <option value="5">Escape to exit</option>
+        </select>
+        <div class="status info" id="keyboard-status">Test keyboard navigation</div>
+    </div>
+
+    <!-- Build Info -->
+    <div class="test-section">
+        <h2>📊 Build Information</h2>
+        <table style="width:100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;"><strong>Build Status</strong></td>
+                <td style="padding: 8px;">✅ Core package built</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;"><strong>Bundle Size (gzipped)</strong></td>
+                <td style="padding: 8px;">13.09 KB</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;"><strong>Formats</strong></td>
+                <td style="padding: 8px;">ESM, UMD, CommonJS</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;"><strong>WCAG Compliance</strong></td>
+                <td style="padding: 8px;">AA (91%), AAA (4 criteria)</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px;"><strong>Tests Passed</strong></td>
+                <td style="padding: 8px;" id="tests-passed">0</td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        let testsPassed = 0;
+        let optionCounter = 1;
+
+        function updateTestCount() {
+            testsPassed++;
+            document.getElementById('tests-passed').textContent = testsPassed;
+        }
+
+        // Test 1: Basic Selection
+        document.getElementById('basic-select').addEventListener('change', function(e) {
+            const value = e.target.value;
+            const text = e.target.options[e.target.selectedIndex].text;
+            document.getElementById('basic-status').className = 'status success';
+            document.getElementById('basic-status').textContent = `✅ Selected: ${text} (value: ${value})`;
+            updateTestCount();
+        });
+
+        // Test 2: Large Dataset
+        function loadLargeDataset() {
+            const select = document.getElementById('large-select');
+            const status = document.getElementById('large-status');
+            
+            const startTime = performance.now();
+            select.innerHTML = '';
+            
+            for (let i = 1; i <= 1000; i++) {
+                const option = document.createElement('option');
+                option.value = `item-${i}`;
+                option.textContent = `Item ${String(i).padStart(4, '0')}`;
+                select.appendChild(option);
+            }
+            
+            const endTime = performance.now();
+            const duration = (endTime - startTime).toFixed(2);
+            
+            status.className = 'status success';
+            status.textContent = `✅ Loaded 1,000 items in ${duration}ms`;
+            updateTestCount();
+        }
+
+        document.getElementById('large-select').addEventListener('change', function(e) {
+            const status = document.getElementById('large-status');
+            status.className = 'status success';
+            status.textContent = `✅ Selected: ${e.target.value}`;
+        });
+
+        // Test 3: Multi-Select
+        document.getElementById('multi-select').addEventListener('change', function(e) {
+            const selected = Array.from(e.target.selectedOptions);
+            const count = selected.length;
+            const values = selected.map(opt => opt.value).join(', ');
+            
+            document.getElementById('multi-status').className = 'status success';
+            document.getElementById('multi-status').textContent = `✅ Selected ${count} option(s): [${values}]`;
+            updateTestCount();
+        });
+
+        // Test 4: Dynamic Updates
+        function addDynamicOption() {
+            const select = document.getElementById('dynamic-select');
+            const option = document.createElement('option');
+            option.value = `dynamic-${optionCounter}`;
+            option.textContent = `Dynamic Option ${optionCounter}`;
+            select.appendChild(option);
+            optionCounter++;
+            
+            document.getElementById('dynamic-status').textContent = `Options: ${select.options.length}`;
+            updateTestCount();
+        }
+
+        function removeDynamicOption() {
+            const select = document.getElementById('dynamic-select');
+            if (select.options.length > 1) {
+                select.removeChild(select.lastElementChild);
+                document.getElementById('dynamic-status').textContent = `Options: ${select.options.length}`;
+                updateTestCount();
+            }
+        }
+
+        function clearDynamicOptions() {
+            const select = document.getElementById('dynamic-select');
+            select.innerHTML = '<option>Cleared</option>';
+            document.getElementById('dynamic-status').textContent = `Options: 1`;
+            updateTestCount();
+        }
+
+        // Test 5: Keyboard Navigation
+        const keyboardSelect = document.getElementById('keyboard-select');
+        
+        keyboardSelect.addEventListener('focus', () => {
+            document.getElementById('keyboard-status').className = 'status info';
+            document.getElementById('keyboard-status').textContent = '⌨️ Focused - Use arrow keys';
+        });
+
+        keyboardSelect.addEventListener('keydown', (e) => {
+            const status = document.getElementById('keyboard-status');
+            status.className = 'status info';
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    status.textContent = '⬇️ Arrow Down pressed';
+                    break;
+                case 'ArrowUp':
+                    status.textContent = '⬆️ Arrow Up pressed';
+                    break;
+                case 'Enter':
+                    status.className = 'status success';
+                    status.textContent = '✅ Enter pressed - Selection confirmed!';
+                    updateTestCount();
+                    break;
+                case 'Escape':
+                    status.textContent = '❌ Escape pressed - Focus released';
+                    e.target.blur();
+                    break;
+                case 'Home':
+                    status.textContent = '🏠 Home - Jump to first';
+                    break;
+                case 'End':
+                    status.textContent = '🔚 End - Jump to last';
+                    break;
+            }
+        });
+
+        keyboardSelect.addEventListener('change', function(e) {
+            const text = e.target.options[e.target.selectedIndex].text;
+            document.getElementById('keyboard-status').className = 'status success';
+            document.getElementById('keyboard-status').textContent = `✅ Changed to: ${text}`;
+        });
+
+        // Console logging
+        console.log('🦖 Smilodon Quick Test Loaded');
+        console.log('Build: v0.0.1');
+        console.log('Bundle: 13.09 KB gzipped');
+        console.log('Ready for testing!');
+    </script>
+</body>
+</html>

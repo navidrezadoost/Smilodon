@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Select - Real Component Test</title>
+  
+  <!-- Import the actual built component -->
+  <script type="module" src="./packages/core/dist/index.js"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      font-size: 1.3em;
+      opacity: 0.95;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .demo-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+
+    .demo-title {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .demo-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 0.6em;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .demo-description {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .select-wrapper {
+      margin: 20px 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .output-panel {
+      margin-top: 16px;
+      padding: 16px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .output-title {
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+    }
+
+    .log-entry {
+      padding: 6px 0;
+      font-size: 0.85em;
+      color: #666;
+      border-bottom: 1px solid #eee;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: #999;
+      margin-right: 8px;
+      font-family: monospace;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 2em;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .feature-list {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .feature-list h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+    }
+
+    .feature-list ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 10px 0;
+      padding-left: 28px;
+      position: relative;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .feature-list li:before {
+      content: "✅";
+      position: absolute;
+      left: 0;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .status-ready {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status-testing {
+      background: #fff3e0;
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🦖 Enhanced Select Component</h1>
+      <p>Real Component Testing Suite <span class="status-indicator status-ready">✓ Build v0.0.1</span></p>
+    </div>
+
+    <div class="demo-grid">
+      <!-- Demo 1: Basic Single Select -->
+      <div class="demo-card">
+        <div class="demo-title">
+          1. Basic Select (No Search)
+          <span class="demo-badge">Core</span>
+        </div>
+        <div class="demo-description">
+          Simple select with 10 options. Arrow keys work, no search functionality.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo1"></enhanced-select>
+        </div>
+        <div class="controls">
+          <button class="btn btn-secondary" onclick="demo1.reset()">Reset</button>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Selected Value:</div>
+          <div id="output1">None</div>
+        </div>
+      </div>
+
+      <!-- Demo 2: Searchable Select (Frontend) -->
+      <div class="demo-card">
+        <div class="demo-title">
+          2. Searchable (Frontend Filter)
+          <span class="demo-badge">Search</span>
+        </div>
+        <div class="demo-description">
+          Type to filter 50 countries. Filtering happens on the frontend. Arrow keys navigate filtered results.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo2"></enhanced-select>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value">50</span>
+            <span class="stat-label">Total Items</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="demo2-filtered">50</span>
+            <span class="stat-label">Filtered</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Search Queries:</div>
+          <div id="output2"></div>
+        </div>
+      </div>
+
+      <!-- Demo 3: Searchable Select (Server-side) -->
+      <div class="demo-card">
+        <div class="demo-title">
+          3. Searchable (Server-side)
+          <span class="demo-badge">Search</span>
+        </div>
+        <div class="demo-description">
+          Type to search 1000+ items on "server". Shows loading state while fetching. Simulated 300ms API delay.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo3"></enhanced-select>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value" id="demo3-total">1000</span>
+            <span class="stat-label">Server Items</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="demo3-results">0</span>
+            <span class="stat-label">Results</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Server Requests:</div>
+          <div id="output3"></div>
+        </div>
+      </div>
+
+      <!-- Demo 4: Multi-Select (No Search) -->
+      <div class="demo-card">
+        <div class="demo-title">
+          4. Multi-Select (No Search)
+          <span class="demo-badge">Multi</span>
+        </div>
+        <div class="demo-description">
+          Select multiple options. Selected items shown in input and highlighted in dropdown. No search.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo4"></enhanced-select>
+        </div>
+        <div class="controls">
+          <button class="btn btn-primary" onclick="demo4SelectAll()">Select All</button>
+          <button class="btn btn-secondary" onclick="demo4.reset()">Clear All</button>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Selected Items:</div>
+          <div id="output4">None</div>
+        </div>
+      </div>
+
+      <!-- Demo 5: Multi-Select (With Search) -->
+      <div class="demo-card">
+        <div class="demo-title">
+          5. Multi-Select + Search
+          <span class="demo-badge">Advanced</span>
+        </div>
+        <div class="demo-description">
+          Combine multi-select with search. Selected items stay visible in both input and dropdown while searching.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo5"></enhanced-select>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value" id="demo5-selected">0</span>
+            <span class="stat-label">Selected</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="demo5-filtered">30</span>
+            <span class="stat-label">Filtered</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Selection Log:</div>
+          <div id="output5"></div>
+        </div>
+      </div>
+
+      <!-- Demo 6: Keyboard Navigation -->
+      <div class="demo-card">
+        <div class="demo-title">
+          6. Keyboard Navigation
+          <span class="demo-badge">A11y</span>
+        </div>
+        <div class="demo-description">
+          Full keyboard support: Arrow keys (↑/↓) navigate, Enter selects, Escape closes, Home/End jump to first/last.
+        </div>
+        <div class="select-wrapper">
+          <enhanced-select id="demo6"></enhanced-select>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">⌨️ Keyboard Instructions:</div>
+          <div style="font-size: 0.9em; line-height: 1.8; color: #666;">
+            <strong>↑/↓:</strong> Navigate options<br>
+            <strong>Enter:</strong> Select highlighted<br>
+            <strong>Escape:</strong> Close dropdown<br>
+            <strong>Home/End:</strong> First/Last option<br>
+            <strong>Type:</strong> Search (if enabled)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature List -->
+    <div class="feature-list">
+      <h2>✅ Features Demonstrated</h2>
+      <ul>
+        <li><strong>Keyboard Navigation:</strong> Arrow keys (↑/↓) navigate through options smoothly</li>
+        <li><strong>Frontend Search:</strong> Type to filter options instantly (client-side)</li>
+        <li><strong>Server-side Search:</strong> Search large datasets with API integration</li>
+        <li><strong>Multi-Select:</strong> Select multiple items with visual feedback</li>
+        <li><strong>Selected Items Display:</strong> Both in input field and dropdown list</li>
+        <li><strong>Search Toggle:</strong> Enable/disable search per component</li>
+        <li><strong>Accessibility:</strong> Full WCAG 2.2 AA compliant keyboard controls</li>
+        <li><strong>Performance:</strong> Smooth scrolling and highlighting with large datasets</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { EnhancedSelect, configureSelect } from './packages/core/dist/index.js';
+    
+    console.log('Enhanced Select Component loaded successfully!');
+    
+    // Helper: Generate countries
+    function generateCountries(count) {
+      const countries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
+        'France', 'Italy', 'Spain', 'Netherlands', 'Belgium', 'Switzerland', 'Austria',
+        'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Czech Republic', 'Hungary',
+        'Portugal', 'Greece', 'Ireland', 'New Zealand', 'Japan', 'South Korea', 'China',
+        'India', 'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Venezuela',
+        'South Africa', 'Egypt', 'Nigeria', 'Kenya', 'Morocco', 'Israel', 'Turkey',
+        'Saudi Arabia', 'UAE', 'Thailand', 'Vietnam', 'Singapore', 'Malaysia', 'Indonesia',
+        'Philippines', 'Russia'];
+      return countries.slice(0, count).map((name, i) => ({
+        value: i + 1,
+        label: name
+      }));
+    }
+
+    // Helper: Generate items
+    function generateItems(count, prefix = 'Option') {
+      return Array.from({ length: count }, (_, i) => ({
+        value: i + 1,
+        label: `${prefix} ${i + 1}`
+      }));
+    }
+
+    // Helper: Log to output
+    function log(outputId, message) {
+      const output = document.getElementById(outputId);
+      if (!output) return;
+      
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">${time}</span>${message}`;
+      
+      output.insertBefore(entry, output.firstChild);
+      
+      // Keep only last 5 entries
+      while (output.children.length > 5) {
+        output.removeChild(output.lastChild);
+      }
+    }
+
+    // Wait for components to be ready
+    setTimeout(() => {
+      // Demo 1: Basic (no search)
+      const demo1 = document.getElementById('demo1');
+      demo1.setItems(generateItems(10));
+      demo1.addEventListener('change', (e) => {
+        const selected = e.detail;
+        document.getElementById('output1').textContent = selected ? `${selected.label} (value: ${selected.value})` : 'None';
+      });
+      window.demo1 = demo1;
+      
+      // Demo 2: Searchable frontend
+      const demo2 = document.getElementById('demo2');
+      configureSelect({ searchable: true });
+      demo2.setItems(generateCountries(50));
+      demo2.addEventListener('search', (e) => {
+        log('output2', `Searching: "${e.detail.query}"`);
+        // Frontend filtering would happen here
+        const filtered = generateCountries(50).filter(c => 
+          c.label.toLowerCase().includes(e.detail.query.toLowerCase())
+        );
+        document.getElementById('demo2-filtered').textContent = filtered.length;
+      });
+      
+      // Demo 3: Server-side search
+      const demo3 = document.getElementById('demo3');
+      let serverItems = generateItems(1000, 'Server Item');
+      demo3.addEventListener('search', async (e) => {
+        const query = e.detail.query;
+        log('output3', `🌐 Server request: "${query}"`);
+        
+        // Simulate server delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const results = serverItems.filter(item => 
+          item.label.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        demo3.setItems(results);
+        document.getElementById('demo3-results').textContent = results.length;
+        log('output3', `✅ Received ${results.length} results`);
+      });
+      
+      // Demo 4: Multi-select (no search)
+      const demo4 = document.getElementById('demo4');
+      configureSelect({ 
+        selection: { mode: 'multi' }
+      });
+      demo4.setItems(generateItems(15, 'Item'));
+      demo4.addEventListener('change', (e) => {
+        const selected = demo4.getSelectedItems();
+        document.getElementById('output4').textContent = selected.length > 0 
+          ? selected.map(s => s.label).join(', ')
+          : 'None';
+      });
+      window.demo4 = demo4;
+      window.demo4SelectAll = () => {
+        demo4.setSelectedValues([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+      };
+      
+      // Demo 5: Multi-select + search
+      const demo5 = document.getElementById('demo5');
+      configureSelect({ 
+        selection: { mode: 'multi' },
+        searchable: true
+      });
+      demo5.setItems(generateItems(30, 'Product'));
+      demo5.addEventListener('change', (e) => {
+        const selected = demo5.getSelectedItems();
+        document.getElementById('demo5-selected').textContent = selected.length;
+        log('output5', `Selected: ${selected.map(s => s.label).join(', ')}`);
+      });
+      demo5.addEventListener('search', (e) => {
+        const filtered = generateItems(30, 'Product').filter(item =>
+          item.label.toLowerCase().includes(e.detail.query.toLowerCase())
+        );
+        document.getElementById('demo5-filtered').textContent = filtered.length;
+      });
+      
+      // Demo 6: Keyboard navigation
+      const demo6 = document.getElementById('demo6');
+      demo6.setItems(generateItems(20, 'Option'));
+      
+      console.log('All demos initialized successfully!');
+    }, 100);
+  </script>
+</body>
+</html>

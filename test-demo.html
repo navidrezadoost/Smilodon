@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Enhanced Select Component - Full Feature Demo</title>
+  
+  <!-- Import the actual built component -->
+  <script type="module" src="./packages/core/dist/index.js"></script>
+  
   <style>
     * {
       box-sizing: border-box;
@@ -740,6 +744,9 @@
         this.items = [];
         this.selectedIndices = new Set();
         this.isOpen = false;
+        this.boundInputClick = null;
+        this.boundDropdownClick = null;
+        this.boundDocumentClick = null;
         this.render();
       }
 
@@ -856,6 +863,7 @@
           </div>
         `;
 
+        // Re-attach listeners after DOM update since innerHTML replaces elements
         this.attachEventListeners();
       }
 
@@ -878,15 +886,27 @@
         const input = this.shadowRoot.getElementById('input');
         const dropdown = this.shadowRoot.getElementById('dropdown');
 
-        input.addEventListener('click', () => {
+        // Remove old listeners if they exist to prevent duplicates
+        if (this.boundInputClick) {
+          input.removeEventListener('click', this.boundInputClick);
+        }
+        if (this.boundDropdownClick) {
+          dropdown.removeEventListener('click', this.boundDropdownClick);
+        }
+        if (this.boundDocumentClick) {
+          document.removeEventListener('click', this.boundDocumentClick);
+        }
+
+        // Create bound handlers
+        this.boundInputClick = () => {
           this.isOpen = !this.isOpen;
           this.render();
           if (this.isOpen && this.config.callbacks?.onOpen) {
             this.config.callbacks.onOpen();
           }
-        });
+        };
 
-        dropdown.addEventListener('click', (e) => {
+        this.boundDropdownClick = (e) => {
           const option = e.target.closest('.option');
           const loadMore = e.target.closest('#load-more');
           
@@ -902,14 +922,19 @@
           } else if (loadMore) {
             this.loadMore();
           }
-        });
+        };
 
-        document.addEventListener('click', (e) => {
+        this.boundDocumentClick = (e) => {
           if (!this.contains(e.target)) {
             this.isOpen = false;
             this.render();
           }
-        });
+        };
+
+        // Attach listeners
+        input.addEventListener('click', this.boundInputClick);
+        dropdown.addEventListener('click', this.boundDropdownClick);
+        document.addEventListener('click', this.boundDocumentClick);
       }
 
       selectOption(index) {
