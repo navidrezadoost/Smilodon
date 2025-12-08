@@ -337,7 +337,7 @@
   <div class="container">
     <!-- Feature Showcase -->
     <div class="feature-showcase">
-      <div class="demo-title">✨ Implemented Features</div>
+      <div class="demo-title">✨ Implemented Features (React-Select Compatible + More)</div>
       <div class="feature-grid">
         <div class="feature-item">
           <div class="feature-icon">🎛️</div>
@@ -402,13 +402,43 @@
         <div class="feature-item">
           <div class="feature-icon">🔍</div>
           <div class="feature-text">
-            <div class="feature-name">Searchable</div>
+            <div class="feature-name">3 Search Modes</div>
           </div>
         </div>
         <div class="feature-item">
           <div class="feature-icon">⚡</div>
           <div class="feature-text">
             <div class="feature-name">High Performance</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📂</div>
+          <div class="feature-text">
+            <div class="feature-name">Grouped Options</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">✨</div>
+          <div class="feature-text">
+            <div class="feature-name">Animated</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🔄</div>
+          <div class="feature-text">
+            <div class="feature-name">Async Loading</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">➕</div>
+          <div class="feature-text">
+            <div class="feature-name">Creatable</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📌</div>
+          <div class="feature-text">
+            <div class="feature-name">Fixed Options</div>
           </div>
         </div>
       </div>
@@ -671,6 +701,183 @@
           <div id="output10"></div>
         </div>
       </div>
+
+      <!-- Demo 11: Grouped Options -->
+      <div class="demo-card">
+        <div class="demo-title">
+          11. Grouped Options
+          <span class="demo-badge">NEW</span>
+        </div>
+        <div class="demo-description">
+          Organize options into logical groups with labels. Like react-select!
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo11"></div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Output:</div>
+          <div id="output11"></div>
+        </div>
+      </div>
+
+      <!-- Demo 12: Animated Multi-Select -->
+      <div class="demo-card">
+        <div class="demo-title">
+          12. Animated Select
+          <span class="demo-badge">NEW</span>
+        </div>
+        <div class="demo-description">
+          Smooth animations when options appear. Pure CSS animations!
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo12"></div>
+        </div>
+        <div class="demo-controls">
+          <button class="btn btn-primary" onclick="selectDemo12([1,2,3])">Select 3 Items</button>
+          <button class="btn btn-secondary" onclick="clearDemo12()">Clear</button>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Output:</div>
+          <div id="output12"></div>
+        </div>
+      </div>
+
+      <!-- Demo 13: Async/Remote Loading -->
+      <div class="demo-card">
+        <div class="demo-title">
+          13. Async Data Loading
+          <span class="demo-badge">NEW</span>
+        </div>
+        <div class="demo-description">
+          Load options from a remote source as you type. Simulates API calls!
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo13"></div>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value" id="demo13-requests">0</span>
+            <span class="stat-label">API Requests</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Output:</div>
+          <div id="output13"></div>
+        </div>
+      </div>
+
+      <!-- Demo 14: Creatable Options -->
+      <div class="demo-card">
+        <div class="demo-title">
+          14. Creatable Select
+          <span class="demo-badge">NEW</span>
+        </div>
+        <div class="demo-description">
+          Type to create new options that don't exist. Great for tags!
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo14"></div>
+        </div>
+        <div class="demo-controls">
+          <button class="btn btn-secondary" onclick="clearDemo14()">Clear All</button>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Created Options:</div>
+          <div id="output14"></div>
+        </div>
+      </div>
+
+      <!-- Demo 15: Fixed/Pinned Options -->
+      <div class="demo-card">
+        <div class="demo-title">
+          15. Fixed Options
+          <span class="demo-badge">NEW</span>
+        </div>
+        <div class="demo-description">
+          Some options are "pinned" and cannot be removed. Highlighted in yellow!
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo15"></div>
+        </div>
+        <div class="demo-controls">
+          <button class="btn btn-primary" onclick="selectDemo15([1,2,3,4,5])">Select All</button>
+          <button class="btn btn-secondary" onclick="demo15Reset()">Reset to Fixed Only</button>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Output:</div>
+          <div id="output15"></div>
+        </div>
+      </div>
+
+      <!-- Demo 16: Client-Side Search -->
+      <div class="demo-card">
+        <div class="demo-title">
+          16. Client-Side Search
+          <span class="demo-badge">SEARCH MODE</span>
+        </div>
+        <div class="demo-description">
+          Type to filter options locally. Fast, no API calls! Try typing "5" or "red".
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo16"></div>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value" id="demo16-filtered">50</span>
+            <span class="stat-label">Filtered Results</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">🔍 Client Filter:</div>
+          <div id="output16"></div>
+        </div>
+      </div>
+
+      <!-- Demo 17: Server-Side Search -->
+      <div class="demo-card">
+        <div class="demo-title">
+          17. Server-Side Search
+          <span class="demo-badge">SEARCH MODE</span>
+        </div>
+        <div class="demo-description">
+          Type to fetch from server. Updates items list from API. Simulates 500ms delay.
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo17"></div>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-value" id="demo17-api-calls">0</span>
+            <span class="stat-label">API Calls</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="demo17-results">10</span>
+            <span class="stat-label">Server Results</span>
+          </div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">🌐 Server Queries:</div>
+          <div id="output17"></div>
+        </div>
+      </div>
+
+      <!-- Demo 18: Passive Search (Display Only) -->
+      <div class="demo-card">
+        <div class="demo-title">
+          18. Passive Mode (No Search)
+          <span class="demo-badge">SEARCH MODE</span>
+        </div>
+        <div class="demo-description">
+          Input is readonly - shows selected value but doesn't filter. Click to open dropdown.
+        </div>
+        <div class="demo-select-wrapper">
+          <div id="demo18"></div>
+        </div>
+        <div class="output-panel">
+          <div class="output-title">📊 Selection:</div>
+          <div id="output18"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Instructions -->
@@ -703,7 +910,13 @@
       callbacks: {},
       enabled: true,
       searchable: false,
+      searchMode: 'client', // 'client' | 'server' | 'passive'
       placeholder: 'Select an option...',
+      grouped: false,
+      animated: false,
+      async: false,
+      creatable: false,
+      fixedOptions: [],
     };
 
     function configureSelect(config) {
@@ -716,6 +929,35 @@
         value: i + 1,
         label: `${prefix} ${i + 1}`,
       }));
+    }
+
+    function generateGroupedItems() {
+      return [
+        {
+          label: 'Colors',
+          options: [
+            { value: 'red', label: 'Red' },
+            { value: 'blue', label: 'Blue' },
+            { value: 'green', label: 'Green' },
+          ]
+        },
+        {
+          label: 'Fruits',
+          options: [
+            { value: 'apple', label: 'Apple' },
+            { value: 'banana', label: 'Banana' },
+            { value: 'orange', label: 'Orange' },
+          ]
+        },
+        {
+          label: 'Animals',
+          options: [
+            { value: 'dog', label: 'Dog' },
+            { value: 'cat', label: 'Cat' },
+            { value: 'bird', label: 'Bird' },
+          ]
+        }
+      ];
     }
 
     function log(id, message) {
@@ -742,10 +984,20 @@
         this.attachShadow({ mode: 'open' });
         this.config = { ...globalConfig };
         this.items = [];
+        this.groupedItems = [];
         this.selectedIndices = new Set();
+        this.fixedIndices = new Set();
         this.isOpen = false;
+        this.searchQuery = '';
+        this.isCreating = false;
+        this.isLoading = false;
+        this.hasFocus = false;
         this.boundInputClick = null;
+        this.boundInputChange = null;
+        this.boundInputKeyDown = null;
         this.boundDropdownClick = null;
+        this.boundDropdownScroll = null;
+        this.boundDocumentClick = null;
         this.boundDocumentClick = null;
         this.render();
       }
@@ -764,24 +1016,64 @@
           displayValue = `${selectedCount} selected`;
         }
 
+        const isSearchable = this.config.searchable;
+        const searchMode = this.config.searchMode || 'client';
+        const isPassive = searchMode === 'passive';
+        
+        // For single-select searchable: show selected value when not searching
+        let inputValue = this.searchQuery;
+        if (isSearchable && mode === 'single' && !this.isOpen && selectedCount > 0 && !isPassive) {
+          inputValue = displayValue;
+        }
+        
+        let inputElement;
+        if (isSearchable) {
+          if (isPassive) {
+            // Passive mode: input shows selected value, no filtering
+            inputElement = `<input type="text" class="select-input" id="input" placeholder="${this.config.placeholder || 'Select...'}" value="${displayValue}" readonly />`;
+          } else {
+            // Client/Server mode: input for searching
+            inputElement = `<input type="text" class="select-input" id="input" placeholder="${this.config.placeholder || 'Type to search...'}" value="${inputValue}" />`;
+          }
+        } else {
+          inputElement = `<div class="select-input" id="input">${displayValue}</div>`;
+        }
+
         this.shadowRoot.innerHTML = `
           <style>
             :host { display: block; width: 100%; }
             .select-container { position: relative; width: 100%; }
+            .select-input-wrapper { position: relative; width: 100%; }
             .select-input {
               width: 100%;
-              padding: 10px 12px;
+              padding: 10px 40px 10px 12px;
               border: 2px solid var(--select-border-color, #ddd);
               border-radius: 6px;
               font-size: 14px;
-              cursor: pointer;
+              cursor: ${isSearchable && searchMode !== 'passive' ? 'text' : 'pointer'};
               background: white;
-              transition: all 0.2s;
+              transition: all 0.2s ease;
+            }
+            .select-input[readonly] {
+              cursor: pointer;
             }
             .select-input:focus, .select-input:hover {
               border-color: var(--select-border-focus-color, #667eea);
               outline: none;
               box-shadow: 0 0 0 3px var(--select-shadow-focus-color, rgba(102, 126, 234, 0.1));
+            }
+            .dropdown-arrow {
+              position: absolute;
+              right: 12px;
+              top: 50%;
+              transform: translateY(-50%) rotate(${this.isOpen ? '180deg' : '0deg'});
+              width: 0;
+              height: 0;
+              border-left: 5px solid transparent;
+              border-right: 5px solid transparent;
+              border-top: 6px solid var(--select-border-color, #999);
+              pointer-events: none;
+              transition: transform 0.2s ease;
             }
             .select-dropdown {
               position: absolute;
@@ -796,7 +1088,10 @@
               border-radius: 6px;
               box-shadow: 0 4px 12px rgba(0,0,0,0.15);
               z-index: 1000;
-              display: ${this.isOpen ? 'block' : 'none'};
+              opacity: ${this.isOpen ? '1' : '0'};
+              transform: translateY(${this.isOpen ? '0' : '-10px'});
+              visibility: ${this.isOpen ? 'visible' : 'hidden'};
+              transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
             }
             .option {
               padding: 10px 12px;
@@ -813,6 +1108,8 @@
               background: var(--select-option-selected-bg, #e3f2fd);
               color: var(--select-option-selected-color, #1976d2);
               font-weight: 600;
+              border-left: 3px solid var(--select-option-selected-color, #1976d2);
+              padding-left: 9px;
             }
             .remove-btn {
               background: transparent;
@@ -854,9 +1151,83 @@
             @keyframes spin {
               to { transform: rotate(360deg); }
             }
+            .no-results {
+              padding: 20px;
+              text-align: center;
+              color: #999;
+              font-style: italic;
+            }
+            .option-group-label {
+              padding: 8px 12px;
+              font-weight: 700;
+              font-size: 12px;
+              color: #999;
+              text-transform: uppercase;
+              background: #f9f9f9;
+              border-top: 1px solid #e0e0e0;
+            }
+            .option-group-label:first-child {
+              border-top: none;
+            }
+            .option.grouped {
+              padding-left: 24px;
+            }
+            .option.fixed {
+              background: #fff3cd;
+              border-left: 3px solid #ffc107;
+            }
+            .option.fixed .remove-btn {
+              display: none;
+            }
+            .create-option {
+              padding: 10px 12px;
+              cursor: pointer;
+              color: #667eea;
+              font-weight: 600;
+              border-top: 1px solid #e0e0e0;
+              background: #f9f9f9;
+            }
+            .create-option:hover {
+              background: #f0f0f0;
+            }
+            @keyframes slideDown {
+              from {
+                opacity: 0;
+                transform: translateY(-10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            .option.animated {
+              animation: slideDown 0.2s ease-out;
+            }
+            .loading-indicator {
+              padding: 16px;
+              text-align: center;
+              color: #667eea;
+              font-size: 14px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            }
+            .loading-spinner {
+              display: inline-block;
+              width: 16px;
+              height: 16px;
+              border: 2px solid #f3f3f3;
+              border-top: 2px solid #667eea;
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            }
           </style>
           <div class="select-container">
-            <div class="select-input" id="input">${displayValue}</div>
+            <div class="select-input-wrapper">
+              ${inputElement}
+              <div class="dropdown-arrow"></div>
+            </div>
             <div class="select-dropdown" id="dropdown">
               ${this.renderOptions()}
             </div>
@@ -865,21 +1236,106 @@
 
         // Re-attach listeners after DOM update since innerHTML replaces elements
         this.attachEventListeners();
+        
+        // Restore focus if input had focus before render
+        if (this.hasFocus && this.config.searchable && this.config.searchMode !== 'passive') {
+          const input = this.shadowRoot.getElementById('input');
+          if (input && document.activeElement !== input) {
+            setTimeout(() => input.focus(), 0);
+          }
+        }
+        
+        // Scroll to selected option when dropdown opens
+        if (this.isOpen && this.config.scrollToSelected?.enabled && this.selectedIndices.size > 0) {
+          setTimeout(() => this.scrollToSelected(), 0);
+        }
       }
 
       renderOptions() {
         const mode = this.config.selection?.mode || 'single';
         const showRemove = this.config.selection?.showRemoveButton && mode === 'multi';
+        const animated = this.config.animated;
+        const searchMode = this.config.searchMode || 'client';
 
-        return this.items.map((item, index) => {
-          const isSelected = this.selectedIndices.has(index);
-          return `
-            <div class="option ${isSelected ? 'selected' : ''}" data-index="${index}">
-              <span>${item.label}</span>
-              ${isSelected && showRemove ? '<button class="remove-btn" data-action="remove" data-index="${index}">×</button>' : ''}
-            </div>
-          `;
-        }).join('') + (this.config.loadMore?.enabled ? '<div class="load-more" id="load-more">Load More</div>' : '');
+        let html = '';
+
+        // Handle grouped options
+        if (this.config.grouped && this.groupedItems.length > 0) {
+          this.groupedItems.forEach(group => {
+            html += `<div class="option-group-label">${group.label}</div>`;
+            
+            let filteredOptions = group.options;
+            // Only filter on client-side if client mode and has search query
+            if (this.config.searchable && this.searchQuery && searchMode === 'client') {
+              const query = this.searchQuery.toLowerCase();
+              filteredOptions = group.options.filter(item => 
+                item.label.toLowerCase().includes(query)
+              );
+            }
+
+            filteredOptions.forEach(item => {
+              const originalIndex = this.items.indexOf(item);
+              const isSelected = this.selectedIndices.has(originalIndex);
+              const isFixed = this.config.fixedOptions?.includes(item.value);
+              html += `
+                <div class="option grouped ${isSelected ? 'selected' : ''} ${isFixed ? 'fixed' : ''} ${animated ? 'animated' : ''}" data-index="${originalIndex}">
+                  <span>${item.label}</span>
+                  ${isSelected && showRemove && !isFixed ? `<button class="remove-btn" data-action="remove" data-index="${originalIndex}">×</button>` : ''}
+                </div>
+              `;
+            });
+          });
+        } else {
+          // Regular options
+          let filteredItems = this.items;
+          
+          // Client-side search: filter locally
+          if (this.config.searchable && this.searchQuery && searchMode === 'client') {
+            const query = this.searchQuery.toLowerCase();
+            filteredItems = this.items.filter(item => 
+              item.label.toLowerCase().includes(query)
+            );
+          }
+
+          // Trigger onSearch callback if configured
+          // Server-side and passive modes use this callback differently
+          if (this.config.callbacks?.onSearch) {
+            this.config.callbacks.onSearch(this.searchQuery, filteredItems, searchMode);
+          }
+
+          if (filteredItems.length === 0 && !this.config.creatable) {
+            return '<div class="no-results">No results found</div>';
+          }
+
+          filteredItems.forEach(item => {
+            const originalIndex = this.items.indexOf(item);
+            const isSelected = this.selectedIndices.has(originalIndex);
+            const isFixed = this.config.fixedOptions?.includes(item.value);
+            html += `
+              <div class="option ${isSelected ? 'selected' : ''} ${isFixed ? 'fixed' : ''} ${animated ? 'animated' : ''}" data-index="${originalIndex}">
+                <span>${item.label}</span>
+                ${isSelected && showRemove && !isFixed ? `<button class="remove-btn" data-action="remove" data-index="${originalIndex}">×</button>` : ''}
+              </div>
+            `;
+          });
+
+          // Add creatable option if enabled and search query doesn't match any item
+          if (this.config.creatable && this.searchQuery && filteredItems.length === 0) {
+            html += `<div class="create-option" data-action="create">Create "${this.searchQuery}"</div>`;
+          }
+        }
+
+        // Add load more button
+        if (this.config.loadMore?.enabled) {
+          html += '<div class="load-more" id="load-more">Load More</div>';
+        }
+        
+        // Add loading indicator for infinite scroll
+        if (this.config.infiniteScroll?.enabled && this.isLoading) {
+          html += '<div class="loading-indicator"><div class="loading-spinner"></div><span>Loading more...</span></div>';
+        }
+
+        return html || '<div class="no-results">No options available</div>';
       }
 
       attachEventListeners() {
@@ -890,25 +1346,108 @@
         if (this.boundInputClick) {
           input.removeEventListener('click', this.boundInputClick);
         }
+        if (this.boundInputChange) {
+          input.removeEventListener('input', this.boundInputChange);
+        }
+        if (this.boundInputFocus) {
+          input.removeEventListener('focus', this.boundInputFocus);
+        }
+        if (this.boundInputBlur) {
+          input.removeEventListener('blur', this.boundInputBlur);
+        }
         if (this.boundDropdownClick) {
           dropdown.removeEventListener('click', this.boundDropdownClick);
+        }
+        if (this.boundDropdownScroll) {
+          dropdown.removeEventListener('scroll', this.boundDropdownScroll);
         }
         if (this.boundDocumentClick) {
           document.removeEventListener('click', this.boundDocumentClick);
         }
 
         // Create bound handlers
-        this.boundInputClick = () => {
-          this.isOpen = !this.isOpen;
-          this.render();
-          if (this.isOpen && this.config.callbacks?.onOpen) {
-            this.config.callbacks.onOpen();
+        if (this.config.searchable) {
+          const searchMode = this.config.searchMode || 'client';
+          const isPassive = searchMode === 'passive';
+          
+          // For searchable (all modes), open on focus and track focus state
+          this.boundInputFocus = (e) => {
+            this.hasFocus = true;
+            if (!this.isOpen) {
+              this.isOpen = true;
+              this.render();
+              if (this.config.callbacks?.onOpen) {
+                this.config.callbacks.onOpen();
+              }
+              // Auto-focus the input after render
+              setTimeout(() => {
+                const input = this.shadowRoot.getElementById('input');
+                if (input) input.focus();
+              }, 0);
+            }
+          };
+          
+          this.boundInputBlur = () => {
+            this.hasFocus = false;
+          };
+
+          // For passive mode, treat like click-to-open
+          if (isPassive) {
+            this.boundInputClick = () => {
+              this.isOpen = !this.isOpen;
+              this.render();
+            };
+            input.addEventListener('click', this.boundInputClick);
+            input.addEventListener('blur', this.boundInputBlur);
+          } else {
+            // For client/server mode, update on input
+            this.boundInputChange = (e) => {
+              this.searchQuery = e.target.value;
+              this.isOpen = true;
+              
+              // Server-side mode: trigger callback immediately for debounced API calls
+              if (searchMode === 'server' && this.config.callbacks?.onSearch) {
+                this.config.callbacks.onSearch(this.searchQuery, this.items, searchMode);
+              }
+              
+              // Don't render immediately - just update dropdown content
+              const dropdown = this.shadowRoot.getElementById('dropdown');
+              if (dropdown) {
+                dropdown.innerHTML = this.renderOptions();
+              }
+            };
+            
+            this.boundInputClick = (e) => {
+              // Prevent click from bubbling and closing dropdown
+              e.stopPropagation();
+              // Ensure input is focused when clicked
+              if (!this.hasFocus) {
+                const input = this.shadowRoot.getElementById('input');
+                if (input) input.focus();
+              }
+            };
+            
+            input.addEventListener('focus', this.boundInputFocus);
+            input.addEventListener('blur', this.boundInputBlur);
+            input.addEventListener('input', this.boundInputChange);
+            input.addEventListener('click', this.boundInputClick);
           }
-        };
+        } else {
+          // For non-searchable, toggle on click
+          this.boundInputClick = () => {
+            this.isOpen = !this.isOpen;
+            this.render();
+            if (this.isOpen && this.config.callbacks?.onOpen) {
+              this.config.callbacks.onOpen();
+            }
+          };
+          input.addEventListener('click', this.boundInputClick);
+        }
 
         this.boundDropdownClick = (e) => {
           const option = e.target.closest('.option');
           const loadMore = e.target.closest('#load-more');
+          const createOption = e.target.closest('.create-option');
           
           if (option) {
             const index = parseInt(option.dataset.index);
@@ -921,20 +1460,43 @@
             }
           } else if (loadMore) {
             this.loadMore();
+          } else if (createOption) {
+            this.createOption(this.searchQuery);
           }
         };
 
         this.boundDocumentClick = (e) => {
-          if (!this.contains(e.target)) {
+          // Don't close if clicking inside the component
+          if (!this.contains(e.target) && !this.shadowRoot.contains(e.target)) {
             this.isOpen = false;
+            this.hasFocus = false;
+            // Clear search query to show selected value
+            if (this.config.selection?.mode === 'single' && this.config.searchable) {
+              this.searchQuery = '';
+            }
             this.render();
           }
         };
 
         // Attach listeners
-        input.addEventListener('click', this.boundInputClick);
         dropdown.addEventListener('click', this.boundDropdownClick);
         document.addEventListener('click', this.boundDocumentClick);
+        
+        // Infinite scroll: detect when scrolled near bottom
+        if (this.config.infiniteScroll?.enabled) {
+          this.boundDropdownScroll = (e) => {
+            const dropdown = e.target;
+            const scrollTop = dropdown.scrollTop;
+            const scrollHeight = dropdown.scrollHeight;
+            const clientHeight = dropdown.clientHeight;
+            
+            // Trigger load when scrolled to within 50px of bottom
+            if (scrollTop + clientHeight >= scrollHeight - 50) {
+              this.loadMore();
+            }
+          };
+          dropdown.addEventListener('scroll', this.boundDropdownScroll);
+        }
       }
 
       selectOption(index) {
@@ -945,6 +1507,8 @@
           this.selectedIndices.clear();
           this.selectedIndices.add(index);
           this.isOpen = false;
+          this.hasFocus = false;
+          this.searchQuery = ''; // Clear search on selection to show selected value
         } else {
           if (this.selectedIndices.has(index)) {
             this.selectedIndices.delete(index);
@@ -975,6 +1539,13 @@
       }
 
       removeOption(index) {
+        const item = this.items[index];
+        
+        // Prevent removing fixed options
+        if (this.config.fixedOptions?.includes(item.value)) {
+          return;
+        }
+        
         this.selectedIndices.delete(index);
         this.render();
 
@@ -986,9 +1557,48 @@
       }
 
       loadMore() {
+        if (this.isLoading) return; // Prevent multiple simultaneous loads
+        
+        this.isLoading = true;
+        
+        // Update only dropdown content to show loading indicator
+        const dropdown = this.shadowRoot.getElementById('dropdown');
+        if (dropdown) {
+          const scrollTop = dropdown.scrollTop; // Save scroll position
+          dropdown.innerHTML = this.renderOptions();
+          dropdown.scrollTop = scrollTop; // Restore scroll position
+        }
+        
         if (this.config.callbacks?.onLoadMore) {
           this.config.callbacks.onLoadMore();
         }
+      }
+
+      createOption(label) {
+        if (!this.config.creatable || !label) return;
+
+        const newItem = {
+          value: `new-${Date.now()}`,
+          label: label,
+        };
+
+        this.items.push(newItem);
+        const newIndex = this.items.length - 1;
+        
+        // Auto-select created option
+        const mode = this.config.selection?.mode || 'single';
+        if (mode === 'single') {
+          this.selectedIndices.clear();
+        }
+        this.selectedIndices.add(newIndex);
+        this.searchQuery = '';
+        this.isOpen = false;
+
+        if (this.config.callbacks?.onCreate) {
+          this.config.callbacks.onCreate(newItem);
+        }
+
+        this.render();
       }
 
       updateConfig(config) {
@@ -998,6 +1608,28 @@
 
       setItems(items) {
         this.items = items;
+        // Flatten grouped items if provided
+        if (this.config.grouped && this.groupedItems.length > 0) {
+          this.items = this.groupedItems.flatMap(group => group.options);
+        }
+        
+        // If loading, preserve scroll position and only update dropdown
+        if (this.isLoading) {
+          const dropdown = this.shadowRoot.getElementById('dropdown');
+          if (dropdown) {
+            const scrollTop = dropdown.scrollTop;
+            dropdown.innerHTML = this.renderOptions();
+            dropdown.scrollTop = scrollTop;
+          }
+          this.isLoading = false;
+        } else {
+          this.render();
+        }
+      }
+
+      setGroupedItems(groupedItems) {
+        this.groupedItems = groupedItems;
+        this.items = groupedItems.flatMap(group => group.options);
         this.render();
       }
 
@@ -1018,6 +1650,37 @@
       getSelectedValues() {
         return Array.from(this.selectedIndices).map(i => this.items[i].value);
       }
+      
+      scrollToSelected() {
+        if (this.selectedIndices.size === 0) return;
+        
+        const dropdown = this.shadowRoot.getElementById('dropdown');
+        if (!dropdown) return;
+        
+        // Get first selected index (or configured target)
+        const targetConfig = this.config.scrollToSelected?.multiSelectTarget || 'first';
+        let targetIndex;
+        
+        if (targetConfig === 'first') {
+          targetIndex = Math.min(...Array.from(this.selectedIndices));
+        } else if (targetConfig === 'last') {
+          targetIndex = Math.max(...Array.from(this.selectedIndices));
+        } else {
+          targetIndex = Array.from(this.selectedIndices)[0];
+        }
+        
+        // Find the selected option element
+        const selectedOption = dropdown.querySelector(`.option[data-index="${targetIndex}"]`);
+        if (selectedOption) {
+          // Scroll to center the selected option in the dropdown
+          const dropdownHeight = dropdown.clientHeight;
+          const optionTop = selectedOption.offsetTop;
+          const optionHeight = selectedOption.offsetHeight;
+          
+          // Center the option in the visible area
+          dropdown.scrollTop = optionTop - (dropdownHeight / 2) + (optionHeight / 2);
+        }
+      }
     }
 
     customElements.define('mock-enhanced-select', MockEnhancedSelect);
@@ -1027,6 +1690,7 @@
       // Demo 1: Basic Single Select
       const demo1 = document.createElement('mock-enhanced-select');
       demo1.updateConfig({
+        searchable: true,
         callbacks: {
           onSelect: (data) => log('output1', `Selected: ${data.label} (value: ${data.value})`),
         },
@@ -1037,6 +1701,7 @@
       // Demo 2: Multi-Select
       const demo2 = document.createElement('mock-enhanced-select');
       demo2.updateConfig({
+        searchable: true,
         selection: { mode: 'multi', maxSelections: 5, showRemoveButton: true },
         callbacks: {
           onSelect: (data) => log('output2', `${data.selected ? 'Selected' : 'Removed'}: ${data.label}`),
@@ -1163,6 +1828,9 @@
 
       // Demo 7: Busy State
       const demo7 = document.createElement('mock-enhanced-select');
+      demo7.updateConfig({
+        searchable: true,
+      });
       demo7.setItems(generateItems(10));
       document.getElementById('demo7').appendChild(demo7);
 
@@ -1184,10 +1852,9 @@
       demo8.updateConfig({
         searchable: true,
         callbacks: {
-          onSearch: (query) => {
-            log('output8', `Search: "${query}"`);
-            document.getElementById('demo8-filtered').textContent = 
-              query ? Math.max(1, Math.floor(100 / (query.length + 1))) : 100;
+          onSearch: (query, filteredItems) => {
+            log('output8', `Search: "${query}" - ${filteredItems.length} results`);
+            document.getElementById('demo8-filtered').textContent = filteredItems.length;
           },
         },
       });
@@ -1224,6 +1891,175 @@
       demo10b.setItems(generateItems(5, 'Override'));
       document.getElementById('demo10b').appendChild(demo10b);
       log('output10', 'Demo B overrides to single-select');
+
+      // Demo 11: Grouped Options
+      const demo11 = document.createElement('mock-enhanced-select');
+      demo11.updateConfig({
+        grouped: true,
+        searchable: true,
+        callbacks: {
+          onSelect: (data) => log('output11', `Selected: ${data.label} (${data.value})`),
+        },
+      });
+      demo11.setGroupedItems(generateGroupedItems());
+      document.getElementById('demo11').appendChild(demo11);
+
+      // Demo 12: Animated Multi-Select
+      const demo12 = document.createElement('mock-enhanced-select');
+      demo12.updateConfig({
+        animated: true,
+        searchable: true,
+        selection: { mode: 'multi', showRemoveButton: true },
+        callbacks: {
+          onChange: (items, values) => {
+            log('output12', `Selected ${values.length} items: ${values.join(', ')}`);
+          },
+        },
+      });
+      demo12.setItems(generateItems(10, 'Animated Option'));
+      document.getElementById('demo12').appendChild(demo12);
+
+      window.selectDemo12 = (values) => {
+        demo12.setSelectedValues(values);
+        log('output12', `Programmatically selected: ${values.join(', ')}`);
+      };
+
+      window.clearDemo12 = () => {
+        demo12.clear();
+        log('output12', 'Cleared all selections');
+      };
+
+      // Demo 13: Async Data Loading
+      let demo13RequestCount = 0;
+      const demo13 = document.createElement('mock-enhanced-select');
+      demo13.updateConfig({
+        searchable: true,
+        async: true,
+        callbacks: {
+          onSearch: (query, filteredItems) => {
+            if (query.length >= 2) {
+              // Simulate async API call
+              demo13RequestCount++;
+              document.getElementById('demo13-requests').textContent = demo13RequestCount;
+              log('output13', `🌐 API Request #${demo13RequestCount}: Searching for "${query}"...`);
+              
+              setTimeout(() => {
+                const mockApiResults = generateItems(5, `${query} Result`);
+                demo13.setItems([...demo13.items, ...mockApiResults]);
+                log('output13', `✅ Loaded ${mockApiResults.length} results for "${query}"`);
+              }, 800);
+            }
+          },
+          onSelect: (data) => log('output13', `Selected: ${data.label}`),
+        },
+      });
+      demo13.setItems(generateItems(3, 'Initial'));
+      document.getElementById('demo13').appendChild(demo13);
+
+      // Demo 14: Creatable Options
+      const demo14 = document.createElement('mock-enhanced-select');
+      demo14.updateConfig({
+        searchable: true,
+        creatable: true,
+        selection: { mode: 'multi', showRemoveButton: true },
+        callbacks: {
+          onCreate: (item) => log('output14', `✨ Created new option: "${item.label}"`),
+          onChange: (items, values) => log('output14', `Total: ${items.length} options`),
+        },
+      });
+      demo14.setItems(generateItems(5, 'Existing Tag'));
+      document.getElementById('demo14').appendChild(demo14);
+
+      window.clearDemo14 = () => {
+        demo14.clear();
+        log('output14', 'Cleared all selections');
+      };
+
+      // Demo 15: Fixed/Pinned Options
+      const demo15 = document.createElement('mock-enhanced-select');
+      demo15.updateConfig({
+        searchable: true,
+        selection: { mode: 'multi', showRemoveButton: true },
+        fixedOptions: [1, 2], // First two options are fixed
+        callbacks: {
+          onChange: (items, values) => {
+            const fixedCount = values.filter(v => v === 1 || v === 2).length;
+            log('output15', `Selected: ${values.length} (${fixedCount} fixed, ${values.length - fixedCount} removable)`);
+          },
+        },
+      });
+      demo15.setItems(generateItems(10, 'Option'));
+      demo15.setSelectedValues([1, 2]); // Pre-select fixed options
+      document.getElementById('demo15').appendChild(demo15);
+
+      window.selectDemo15 = (values) => {
+        demo15.setSelectedValues(values);
+        log('output15', `Selected: ${values.join(', ')}`);
+      };
+
+      window.demo15Reset = () => {
+        demo15.setSelectedValues([1, 2]); // Reset to fixed only
+        log('output15', 'Reset to fixed options only');
+      };
+
+      // Demo 16: Client-Side Search
+      const demo16 = document.createElement('mock-enhanced-select');
+      demo16.updateConfig({
+        searchable: true,
+        searchMode: 'client', // Filter locally
+        callbacks: {
+          onSelect: (data) => log('output16', `Selected: ${data.label}`),
+          onSearch: (query, filteredItems, mode) => {
+            document.getElementById('demo16-filtered').textContent = filteredItems.length;
+            log('output16', `🔍 Client filter: "${query}" → ${filteredItems.length} results`);
+          },
+        },
+      });
+      demo16.setItems(generateItems(50, 'Item'));
+      document.getElementById('demo16').appendChild(demo16);
+
+      // Demo 17: Server-Side Search
+      let demo17ApiCalls = 0;
+      const demo17 = document.createElement('mock-enhanced-select');
+      demo17.updateConfig({
+        searchable: true,
+        searchMode: 'server', // Fetch from server
+        callbacks: {
+          onSelect: (data) => log('output17', `Selected: ${data.label}`),
+          onSearch: (query, items, mode) => {
+            if (!query || query.length < 2) return;
+            
+            demo17ApiCalls++;
+            document.getElementById('demo17-api-calls').textContent = demo17ApiCalls;
+            log('output17', `🌐 API Call #${demo17ApiCalls}: Searching for "${query}"...`);
+            
+            // Simulate server API call with debouncing
+            setTimeout(() => {
+              const serverResults = generateItems(Math.floor(Math.random() * 15) + 5, `${query} Result`);
+              demo17.setItems(serverResults);
+              document.getElementById('demo17-results').textContent = serverResults.length;
+              log('output17', `✅ Server returned ${serverResults.length} results`);
+            }, 500);
+          },
+        },
+      });
+      demo17.setItems(generateItems(10, 'Initial'));
+      document.getElementById('demo17').appendChild(demo17);
+
+      // Demo 18: Passive Mode (No Search)
+      const demo18 = document.createElement('mock-enhanced-select');
+      demo18.updateConfig({
+        searchable: true,
+        searchMode: 'passive', // Input is readonly, just shows selected value
+        callbacks: {
+          onSelect: (data) => log('output18', `Selected: ${data.label} (${data.value})`),
+          onChange: (items, values) => {
+            log('output18', `Total selected: ${values.length}`);
+          },
+        },
+      });
+      demo18.setItems(generateItems(20, 'Passive Option'));
+      document.getElementById('demo18').appendChild(demo18);
     });
   </script>
 </body>

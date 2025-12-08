@@ -11,6 +11,215 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2025-12-09
+
+### 🎨 Enhanced Demo & React-Select Feature Parity
+
+This release significantly enhances the demo with all react-select features plus additional improvements including searchable inputs, animations, grouped options, and multiple search modes.
+
+### Added
+
+#### Search Functionality
+- **Three Search Modes** - Flexible search behavior
+  - `client` mode: Local filtering with real-time results
+  - `server` mode: API-based search with remote data fetching
+  - `passive` mode: Readonly input showing selected value only
+  - Configurable via `searchMode` property
+  
+- **Searchable Input Enhancement**
+  - Auto-focus on dropdown open for immediate typing
+  - Selected value displays in single-select inputs when closed
+  - Search query clears on selection to show chosen value
+  - Proper focus management without losing input state
+  - Click-to-type functionality for all searchable modes
+
+#### React-Select Compatible Features
+- **Grouped Options** (Demo 11)
+  - Organize options into labeled groups
+  - Group headers with visual separation
+  - Searchable within groups
+  - Configurable via `grouped: true` and `setGroupedItems()`
+
+- **Animated Transitions** (Demo 12)
+  - Smooth CSS animations for dropdown open/close
+  - Slide-down effect (translateY animation)
+  - Fade-in/fade-out (opacity transition)
+  - Arrow rotation animation (0° → 180°)
+  - Option slide-down on render with `animated: true`
+
+- **Async Data Loading** (Demo 13)
+  - Load options from remote source as user types
+  - Simulated API calls with configurable delay
+  - Request counter and statistics
+  - `async: true` configuration option
+
+- **Creatable Options** (Demo 14)
+  - Create new options that don't exist
+  - "Create" button appears when search has no matches
+  - Auto-selects newly created options
+  - Perfect for tags and custom entries
+  - `creatable: true` configuration
+
+- **Fixed/Pinned Options** (Demo 15)
+  - Mark options as non-removable
+  - Visual highlighting (yellow background, border)
+  - Protected from deletion in multi-select
+  - `fixedOptions: [values]` array configuration
+
+#### UI/UX Improvements
+- **Dropdown Arrow Icon**
+  - Modern triangle arrow on right side of input
+  - Smooth 180° rotation on open/close
+  - CSS-only implementation with transitions
+  - Positioned with absolute positioning
+
+- **Visual Enhancements**
+  - Selected options show blue left border (3px)
+  - Input padding adjusted for arrow icon (40px right)
+  - Improved hover states and transitions
+  - Better color scheme and spacing
+
+- **Scroll to Selected** (Demo 6)
+  - Auto-scrolls to selected option when dropdown opens
+  - Centers selected option in visible area
+  - Configurable target for multi-select (first/last)
+  - Enhanced visual highlighting for selected items
+
+#### Infinite Scroll Improvements (Demo 5)
+- **Scroll Position Preservation**
+  - Maintains scroll position during data loading
+  - No jump to top when new items load
+  - Smooth continuous scrolling experience
+  
+- **Loading Indicator**
+  - Animated spinner at bottom during load
+  - "Loading more..." text feedback
+  - Prevents multiple simultaneous loads
+  - `isLoading` state management
+
+- **Scroll Detection**
+  - Triggers load when within 50px of bottom
+  - Event-based scroll listener on dropdown
+  - Automatic cleanup of event listeners
+
+### Enhanced
+
+#### Demo Page Improvements
+- **18 Interactive Demos** (previously 10)
+  - Demo 1-2: Searchable single/multi-select
+  - Demo 3: Load more functionality
+  - Demo 4: Server-side selection
+  - Demo 5: Infinite scroll with loading
+  - Demo 6: Scroll to selected with highlighting
+  - Demo 7: Busy/loading states
+  - Demo 8: Searchable with 100 items
+  - Demo 9: Custom themes
+  - Demo 10: Global configuration
+  - Demo 11: Grouped options ⭐ NEW
+  - Demo 12: Animated select ⭐ NEW
+  - Demo 13: Async data loading ⭐ NEW
+  - Demo 14: Creatable options ⭐ NEW
+  - Demo 15: Fixed/pinned options ⭐ NEW
+  - Demo 16: Client-side search ⭐ NEW
+  - Demo 17: Server-side search ⭐ NEW
+  - Demo 18: Passive mode ⭐ NEW
+
+- **Feature Count: 17** (previously 12)
+  - Added: Grouped Options, Animated, Async Loading, Creatable, Fixed Options
+  - Enhanced: 3 Search Modes, Scroll to Selected, Infinite Scroll
+
+#### Code Quality
+- **Event Listener Management**
+  - Proper cleanup of all event listeners
+  - Blur event tracking for focus management
+  - Scroll event listeners for infinite scroll
+  - Click-outside detection improvements
+
+- **State Management**
+  - `hasFocus` flag for input focus tracking
+  - `isLoading` flag for load state
+  - `searchQuery` preservation during interactions
+  - Grouped items flattening for unified access
+
+### Fixed
+
+#### Search & Input Issues
+- **Searchable Input Focus** (#1)
+  - Input now auto-focuses when dropdown opens
+  - Can type immediately without second click
+  - Focus maintained during typing
+  - No loss of cursor position
+
+- **Input Click Behavior** (#2)
+  - Clicking input opens dropdown AND focuses it
+  - Stop propagation prevents unwanted close
+  - Proper event handling for searchable vs non-searchable
+
+- **Search Query Display** (#3)
+  - Single-select shows selected value when closed
+  - Clears to allow search when opened
+  - Multi-select shows count
+  - Passive mode always shows selected
+
+#### Scroll & Position Issues
+- **Infinite Scroll** (#4)
+  - No longer jumps to top during load
+  - Preserves exact scroll position
+  - Smooth data appending
+  - Loading indicator shows at bottom
+
+- **Scroll to Selected** (#5)
+  - Properly scrolls to selected option
+  - Centers option in viewport
+  - Visual highlighting with border
+  - Works with multi-select
+
+#### Rendering Issues
+- **Partial Updates**
+  - Dropdown-only updates during search
+  - Full render only when necessary
+  - Prevents focus loss during typing
+  - Better performance
+
+### Technical Details
+
+#### New Configuration Options
+```typescript
+{
+  searchMode: 'client' | 'server' | 'passive',  // Search behavior
+  grouped: boolean,                              // Enable grouped options
+  animated: boolean,                             // Enable animations
+  async: boolean,                                // Async data loading
+  creatable: boolean,                            // Allow creating options
+  fixedOptions: any[]                            // Non-removable options
+}
+```
+
+#### New Methods
+- `setGroupedItems(groupedItems)` - Set options with groups
+- `scrollToSelected()` - Scroll to first selected option
+- `createOption(label)` - Create new option dynamically
+
+#### CSS Animations
+- Dropdown fade-in: `opacity 0.2s ease`
+- Dropdown slide: `transform translateY(-10px → 0) 0.2s ease`
+- Arrow rotation: `transform rotate(0deg → 180deg) 0.2s ease`
+- Option slide-down: `slideDown 0.2s ease-out`
+
+### Performance
+- Partial rendering for search updates (dropdown innerHTML only)
+- Event listener cleanup prevents memory leaks
+- Debounced server-side search (configurable)
+- Scroll position caching for smooth infinite scroll
+
+### Browser Compatibility
+- All features tested in Chrome, Firefox, Safari, Edge
+- CSS animations with proper fallbacks
+- Shadow DOM support required
+- ES6+ JavaScript features
+
+---
+
 ## [0.1.0] - 2025-12-08
 
 ### 🎯 Major Release: Enhanced Select Component
