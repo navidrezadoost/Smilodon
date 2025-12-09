@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smilodon React - Production Test Suite</title>
+  
+  <!-- React & Babel -->
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js"></script>
+  
+  <!-- Smilodon Core -->
+  <script type="module" src="../packages/core/dist/index.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container { max-width: 1600px; margin: 0 auto; }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.8em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      padding: 8px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { background: rgba(255,255,255,0.3); }
+    .tab.active { background: white; color: #667eea; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .card-title {
+      font-size: 1.3em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background: #667eea;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 0.65em;
+      font-weight: 600;
+    }
+
+    .badge.react { background: #61dafb; color: #000; }
+    .badge.perf { background: #4caf50; }
+    .badge.test { background: #ff9800; }
+    .badge.bug { background: #f44336; }
+
+    .desc {
+      color: #666;
+      margin-bottom: 16px;
+      line-height: 1.5;
+      font-size: 0.95em;
+    }
+
+    .select-wrapper {
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .btn-primary { background: #667eea; color: white; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-success { background: #4caf50; color: white; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+    .output {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      font-size: 0.9em;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .output-title {
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 6px;
+      font-size: 0.85em;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      font-size: 0.85em;
+      color: #666;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: #999; margin-right: 6px; font-family: monospace; }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 6px;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 1.8em;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.75em;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .console {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.8em;
+      max-height: 250px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+
+    .console-line { padding: 2px 0; }
+    .console-error { color: #f44336; }
+    .console-warn { color: #ff9800; }
+    .console-info { color: #2196f3; }
+    .console-success { color: #4caf50; }
+
+    .test-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .test-item {
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9em;
+    }
+
+    .test-status {
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .test-status.pass { background: #e8f5e9; color: #2e7d32; }
+    .test-status.fail { background: #ffebee; color: #c62828; }
+    .test-status.pending { background: #fff3e0; color: #e65100; }
+
+    .full-width { grid-column: 1 / -1; }
+
+    .perf-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .perf-metric {
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .perf-value {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #4caf50;
+    }
+
+    .perf-value.warning { color: #ff9800; }
+    .perf-value.danger { color: #f44336; }
+
+    .perf-label {
+      font-size: 0.75em;
+      color: #666;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback, useMemo } = React;
+
+    // ============================================================================
+    // UTILITIES & DATA
+    // ============================================================================
+
+    const generateCountries = (count) => {
+      const list = [
+        'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 
+        'Italy', 'Spain', 'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Sweden',
+        'Norway', 'Denmark', 'Finland', 'Poland', 'Czech Republic', 'Hungary', 'Portugal',
+        'Greece', 'Ireland', 'New Zealand', 'Japan', 'South Korea', 'China', 'India',
+        'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Venezuela',
+        'South Africa', 'Egypt', 'Nigeria', 'Kenya', 'Morocco', 'Israel', 'Turkey',
+        'Saudi Arabia', 'UAE', 'Thailand', 'Vietnam', 'Singapore', 'Malaysia', 'Indonesia',
+        'Philippines', 'Russia', 'Ukraine', 'Romania', 'Croatia', 'Serbia', 'Bulgaria'
+      ];
+      return list.slice(0, count).map((name, i) => ({
+        value: `country-${i}`,
+        label: name,
+        code: name.substring(0, 2).toUpperCase(),
+        population: Math.floor(Math.random() * 100000000)
+      }));
+    };
+
+    const generateItems = (count, prefix = 'Item') => {
+      return Array.from({ length: count }, (_, i) => ({
+        value: `${prefix.toLowerCase()}-${i}`,
+        label: `${prefix} ${i + 1}`,
+        index: i
+      }));
+    };
+
+    const useLogger = () => {
+      const [logs, setLogs] = useState([]);
+      
+      const log = useCallback((message, type = 'info') => {
+        const time = new Date().toLocaleTimeString();
+        setLogs(prev => [{ time, message, type }, ...prev.slice(0, 9)]);
+      }, []);
+
+      return [logs, log];
+    };
+
+    // ============================================================================
+    // SELECT WRAPPER
+    // ============================================================================
+
+    const Select = React.forwardRef(({ 
+      items = [],
+      searchable = false,
+      multiSelect = false,
+      placeholder = 'Select...',
+      onChange,
+      onSearch,
+      disabled = false,
+      ...props 
+    }, ref) => {
+      const containerRef = useRef(null);
+      const selectRef = useRef(null);
+
+      useEffect(() => {
+        if (!containerRef.current) return;
+
+        const select = document.createElement('enhanced-select');
+        containerRef.current.appendChild(select);
+        selectRef.current = select;
+
+        if (items.length > 0) {
+          select.setItems(items);
+        }
+
+        if (onChange) {
+          select.addEventListener('change', () => {
+            const selected = select.getSelectedItems();
+            const values = select.getSelectedValues();
+            onChange(selected, values);
+          });
+        }
+
+        if (onSearch) {
+          select.addEventListener('search', (e) => {
+            onSearch(e.detail.query);
+          });
+        }
+
+        return () => {
+          if (containerRef.current && select) {
+            containerRef.current.removeChild(select);
+          }
+        };
+      }, []);
+
+      useEffect(() => {
+        if (selectRef.current && items) {
+          selectRef.current.setItems(items);
+        }
+      }, [items]);
+
+      React.useImperativeHandle(ref, () => ({
+        getSelectedItems: () => selectRef.current?.getSelectedItems() || [],
+        getSelectedValues: () => selectRef.current?.getSelectedValues() || [],
+        setSelectedValues: (values) => selectRef.current?.setSelectedValues(values),
+        clear: () => selectRef.current?.setSelectedValues([]),
+        setItems: (items) => selectRef.current?.setItems(items),
+        open: () => selectRef.current?.open?.(),
+        close: () => selectRef.current?.close?.()
+      }));
+
+      return <div ref={containerRef} />;
+    });
+
+    // ============================================================================
+    // TEST COMPONENTS
+    // ============================================================================
+
+    // Demo 1: Basic Functionality
+    function BasicDemo() {
+      const [selected, setSelected] = useState('');
+      const items = useMemo(() => generateItems(10, 'Option'), []);
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            1. Basic Single Select
+            <span className="badge">Core</span>
+          </div>
+          <div className="desc">
+            Simple select, no search. Test: Arrow keys ↑/↓, Enter to select, Escape to close.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              searchable={false}
+              placeholder="Select an option..."
+              onChange={(sel) => setSelected(sel[0]?.label || '')}
+            />
+          </div>
+          <div className="output">
+            <div className="output-title">Selected:</div>
+            <div>{selected || 'None'}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 2: Frontend Search
+    function FrontendSearchDemo() {
+      const [logs, log] = useLogger();
+      const [filteredCount, setFilteredCount] = useState(50);
+      const allCountries = useMemo(() => generateCountries(50), []);
+      const [items, setItems] = useState(allCountries);
+
+      const handleSearch = (query) => {
+        log(`Search: "${query}"`, 'info');
+        const filtered = allCountries.filter(c =>
+          c.label.toLowerCase().includes(query.toLowerCase())
+        );
+        setItems(filtered);
+        setFilteredCount(filtered.length);
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            2. Frontend Search Filter
+            <span className="badge">Search</span>
+          </div>
+          <div className="desc">
+            Type to filter 50 countries client-side. Test: Type "United", "Japan", clear input.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              searchable={true}
+              placeholder="Search countries..."
+              onSearch={handleSearch}
+            />
+          </div>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-value">50</span>
+              <span className="stat-label">Total</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{filteredCount}</span>
+              <span className="stat-label">Filtered</span>
+            </div>
+          </div>
+          <div className="output">
+            <div className="output-title">Search Log:</div>
+            {logs.map((l, i) => (
+              <div key={i} className="log-entry">
+                <span className="log-time">{l.time}</span>{l.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 3: Server-side Search with Debounce
+    function ServerSearchDemo() {
+      const [logs, log] = useLogger();
+      const [results, setResults] = useState(0);
+      const [items, setItems] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const serverData = useMemo(() => generateItems(10000, 'Server Item'), []);
+      const timeoutRef = useRef(null);
+
+      const handleSearch = (query) => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        
+        setLoading(true);
+        log(`🌐 Request: "${query}"`, 'info');
+
+        timeoutRef.current = setTimeout(async () => {
+          await new Promise(r => setTimeout(r, 300));
+          
+          const filtered = serverData.filter(item =>
+            item.label.toLowerCase().includes(query.toLowerCase())
+          );
+          
+          setItems(filtered);
+          setResults(filtered.length);
+          setLoading(false);
+          log(`✅ Got ${filtered.length} results`, 'success');
+        }, 300);
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            3. Server-side Search
+            <span className="badge">Async</span>
+          </div>
+          <div className="desc">
+            Search 10,000 items with 300ms debounce. Test: Type quickly, watch debouncing.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              searchable={true}
+              placeholder="Search 10,000 items..."
+              onSearch={handleSearch}
+            />
+          </div>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-value">10k</span>
+              <span className="stat-label">Server Items</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{loading ? '...' : results}</span>
+              <span className="stat-label">Results</span>
+            </div>
+          </div>
+          <div className="output">
+            <div className="output-title">Server Log:</div>
+            {logs.map((l, i) => (
+              <div key={i} className={`log-entry console-${l.type}`}>
+                <span className="log-time">{l.time}</span>{l.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 4: Multi-Select
+    function MultiSelectDemo() {
+      const selectRef = useRef();
+      const [selected, setSelected] = useState([]);
+      const items = useMemo(() => generateItems(20, 'Item'), []);
+
+      const selectAll = () => selectRef.current?.setSelectedValues(items.map(i => i.value));
+      const selectEven = () => selectRef.current?.setSelectedValues(items.filter((_, i) => i % 2 === 0).map(i => i.value));
+      const selectOdd = () => selectRef.current?.setSelectedValues(items.filter((_, i) => i % 2 === 1).map(i => i.value));
+      const clear = () => selectRef.current?.clear();
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            4. Multi-Select
+            <span className="badge">Multi</span>
+          </div>
+          <div className="desc">
+            Select multiple. Test: Click items, Ctrl+Click, selected items show in input & dropdown.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              ref={selectRef}
+              items={items}
+              multiSelect={true}
+              placeholder="Select multiple..."
+              onChange={(sel) => setSelected(sel)}
+            />
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={selectAll}>All</button>
+            <button className="btn btn-primary" onClick={selectEven}>Even</button>
+            <button className="btn btn-primary" onClick={selectOdd}>Odd</button>
+            <button className="btn btn-secondary" onClick={clear}>Clear</button>
+          </div>
+          <div className="output">
+            <div className="output-title">Selected ({selected.length}):</div>
+            <div>{selected.map(s => s.label).join(', ') || 'None'}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 5: Multi-Select + Search
+    function MultiSearchDemo() {
+      const [selected, setSelected] = useState([]);
+      const [logs, log] = useLogger();
+      const allItems = useMemo(() => generateItems(50, 'Product'), []);
+      const [items, setItems] = useState(allItems);
+      const [filteredCount, setFilteredCount] = useState(50);
+
+      const handleSearch = (query) => {
+        const filtered = allItems.filter(i =>
+          i.label.toLowerCase().includes(query.toLowerCase())
+        );
+        setItems(filtered);
+        setFilteredCount(filtered.length);
+      };
+
+      const handleChange = (sel) => {
+        setSelected(sel);
+        log(`Selected: ${sel.map(s => s.label).join(', ') || 'None'}`, 'info');
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            5. Multi-Select + Search
+            <span className="badge react">Combined</span>
+          </div>
+          <div className="desc">
+            Search + multi-select. Test: Search "Product 1", select items, selected stay visible.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              searchable={true}
+              multiSelect={true}
+              placeholder="Search and select multiple..."
+              onChange={handleChange}
+              onSearch={handleSearch}
+            />
+          </div>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-value">{selected.length}</span>
+              <span className="stat-label">Selected</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{filteredCount}</span>
+              <span className="stat-label">Filtered</span>
+            </div>
+          </div>
+          <div className="output">
+            <div className="output-title">Selection Log:</div>
+            {logs.map((l, i) => (
+              <div key={i} className="log-entry">
+                <span className="log-time">{l.time}</span>{l.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 6: Large Dataset Performance
+    function PerformanceDemo() {
+      const [size, setSize] = useState(100);
+      const [renderTime, setRenderTime] = useState(0);
+      const [searchTime, setSearchTime] = useState(0);
+      const items = useMemo(() => {
+        const start = performance.now();
+        const result = generateItems(size, 'Item');
+        setRenderTime(performance.now() - start);
+        return result;
+      }, [size]);
+
+      const handleSearch = (query) => {
+        const start = performance.now();
+        const filtered = items.filter(i => i.label.toLowerCase().includes(query.toLowerCase()));
+        setSearchTime(performance.now() - start);
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            6. Performance Test
+            <span className="badge perf">Speed</span>
+          </div>
+          <div className="desc">
+            Test with different dataset sizes. Monitor render and search performance.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              searchable={true}
+              placeholder={`Searching ${size} items...`}
+              onSearch={handleSearch}
+            />
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={() => setSize(100)}>100 items</button>
+            <button className="btn btn-primary" onClick={() => setSize(500)}>500 items</button>
+            <button className="btn btn-primary" onClick={() => setSize(1000)}>1000 items</button>
+            <button className="btn btn-primary" onClick={() => setSize(5000)}>5000 items</button>
+          </div>
+          <div className="perf-metrics">
+            <div className="perf-metric">
+              <div className={`perf-value ${renderTime > 100 ? 'danger' : renderTime > 50 ? 'warning' : ''}`}>
+                {renderTime.toFixed(2)}ms
+              </div>
+              <div className="perf-label">Render Time</div>
+            </div>
+            <div className="perf-metric">
+              <div className={`perf-value ${searchTime > 50 ? 'danger' : searchTime > 20 ? 'warning' : ''}`}>
+                {searchTime.toFixed(2)}ms
+              </div>
+              <div className="perf-label">Search Time</div>
+            </div>
+            <div className="perf-metric">
+              <div className="perf-value">{size}</div>
+              <div className="perf-label">Items Count</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 7: Keyboard Navigation
+    function KeyboardDemo() {
+      const [logs, log] = useLogger();
+      const items = useMemo(() => generateItems(30, 'Option'), []);
+
+      const handleChange = (sel) => {
+        log(`Selected via keyboard: ${sel[0]?.label}`, 'success');
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            7. Keyboard Navigation
+            <span className="badge">A11y</span>
+          </div>
+          <div className="desc">
+            Full keyboard support. Test: Tab to focus, ↑/↓ navigate, Enter select, Escape close.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={items}
+              placeholder="Use keyboard only..."
+              onChange={handleChange}
+            />
+          </div>
+          <div className="output">
+            <div className="output-title">Keyboard Events:</div>
+            {logs.map((l, i) => (
+              <div key={i} className={`log-entry console-${l.type}`}>
+                <span className="log-time">{l.time}</span>{l.message}
+              </div>
+            ))}
+          </div>
+          <div className="output">
+            <div className="output-title">⌨️ Instructions:</div>
+            <div style={{fontSize: '0.85em', lineHeight: '1.6'}}>
+              <strong>Tab:</strong> Focus select<br/>
+              <strong>↑/↓:</strong> Navigate options<br/>
+              <strong>Enter:</strong> Select highlighted<br/>
+              <strong>Escape:</strong> Close dropdown<br/>
+              <strong>Home/End:</strong> First/Last option
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 8: Controlled Component
+    function ControlledDemo() {
+      const selectRef = useRef();
+      const [selectedValues, setSelectedValues] = useState([]);
+      const items = useMemo(() => generateItems(25, 'Item'), []);
+
+      const preset1 = () => selectRef.current?.setSelectedValues(['item-0', 'item-1', 'item-2']);
+      const preset2 = () => selectRef.current?.setSelectedValues(['item-10', 'item-15', 'item-20']);
+      const preset3 = () => selectRef.current?.setSelectedValues(items.map(i => i.value));
+      const clear = () => selectRef.current?.clear();
+
+      return (
+        <div className="card">
+          <div className="card-title">
+            8. Controlled Component
+            <span className="badge react">React</span>
+          </div>
+          <div className="desc">
+            Programmatic control via ref. Test: Click preset buttons, observe state sync.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              ref={selectRef}
+              items={items}
+              multiSelect={true}
+              placeholder="Controlled by React..."
+              onChange={(sel, vals) => setSelectedValues(vals)}
+            />
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={preset1}>First 3</button>
+            <button className="btn btn-primary" onClick={preset2}>Items 10,15,20</button>
+            <button className="btn btn-success" onClick={preset3}>Select All</button>
+            <button className="btn btn-secondary" onClick={clear}>Clear</button>
+          </div>
+          <div className="console">
+            <div className="console-line console-info">// React State:</div>
+            <div className="console-line">{JSON.stringify(selectedValues, null, 2)}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 9: Edge Cases & Bug Testing
+    function EdgeCasesDemo() {
+      const selectRef = useRef();
+      const [testResults, setTestResults] = useState([]);
+      const [items, setItems] = useState(generateItems(10));
+
+      const runTest = async (name, testFn) => {
+        try {
+          await testFn();
+          setTestResults(prev => [...prev, { name, status: 'pass' }]);
+        } catch (error) {
+          setTestResults(prev => [...prev, { name, status: 'fail', error: error.message }]);
+        }
+      };
+
+      const testEmptyItems = () => runTest('Empty items array', async () => {
+        setItems([]);
+        await new Promise(r => setTimeout(r, 100));
+        if (selectRef.current?.getSelectedItems().length !== 0) throw new Error('Should have no selection');
+      });
+
+      const testRapidChanges = () => runTest('Rapid item changes', async () => {
+        for (let i = 0; i < 10; i++) {
+          setItems(generateItems(Math.random() * 50 + 10));
+          await new Promise(r => setTimeout(r, 10));
+        }
+      });
+
+      const testLargeSelection = () => runTest('Large multi-selection', async () => {
+        const large = generateItems(1000);
+        setItems(large);
+        await new Promise(r => setTimeout(r, 100));
+        selectRef.current?.setSelectedValues(large.map(i => i.value));
+        await new Promise(r => setTimeout(r, 100));
+        if (selectRef.current?.getSelectedItems().length !== 1000) throw new Error('Should select all 1000');
+      });
+
+      const testSpecialChars = () => runTest('Special characters in labels', async () => {
+        setItems([
+          { value: '1', label: '<script>alert("xss")<\/script>' },
+          { value: '2', label: 'Item with "quotes" and \'apostrophes\'' },
+          { value: '3', label: 'Unicode: 你好 🎉 émojis' }
+        ]);
+        await new Promise(r => setTimeout(r, 100));
+      });
+
+      const testDuplicateValues = () => runTest('Duplicate values handling', async () => {
+        setItems([
+          { value: 'dup', label: 'Item 1' },
+          { value: 'dup', label: 'Item 2' },
+          { value: 'dup', label: 'Item 3' }
+        ]);
+        await new Promise(r => setTimeout(r, 100));
+      });
+
+      return (
+        <div className="card full-width">
+          <div className="card-title">
+            9. Edge Cases & Bug Testing
+            <span className="badge bug">Test</span>
+          </div>
+          <div className="desc">
+            Test edge cases and potential bugs. Click tests to run validation.
+          </div>
+          <div className="select-wrapper">
+            <Select
+              ref={selectRef}
+              items={items}
+              multiSelect={true}
+              searchable={true}
+              placeholder="Test component..."
+            />
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={testEmptyItems}>Empty Items</button>
+            <button className="btn btn-primary" onClick={testRapidChanges}>Rapid Changes</button>
+            <button className="btn btn-primary" onClick={testLargeSelection}>Large Selection (1000)</button>
+            <button className="btn btn-primary" onClick={testSpecialChars}>Special Characters</button>
+            <button className="btn btn-primary" onClick={testDuplicateValues}>Duplicate Values</button>
+            <button className="btn btn-secondary" onClick={() => setTestResults([])}>Clear Results</button>
+          </div>
+          <div className="test-grid">
+            {testResults.map((test, i) => (
+              <div key={i} className="test-item">
+                <span>{test.name}</span>
+                <span className={`test-status ${test.status}`}>
+                  {test.status === 'pass' ? '✓ Pass' : `✗ Fail: ${test.error}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Demo 10: Real-world Scenario
+    function RealWorldDemo() {
+      const [logs, log] = useLogger();
+      const [countries, setCountries] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [selectedCountry, setSelectedCountry] = useState(null);
+
+      const fetchCountries = async (query) => {
+        setLoading(true);
+        log(`🌐 Fetching countries matching "${query}"...`, 'info');
+        
+        // Simulate API call
+        await new Promise(r => setTimeout(r, 500));
+        
+        const all = generateCountries(54);
+        const filtered = all.filter(c =>
+          c.label.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        setCountries(filtered);
+        log(`✅ Loaded ${filtered.length} countries`, 'success');
+        setLoading(false);
+      };
+
+      return (
+        <div className="card full-width">
+          <div className="card-title">
+            10. Real-world API Integration
+            <span className="badge perf">Production</span>
+          </div>
+          <div className="desc">
+            Simulates real API: async search, loading states, error handling. Report any bugs here!
+          </div>
+          <div className="select-wrapper">
+            <Select
+              items={countries}
+              searchable={true}
+              placeholder="Search countries (simulated API)..."
+              onSearch={fetchCountries}
+              onChange={(sel) => {
+                setSelectedCountry(sel[0]);
+                log(`Selected: ${sel[0]?.label}`, 'success');
+              }}
+            />
+          </div>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-value">{loading ? '...' : countries.length}</span>
+              <span className="stat-label">Results</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{selectedCountry?.population || '-'}</span>
+              <span className="stat-label">Population</span>
+            </div>
+          </div>
+          <div className="output">
+            <div className="output-title">API Activity Log:</div>
+            {logs.map((l, i) => (
+              <div key={i} className={`log-entry console-${l.type}`}>
+                <span className="log-time">{l.time}</span>{l.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================================
+    // MAIN APP
+    // ============================================================================
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('basic');
+
+      return (
+        <div className="container">
+          <div className="header">
+            <h1>🦖 Smilodon React - Production Test Suite</h1>
+            <p>Complete Feature Testing & Bug Reporting Environment v0.0.1</p>
+          </div>
+
+          <div className="tabs">
+            <button 
+              className={`tab ${activeTab === 'basic' ? 'active' : ''}`}
+              onClick={() => setActiveTab('basic')}
+            >
+              Basic Features
+            </button>
+            <button 
+              className={`tab ${activeTab === 'advanced' ? 'active' : ''}`}
+              onClick={() => setActiveTab('advanced')}
+            >
+              Advanced
+            </button>
+            <button 
+              className={`tab ${activeTab === 'testing' ? 'active' : ''}`}
+              onClick={() => setActiveTab('testing')}
+            >
+              Testing & Bugs
+            </button>
+          </div>
+
+          <div className={`tab-content ${activeTab === 'basic' ? 'active' : ''}`}>
+            <div className="grid">
+              <BasicDemo />
+              <FrontendSearchDemo />
+              <ServerSearchDemo />
+              <MultiSelectDemo />
+            </div>
+          </div>
+
+          <div className={`tab-content ${activeTab === 'advanced' ? 'active' : ''}`}>
+            <div className="grid">
+              <MultiSearchDemo />
+              <PerformanceDemo />
+              <KeyboardDemo />
+              <ControlledDemo />
+            </div>
+          </div>
+
+          <div className={`tab-content ${activeTab === 'testing' ? 'active' : ''}`}>
+            <div className="grid">
+              <EdgeCasesDemo />
+              <RealWorldDemo />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
