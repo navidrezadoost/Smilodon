@@ -1,7 +1,7 @@
 # Angular Support Documentation
 
 **Status:** ✅ Fully Supported  
-**Package:** `@native-select/angular`  
+**Package:** `@smilodon/angular`  
 **Version:** 1.0.0+  
 **Angular Compatibility:** 14.0.0+
 
@@ -16,13 +16,13 @@ Smilodon provides first-class support for Angular with a dedicated Angular modul
 ## Installation
 
 ```bash
-npm install @native-select/core @native-select/angular
+npm install @smilodon/core @smilodon/angular
 ```
 
 or with yarn:
 
 ```bash
-yarn add @native-select/core @native-select/angular
+yarn add @smilodon/core @smilodon/angular
 ```
 
 ---
@@ -35,7 +35,7 @@ yarn add @native-select/core @native-select/angular
 // app.module.ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 import { AppComponent } from './app.component';
 
 @NgModule({
@@ -54,7 +54,7 @@ export class AppModule { }
 ```typescript
 // app.component.ts
 import { Component } from '@angular/core';
-import { NativeSelectComponent } from '@native-select/angular';
+import { NativeSelectComponent } from '@smilodon/angular';
 
 @Component({
   selector: 'app-root',
@@ -368,7 +368,7 @@ export class CustomTemplateComponent {
 ### Type Definitions
 
 ```typescript
-import { NativeSelectComponent } from '@native-select/angular';
+import { NativeSelectComponent } from '@smilodon/angular';
 
 // Generic typing
 interface Product {
@@ -437,7 +437,7 @@ export class OptimizedSelectComponent {
 ```typescript
 // feature.module.ts
 import { NgModule } from '@angular/core';
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 
 @NgModule({
   imports: [NativeSelectModule],
@@ -516,7 +516,7 @@ export class StyledSelectComponent {
 
 ```typescript
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 import { MyComponent } from './my.component';
 
 describe('MyComponent', () => {
@@ -611,7 +611,7 @@ describe('MyComponent', () => {
 **Solution:** Ensure `NativeSelectModule` is imported in your module
 
 **Issue:** TypeScript errors  
-**Solution:** Update to Angular 14+ and ensure `@native-select/angular` is installed
+**Solution:** Update to Angular 14+ and ensure `@smilodon/angular` is installed
 
 **Issue:** Styles not applying  
 **Solution:** Check ViewEncapsulation and CSS variable inheritance

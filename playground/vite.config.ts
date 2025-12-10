@@ -18,7 +18,12 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
-        sandbox: './sandbox.html'
+        sandbox: './sandbox.html',
+        react: './react-demo.html',
+        vue: './vue-demo.html',
+        svelte: './svelte-demo.html',
+        angular: './angular-demo.html',
+        vanilla: './vanilla-demo.html'
       }
     }
   },

@@ -1,0 +1,176 @@
+/**
+ * Multi-Select E2E Test
+ * 
+ * Tests multi-selection behavior across all framework implementations
+ * 
+ * @all - Runs on all frameworks
+ */
+
+import { test, expect } from '@playwright/test';
+
+const frameworkUrls = {
+  react: process.env.REACT_URL || 'http://localhost:5173',
+  vue: process.env.VUE_URL || 'http://localhost:5174',
+  svelte: process.env.SVELTE_URL || 'http://localhost:5175',
+  angular: process.env.ANGULAR_URL || 'http://localhost:5176',
+  vanilla: process.env.VANILLA_URL || 'http://localhost:5177',
+};
+
+for (const [framework, url] of Object.entries(frameworkUrls)) {
+  test.describe(`Multi-Select - ${framework}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto(`${url}#multi-select`);
+      await page.waitForLoadState('networkidle');
+    });
+    
+    test(`@${framework} @all should select multiple items`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      // Open dropdown
+      await select.click();
+      
+      // Select first item
+      const option1 = page.locator('[role="option"]', { hasText: 'Apple' });
+      await option1.click();
+      
+      // Select second item
+      const option2 = page.locator('[role="option"]', { hasText: 'Banana' });
+      await option2.click();
+      
+      // Select third item
+      const option3 = page.locator('[role="option"]', { hasText: 'Cherry' });
+      await option3.click();
+      
+      // Verify all selected (check aria-selected)
+      await expect(option1).toHaveAttribute('aria-selected', 'true');
+      await expect(option2).toHaveAttribute('aria-selected', 'true');
+      await expect(option3).toHaveAttribute('aria-selected', 'true');
+    });
+    
+    test(`@${framework} @all should keep dropdown open in multi-select mode`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      await select.click();
+      const dropdown = page.locator('[role="listbox"]');
+      
+      // Select first item
+      const option1 = page.locator('[role="option"]').first();
+      await option1.click();
+      
+      // Dropdown should still be visible
+      await expect(dropdown).toBeVisible();
+      
+      // Select second item
+      const option2 = page.locator('[role="option"]').nth(1);
+      await option2.click();
+      
+      // Dropdown should still be visible
+      await expect(dropdown).toBeVisible();
+    });
+    
+    test(`@${framework} @all should deselect item on second click`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      await select.click();
+      const option = page.locator('[role="option"]').first();
+      
+      // Select
+      await option.click();
+      await expect(option).toHaveAttribute('aria-selected', 'true');
+      
+      // Deselect
+      await option.click();
+      await expect(option).toHaveAttribute('aria-selected', 'false');
+    });
+    
+    test(`@${framework} @all should display selected count`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      await select.click();
+      
+      // Select 3 items
+      await page.locator('[role="option"]').nth(0).click();
+      await page.locator('[role="option"]').nth(1).click();
+      await page.locator('[role="option"]').nth(2).click();
+      
+      // Close dropdown
+      await page.keyboard.press('Escape');
+      
+      // Verify count displayed (implementation may vary)
+      const text = await select.textContent();
+      expect(text).toMatch(/3|three/i);
+    });
+    
+    test(`@${framework} @all should emit change event with all selected values`, async ({ page }) => {
+      await page.evaluate(() => {
+        (window as any).multiSelectEvents = [];
+        document.querySelector('enhanced-select[multiple]')?.addEventListener('change', (e: any) => {
+          (window as any).multiSelectEvents.push(e.detail);
+        });
+      });
+      
+      const select = page.locator('enhanced-select[multiple]').first();
+      await select.click();
+      
+      // Select multiple items
+      await page.locator('[role="option"]').nth(0).click();
+      await page.locator('[role="option"]').nth(1).click();
+      
+      const events = await page.evaluate(() => (window as any).multiSelectEvents);
+      
+      // Should have 2 events (one per selection)
+      expect(events.length).toBeGreaterThanOrEqual(2);
+      
+      // Last event should have both values
+      const lastEvent = events[events.length - 1];
+      expect(lastEvent.selectedValues).toHaveLength(2);
+    });
+    
+    test(`@${framework} @all should support keyboard multi-selection with Ctrl/Cmd`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      await select.focus();
+      await page.keyboard.press('Enter');
+      
+      const isMac = process.platform === 'darwin';
+      const modifier = isMac ? 'Meta' : 'Control';
+      
+      // Navigate and select first item
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Enter');
+      
+      // Navigate to second item
+      await page.keyboard.press('ArrowDown');
+      
+      // Select with modifier (Ctrl/Cmd+Enter)
+      await page.keyboard.down(modifier);
+      await page.keyboard.press('Enter');
+      await page.keyboard.up(modifier);
+      
+      // Both items should be selected
+      const selectedOptions = page.locator('[role="option"][aria-selected="true"]');
+      await expect(selectedOptions).toHaveCount(2);
+    });
+    
+    test(`@${framework} @all should clear all selections`, async ({ page }) => {
+      const select = page.locator('enhanced-select[multiple]').first();
+      
+      // Select multiple items
+      await select.click();
+      await page.locator('[role="option"]').nth(0).click();
+      await page.locator('[role="option"]').nth(1).click();
+      await page.locator('[role="option"]').nth(2).click();
+      
+      // Look for clear button (may be outside dropdown)
+      const clearButton = page.locator('[aria-label*="clear" i], .clear-button, [data-clear]').first();
+      
+      if (await clearButton.isVisible()) {
+        await clearButton.click();
+        
+        // Verify all deselected
+        const selectedOptions = page.locator('[role="option"][aria-selected="true"]');
+        await expect(selectedOptions).toHaveCount(0);
+      }
+    });
+  });
+}

@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { 
   setHTMLSanitizer, 
+  resetHTMLSanitizer,
   getHTMLSanitizer, 
   sanitizeHTML,
   createElement,
@@ -62,16 +63,26 @@ describe('CSP Compliance - Security Utilities', () => {
     });
 
     it('should warn when template has no sanitizer', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // Reset to default NoOpSanitizer
+      resetHTMLSanitizer();
       
-      setHTMLSanitizer({ sanitize: (html) => html }); // Reset to no-op
-      validateTemplate('<div>Test</div>', 'test-template');
+      // Spy on console.warn
+      const originalWarn = console.warn;
+      const warnCalls: any[] = [];
+      console.warn = (...args: any[]) => {
+        warnCalls.push(args);
+      };
       
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('no sanitizer is configured')
-      );
+      // Trigger validation - should warn since we're using NoOpSanitizer
+      const result = validateTemplate('<div>Test</div>', 'test-template');
       
-      warnSpy.mockRestore();
+      // Check warning was issued
+      expect(warnCalls.length).toBeGreaterThan(0);
+      expect(warnCalls[0][0]).toContain('no sanitizer is configured');
+      expect(result).toBe('<div>Test</div>');
+      
+      // Restore
+      console.warn = originalWarn;
     });
   });
 

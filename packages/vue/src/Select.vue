@@ -1,132 +1,396 @@
 <!--
-  Vue 3 Adapter for Enhanced Select Component
+  Smilodon Select Component for Vue 3
+  
+  A production-ready, accessible select component with advanced features:
+  - Single and multi-select modes
+  - Searchable with client or server-side filtering
+  - Infinite scroll and virtual scrolling for large datasets
+  - Grouped options
+  - Custom rendering
+  - Full keyboard navigation
+  - WCAG 2.1 AAA compliant
+  
+  @example
+  <Select
+    :items="items"
+    v-model="selectedValue"
+    searchable
+    placeholder="Select an option..."
+  />
 -->
 
 <template>
-  <div ref="containerRef" :class="className" :style="style"></div>
+  <enhanced-select
+    ref="selectRef"
+    :class="className"
+    :style="style"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, defineExpose } from 'vue';
-import type { GlobalSelectConfig } from '../../core/src/config/global-config';
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import {
+  SelectEventDetail,
+  OpenEventDetail,
+  CloseEventDetail,
+  SearchEventDetail,
+  ChangeEventDetail,
+  LoadMoreEventDetail,
+  GroupedItem,
+} from '@smilodon/core';
 
-export interface VueSelectProps {
-  /** Items to display */
-  items?: unknown[];
-  /** Initial selected values */
-  initialSelectedValues?: unknown[];
-  /** Controlled selected values */
-  modelValue?: unknown[];
-  /** Configuration */
-  config?: Partial<GlobalSelectConfig>;
-  /** Custom className */
+export interface SelectItem {
+  value: string | number;
+  label: string;
+  disabled?: boolean;
+  group?: string;
+  [key: string]: any;
+}
+
+export interface SelectProps {
+  /** Array of items to display in the select */
+  items?: SelectItem[];
+  /** Grouped items (alternative to items) */
+  groupedItems?: GroupedItem[];
+  /** Selected value(s) - for v-model binding */
+  modelValue?: string | number | (string | number)[];
+  /** Default value for uncontrolled mode */
+  defaultValue?: string | number | (string | number)[];
+  /** Enable multi-select mode */
+  multiple?: boolean;
+  /** Enable search functionality */
+  searchable?: boolean;
+  /** Placeholder text */
+  placeholder?: string;
+  /** Disable the select */
+  disabled?: boolean;
+  /** Mark as required */
+  required?: boolean;
+  /** Show error state */
+  error?: boolean;
+  /** Enable infinite scroll */
+  infiniteScroll?: boolean;
+  /** Number of items per page (for infinite scroll) */
+  pageSize?: number;
+  /** Enable virtual scrolling */
+  virtualized?: boolean;
+  /** Maximum number of selections (for multi-select) */
+  maxSelections?: number;
+  /** Dropdown placement */
+  placement?: 'bottom' | 'top' | 'auto';
+  /** Custom CSS class */
   className?: string;
-  /** Custom style */
+  /** Custom inline styles */
   style?: Record<string, string>;
 }
 
-export interface VueSelectEmits {
-  (e: 'update:modelValue', values: unknown[]): void;
-  (e: 'change', items: unknown[], values: unknown[]): void;
-  (e: 'select', data: { item: unknown; index: number; value: unknown; label: string; selected: boolean }): void;
+export interface SelectEmits {
+  /** Emitted when selection changes - for v-model */
+  (e: 'update:modelValue', value: string | number | (string | number)[]): void;
+  /** Emitted when selection changes with full details */
+  (e: 'change', value: string | number | (string | number)[], selectedItems: SelectItem[]): void;
+  /** Emitted when an item is selected */
+  (e: 'select', item: SelectItem, index: number): void;
+  /** Emitted when dropdown opens */
   (e: 'open'): void;
+  /** Emitted when dropdown closes */
   (e: 'close'): void;
+  /** Emitted when search query changes */
   (e: 'search', query: string): void;
+  /** Emitted when more items are requested (infinite scroll) */
   (e: 'loadMore', page: number): void;
-  (e: 'error', error: Error): void;
+  /** Emitted when user creates a new item (if enabled) */
+  (e: 'create', value: string): void;
 }
 
-const props = withDefaults(defineProps<VueSelectProps>(), {
+const props = withDefaults(defineProps<SelectProps>(), {
   items: () => [],
-  config: () => ({}),
+  multiple: false,
+  searchable: false,
+  disabled: false,
+  required: false,
+  error: false,
+  infiniteScroll: false,
+  pageSize: 50,
+  virtualized: true,
+  placement: 'auto',
 });
 
-const emit = defineEmits<VueSelectEmits>();
+const emit = defineEmits<SelectEmits>();
 
-const containerRef = ref<HTMLDivElement | null>(null);
-let selectElement: any = null;
+const selectRef = ref<HTMLElement | null>(null);
+const internalValue = ref<string | number | (string | number)[] | undefined>(
+  props.defaultValue
+);
 
-onMounted(async () => {
-  if (!containerRef.value) return;
+// Check if component is controlled
+const isControlled = computed(() => props.modelValue !== undefined);
 
-  // Dynamically import the enhanced select component
-  const { EnhancedSelect } = await import('../../core/src/components/enhanced-select');
+// Get current value
+const currentValue = computed(() =>
+  isControlled.value ? props.modelValue : internalValue.value
+);
 
-  const select = document.createElement('enhanced-select') as any;
-  containerRef.value.appendChild(select);
-  selectElement = select;
+// Sync items to web component
+watch(
+  () => props.items,
+  (newItems) => {
+    if (selectRef.value && newItems) {
+      (selectRef.value as any).setItems(newItems);
+    }
+  },
+  { deep: true }
+);
 
-  // Apply configuration
-  select.updateConfig({
-    ...props.config,
-    callbacks: {
-      onSelect: (data: any) => emit('select', data),
-      onOpen: () => emit('open'),
-      onClose: () => emit('close'),
-      onSearch: (query: string) => emit('search', query),
-      onLoadMore: (page: number) => emit('loadMore', page),
-      onError: (error: Error) => emit('error', error),
-      onChange: (items: unknown[], values: unknown[]) => {
-        emit('change', items, values);
-        emit('update:modelValue', values);
-      },
-    },
-  });
+// Sync grouped items to web component
+watch(
+  () => props.groupedItems,
+  (newGroups) => {
+    if (selectRef.value && newGroups) {
+      (selectRef.value as any).setGroupedItems(newGroups);
+    }
+  },
+  { deep: true }
+);
+
+// Sync value to web component
+watch(
+  currentValue,
+  (newValue) => {
+    if (selectRef.value && newValue !== undefined) {
+      const values = Array.isArray(newValue) ? newValue : [newValue];
+      (selectRef.value as any).setSelectedValues(values);
+    }
+  },
+  { immediate: true }
+);
+
+// Sync other props
+watch(
+  () => props.placeholder,
+  (newPlaceholder) => {
+    if (selectRef.value && newPlaceholder) {
+      selectRef.value.setAttribute('placeholder', newPlaceholder);
+    }
+  }
+);
+
+watch(
+  () => props.disabled,
+  (newDisabled) => {
+    if (selectRef.value) {
+      if (newDisabled) {
+        selectRef.value.setAttribute('disabled', '');
+      } else {
+        selectRef.value.removeAttribute('disabled');
+      }
+    }
+  }
+);
+
+watch(
+  () => props.searchable,
+  (newSearchable) => {
+    if (selectRef.value) {
+      if (newSearchable) {
+        selectRef.value.setAttribute('searchable', '');
+      } else {
+        selectRef.value.removeAttribute('searchable');
+      }
+    }
+  }
+);
+
+watch(
+  () => props.multiple,
+  (newMultiple) => {
+    if (selectRef.value) {
+      if (newMultiple) {
+        selectRef.value.setAttribute('multiple', '');
+      } else {
+        selectRef.value.removeAttribute('multiple');
+      }
+    }
+  }
+);
+
+watch(
+  () => props.virtualized,
+  (newVirtualized) => {
+    if (selectRef.value) {
+      if (newVirtualized) {
+        selectRef.value.setAttribute('virtualized', '');
+      } else {
+        selectRef.value.removeAttribute('virtualized');
+      }
+    }
+  }
+);
+
+// Event handlers
+const handleSelect = (e: Event) => {
+  const customEvent = e as CustomEvent<SelectEventDetail>;
+  const { item, index } = customEvent.detail;
+  emit('select', item as SelectItem, index);
+};
+
+const handleChange = (e: Event) => {
+  const customEvent = e as CustomEvent<ChangeEventDetail>;
+  const { selectedItems, selectedValues } = customEvent.detail;
+
+  const values = selectedValues as (string | number)[];
+
+  // Update internal value in uncontrolled mode
+  if (!isControlled.value) {
+    internalValue.value = props.multiple ? values : values[0];
+  }
+
+  // Emit events
+  const value = props.multiple ? values : values[0];
+  emit('update:modelValue', value);
+  emit('change', value, selectedItems as SelectItem[]);
+};
+
+const handleOpen = () => {
+  emit('open');
+};
+
+const handleClose = () => {
+  emit('close');
+};
+
+const handleSearch = (e: Event) => {
+  const customEvent = e as CustomEvent<SearchEventDetail>;
+  emit('search', customEvent.detail.query);
+};
+
+const handleLoadMore = (e: Event) => {
+  const customEvent = e as CustomEvent<LoadMoreEventDetail>;
+  emit('loadMore', customEvent.detail.page);
+};
+
+const handleCreate = (e: Event) => {
+  const customEvent = e as CustomEvent<{ value: string }>;
+  emit('create', customEvent.detail.value);
+};
+
+// Setup event listeners
+onMounted(() => {
+  if (!selectRef.value) return;
+
+  const element = selectRef.value;
+
+  // Set initial attributes
+  if (props.placeholder) {
+    element.setAttribute('placeholder', props.placeholder);
+  }
+  if (props.disabled) {
+    element.setAttribute('disabled', '');
+  }
+  if (props.required) {
+    element.setAttribute('required', '');
+  }
+  if (props.error) {
+    element.setAttribute('error', '');
+  }
+  if (props.searchable) {
+    element.setAttribute('searchable', '');
+  }
+  if (props.multiple) {
+    element.setAttribute('multiple', '');
+  }
+  if (props.virtualized) {
+    element.setAttribute('virtualized', '');
+  }
+  if (props.infiniteScroll) {
+    element.setAttribute('infinite-scroll', '');
+  }
+  if (props.pageSize) {
+    element.setAttribute('page-size', String(props.pageSize));
+  }
+  if (props.maxSelections) {
+    element.setAttribute('max-selections', String(props.maxSelections));
+  }
+  if (props.placement) {
+    element.setAttribute('placement', props.placement);
+  }
 
   // Set initial items
-  if (props.items && props.items.length > 0) {
-    select.setItems(props.items);
+  if (props.items?.length) {
+    (element as any).setItems(props.items);
+  }
+  if (props.groupedItems?.length) {
+    (element as any).setGroupedItems(props.groupedItems);
   }
 
-  // Set initial selected values
-  if (props.initialSelectedValues) {
-    await select.setSelectedValues(props.initialSelectedValues);
+  // Set initial value
+  if (currentValue.value !== undefined) {
+    const values = Array.isArray(currentValue.value)
+      ? currentValue.value
+      : [currentValue.value];
+    (element as any).setSelectedValues(values);
   }
 
-  // Set model value if provided
-  if (props.modelValue) {
-    await select.setSelectedValues(props.modelValue);
-  }
+  // Add event listeners
+  element.addEventListener('select', handleSelect as EventListener);
+  element.addEventListener('change', handleChange as EventListener);
+  element.addEventListener('open', handleOpen as EventListener);
+  element.addEventListener('close', handleClose as EventListener);
+  element.addEventListener('search', handleSearch as EventListener);
+  element.addEventListener('loadMore', handleLoadMore as EventListener);
+  element.addEventListener('create', handleCreate as EventListener);
 });
 
-onUnmounted(() => {
-  if (selectElement && containerRef.value) {
-    containerRef.value.removeChild(selectElement);
-  }
+onBeforeUnmount(() => {
+  if (!selectRef.value) return;
+
+  const element = selectRef.value;
+
+  // Remove event listeners
+  element.removeEventListener('select', handleSelect as EventListener);
+  element.removeEventListener('change', handleChange as EventListener);
+  element.removeEventListener('open', handleOpen as EventListener);
+  element.removeEventListener('close', handleClose as EventListener);
+  element.removeEventListener('search', handleSearch as EventListener);
+  element.removeEventListener('loadMore', handleLoadMore as EventListener);
+  element.removeEventListener('create', handleCreate as EventListener);
 });
 
-// Watch for items changes
-watch(() => props.items, (newItems) => {
-  if (selectElement && newItems) {
-    selectElement.setItems(newItems);
-  }
-}, { deep: true });
-
-// Watch for modelValue changes
-watch(() => props.modelValue, (newValue) => {
-  if (selectElement && newValue !== undefined) {
-    selectElement.setSelectedValues(newValue);
-  }
-}, { deep: true });
-
-// Watch for config changes
-watch(() => props.config, (newConfig) => {
-  if (selectElement) {
-    selectElement.updateConfig(newConfig);
-  }
-}, { deep: true });
-
-// Expose methods
+// Expose imperative API
 defineExpose({
-  getSelectedItems: () => selectElement?.getSelectedItems() || [],
-  getSelectedValues: () => selectElement?.getSelectedValues() || [],
-  setSelectedValues: async (values: unknown[]) => {
-    await selectElement?.setSelectedValues(values);
+  /** Open the dropdown */
+  open: () => {
+    (selectRef.value as any)?.open();
   },
-  clear: () => selectElement?.clear(),
-  open: () => selectElement?.open(),
-  close: () => selectElement?.close(),
-  updateConfig: (config: Partial<GlobalSelectConfig>) => selectElement?.updateConfig(config),
-  setItems: (items: unknown[]) => selectElement?.setItems(items),
+  /** Close the dropdown */
+  close: () => {
+    (selectRef.value as any)?.close();
+  },
+  /** Focus the select */
+  focus: () => {
+    selectRef.value?.focus();
+  },
+  /** Set items programmatically */
+  setItems: (items: SelectItem[]) => {
+    (selectRef.value as any)?.setItems(items);
+  },
+  /** Set grouped items programmatically */
+  setGroupedItems: (groups: GroupedItem[]) => {
+    (selectRef.value as any)?.setGroupedItems(groups);
+  },
+  /** Clear selection */
+  clear: () => {
+    (selectRef.value as any)?.setSelectedValues([]);
+    if (!isControlled.value) {
+      internalValue.value = props.multiple ? [] : undefined;
+    }
+    const value = props.multiple ? [] : '';
+    emit('update:modelValue', value);
+    emit('change', value, []);
+  },
 });
 </script>
+
+<style scoped>
+/* Component uses web component styling from @smilodon/core */
+</style>

@@ -1,5 +1,5 @@
 /**
- * Public API Surface of @native-select/angular
+ * Public API Surface of @smilodon/angular
  */
 
 export * from './src/index';

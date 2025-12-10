@@ -42,6 +42,14 @@ export function setHTMLSanitizer(sanitizer: HTMLSanitizer): void {
 }
 
 /**
+ * Reset to the default no-op sanitizer.
+ * Mainly for testing purposes.
+ */
+export function resetHTMLSanitizer(): void {
+  globalSanitizer = new NoOpSanitizer();
+}
+
+/**
  * Get the current HTML sanitizer.
  */
 export function getHTMLSanitizer(): HTMLSanitizer {

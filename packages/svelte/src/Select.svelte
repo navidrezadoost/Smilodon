@@ -1,129 +1,260 @@
 <!--
-  Svelte Adapter for Enhanced Select Component
+  Smilodon Select Component for Svelte
+  
+  A production-ready, accessible select component with advanced features:
+  - Single and multi-select modes
+  - Searchable with client or server-side filtering
+  - Infinite scroll and virtual scrolling for large datasets
+  - Grouped options
+  - Custom rendering
+  - Full keyboard navigation
+  - WCAG 2.1 AAA compliant
+  
+  @example
+  <Select
+    {items}
+    bind:value={selectedValue}
+    searchable
+    placeholder="Select an option..."
+  />
 -->
 
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-  import type { GlobalSelectConfig } from '../../core/src/config/global-config';
+  import type {
+    SelectEventDetail,
+    OpenEventDetail,
+    CloseEventDetail,
+    SearchEventDetail,
+    ChangeEventDetail,
+    LoadMoreEventDetail,
+    GroupedItem,
+  } from '@smilodon/core';
 
-  export let items: unknown[] = [];
-  export let initialSelectedValues: unknown[] | undefined = undefined;
-  export let selectedValues: unknown[] | undefined = undefined;
-  export let config: Partial<GlobalSelectConfig> = {};
+  export interface SelectItem {
+    value: string | number;
+    label: string;
+    disabled?: boolean;
+    group?: string;
+    [key: string]: any;
+  }
+
+  // Props
+  export let items: SelectItem[] = [];
+  export let groupedItems: GroupedItem[] | undefined = undefined;
+  export let value: string | number | (string | number)[] | undefined = undefined;
+  export let defaultValue: string | number | (string | number)[] | undefined = undefined;
+  export let multiple: boolean = false;
+  export let searchable: boolean = false;
+  export let placeholder: string = '';
+  export let disabled: boolean = false;
+  export let required: boolean = false;
+  export let error: boolean = false;
+  export let infiniteScroll: boolean = false;
+  export let pageSize: number = 50;
+  export let virtualized: boolean = true;
+  export let maxSelections: number | undefined = undefined;
+  export let placement: 'bottom' | 'top' | 'auto' = 'auto';
   export let className: string = '';
   export let style: string = '';
 
   const dispatch = createEventDispatcher<{
-    change: { items: unknown[]; values: unknown[] };
-    select: { item: unknown; index: number; value: unknown; label: string; selected: boolean };
+    change: { value: string | number | (string | number)[]; selectedItems: SelectItem[] };
+    select: { item: SelectItem; index: number };
     open: void;
     close: void;
     search: { query: string };
     loadMore: { page: number };
-    error: { error: Error };
+    create: { value: string };
   }>();
 
-  let containerRef: HTMLDivElement;
-  let selectElement: any = null;
+  let selectRef: HTMLElement;
+  let internalValue: string | number | (string | number)[] | undefined = defaultValue;
 
-  onMount(async () => {
-    // Dynamically import the enhanced select component
-    const { EnhancedSelect } = await import('../../core/src/components/enhanced-select');
+  // Check if component is controlled
+  $: isControlled = value !== undefined;
+  $: currentValue = isControlled ? value : internalValue;
 
-    const select = document.createElement('enhanced-select') as any;
-    containerRef.appendChild(select);
-    selectElement = select;
+  // Event handlers
+  function handleSelect(e: Event) {
+    const customEvent = e as CustomEvent<SelectEventDetail>;
+    const { item, index } = customEvent.detail;
+    dispatch('select', { item: item as SelectItem, index });
+  }
 
-    // Apply configuration
-    select.updateConfig({
-      ...config,
-      callbacks: {
-        onSelect: (data: any) => dispatch('select', data),
-        onOpen: () => dispatch('open'),
-        onClose: () => dispatch('close'),
-        onSearch: (query: string) => dispatch('search', { query }),
-        onLoadMore: (page: number) => dispatch('loadMore', { page }),
-        onError: (error: Error) => dispatch('error', { error }),
-        onChange: (items: unknown[], values: unknown[]) => {
-          dispatch('change', { items, values });
-          selectedValues = values;
-        },
-      },
-    });
+  function handleChange(e: Event) {
+    const customEvent = e as CustomEvent<ChangeEventDetail>;
+    const { selectedItems, selectedValues } = customEvent.detail;
+
+    const values = selectedValues as (string | number)[];
+
+    // Update internal value in uncontrolled mode
+    if (!isControlled) {
+      internalValue = multiple ? values : values[0];
+    }
+
+    // Emit change event
+    const newValue = multiple ? values : values[0];
+    value = newValue; // Update binding
+    dispatch('change', { value: newValue, selectedItems: selectedItems as SelectItem[] });
+  }
+
+  function handleOpen() {
+    dispatch('open');
+  }
+
+  function handleClose() {
+    dispatch('close');
+  }
+
+  function handleSearch(e: Event) {
+    const customEvent = e as CustomEvent<SearchEventDetail>;
+    dispatch('search', { query: customEvent.detail.query });
+  }
+
+  function handleLoadMore(e: Event) {
+    const customEvent = e as CustomEvent<LoadMoreEventDetail>;
+    dispatch('loadMore', { page: customEvent.detail.page });
+  }
+
+  function handleCreate(e: Event) {
+    const customEvent = e as CustomEvent<{ value: string }>;
+    dispatch('create', { value: customEvent.detail.value });
+  }
+
+  onMount(() => {
+    if (!selectRef) return;
+
+    const element = selectRef;
+
+    // Set initial attributes
+    if (placeholder) element.setAttribute('placeholder', placeholder);
+    if (disabled) element.setAttribute('disabled', '');
+    if (required) element.setAttribute('required', '');
+    if (error) element.setAttribute('error', '');
+    if (searchable) element.setAttribute('searchable', '');
+    if (multiple) element.setAttribute('multiple', '');
+    if (virtualized) element.setAttribute('virtualized', '');
+    if (infiniteScroll) element.setAttribute('infinite-scroll', '');
+    if (pageSize) element.setAttribute('page-size', String(pageSize));
+    if (maxSelections) element.setAttribute('max-selections', String(maxSelections));
+    if (placement) element.setAttribute('placement', placement);
 
     // Set initial items
-    if (items.length > 0) {
-      select.setItems(items);
+    if (items?.length) {
+      (element as any).setItems(items);
+    }
+    if (groupedItems?.length) {
+      (element as any).setGroupedItems(groupedItems);
     }
 
-    // Set initial selected values
-    if (initialSelectedValues) {
-      await select.setSelectedValues(initialSelectedValues);
+    // Set initial value
+    if (currentValue !== undefined) {
+      const values = Array.isArray(currentValue) ? currentValue : [currentValue];
+      (element as any).setSelectedValues(values);
     }
 
-    // Set selected values if provided
-    if (selectedValues) {
-      await select.setSelectedValues(selectedValues);
-    }
+    // Add event listeners
+    element.addEventListener('select', handleSelect as EventListener);
+    element.addEventListener('change', handleChange as EventListener);
+    element.addEventListener('open', handleOpen as EventListener);
+    element.addEventListener('close', handleClose as EventListener);
+    element.addEventListener('search', handleSearch as EventListener);
+    element.addEventListener('loadMore', handleLoadMore as EventListener);
+    element.addEventListener('create', handleCreate as EventListener);
   });
 
   onDestroy(() => {
-    if (selectElement && containerRef) {
-      containerRef.removeChild(selectElement);
-    }
+    if (!selectRef) return;
+
+    const element = selectRef;
+
+    // Remove event listeners
+    element.removeEventListener('select', handleSelect as EventListener);
+    element.removeEventListener('change', handleChange as EventListener);
+    element.removeEventListener('open', handleOpen as EventListener);
+    element.removeEventListener('close', handleClose as EventListener);
+    element.removeEventListener('search', handleSearch as EventListener);
+    element.removeEventListener('loadMore', handleLoadMore as EventListener);
+    element.removeEventListener('create', handleCreate as EventListener);
   });
 
-  // Reactive statements for prop changes
-  $: if (selectElement && items) {
-    selectElement.setItems(items);
+  // Reactive updates
+  $: if (selectRef && items) {
+    (selectRef as any).setItems(items);
   }
 
-  $: if (selectElement && selectedValues !== undefined) {
-    selectElement.setSelectedValues(selectedValues);
+  $: if (selectRef && groupedItems) {
+    (selectRef as any).setGroupedItems(groupedItems);
   }
 
-  $: if (selectElement && config) {
-    selectElement.updateConfig(config);
+  $: if (selectRef && currentValue !== undefined) {
+    const values = Array.isArray(currentValue) ? currentValue : [currentValue];
+    (selectRef as any).setSelectedValues(values);
+  }
+
+  $: if (selectRef) {
+    if (placeholder) selectRef.setAttribute('placeholder', placeholder);
+    if (disabled) {
+      selectRef.setAttribute('disabled', '');
+    } else {
+      selectRef.removeAttribute('disabled');
+    }
+    if (searchable) {
+      selectRef.setAttribute('searchable', '');
+    } else {
+      selectRef.removeAttribute('searchable');
+    }
+    if (multiple) {
+      selectRef.setAttribute('multiple', '');
+    } else {
+      selectRef.removeAttribute('multiple');
+    }
+    if (virtualized) {
+      selectRef.setAttribute('virtualized', '');
+    } else {
+      selectRef.removeAttribute('virtualized');
+    }
   }
 
   // Public methods
-  export function getSelectedItems(): unknown[] {
-    return selectElement?.getSelectedItems() || [];
+  export function open() {
+    (selectRef as any)?.open();
   }
 
-  export function getSelectedValues(): unknown[] {
-    return selectElement?.getSelectedValues() || [];
+  export function close() {
+    (selectRef as any)?.close();
   }
 
-  export async function setSelectedValues(values: unknown[]): Promise<void> {
-    await selectElement?.setSelectedValues(values);
+  export function focus() {
+    selectRef?.focus();
   }
 
-  export function clear(): void {
-    selectElement?.clear();
+  export function setItems(newItems: SelectItem[]) {
+    (selectRef as any)?.setItems(newItems);
   }
 
-  export function open(): void {
-    selectElement?.open();
+  export function setGroupedItems(groups: GroupedItem[]) {
+    (selectRef as any)?.setGroupedItems(groups);
   }
 
-  export function close(): void {
-    selectElement?.close();
-  }
-
-  export function updateConfig(newConfig: Partial<GlobalSelectConfig>): void {
-    selectElement?.updateConfig(newConfig);
-  }
-
-  export function setItems(newItems: unknown[]): void {
-    selectElement?.setItems(newItems);
+  export function clear() {
+    (selectRef as any)?.setSelectedValues([]);
+    if (!isControlled) {
+      internalValue = multiple ? [] : undefined;
+    }
+    const newValue = multiple ? [] : '';
+    value = newValue as any;
+    dispatch('change', { value: newValue as any, selectedItems: [] });
   }
 </script>
 
-<div bind:this={containerRef} class={className} {style}></div>
+<enhanced-select
+  bind:this={selectRef}
+  class={className}
+  {style}
+/>
 
 <style>
-  div {
-    width: 100%;
-  }
+  /* Component uses web component styling from @smilodon/core */
 </style>

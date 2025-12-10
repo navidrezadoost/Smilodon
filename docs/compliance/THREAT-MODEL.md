@@ -128,7 +128,7 @@ Browser Display
 ```html
 <!-- Subresource Integrity (SRI) Hash -->
 <script 
-  src="https://cdn.jsdelivr.net/npm/@native-select/core@1.0.0/dist/index.min.js"
+  src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.0.0/dist/index.min.js"
   integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/ux..."
   crossorigin="anonymous">
 </script>
@@ -950,9 +950,9 @@ node scripts/stress-test.js
 
 ### Appendix B: Security Contacts
 
-**Primary:** security@native-select.dev  
+**Primary:** security@smilodon.dev  
 **PGP Key:** [Fingerprint TBD]  
-**GitHub:** @native-select/security-team
+**GitHub:** @smilodon/security-team
 
 ### Appendix C: Change Log
 

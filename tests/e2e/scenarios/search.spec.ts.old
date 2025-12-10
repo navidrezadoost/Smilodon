@@ -1,0 +1,215 @@
+/**
+ * Search/Filter E2E Test
+ * 
+ * Tests search and filter functionality across all framework implementations
+ * 
+ * @all - Runs on all frameworks
+ */
+
+import { test, expect } from '@playwright/test';
+
+const frameworkUrls = {
+  react: process.env.REACT_URL || 'http://localhost:5173',
+  vue: process.env.VUE_URL || 'http://localhost:5174',
+  svelte: process.env.SVELTE_URL || 'http://localhost:5175',
+  angular: process.env.ANGULAR_URL || 'http://localhost:5176',
+  vanilla: process.env.VANILLA_URL || 'http://localhost:5177',
+};
+
+for (const [framework, url] of Object.entries(frameworkUrls)) {
+  test.describe(`Search/Filter - ${framework}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto(`${url}#search`);
+      await page.waitForLoadState('networkidle');
+    });
+    
+    test(`@${framework} @all should filter items by search input`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      
+      // Find search input
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      await expect(searchInput).toBeVisible();
+      
+      // Type search query
+      await searchInput.fill('ban');
+      
+      // Verify filtered results
+      const visibleOptions = page.locator('[role="option"]:visible');
+      await expect(visibleOptions).toHaveCount(1);
+      await expect(visibleOptions.first()).toContainText('Banana');
+    });
+    
+    test(`@${framework} @all should show no results message when no matches`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Type non-matching query
+      await searchInput.fill('xyz123');
+      
+      // Verify no results message
+      const noResults = page.locator('[role="status"], .no-results, [data-no-results]');
+      await expect(noResults).toBeVisible();
+      
+      const options = page.locator('[role="option"]:visible');
+      await expect(options).toHaveCount(0);
+    });
+    
+    test(`@${framework} @all should clear search on Escape`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Type search query
+      await searchInput.fill('apple');
+      await expect(searchInput).toHaveValue('apple');
+      
+      // Press Escape
+      await page.keyboard.press('Escape');
+      
+      // Search should be cleared (or dropdown closed)
+      const isDropdownOpen = await page.locator('[role="listbox"]').isVisible();
+      if (isDropdownOpen) {
+        await expect(searchInput).toHaveValue('');
+      }
+    });
+    
+    test(`@${framework} @all should highlight search matches`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Type partial match
+      await searchInput.fill('err');
+      
+      // Look for highlighted text (implementation varies)
+      const option = page.locator('[role="option"]:visible', { hasText: 'Cherry' }).first();
+      const html = await option.innerHTML();
+      
+      // Check for highlight markup (mark, strong, em, or class)
+      const hasHighlight = 
+        html.includes('<mark>') || 
+        html.includes('<strong>') || 
+        html.includes('highlight') ||
+        html.includes('match');
+      
+      expect(hasHighlight).toBeTruthy();
+    });
+    
+    test(`@${framework} @all should navigate filtered results with keyboard`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Filter to 2-3 results
+      await searchInput.fill('e'); // matches Apple, Cherry, etc.
+      
+      // Navigate with arrow keys
+      await page.keyboard.press('ArrowDown');
+      
+      const activeOption = page.locator('[role="option"][aria-selected="true"], [role="option"][data-active="true"]').first();
+      await expect(activeOption).toBeVisible();
+      
+      // Select with Enter
+      await page.keyboard.press('Enter');
+      
+      // Verify selection
+      const dropdown = page.locator('[role="listbox"]');
+      await expect(dropdown).not.toBeVisible();
+    });
+    
+    test(`@${framework} @all should perform case-insensitive search`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Type uppercase
+      await searchInput.fill('APPLE');
+      
+      // Should still match lowercase
+      const option = page.locator('[role="option"]:visible', { hasText: /apple/i }).first();
+      await expect(option).toBeVisible();
+    });
+    
+    test(`@${framework} @all should search within groups`, async ({ page }) => {
+      await page.goto(`${url}#grouped-search`);
+      
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Search for item in specific group
+      await searchInput.fill('banana');
+      
+      // Verify option visible
+      const option = page.locator('[role="option"]:visible', { hasText: 'Banana' }).first();
+      await expect(option).toBeVisible();
+      
+      // Group header should still be visible
+      const group = page.locator('[role="group"]').first();
+      await expect(group).toBeVisible();
+    });
+    
+    test(`@${framework} @all should debounce search input`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Track search events
+      await page.evaluate(() => {
+        (window as any).searchCount = 0;
+        const input = document.querySelector('input[type="text"], input[role="combobox"]');
+        input?.addEventListener('input', () => {
+          (window as any).searchCount++;
+        });
+      });
+      
+      // Type quickly
+      await searchInput.type('apple', { delay: 10 });
+      
+      // Wait for debounce
+      await page.waitForTimeout(500);
+      
+      const searchCount = await page.evaluate(() => (window as any).searchCount);
+      
+      // Input events should fire for each keystroke (5 for "apple")
+      // But search logic may debounce
+      expect(searchCount).toBe(5);
+    });
+    
+    test(`@${framework} @all should restore all items when search cleared`, async ({ page }) => {
+      const select = page.locator('enhanced-select[searchable]').first();
+      
+      await select.click();
+      
+      // Get initial count
+      const initialCount = await page.locator('[role="option"]').count();
+      
+      const searchInput = page.locator('input[type="text"], input[role="combobox"]').first();
+      
+      // Filter
+      await searchInput.fill('apple');
+      const filteredCount = await page.locator('[role="option"]:visible').count();
+      expect(filteredCount).toBeLessThan(initialCount);
+      
+      // Clear search
+      await searchInput.clear();
+      
+      // Wait for debounce/update
+      await page.waitForTimeout(300);
+      
+      // All items should be visible again
+      const finalCount = await page.locator('[role="option"]:visible').count();
+      expect(finalCount).toBe(initialCount);
+    });
+  });
+}

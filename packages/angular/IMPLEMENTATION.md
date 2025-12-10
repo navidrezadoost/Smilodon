@@ -1,7 +1,7 @@
 # Angular Package Implementation - Complete
 
 **Date:** December 7, 2025  
-**Package:** `@native-select/angular`  
+**Package:** `@smilodon/angular`  
 **Status:** ✅ Implementation Complete
 
 ---
@@ -44,7 +44,7 @@ Complete Angular component implementation featuring:
 - **Reactive Bindings**: Inputs for all properties, Outputs for all events
 - **Lifecycle Hooks**: AfterViewInit, OnChanges, OnDestroy
 - **OnPush Compatible**: Designed for ChangeDetectionStrategy.OnPush
-- **Custom Element Wrapper**: Dynamically loads and wraps @native-select/core
+- **Custom Element Wrapper**: Dynamically loads and wraps @smilodon/core
 - **Event Management**: Proper event listener attachment and cleanup
 - **Public Methods**: open(), close(), setSelectedIndices(), scrollToIndex(), focus()
 
@@ -82,11 +82,11 @@ Public API surface:
 ### 2. Configuration Files
 
 #### `/packages/angular/package.json`
-- **Package name**: `@native-select/angular`
+- **Package name**: `@smilodon/angular`
 - **Version**: 0.0.1
 - **Peer Dependencies**: 
   - Angular 14-18+ support
-  - @native-select/core ^0.0.1
+  - @smilodon/core ^0.0.1
 - **Build System**: ng-packagr
 - **Module Format**: ESM with proper exports
 - **Bundle Size**: ~892 bytes (estimated)
@@ -102,7 +102,7 @@ Public API surface:
 - ng-packagr configuration
 - Entry file: src/index.ts
 - Output: dist/
-- UMD module ID mapping for @native-select/core
+- UMD module ID mapping for @smilodon/core
 
 ### 3. Documentation Files
 
@@ -143,7 +143,7 @@ Standard Angular package ignores
 ### Component Architecture
 
 1. **Web Component Wrapper Pattern**
-   - Dynamically imports @native-select/core
+   - Dynamically imports @smilodon/core
    - Registers custom element on first use
    - Creates wrapper div container
    - Appends web component to container
@@ -186,7 +186,7 @@ export type { SelectEventDetail, OpenEventDetail, CloseEventDetail, SearchEventD
 
 #### Module-Based (Traditional)
 ```typescript
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 
 @NgModule({
   imports: [NativeSelectModule]
@@ -196,7 +196,7 @@ export class AppModule { }
 
 #### Standalone (Angular 14+)
 ```typescript
-import { NativeSelectComponent } from '@native-select/angular';
+import { NativeSelectComponent } from '@smilodon/angular';
 
 @Component({
   standalone: true,
@@ -277,7 +277,7 @@ expect(component).toBeTruthy();
 ### Implementation
 ```typescript
 if (typeof window !== 'undefined' && !customElements.get('native-select')) {
-  const module = await import('@native-select/core');
+  const module = await import('@smilodon/core');
   // ...register element
 }
 ```

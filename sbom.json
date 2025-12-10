@@ -100,10 +100,10 @@
   "vulnerabilities": [],
   "annotations": [
     {
-      "subjects": ["pkg:npm/@native-select/core@1.0.0"],
+      "subjects": ["pkg:npm/@smilodon/core@1.0.0"],
       "annotator": {
         "organization": {
-          "name": "@native-select Security Team"
+          "name": "@smilodon Security Team"
         }
       },
       "timestamp": "2025-12-07T12:00:00Z",

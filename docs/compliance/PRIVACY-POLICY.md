@@ -210,7 +210,7 @@ sessionStorage.clear();
 
 ### 3.3 Data Protection Officer (DPO)
 
-**Contact:** privacy@native-select.dev  
+**Contact:** privacy@smilodon.dev  
 **Role:** Open source project maintainer  
 **Responsibilities:** Privacy policy compliance, data handling oversight
 
@@ -487,7 +487,7 @@ async function encryptData(
 
 **Self-hosting (Recommended for Privacy):**
 ```bash
-npm install @native-select/core
+npm install @smilodon/core
 # Code bundled with your application
 # No third-party requests
 # Full privacy control
@@ -543,7 +543,7 @@ If your application targets children, ensure:
 <div class="consent-banner">
   <p>
     We'd like to collect anonymous performance data to improve 
-    @native-select. This includes render times and browser info.
+    @smilodon. This includes render times and browser info.
     <strong>No personal information is collected.</strong>
   </p>
   <button onclick="enableTelemetry()">Accept</button>
@@ -644,7 +644,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 ```
 
 **Notification Channels:**
-- Email: privacy@native-select.dev
+- Email: privacy@smilodon.dev
 - GitHub: Security Advisory
 - Website: Incident banner
 - Social media: @nativeselect
@@ -652,7 +652,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 ### 12.3 User Actions
 
 **If you suspect a breach:**
-1. Report to security@native-select.dev
+1. Report to security@smilodon.dev
 2. Disable telemetry immediately
 3. Clear browser storage (if concerned)
 4. Monitor for suspicious activity
@@ -679,7 +679,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 
 ### 13.3 Acceptance
 
-**By using @native-select, you acknowledge:**
+**By using @smilodon, you acknowledge:**
 - You have read this privacy policy
 - You understand what data (if any) is collected
 - You agree to the terms (especially if enabling telemetry)
@@ -695,13 +695,13 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 
 ### 14.1 Privacy Inquiries
 
-**Email:** privacy@native-select.dev  
+**Email:** privacy@smilodon.dev  
 **Response time:** 5 business days  
 **Languages:** English
 
 **Mailing Address:**
 ```
-@native-select Privacy Team
+@smilodon Privacy Team
 [Open Source Project]
 [No physical address - distributed team]
 ```
@@ -709,7 +709,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 ### 14.2 Data Protection Officer
 
 **Role:** Open source project maintainer  
-**Email:** dpo@native-select.dev  
+**Email:** dpo@smilodon.dev  
 **Responsibilities:** Privacy policy compliance, data subject requests
 
 ### 14.3 Supervisory Authority
@@ -789,7 +789,7 @@ A: No. Workers operate entirely in your browser.
 **For Enterprise Customers:**
 
 If your organization requires a formal DPA, contact us at:
-enterprise@native-select.dev
+enterprise@smilodon.dev
 
 **Standard terms:**
 - Component acts as data processor (if telemetry enabled)

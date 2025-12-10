@@ -350,7 +350,7 @@ npm run test:a11y
 
 ```typescript
 // Use telemetry to catch regressions
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 const telemetry = getTelemetry();
 telemetry.startRecording();

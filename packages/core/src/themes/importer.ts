@@ -9,7 +9,7 @@
  * - Style Dictionary format
  * 
  * Usage:
- *   import { importTokens, applyTokens } from '@native-select/core/themes/importer';
+ *   import { importTokens, applyTokens } from '@smilodon/core/themes/importer';
  *   
  *   const tokens = await importTokens('figma', figmaData);
  *   applyTokens(selectElement, tokens);
@@ -237,11 +237,15 @@ export function importStyleDictionaryTokens(data: any): Map<string, CSSVariable>
           const varName = `--ns-${path.concat(key).map(kebabCase).join('-')}`;
           const varValue = String(value.value);
           
+          // Type guard for token properties
+          const tokenValue = value as any;
+          const description = tokenValue.comment || tokenValue.description || '';
+          
           cssVars.set(varName, {
             name: varName,
             value: varValue,
             category: path[0],
-            description: value.comment || value.description,
+            description,
           });
         } else {
           // Traverse deeper
@@ -344,7 +348,7 @@ export function generateCSS(
   } = {}
 ): string {
   const {
-    selector = ':host, native-select',
+    selector = ':host, smilodon-select',
     groupByCategory = true,
     includeComments = true,
   } = options;
@@ -466,14 +470,14 @@ function kebabCase(str: string): string {
  * CLI tool for token conversion
  * 
  * Usage:
- *   npx @native-select/tokens import figma tokens.json --output theme.css
- *   npx @native-select/tokens import adobe-xd design.json --output vars.css
+ *   npx @smilodon/tokens import figma tokens.json --output theme.css
+ *   npx @smilodon/tokens import adobe-xd design.json --output vars.css
  */
 export async function cli(args: string[]): Promise<void> {
   const [command, source, inputFile, ...flags] = args;
   
   if (command !== 'import') {
-    console.error('Usage: npx @native-select/tokens import <source> <file> [--output file.css]');
+    console.error('Usage: npx @smilodon/tokens import <source> <file> [--output file.css]');
     process.exit(1);
   }
   

@@ -1,6 +1,6 @@
 {
-  "name": "@native-select/core",
-  "version": "0.0.1",
+  "name": "@smilodon/core",
+  "version": "1.0.0",
   "description": "High-performance native select component with extreme-scale virtualization",
   "type": "module",
   "main": "./dist/index.cjs",

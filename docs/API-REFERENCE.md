@@ -1,6 +1,6 @@
 # API Reference
 
-Complete API documentation for `@native-select` packages.
+Complete API documentation for `@smilodon` packages.
 
 ---
 
@@ -29,7 +29,7 @@ Web Component providing the base select functionality.
 #### Usage
 
 ```typescript
-import { NativeSelectElement } from '@native-select/core';
+import { NativeSelectElement } from '@smilodon/core';
 
 customElements.define('native-select', NativeSelectElement);
 ```
@@ -160,7 +160,7 @@ Core virtualization engine.
 #### Constructor
 
 ```typescript
-import { Virtualizer } from '@native-select/core';
+import { Virtualizer } from '@smilodon/core';
 
 const virtualizer = new Virtualizer<MyItem>(container, {
   items: myItems,
@@ -235,7 +235,7 @@ Manages background workers for heavy computations.
 #### Constructor
 
 ```typescript
-import { WorkerManager } from '@native-select/core';
+import { WorkerManager } from '@smilodon/core';
 
 const workerManager = new WorkerManager({
   maxWorkers: 4,
@@ -307,7 +307,7 @@ Performance monitoring and metrics collection.
 #### Usage
 
 ```typescript
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 const telemetry = getTelemetry();
 ```
@@ -383,7 +383,7 @@ interface TelemetryMetrics {
 #### Example: Performance Profiling
 
 ```typescript
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 function ProfiledSelect() {
   const telemetry = getTelemetry();
@@ -413,7 +413,7 @@ CSP-compliant security utilities.
 Configure HTML sanitization for templates.
 
 ```typescript
-import { setHTMLSanitizer } from '@native-select/core';
+import { setHTMLSanitizer } from '@smilodon/core';
 import DOMPurify from 'dompurify';
 
 setHTMLSanitizer({
@@ -435,7 +435,7 @@ function setHTMLSanitizer(sanitizer: HTMLSanitizer): void;
 Sanitize HTML string (uses configured sanitizer).
 
 ```typescript
-import { sanitizeHTML } from '@native-select/core';
+import { sanitizeHTML } from '@smilodon/core';
 
 const clean = sanitizeHTML('<script>alert("XSS")</script>');
 // Returns: "" (or sanitized output if DOMPurify configured)
@@ -446,7 +446,7 @@ const clean = sanitizeHTML('<script>alert("XSS")</script>');
 Create DOM element safely.
 
 ```typescript
-import { createElement } from '@native-select/core';
+import { createElement } from '@smilodon/core';
 
 const div = createElement('div', {
   className: 'my-class',
@@ -467,7 +467,7 @@ function createElement<K extends keyof HTMLElementTagNameMap>(
 Escape HTML special characters.
 
 ```typescript
-import { escapeHTML } from '@native-select/core';
+import { escapeHTML } from '@smilodon/core';
 
 const safe = escapeHTML('<script>alert("XSS")</script>');
 // Returns: "&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;"
@@ -478,7 +478,7 @@ const safe = escapeHTML('<script>alert("XSS")</script>');
 Detect runtime environment capabilities.
 
 ```typescript
-import { detectEnvironment } from '@native-select/core';
+import { detectEnvironment } from '@smilodon/core';
 
 const env = detectEnvironment();
 console.log('Can use workers:', env.canUseWorkers);
@@ -506,7 +506,7 @@ interface Environment {
 Check specific CSP features.
 
 ```typescript
-import { CSPFeatures } from '@native-select/core';
+import { CSPFeatures } from '@smilodon/core';
 
 if (CSPFeatures.hasEval()) {
   // Eval available
@@ -536,7 +536,7 @@ class CSPFeatures {
 Set CSS custom properties (CSP-safe).
 
 ```typescript
-import { setCustomProperties } from '@native-select/core';
+import { setCustomProperties } from '@smilodon/core';
 
 setCustomProperties(element, {
   '--ns-item-height': '50px',
@@ -549,7 +549,7 @@ setCustomProperties(element, {
 Apply CSS classes (CSP-safe).
 
 ```typescript
-import { applyClasses } from '@native-select/core';
+import { applyClasses } from '@smilodon/core';
 
 applyClasses(element, ['selected', 'active']);
 ```
@@ -559,7 +559,7 @@ applyClasses(element, ['selected', 'active']);
 Inject styles into shadow DOM.
 
 ```typescript
-import { injectShadowStyles } from '@native-select/core';
+import { injectShadowStyles } from '@smilodon/core';
 
 const shadowRoot = element.attachShadow({ mode: 'open' });
 injectShadowStyles(shadowRoot);
@@ -570,7 +570,7 @@ injectShadowStyles(shadowRoot);
 Check if element has overflow:hidden ancestor.
 
 ```typescript
-import { hasOverflowHiddenAncestor } from '@native-select/core';
+import { hasOverflowHiddenAncestor } from '@smilodon/core';
 
 if (hasOverflowHiddenAncestor(selectElement)) {
   // Use fixed positioning or portal
@@ -589,8 +589,8 @@ React wrapper for NativeSelectElement.
 #### Import
 
 ```typescript
-import { NativeSelect } from '@native-select/react';
-import type { NativeSelectProps } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
+import type { NativeSelectProps } from '@smilodon/react';
 ```
 
 #### Props
@@ -632,7 +632,7 @@ interface NativeSelectProps<T = any> {
 #### Example
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 import { useRef, useState } from 'react';
 
 function MySelect() {
@@ -693,7 +693,7 @@ Vue wrapper for NativeSelectElement.
 
 ```vue
 <script setup>
-import { NativeSelect } from '@native-select/vue';
+import { NativeSelect } from '@smilodon/vue';
 </script>
 ```
 
@@ -743,7 +743,7 @@ interface NativeSelectProps<T = any> {
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { NativeSelect } from '@native-select/vue';
+import { NativeSelect } from '@smilodon/vue';
 
 const selectRef = ref<InstanceType<typeof NativeSelect>>();
 const selectedIndices = ref<number[]>([]);
@@ -780,7 +780,7 @@ Svelte wrapper for NativeSelectElement.
 
 ```svelte
 <script>
-  import { NativeSelect } from '@native-select/svelte';
+  import { NativeSelect } from '@smilodon/svelte';
 </script>
 ```
 
@@ -815,7 +815,7 @@ interface NativeSelectProps<T = any> {
 
 ```svelte
 <script lang="ts">
-  import { NativeSelect } from '@native-select/svelte';
+  import { NativeSelect } from '@smilodon/svelte';
   
   let selectRef: any;
   let selectedIndices: number[] = [];
@@ -851,12 +851,12 @@ interface NativeSelectProps<T = any> {
 
 ## Angular Adapter
 
-Angular component wrapper for `@native-select/core`.
+Angular component wrapper for `@smilodon/core`.
 
 ### Installation
 
 ```bash
-npm install @native-select/core @native-select/angular
+npm install @smilodon/core @smilodon/angular
 ```
 
 ### Module Import
@@ -864,7 +864,7 @@ npm install @native-select/core @native-select/angular
 ```typescript
 // app.module.ts
 import { NgModule } from '@angular/core';
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 
 @NgModule({
   imports: [
@@ -947,7 +947,7 @@ this.selectRef.scrollToIndex(10);
 ```typescript
 // app.component.ts
 import { Component, ViewChild } from '@angular/core';
-import { NativeSelectComponent } from '@native-select/angular';
+import { NativeSelectComponent } from '@smilodon/angular';
 
 @Component({
   selector: 'app-root',
@@ -1065,7 +1065,7 @@ interface HTMLSanitizer {
 import type {
   NativeSelectProps,
   NativeSelectElement
-} from '@native-select/react';
+} from '@smilodon/react';
 
 // Component props
 const props: NativeSelectProps<MyItem> = {
@@ -1080,7 +1080,7 @@ const ref = useRef<NativeSelectElement>(null);
 #### Vue
 
 ```typescript
-import type { NativeSelectProps } from '@native-select/vue';
+import type { NativeSelectProps } from '@smilodon/vue';
 
 // Component props
 interface Props extends NativeSelectProps<MyItem> {
@@ -1091,7 +1091,7 @@ interface Props extends NativeSelectProps<MyItem> {
 #### Svelte
 
 ```typescript
-import type { NativeSelectProps } from '@native-select/svelte';
+import type { NativeSelectProps } from '@smilodon/svelte';
 
 // Component props
 let props: NativeSelectProps<MyItem> = {
@@ -1102,7 +1102,7 @@ let props: NativeSelectProps<MyItem> = {
 #### Angular
 
 ```typescript
-import type { NativeSelectComponent } from '@native-select/angular';
+import type { NativeSelectComponent } from '@smilodon/angular';
 
 // Component reference
 @ViewChild(NativeSelectComponent) select!: NativeSelectComponent<MyItem>;

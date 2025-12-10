@@ -10,7 +10,7 @@
 
 ### 1. Project Name Update
 
-**Previous:** `@native-select`  
+**Previous:** `@smilodon`  
 **Current:** `Smilodon`
 
 All compliance documentation has been updated to reflect the correct project name:
@@ -114,7 +114,7 @@ The addition of Angular support has been reviewed for:
 All compliance documentation now references the correct project contact domains:
 
 **Previous (Incorrect):**
-- `@native-select.dev` email domains
+- `@smilodon.dev` email domains
 - `native-select/native-select` GitHub repository
 - `https://native-select.dev` websites
 
@@ -148,7 +148,7 @@ All compliance documentation now references the correct project contact domains:
 
 ### For Development Teams
 1. Review updated compliance documentation at `/docs/compliance/`
-2. Update any internal references from `@native-select` to `Smilodon`
+2. Update any internal references from `@smilodon` to `Smilodon`
 3. Note Angular support availability for framework selection
 
 ### For Security/Compliance Teams
@@ -190,7 +190,7 @@ All compliance documentation now references the correct project contact domains:
 
 ## Verification Checklist
 
-- [x] All occurrences of `@native-select` in compliance docs updated to `Smilodon`
+- [x] All occurrences of `@smilodon` in compliance docs updated to `Smilodon`
 - [x] Angular added to framework support lists
 - [x] Typosquatting examples updated (removed `native-selectt`)
 - [x] SBOM package references corrected

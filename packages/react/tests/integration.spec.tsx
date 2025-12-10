@@ -11,21 +11,21 @@ describe('NativeSelect React Integration', () => {
 
   beforeAll(async () => {
     // Ensure custom element is registered
-    if (!customElements.get('native-select')) {
+    if (!customElements.get('smilodon-select')) {
       const module = await import('@native-select/core');
-      customElements.define('native-select', module.NativeSelectElement);
+      customElements.define('smilodon-select', module.NativeSelectElement);
     }
   });
 
   it('should render native-select element', () => {
     const { container } = render(<NativeSelect items={testItems} />);
-    const element = container.querySelector('native-select');
+    const element = container.querySelector('smilodon-select');
     expect(element).toBeTruthy();
   });
 
   it('should sync items prop to element', async () => {
     const { container } = render(<NativeSelect items={testItems} />);
-    const element = container.querySelector('native-select') as any;
+    const element = container.querySelector('smilodon-select') as any;
     
     await waitFor(() => {
       expect(element?.items).toBeDefined();
@@ -35,7 +35,7 @@ describe('NativeSelect React Integration', () => {
 
   it('should handle multi prop', async () => {
     const { container } = render(<NativeSelect items={testItems} multi={true} />);
-    const element = container.querySelector('native-select') as any;
+    const element = container.querySelector('smilodon-select') as any;
     
     await waitFor(() => {
       expect(element?.multi).toBe(true);
@@ -51,7 +51,7 @@ describe('NativeSelect React Integration', () => {
     const { container } = render(
       <NativeSelect items={testItems} onSelect={handleSelect} />
     );
-    const element = container.querySelector('native-select') as any;
+    const element = container.querySelector('smilodon-select') as any;
 
     await waitFor(() => expect(element?.items).toBeDefined());
 
@@ -83,7 +83,7 @@ describe('NativeSelect React Integration', () => {
     };
 
     const { container } = render(<TestComponent />);
-    const element = container.querySelector('native-select');
+    const element = container.querySelector('smilodon-select');
     
     expect(element).toBeTruthy();
   });
@@ -102,7 +102,7 @@ describe('NativeSelect React Integration', () => {
 
   it('should update when items prop changes', async () => {
     const { container, rerender } = render(<NativeSelect items={testItems} />);
-    const element = container.querySelector('native-select') as any;
+    const element = container.querySelector('smilodon-select') as any;
 
     await waitFor(() => {
       expect(element?.items.length).toBe(100);

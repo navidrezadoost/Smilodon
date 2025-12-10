@@ -1,7 +1,7 @@
 {
-  "name": "@native-select/react",
-  "version": "0.0.1",
-  "description": "React adapter for @native-select/core",
+  "name": "@smilodon/react",
+  "version": "1.0.0",
+  "description": "React adapter for @smilodon/core - Production-ready accessible select component",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -18,28 +18,45 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c && tsc --emitDeclarationOnly --outDir dist/types",
+    "build": "tsc --declaration --emitDeclarationOnly --outDir dist/types && vite build && node scripts/cleanup-types.js",
     "size": "gzip -c dist/index.js | wc -c"
   },
   "peerDependencies": {
-    "@native-select/core": "^0.0.1",
+    "@smilodon/core": "^1.0.0",
     "react": ">=16.8.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.6",
     "@types/react": "^18.2.0",
-    "rollup": "^4.9.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "react": "^18.2.0",
     "typescript": "^5.6.2",
-    "react": "^18.2.0"
+    "vite": "^5.4.21"
   },
   "keywords": [
     "react",
     "select",
     "dropdown",
-    "virtualization"
+    "combobox",
+    "autocomplete",
+    "searchable",
+    "multi-select",
+    "virtualization",
+    "infinite-scroll",
+    "accessible",
+    "wcag",
+    "aria",
+    "typescript",
+    "web-components"
   ],
   "license": "MIT",
-  "sideEffects": false
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/smilodon.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/smilodon/issues"
+  },
+  "homepage": "https://github.com/yourusername/smilodon#readme"
 }

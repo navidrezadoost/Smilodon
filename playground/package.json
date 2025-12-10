@@ -1,22 +1,26 @@
 {
-  "name": "@native-select/playground",
+  "name": "@smilodon/playground",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:react": "vite --config vite.config.react.ts",
+    "dev:vue": "vite --config vite.config.vue.ts",
+    "dev:svelte": "vite --config vite.config.svelte.ts",
+    "dev:angular": "vite --config vite.config.angular.ts",
+    "dev:vanilla": "vite --config vite.config.vanilla.ts",
+    "dev:all": "concurrently \"npm:dev:react\" \"npm:dev:vue\" \"npm:dev:svelte\" \"npm:dev:angular\" \"npm:dev:vanilla\"",
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@native-select/core": "workspace:*",
-    "@native-select/react": "workspace:*",
-    "@native-select/vue": "workspace:*",
-    "@native-select/svelte": "workspace:*"
+    "@smilodon/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
     "monaco-editor": "^0.45.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.8"

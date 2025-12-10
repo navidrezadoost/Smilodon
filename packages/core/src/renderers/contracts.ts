@@ -34,8 +34,8 @@ export function renderTemplate(container: HTMLElement, items: unknown[], optionT
       frag.appendChild(wrap);
       continue;
     }
-    // Allow override if developer sets data-native-select-handled="true"
-    if (!el.hasAttribute('data-native-select-handled')) {
+    // Allow override if developer sets data-smilodon-handled="true"
+    if (!el.hasAttribute('data-smilodon-handled')) {
       el.setAttribute('data-selectable', '');
       el.setAttribute('data-index', String(i));
     }

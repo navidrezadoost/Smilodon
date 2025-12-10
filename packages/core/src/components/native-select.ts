@@ -228,7 +228,17 @@ export class NativeSelectElement extends HTMLElement {
     }
     this._activeIndex = index;
     this.render();
-    this._emit('select', { item, index, multi: this._multi });
+    
+    // Emit with all required fields
+    const selected = this._selectedSet.has(index);
+    this._emit('select', { 
+      item, 
+      index, 
+      value: (item as any)?.value ?? item,
+      label: (item as any)?.label ?? String(item),
+      selected,
+      multi: this._multi 
+    });
     this._announce(`Selected ${String(item)}`);
   }
 
@@ -325,4 +335,4 @@ export class NativeSelectElement extends HTMLElement {
   }
 }
 
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);

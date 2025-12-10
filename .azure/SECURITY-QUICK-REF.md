@@ -23,7 +23,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
 
 ### 1. Basic Usage (Safe by Default)
 ```typescript
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 // ✅ Safe - no user HTML
 <NativeSelect 
@@ -35,7 +35,7 @@ import { NativeSelect } from '@native-select/react';
 ### 2. With HTML Templates (Add Sanitizer)
 ```typescript
 import DOMPurify from 'dompurify';
-import { setHTMLSanitizer } from '@native-select/core';
+import { setHTMLSanitizer } from '@smilodon/core';
 
 // ✅ One-time setup
 setHTMLSanitizer({
@@ -51,7 +51,7 @@ setHTMLSanitizer({
 
 ### 3. Check Environment
 ```typescript
-import { detectEnvironment } from '@native-select/core';
+import { detectEnvironment } from '@smilodon/core';
 
 const env = detectEnvironment();
 console.log('Workers:', env.canUseWorkers);
@@ -65,7 +65,7 @@ console.log('Sandboxed:', env.isSandboxed);
 
 ### Safe Styling
 ```typescript
-import { setCustomProperties, applyClasses } from '@native-select/core';
+import { setCustomProperties, applyClasses } from '@smilodon/core';
 
 // ✅ Good
 setCustomProperties(el, { '--color': 'red' });
@@ -78,7 +78,7 @@ el.setAttribute('style', 'color: red');
 
 ### Safe Element Creation
 ```typescript
-import { createElement } from '@native-select/core';
+import { createElement } from '@smilodon/core';
 
 // ✅ Good
 const div = createElement('div', {
@@ -92,7 +92,7 @@ div.innerHTML = `<div onclick="alert(1)">${userInput}</div>`;
 
 ### Overflow Detection
 ```typescript
-import { hasOverflowHiddenAncestor } from '@native-select/core';
+import { hasOverflowHiddenAncestor } from '@smilodon/core';
 
 if (hasOverflowHiddenAncestor(select)) {
   select.setAttribute('strategy', 'fixed');

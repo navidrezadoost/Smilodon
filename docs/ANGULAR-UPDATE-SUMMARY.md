@@ -41,7 +41,7 @@ Added comprehensive Angular support documentation across all Smilodon documentat
 #### `/README.md`
 - ✅ Updated features list to mention Angular
 - ✅ Added Angular to SSR compatibility list
-- ✅ Added `@native-select/angular` package to packages table
+- ✅ Added `@smilodon/angular` package to packages table
 - ✅ Created complete Angular quick start section with:
   - Installation instructions
   - Module setup
@@ -89,7 +89,7 @@ All compliance files already updated with Angular support:
 
 ### Package Information
 
-**Package Name:** `@native-select/angular`  
+**Package Name:** `@smilodon/angular`  
 **Bundle Size:** +892 B (on top of 6.6KB core)  
 **Angular Version:** 14.0.0+  
 **TypeScript:** Full type support included
@@ -239,11 +239,11 @@ All compliance files already updated with Angular support:
 
 | Framework | Status | Package | Documentation |
 |-----------|--------|---------|---------------|
-| React | ✅ Full Support | `@native-select/react` | ✅ Complete |
-| Vue 3 | ✅ Full Support | `@native-select/vue` | ✅ Complete |
-| Svelte | ✅ Full Support | `@native-select/svelte` | ✅ Complete |
-| **Angular** | ✅ **Full Support** | `@native-select/angular` | ✅ **Complete** |
-| Vanilla JS | ✅ Full Support | `@native-select/core` | ✅ Complete |
+| React | ✅ Full Support | `@smilodon/react` | ✅ Complete |
+| Vue 3 | ✅ Full Support | `@smilodon/vue` | ✅ Complete |
+| Svelte | ✅ Full Support | `@smilodon/svelte` | ✅ Complete |
+| **Angular** | ✅ **Full Support** | `@smilodon/angular` | ✅ **Complete** |
+| Vanilla JS | ✅ Full Support | `@smilodon/core` | ✅ Complete |
 
 ---
 

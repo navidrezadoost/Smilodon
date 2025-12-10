@@ -1,6 +1,6 @@
 # Performance Tuning Guide
 
-Optimize `@native-select` for maximum performance.
+Optimize `@smilodon` for maximum performance.
 
 ---
 
@@ -293,7 +293,7 @@ Don't use workers for:
 ### Basic Worker Usage
 
 ```tsx
-import { WorkerManager } from '@native-select/core';
+import { WorkerManager } from '@smilodon/core';
 import { useEffect, useState } from 'react';
 
 function WorkerSelect() {
@@ -518,11 +518,11 @@ Only import what you need:
 
 ```tsx
 // ❌ Bad: Imports everything
-import * as NativeSelect from '@native-select/core';
+import * as NativeSelect from '@smilodon/core';
 
 // ✅ Good: Tree-shakeable imports
-import { NativeSelect } from '@native-select/react';
-import { WorkerManager, getTelemetry } from '@native-select/core';
+import { NativeSelect } from '@smilodon/react';
+import { WorkerManager, getTelemetry } from '@smilodon/core';
 ```
 
 ### Bundle Analysis
@@ -548,7 +548,7 @@ npm install -D rollup-plugin-visualizer
 
 ```tsx
 // Lazy load select component
-const NativeSelect = lazy(() => import('@native-select/react'));
+const NativeSelect = lazy(() => import('@smilodon/react'));
 
 function App() {
   return (
@@ -567,7 +567,7 @@ let WorkerManager: any;
 
 async function enableWorkers() {
   if (!WorkerManager) {
-    const module = await import('@native-select/core');
+    const module = await import('@smilodon/core');
     WorkerManager = module.WorkerManager;
   }
   return new WorkerManager();
@@ -585,7 +585,7 @@ const filtered = await worker.filter(items, query);
 ### Built-in Telemetry
 
 ```tsx
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 function ProfiledSelect() {
   const telemetry = getTelemetry();
@@ -614,7 +614,7 @@ function ProfiledSelect() {
 ### Custom Performance Marks
 
 ```tsx
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 const telemetry = getTelemetry();
 
@@ -676,7 +676,7 @@ observer.observe({ entryTypes: ['longtask'] });
 
 **Diagnosis**:
 ```typescript
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 const telemetry = getTelemetry();
 telemetry.startRecording();
@@ -760,7 +760,7 @@ ls -lh dist/*.js | awk '{print $5, $9}'
 
 ```bash
 # Find duplicates
-npm ls @native-select/core
+npm ls @smilodon/core
 ```
 
 ---

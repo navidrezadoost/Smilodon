@@ -1,11 +1,18 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react",
-    "outDir": "./dist",
+    "jsx": "react-jsx",
+    "outDir": "./dist/types",
     "declaration": true,
-    "declarationDir": "./dist/types"
+    "declarationDir": "./dist/types",
+    "declarationMap": true,
+    "module": "ES2020",
+    "target": "ES2020",
+    "skipLibCheck": true,
+    "paths": {
+      "@smilodon/core": ["../core/src/index.ts"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "../core/**", "../../node_modules", "examples"]
 }

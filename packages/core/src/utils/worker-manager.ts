@@ -273,11 +273,32 @@ export class WorkerManager {
         return items.map((item, i) => fn(item, i)) as T;
       }
       case 'search': {
-        const { items, query } = payload as SearchRequest;
+        const { items, query, fuzzy } = payload as SearchRequest;
         const lowerQuery = query.toLowerCase();
-        return items.filter(item => 
-          String(item).toLowerCase().includes(lowerQuery)
-        ) as T;
+        const results: { item: any; index: number }[] = [];
+        
+        items.forEach((item, index) => {
+          const itemStr = String(item).toLowerCase();
+          if (fuzzy) {
+            // Simple fuzzy match - check if all query chars appear in order
+            let queryIndex = 0;
+            for (let i = 0; i < itemStr.length && queryIndex < lowerQuery.length; i++) {
+              if (itemStr[i] === lowerQuery[queryIndex]) {
+                queryIndex++;
+              }
+            }
+            if (queryIndex === lowerQuery.length) {
+              results.push({ item, index });
+            }
+          } else {
+            // Exact substring match
+            if (itemStr.includes(lowerQuery)) {
+              results.push({ item, index });
+            }
+          }
+        });
+        
+        return results as T;
       }
       case 'filter': {
         const { items, predicate } = payload as FilterRequest;

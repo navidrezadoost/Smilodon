@@ -11,11 +11,11 @@ import { NativeSelectComponent } from '../src/native-select.component';
   template: `
     <div class="example-container">
       <h2>Basic Select</h2>
-      <native-select
+      <smilodon-select
         [items]="fruits"
         [placeholder]="'Select a fruit'"
         (select)="onFruitSelect($event)">
-      </native-select>
+      </smilodon-select>
       
       <div *ngIf="selectedFruit">
         Selected: {{ selectedFruit.label }}
@@ -57,12 +57,12 @@ export class BasicExampleComponent {
   template: `
     <div class="example-container">
       <h2>Multi-Select</h2>
-      <native-select
+      <smilodon-select
         [items]="items"
         [multiple]="true"
         [selectedIndices]="selectedIndices"
         (select)="onSelect($event)">
-      </native-select>
+      </smilodon-select>
       
       <div *ngIf="selectedItems.length > 0">
         <h3>Selected Items ({{ selectedItems.length }}):</h3>
@@ -102,14 +102,14 @@ export class MultiSelectExampleComponent {
   template: `
     <div class="example-container">
       <h2>Virtual Scrolling ({{ largeDataset.length }} items)</h2>
-      <native-select
+      <smilodon-select
         [items]="largeDataset"
         [virtualized]="true"
         [estimatedItemHeight]="48"
         [buffer]="10"
         [searchable]="true"
         (select)="onSelect($event)">
-      </native-select>
+      </smilodon-select>
       
       <div *ngIf="selectedItem">
         Selected: {{ selectedItem.label }}

@@ -478,8 +478,8 @@ if (!isSupported) {
 **For Developers:**
 ```javascript
 // Provide fallback component
-import NativeSelect from '@native-select/core';
-import LegacySelect from '@native-select/legacy'; // Simplified version
+import NativeSelect from '@smilodon/core';
+import LegacySelect from '@smilodon/legacy'; // Simplified version
 
 const SelectComponent = isModernBrowser() ? NativeSelect : LegacySelect;
 ```
@@ -604,7 +604,7 @@ Patch Release
 ### 10.3 Contact
 
 **Browser compatibility issues:**  
-Email: support@native-select.dev  
+Email: support@smilodon.dev  
 GitHub: https://github.com/native-select/native-select/issues
 
 ---

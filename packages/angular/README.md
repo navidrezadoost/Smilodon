@@ -1,355 +1,187 @@
-# @native-select/angular
+# @smilodon/angular
 
-Angular adapter for [@native-select/core](../core) - High-performance select component with virtual scrolling.
+Production-ready, accessible select component for Angular applications. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
 ## Features
 
-- 🚀 **High Performance**: Virtual scrolling for large datasets (100K+ items)
-- 📦 **Tiny Bundle**: Only +892 bytes on top of core (6.6KB)
-- 🎯 **Angular Integration**: Full TypeScript support with reactive bindings
-- ♿ **Accessible**: WCAG 2.2 Level AA compliant
-- 🔒 **Secure**: CSP-compliant, XSS prevention
-- 📱 **SSR Compatible**: Works with Angular Universal
+- ✨ **Single & Multi-Select** - Choose one or multiple options
+- 🔍 **Searchable** - Filter options with built-in or custom search
+- ♿ **Fully Accessible** - WCAG 2.1 AAA compliant
+- ⚡ **Virtual Scrolling** - Handle 100k+ options smoothly
+- 📜 **Infinite Scroll** - Load data progressively
+- 👥 **Grouped Options** - Organize options into categories
+- 🎨 **Customizable** - Style with CSS variables or custom themes
+- 📦 **Small Bundle** - Optimized for production
+- 🔧 **TypeScript** - Full type safety included
+- 📋 **Angular Forms** - Full ControlValueAccessor support
+- 🎯 **Standalone** - Works with or without NgModule
 
 ## Installation
 
 ```bash
-npm install @native-select/core @native-select/angular
+npm install @smilodon/angular @smilodon/core
 ```
 
 ## Quick Start
 
-### Module Import
-
-```typescript
-// app.module.ts
-import { NgModule } from '@angular/core';
-import { NativeSelectModule } from '@native-select/angular';
-
-@NgModule({
-  imports: [NativeSelectModule],
-  // ...
-})
-export class AppModule { }
-```
-
 ### Standalone Component (Angular 14+)
 
 ```typescript
-// app.component.ts
 import { Component } from '@angular/core';
-import { NativeSelectComponent } from '@native-select/angular';
+import { SelectComponent } from '@smilodon/angular';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NativeSelectComponent],
+  imports: [SelectComponent],
   template: `
-    <native-select
+    <smilodon-select
       [items]="items"
-      (select)="handleSelect($event)">
-    </native-select>
+      [(value)]="selectedValue"
+      placeholder="Select a fruit..."
+    ></smilodon-select>
   `
 })
 export class AppComponent {
   items = [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' },
-    { id: 3, label: 'Cherry' }
+    { value: '1', label: 'Apple' },
+    { value: '2', label: 'Banana' },
+    { value: '3', label: 'Cherry' },
   ];
-  
-  handleSelect(event: any) {
-    console.log('Selected:', event.items);
-  }
+
+  selectedValue: string | undefined;
 }
 ```
 
-## Basic Usage
+### With NgModule
 
 ```typescript
-import { Component } from '@angular/core';
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { SmilodonSelectModule } from '@smilodon/angular';
+import { AppComponent } from './app.component';
 
-@Component({
-  selector: 'app-example',
-  template: `
-    <native-select
-      [items]="items"
-      [multiple]="false"
-      [placeholder]="'Select a fruit'"
-      (select)="onSelect($event)">
-    </native-select>
-  `
+@NgModule({
+  declarations: [AppComponent],
+  imports: [BrowserModule, SmilodonSelectModule],
+  bootstrap: [AppComponent]
 })
-export class ExampleComponent {
-  items = [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' },
-    { id: 3, label: 'Cherry' }
-  ];
-  
-  onSelect(event: { indices: number[]; items: any[] }) {
-    console.log('Selected indices:', event.indices);
-    console.log('Selected items:', event.items);
-  }
-}
+export class AppModule { }
 ```
 
-## Multi-Select
+## Examples
+
+### Multi-Select
 
 ```typescript
 @Component({
+  selector: 'app-language-select',
+  standalone: true,
+  imports: [SelectComponent],
   template: `
-    <native-select
-      [items]="items"
+    <smilodon-select
+      [items]="languages"
+      [(value)]="selectedLanguages"
       [multiple]="true"
-      [selectedIndices]="selectedIndices"
-      (select)="onSelect($event)">
-    </native-select>
+      placeholder="Select languages..."
+    ></smilodon-select>
+
+    <p>Selected: {{ selectedLanguages | json }}</p>
   `
 })
-export class MultiSelectComponent {
-  items = [/* ... */];
-  selectedIndices: number[] = [];
-  
-  onSelect(event: any) {
-    this.selectedIndices = event.indices;
-  }
+export class LanguageSelectComponent {
+  languages = [
+    { value: 'js', label: 'JavaScript' },
+    { value: 'ts', label: 'TypeScript' },
+    { value: 'py', label: 'Python' },
+  ];
+
+  selectedLanguages: string[] = [];
 }
 ```
 
-## Virtual Scrolling (Large Datasets)
-
-```typescript
-@Component({
-  template: `
-    <native-select
-      [items]="largeDataset"
-      [virtualized]="true"
-      [estimatedItemHeight]="48"
-      [buffer]="10"
-      (select)="onSelect($event)">
-    </native-select>
-  `
-})
-export class LargeSelectComponent {
-  largeDataset = Array.from({ length: 100000 }, (_, i) => ({
-    id: i,
-    label: `Item ${i + 1}`
-  }));
-  
-  onSelect(event: any) {
-    console.log('Selected from 100K items:', event.items[0]);
-  }
-}
-```
-
-## API
-
-### Inputs
-
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `items` | `T[]` | `[]` | Array of items to display |
-| `selectedIndices` | `number[]` | `[]` | Currently selected item indices |
-| `multiple` | `boolean` | `false` | Enable multi-selection |
-| `virtualized` | `boolean` | `false` | Enable virtual scrolling |
-| `estimatedItemHeight` | `number` | `48` | Estimated height of each item (px) |
-| `buffer` | `number` | `5` | Extra items to render outside viewport |
-| `searchable` | `boolean` | `false` | Enable search/filter |
-| `placeholder` | `string` | `'Select...'` | Placeholder text |
-| `disabled` | `boolean` | `false` | Disable the select |
-| `placement` | `'top' \| 'bottom'` | `'bottom'` | Dropdown placement |
-
-### Outputs
-
-| Output | Event Type | Description |
-|--------|------------|-------------|
-| `select` | `{ indices: number[]; items: T[] }` | Emitted when selection changes |
-| `open` | `{ timestamp: number }` | Emitted when dropdown opens |
-| `close` | `{ timestamp: number }` | Emitted when dropdown closes |
-| `search` | `{ query: string }` | Emitted when search query changes |
-
-### Methods
-
-Access component methods via `@ViewChild`:
-
-```typescript
-@ViewChild(NativeSelectComponent) select!: NativeSelectComponent;
-
-// Methods
-this.select.open();                      // Open dropdown
-this.select.close();                     // Close dropdown
-this.select.setSelectedIndices([0, 1]);  // Set selection
-this.select.scrollToIndex(100);          // Scroll to item
-this.select.focus();                     // Focus element
-```
-
-## Advanced Examples
-
-### Reactive Forms Integration
+### Angular Forms Integration
 
 ```typescript
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { SelectComponent } from '@smilodon/angular';
 
 @Component({
+  selector: 'app-form',
+  standalone: true,
+  imports: [ReactiveFormsModule, SelectComponent],
   template: `
-    <form [formGroup]="form">
-      <native-select
-        [items]="items"
-        [selectedIndices]="selectedIndices"
-        (select)="onSelect($event)">
-      </native-select>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <smilodon-select
+        [items]="statuses"
+        formControlName="status"
+        placeholder="Select status..."
+      ></smilodon-select>
+
+      <button type="submit">Submit</button>
     </form>
   `
 })
 export class FormComponent {
   form: FormGroup;
-  selectedIndices: number[] = [];
-  
-  constructor(private fb: FormBuilder) {
-    this.form = this.fb.group({
-      selection: ['']
-    });
-  }
-  
-  onSelect(event: any) {
-    this.selectedIndices = event.indices;
-    this.form.patchValue({ selection: event.items[0]?.id });
-  }
-}
-```
 
-### TypeScript Generics
-
-```typescript
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-}
-
-@Component({
-  template: `<native-select [items]="products" (select)="onProductSelect($event)"></native-select>`
-})
-export class ProductSelectComponent {
-  @ViewChild(NativeSelectComponent) select!: NativeSelectComponent<Product>;
-  
-  products: Product[] = [
-    { id: 1, name: 'Product 1', price: 99.99 }
+  statuses = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'published', label: 'Published' },
   ];
-  
-  onProductSelect(event: { items: Product[] }) {
-    const product = event.items[0];
-    console.log(`Selected: ${product.name} - $${product.price}`);
+
+  constructor(private fb: FormBuilder) {
+    this.form = this.fb.group({ status: ['draft'] });
+  }
+
+  onSubmit(): void {
+    console.log('Form submitted:', this.form.value);
   }
 }
 ```
 
-### OnPush Change Detection
+## API Reference
 
-```typescript
-import { ChangeDetectionStrategy } from '@angular/core';
+### Inputs
 
-@Component({
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<native-select [items]="items" (select)="onSelect($event)"></native-select>`
-})
-export class OptimizedComponent {
-  items = [/* ... */];
-  
-  onSelect(event: any) {
-    // Component uses OnPush for better performance
-  }
-}
-```
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `items` | `SelectItem[]` | `[]` | Array of selectable items |
+| `groupedItems` | `GroupedItem[]` | `undefined` | Grouped items array |
+| `value` | `string \| number \| Array` | `undefined` | Selected value(s) |
+| `multiple` | `boolean` | `false` | Enable multi-select |
+| `searchable` | `boolean` | `false` | Enable search/filter |
+| `placeholder` | `string` | `''` | Placeholder text |
+| `disabled` | `boolean` | `false` | Disable the select |
+| `virtualized` | `boolean` | `true` | Enable virtual scrolling |
+
+### Outputs
+
+| Output | Payload | Description |
+|--------|---------|-------------|
+| `changeEvent` | `{ value, selectedItems }` | Value changed |
+| `selectEvent` | `{ item, index }` | Item selected |
+| `searchEvent` | `{ query }` | Search query changed |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `open()` | Open the dropdown |
+| `close()` | Close the dropdown |
+| `clear()` | Clear selection |
 
 ## Styling
 
-### CSS Variables
-
-```scss
-native-select {
-  --ns-bg-color: #ffffff;
-  --ns-text-color: #333333;
-  --ns-border-color: #cccccc;
-  --ns-hover-bg-color: #f5f5f5;
-  --ns-selected-bg-color: #e3f2fd;
-  --ns-focus-ring-color: #2196f3;
-  --ns-border-radius: 4px;
-  --ns-padding: 8px;
+```css
+enhanced-select {
+  --select-border-color: #d1d5db;
+  --select-focus-border-color: #3b82f6;
+  --select-background: white;
 }
 ```
 
-### Component-Specific Styles
-
-```typescript
-@Component({
-  styles: [`
-    native-select {
-      --ns-bg-color: #f8f9fa;
-      --ns-border-radius: 8px;
-    }
-  `]
-})
-```
-
-## Testing
-
-```typescript
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NativeSelectModule } from '@native-select/angular';
-
-describe('MyComponent', () => {
-  let fixture: ComponentFixture<MyComponent>;
-  
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [MyComponent],
-      imports: [NativeSelectModule]
-    }).compileComponents();
-    
-    fixture = TestBed.createComponent(MyComponent);
-  });
-  
-  it('should emit select event', () => {
-    const component = fixture.componentInstance;
-    spyOn(component, 'onSelect');
-    
-    // Trigger selection
-    const event = { indices: [0], items: [component.items[0]] };
-    component.onSelect(event);
-    
-    expect(component.onSelect).toHaveBeenCalledWith(event);
-  });
-});
-```
-
-## SSR (Angular Universal)
-
-Works out of the box with Angular Universal. No special configuration needed.
-
-## Browser Support
-
-- Chrome 90+
-- Firefox 88+
-- Safari 14.1+
-- Edge 90+
-
-## Performance
-
-- **Initial render**: < 50ms (1K items)
-- **Virtual scrolling**: 60 FPS @ 100K items
-- **Memory**: ~10MB for 100K items
-- **Bundle size**: 6.6KB core + 892B adapter
-
-## Resources
-
-- [Full Documentation](../../docs/ANGULAR-SUPPORT.md)
-- [API Reference](../../docs/API-REFERENCE.md#angular-adapter)
-- [Getting Started](../../docs/GETTING-STARTED.md#angular)
-- [GitHub Issues](https://github.com/navidrezadoost/smilodon/issues)
-
 ## License
 
-MIT © Smilodon Team
+MIT © [Navid Rezadoost](https://github.com/navidrezadoost)

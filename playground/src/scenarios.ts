@@ -39,16 +39,16 @@ export const scenarios: Scenario[] = [
     },
     code: {
       typescript: `// Import the library
-import { NativeSelectElement } from '@native-select/core';
+import { NativeSelectElement } from '@smilodon/core';
 
 // Register custom element
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);
 
 // Create container
 const app = document.getElementById('app');
 
 // Create select element
-const select = document.createElement('native-select');
+const select = document.createElement('smilodon-select');
 
 // Set items
 select.items = Array.from({ length: 100 }, (_, i) => ({
@@ -66,7 +66,7 @@ app.appendChild(select);
 
 console.log('✓ Basic select created with 100 items');
 `,
-      react: `import { NativeSelect } from '@native-select/react';
+      react: `import { NativeSelect } from '@smilodon/react';
 import { useState } from 'react';
 
 function App() {
@@ -116,9 +116,9 @@ root.render(<App />);
       memory: 3
     },
     code: {
-      typescript: `import { NativeSelectElement } from '@native-select/core';
+      typescript: `import { NativeSelectElement } from '@smilodon/core';
 
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);
 
 const app = document.getElementById('app');
 
@@ -127,7 +127,7 @@ const chipsContainer = document.createElement('div');
 chipsContainer.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;';
 
 // Create select
-const select = document.createElement('native-select');
+const select = document.createElement('smilodon-select');
 select.multi = true;
 select.items = Array.from({ length: 200 }, (_, i) => ({
   id: i,
@@ -189,9 +189,9 @@ console.log('✓ Multi-select with chips created');
       memory: 5
     },
     code: {
-      typescript: `import { NativeSelectElement } from '@native-select/core';
+      typescript: `import { NativeSelectElement } from '@smilodon/core';
 
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);
 
 const app = document.getElementById('app');
 
@@ -244,7 +244,7 @@ searchInput.placeholder = 'Search users...';
 searchInput.style.cssText = 'width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;';
 
 // Create select
-const select = document.createElement('native-select');
+const select = document.createElement('smilodon-select');
 select.items = [];
 select.estimatedItemHeight = 60;
 
@@ -324,9 +324,9 @@ app.appendChild(select);
       memory: 12
     },
     code: {
-      typescript: `import { NativeSelectElement } from '@native-select/core';
+      typescript: `import { NativeSelectElement } from '@smilodon/core';
 
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);
 
 const app = document.getElementById('app');
 
@@ -350,7 +350,7 @@ stats.innerHTML = \`
 \`;
 
 // Create select with performance tuning
-const select = document.createElement('native-select');
+const select = document.createElement('smilodon-select');
 select.items = items;
 select.estimatedItemHeight = 48;
 select.buffer = 15; // Increased buffer for smoother scrolling
@@ -407,9 +407,9 @@ console.log('✓ 50K item select initialized');
       memory: 18
     },
     code: {
-      typescript: `import { NativeSelectElement, WorkerManager } from '@native-select/core';
+      typescript: `import { NativeSelectElement, WorkerManager } from '@smilodon/core';
 
-customElements.define('native-select', NativeSelectElement);
+customElements.define('smilodon-select', NativeSelectElement);
 
 const app = document.getElementById('app');
 const worker = new WorkerManager({ maxWorkers: 4 });
@@ -447,7 +447,7 @@ controls.appendChild(filterInput);
 controls.appendChild(sortButton);
 
 // Create select
-const select = document.createElement('native-select');
+const select = document.createElement('smilodon-select');
 select.items = megaDataset.slice(0, 10000); // Start with first 10K
 select.estimatedItemHeight = 48;
 select.buffer = 20;

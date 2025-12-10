@@ -8,19 +8,19 @@ Choose your framework:
 
 ```bash
 # React
-npm install @native-select/core @native-select/react
+npm install @smilodon/core @smilodon/react
 
 # Vue
-npm install @native-select/core @native-select/vue
+npm install @smilodon/core @smilodon/vue
 
 # Svelte
-npm install @native-select/core @native-select/svelte
+npm install @smilodon/core @smilodon/svelte
 
 # Angular
-npm install @native-select/core @native-select/angular
+npm install @smilodon/core @smilodon/angular
 
 # Vanilla JavaScript
-npm install @native-select/core
+npm install @smilodon/core
 ```
 
 ### Your First Select Component
@@ -28,7 +28,7 @@ npm install @native-select/core
 #### React
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function App() {
   const items = [
@@ -61,7 +61,7 @@ function App() {
 </template>
 
 <script setup>
-import { NativeSelect } from '@native-select/vue';
+import { NativeSelect } from '@smilodon/vue';
 
 const items = [
   { id: 1, label: 'Apple' },
@@ -81,7 +81,7 @@ function handleSelect({ indices, items }) {
 
 ```svelte
 <script>
-  import { NativeSelect } from '@native-select/svelte';
+  import { NativeSelect } from '@smilodon/svelte';
   
   const items = [
     { id: 1, label: 'Apple' },
@@ -108,7 +108,7 @@ function handleSelect({ indices, items }) {
 // app.module.ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NativeSelectModule } from '@native-select/angular';
+import { NativeSelectModule } from '@smilodon/angular';
 
 @NgModule({
   imports: [
@@ -153,7 +153,7 @@ export class AppComponent {
 <html>
 <head>
   <script type="module">
-    import { NativeSelectElement } from './node_modules/@native-select/core/dist/index.js';
+    import { NativeSelectElement } from './node_modules/@smilodon/core/dist/index.js';
     
     customElements.define('native-select', NativeSelectElement);
     
@@ -360,8 +360,8 @@ const StyledSelect = styled(NativeSelect)`
 ### Full Type Safety
 
 ```typescript
-import { NativeSelect } from '@native-select/react';
-import type { NativeSelectProps } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
+import type { NativeSelectProps } from '@smilodon/react';
 
 interface User {
   id: number;
@@ -438,7 +438,7 @@ const items = generateLargeDataset(10000);
 ### 4. Use Web Workers for Heavy Processing
 
 ```tsx
-import { WorkerManager } from '@native-select/core';
+import { WorkerManager } from '@smilodon/core';
 
 const worker = new WorkerManager();
 
@@ -487,7 +487,7 @@ useEffect(() => {
 4. Profile with Performance Monitor
 
 ```typescript
-import { getTelemetry } from '@native-select/core';
+import { getTelemetry } from '@smilodon/core';
 
 const telemetry = getTelemetry();
 console.log('Metrics:', telemetry.getMetrics());
@@ -510,7 +510,7 @@ console.log('Metrics:', telemetry.getMetrics());
 
 1. **Custom Renderers** - Full control over rendering
    ```typescript
-   import { OptionRenderer } from '@native-select/core';
+   import { OptionRenderer } from '@smilodon/core';
    
    class CustomRenderer implements OptionRenderer {
      render(item, index, helpers) {
@@ -528,7 +528,7 @@ console.log('Metrics:', telemetry.getMetrics());
 
 3. **Performance Telemetry** - Monitor metrics
    ```typescript
-   import { getTelemetry } from '@native-select/core';
+   import { getTelemetry } from '@smilodon/core';
    
    const telemetry = getTelemetry();
    telemetry.startRecording();
@@ -562,7 +562,7 @@ console.log('Metrics:', telemetry.getMetrics());
 
 - 💬 GitHub Discussions
 - 🐛 GitHub Issues
-- 📧 Email: support@native-select.dev
+- 📧 Email: support@smilodon.dev
 - 📖 Full Documentation: [docs.native-select.dev](https://docs.native-select.dev)
 
 **Still stuck?** Check the [Troubleshooting Guide](./TROUBLESHOOTING.md) or ask in Discussions!

@@ -46,7 +46,7 @@ This document provides comprehensive SOC2 Type II compliance documentation for t
 
 **Security Communication Channels:**
 - **Public:** GitHub Security Advisories (GHSA)
-- **Private:** security@native-select.dev
+- **Private:** security@smilodon.dev
 - **Emergency:** PGP-encrypted contact (key fingerprint: [TBD])
 
 **Disclosure Timeline:**
@@ -462,7 +462,7 @@ interface TelemetryData {
 
 **Data Collection Disclosure:**
 ```markdown
-@native-select Privacy Notice
+@smilodon Privacy Notice
 
 Data We DO NOT Collect:
 - Personal information (name, email, address)
@@ -544,7 +544,7 @@ Public Disclosure (as appropriate)
 ```
 
 **Notification Channels:**
-- Email: security@native-select.dev
+- Email: security@smilodon.dev
 - GitHub: Security Advisory
 - Website: Status banner
 - Social Media: @nativeselect (Twitter/X)
@@ -606,7 +606,7 @@ npm audit:
 
 **Last Audit Date:** December 7, 2025  
 **Auditor:** [Internal Security Team]  
-**Scope:** @native-select v1.0.0 (core + adapters)
+**Scope:** @smilodon v1.0.0 (core + adapters)
 
 **Test Results:**
 
@@ -652,12 +652,12 @@ All controls operating effectively as designed.
 ### Appendix A: Security Contacts
 
 **Primary Contact:**  
-Email: security@native-select.dev  
+Email: security@smilodon.dev  
 PGP Key: [Fingerprint TBD]  
 Response SLA: 24 hours
 
 **Secondary Contact:**  
-GitHub: @native-select/security-team  
+GitHub: @smilodon/security-team  
 Response SLA: 48 hours
 
 ### Appendix B: Compliance Certifications

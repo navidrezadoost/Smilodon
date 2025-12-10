@@ -1,7 +1,7 @@
 {
-  "name": "@native-select/vue",
-  "version": "0.0.1",
-  "description": "Vue 3 adapter for @native-select/core",
+  "name": "@smilodon/vue",
+  "version": "1.0.0",
+  "description": "Vue 3 adapter for @smilodon/core - Production-ready accessible select component",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -18,28 +18,47 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c && tsc --emitDeclarationOnly --outDir dist/types",
+    "build": "vue-tsc --declaration --emitDeclarationOnly --outDir dist/types && vite build && node scripts/cleanup-types.js",
     "size": "gzip -c dist/index.js | wc -c"
   },
   "peerDependencies": {
-    "@native-select/core": "^0.0.1",
-    "vue": ">=3.0.0"
+    "@smilodon/core": "^1.0.0",
+    "vue": "^3.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.6",
-    "rollup": "^4.9.0",
+    "@vitejs/plugin-vue": "^5.0.0",
     "typescript": "^5.6.2",
-    "vue": "^3.4.0"
+    "vite": "^5.4.21",
+    "vue": "^3.4.0",
+    "vue-tsc": "^2.2.12"
   },
   "keywords": [
     "vue",
     "vue3",
     "select",
     "dropdown",
-    "virtualization"
+    "combobox",
+    "autocomplete",
+    "searchable",
+    "multi-select",
+    "virtualization",
+    "infinite-scroll",
+    "accessible",
+    "wcag",
+    "aria",
+    "typescript",
+    "web-components",
+    "composition-api"
   ],
   "license": "MIT",
-  "sideEffects": false
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/smilodon.git",
+    "directory": "packages/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/smilodon/issues"
+  },
+  "homepage": "https://github.com/yourusername/smilodon#readme"
 }

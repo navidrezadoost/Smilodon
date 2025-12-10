@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanilla JS Demo - Smilodon</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 { color: #2196F3; }
+  </style>
+</head>
+<body>
+  <h1>Vanilla JS Demo</h1>
+  
+  <div>
+    <label for="fruit-select">Choose a fruit:</label>
+    <enhanced-select 
+      id="fruit-select" 
+      placeholder="Select a fruit">
+    </enhanced-select>
+  </div>
+  
+  <p id="selected-value"></p>
+
+  <script type="module">
+    import '@smilodon/core';
+
+    // Configure the select element
+    const select = document.getElementById('fruit-select');
+    const selectedValue = document.getElementById('selected-value');
+
+    const fruits = [
+      { value: 'apple', label: 'Apple' },
+      { value: 'banana', label: 'Banana' },
+      { value: 'cherry', label: 'Cherry' },
+      { value: 'orange', label: 'Orange' },
+      { value: 'grape', label: 'Grape' }
+    ];
+
+    // Use setItems method to configure the select
+    select.setItems(fruits);
+
+    // Listen for changes
+    select.addEventListener('change', (e) => {
+      console.log('Change event:', e.detail);
+      selectedValue.textContent = e.detail?.selectedValues?.[0] 
+        ? `Selected: ${e.detail.selectedValues[0]}` 
+        : '';
+    });
+  </script>
+</body>
+</html>

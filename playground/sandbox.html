@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sandbox - @native-select Playground</title>
+  <title>Sandbox - @smilodon Playground</title>
   <style>
     * {
       margin: 0;
@@ -103,12 +103,12 @@
           const startTime = performance.now();
           window.parent.postMessage({ type: 'execution-start' }, '*');
           
-          // Import @native-select modules
+          // Import @smilodon modules
           const modules = {
-            '@native-select/core': await import('@native-select/core'),
-            '@native-select/react': await import('@native-select/react'),
-            '@native-select/vue': await import('@native-select/vue'),
-            '@native-select/svelte': await import('@native-select/svelte')
+            '@smilodon/core': await import('@smilodon/core'),
+            '@smilodon/react': await import('@smilodon/react'),
+            '@smilodon/vue': await import('@smilodon/vue'),
+            '@smilodon/svelte': await import('@smilodon/svelte')
           };
           
           // Create execution context

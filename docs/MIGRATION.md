@@ -1,6 +1,6 @@
 # Migration Guides
 
-Migrate from popular select libraries to `@native-select`.
+Migrate from popular select libraries to `@smilodon`.
 
 ---
 
@@ -19,7 +19,7 @@ Migrate from popular select libraries to `@native-select`.
 
 ### Why Migrate?
 
-| Floating UI | @native-select |
+| Floating UI | @smilodon |
 |-------------|----------------|
 | 14 KB gzipped | **6.6 KB gzipped** ✅ |
 | Positioning only | **Full select component** ✅ |
@@ -73,10 +73,10 @@ function Select({ items }) {
 **Bundle size**: 14 KB + React code  
 **Performance**: O(n) rendering (all items)
 
-#### After (@native-select)
+#### After (@smilodon)
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function Select({ items }) {
   return (
@@ -98,7 +98,7 @@ function Select({ items }) {
 
 ```diff
 -import { useFloating, offset, flip, shift } from '@floating-ui/react';
-+import { NativeSelect } from '@native-select/react';
++import { NativeSelect } from '@smilodon/react';
 ```
 
 #### Step 2: Replace component
@@ -139,7 +139,7 @@ const { refs, floatingStyles } = useFloating({
 });
 ```
 
-**After** (@native-select):
+**After** (@smilodon):
 ```tsx
 <NativeSelect
   items={items}
@@ -162,7 +162,7 @@ import { createPortal } from 'react-dom';
 )}
 ```
 
-**After** (@native-select):
+**After** (@smilodon):
 ```tsx
 <NativeSelect items={items} portal={true} />
 ```
@@ -173,7 +173,7 @@ import { createPortal } from 'react-dom';
 
 ### Why Migrate?
 
-| React Select | @native-select |
+| React Select | @smilodon |
 |--------------|----------------|
 | 32 KB gzipped | **6.6 KB gzipped** ✅ |
 | 12ms render | **<5ms render** ✅ |
@@ -214,10 +214,10 @@ function MySelect() {
 **Bundle size**: 32 KB  
 **Performance**: Slow with 10,000+ items
 
-#### After (@native-select)
+#### After (@smilodon)
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function MySelect() {
   const items = [
@@ -257,7 +257,7 @@ function MySelect() {
 
 ```diff
 -import Select from 'react-select';
-+import { NativeSelect } from '@native-select/react';
++import { NativeSelect } from '@smilodon/react';
 
 -<Select
 -  options={options}
@@ -267,7 +267,7 @@ function MySelect() {
 
 #### Step 3: Update props
 
-| React Select | @native-select |
+| React Select | @smilodon |
 |--------------|----------------|
 | `options` | `items` |
 | `onChange` | `onSelect` |
@@ -296,7 +296,7 @@ function MySelect() {
 />
 ```
 
-**After** (@native-select):
+**After** (@smilodon):
 ```tsx
 <NativeSelect
   items={items}
@@ -325,7 +325,7 @@ function MySelect() {
 />
 ```
 
-**After** (@native-select):
+**After** (@smilodon):
 ```tsx
 <NativeSelect
   items={users}
@@ -354,7 +354,7 @@ import AsyncSelect from 'react-select/async';
 />
 ```
 
-**After** (@native-select):
+**After** (@smilodon):
 ```tsx
 const [items, setItems] = useState([]);
 
@@ -402,7 +402,7 @@ function AsyncSelect() {
 <Select options={largeDataset} />
 ```
 
-**After** (@native-select - fast):
+**After** (@smilodon - fast):
 ```tsx
 // Fast with 100,000+ items
 <NativeSelect
@@ -418,7 +418,7 @@ function AsyncSelect() {
 
 ### Why Migrate?
 
-| Downshift | @native-select |
+| Downshift | @smilodon |
 |-----------|----------------|
 | Headless (need to build UI) | **Complete UI** ✅ |
 | Complex API | **Simple props** ✅ |
@@ -463,10 +463,10 @@ function Select({ items }) {
 **Lines of code**: 25  
 **Styling**: Manual
 
-#### After (@native-select)
+#### After (@smilodon)
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function Select({ items }) {
   return <NativeSelect items={items} />;
@@ -529,7 +529,7 @@ function Select({ items }) {
 
 ### Why Migrate?
 
-| HeadlessUI | @native-select |
+| HeadlessUI | @smilodon |
 |------------|----------------|
 | Tailwind-focused | **Framework-agnostic** ✅ |
 | No virtualization | **Built-in virtualizer** ✅ |
@@ -561,10 +561,10 @@ function Select({ items }) {
 }
 ```
 
-#### After (@native-select)
+#### After (@smilodon)
 
 ```tsx
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 function Select({ items }) {
   const [selectedIndices, setSelectedIndices] = useState([0]);
@@ -585,7 +585,7 @@ function Select({ items }) {
 
 ```diff
 -import { Listbox } from '@headlessui/react';
-+import { NativeSelect } from '@native-select/react';
++import { NativeSelect } from '@smilodon/react';
 ```
 
 #### Step 2: Replace component structure
@@ -621,7 +621,7 @@ function Select({ items }) {
 
 ### Complete Feature Matrix
 
-| Feature | React Select | Downshift | HeadlessUI | Floating UI | @native-select |
+| Feature | React Select | Downshift | HeadlessUI | Floating UI | @smilodon |
 |---------|--------------|-----------|------------|-------------|----------------|
 | **Bundle Size (gzipped)** | 32 KB | 8 KB | 7 KB | 14 KB | **6.6 KB** ✅ |
 | **Virtualization** | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -648,7 +648,7 @@ Tested with 10,000 items on M1 MacBook Pro:
 | React Select | 420ms | 15 FPS | 45 MB |
 | Downshift | 380ms | 20 FPS | 42 MB |
 | HeadlessUI | 350ms | 25 FPS | 40 MB |
-| @native-select | **<50ms** ✅ | **60 FPS** ✅ | **8 MB** ✅ |
+| @smilodon | **<50ms** ✅ | **60 FPS** ✅ | **8 MB** ✅ |
 
 ---
 
@@ -674,30 +674,30 @@ Floating UI:            14.3 KB
 ├─ @floating-ui/react   11.2 KB
 └─ @floating-ui/dom     3.1 KB
 
-@native-select:         6.6 KB ✅
-└─ @native-select/core  5.1 KB
-└─ @native-select/react 1.5 KB
+@smilodon:         6.6 KB ✅
+└─ @smilodon/core  5.1 KB
+└─ @smilodon/react 1.5 KB
 ```
 
 ### Tree-Shaking
 
-Only `@native-select` supports full tree-shaking:
+Only `@smilodon` supports full tree-shaking:
 
 ```typescript
 // Basic usage: 6.6 KB
-import { NativeSelect } from '@native-select/react';
+import { NativeSelect } from '@smilodon/react';
 
 // With workers: +1.2 KB
-import { NativeSelect } from '@native-select/react';
-import { WorkerManager } from '@native-select/core';
+import { NativeSelect } from '@smilodon/react';
+import { WorkerManager } from '@smilodon/core';
 
 // With security: +2.0 KB
-import { NativeSelect } from '@native-select/react';
-import { setHTMLSanitizer } from '@native-select/core';
+import { NativeSelect } from '@smilodon/react';
+import { setHTMLSanitizer } from '@smilodon/core';
 
 // With telemetry: +0.8 KB
-import { NativeSelect } from '@native-select/react';
-import { getTelemetry } from '@native-select/core';
+import { NativeSelect } from '@smilodon/react';
+import { getTelemetry } from '@smilodon/core';
 ```
 
 ---
@@ -714,7 +714,7 @@ import { getTelemetry } from '@native-select/core';
 
 ### During Migration
 
-- [ ] Install `@native-select` packages
+- [ ] Install `@smilodon` packages
 - [ ] Replace imports
 - [ ] Update component usage
 - [ ] Transform data structures
@@ -752,10 +752,10 @@ A: Yes! Use CSS custom properties or global CSS.
 A: Use controlled `selectedIndices` prop + hidden input.
 
 **Q: What about TypeScript types?**  
-A: Fully typed! Import from `@native-select/react` (or vue/svelte/angular).
+A: Fully typed! Import from `@smilodon/react` (or vue/svelte/angular).
 
 **Q: Does it work with Angular?**  
-A: Yes! Install `@native-select/angular` for first-class Angular support with full TypeScript types.
+A: Yes! Install `@smilodon/angular` for first-class Angular support with full TypeScript types.
 
 ### Support Resources
 
@@ -771,10 +771,10 @@ A: Yes! Install `@native-select/angular` for first-class Angular support with fu
 > "Migrated from React Select in 2 hours. Bundle size dropped from 32KB to 6.6KB. Scrolling is buttery smooth now even with 50,000 items!"  
 > — Frontend Team @ TechCorp
 
-> "HeadlessUI was too bare-bones. @native-select gave us the perfect balance of features and flexibility. CSP compliance was a huge bonus!"  
+> "HeadlessUI was too bare-bones. @smilodon gave us the perfect balance of features and flexibility. CSP compliance was a huge bonus!"  
 > — Senior Engineer @ FinanceApp
 
-> "We had Floating UI + custom virtualizer (800 LOC). Replaced with @native-select in one afternoon. Deleted so much code!"  
+> "We had Floating UI + custom virtualizer (800 LOC). Replaced with @smilodon in one afternoon. Deleted so much code!"  
 > — Lead Developer @ DataViz
 
 ---

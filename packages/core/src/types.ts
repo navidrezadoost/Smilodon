@@ -1,10 +1,15 @@
-// Public types and contracts for the native-select component
+// Public types and contracts for the smilodon select component
 export type Placement =
   | 'top' | 'bottom' | 'left' | 'right'
   | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'
   | 'left-start' | 'left-end' | 'right-start' | 'right-end';
 
 export type Strategy = 'fixed' | 'absolute';
+
+export interface GroupedItem {
+  label: string;
+  options: unknown[];
+}
 
 export interface RemoteConfig {
   endpoint: string;
@@ -26,7 +31,11 @@ export interface SelectEventDetail<T = unknown> {
 
 export interface OpenEventDetail { }
 export interface CloseEventDetail { }
-export interface SearchEventDetail { query: string }
+export interface SearchEventDetail { 
+  query: string;
+  results?: unknown[];
+  count?: number;
+}
 export interface PageLoadedEventDetail { page: number; count: number }
 export interface ErrorEventDetail { message: string; cause?: unknown }
 export interface ChangeEventDetail { 

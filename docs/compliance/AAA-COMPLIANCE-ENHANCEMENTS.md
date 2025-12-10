@@ -219,7 +219,7 @@ class NativeSelect extends HTMLElement {
 
 ### Smilodon vs. Competitors
 
-| Feature | Smilodon | React Select | Downshift | Material UI | Native Select |
+| Feature | Smilodon | React Select | Downshift | Material UI | Smilodon Select |
 |---------|----------|-------------|-----------|-------------|---------------|
 | 1.4.6 Contrast (AAA) | ✅ 7:1+ all text | ⚠️ 4.5:1 some text | ⚠️ 4.5:1 | ⚠️ 4.5:1 | ❌ Browser default |
 | 2.4.8 Location (AAA) | ✅ "Item X of Y" | ❌ No announcements | ❌ No announcements | ❌ No announcements | ❌ No position info |

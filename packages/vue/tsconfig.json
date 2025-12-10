@@ -1,10 +1,18 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
+    "outDir": "./dist/types",
     "declaration": true,
-    "declarationDir": "./dist/types"
+    "declarationDir": "./dist/types",
+    "declarationMap": true,
+    "module": "ES2020",
+    "target": "ES2020",
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "paths": {
+      "@smilodon/core": ["../core/src/index.ts"]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "src/**/*.vue"],
+  "exclude": ["node_modules", "dist", "../core/**", "../../node_modules"]
 }

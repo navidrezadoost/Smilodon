@@ -6,7 +6,7 @@
 
 import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
-import type { SelectEventName, SelectEventsDetailMap } from '../types';
+import type { SelectEventName, SelectEventsDetailMap, GroupedItem } from '../types';
 import { SelectOption, OptionConfig, OptionEventDetail } from './select-option';
 
 interface PageCache {
@@ -23,6 +23,11 @@ interface SelectState {
   activeIndex: number;
   searchQuery: string;
   loadedItems: unknown[];
+  groupedItems: GroupedItem[];
+  preserveScrollPosition: boolean;
+  lastScrollPosition: number;
+  lastNotifiedQuery: string | null;
+  lastNotifiedResultCount: number;
 }
 
 export class EnhancedSelect extends HTMLElement {
@@ -35,15 +40,24 @@ export class EnhancedSelect extends HTMLElement {
   private _optionsContainer: HTMLElement;
   private _loadMoreButton?: HTMLButtonElement;
   private _busyBucket?: HTMLElement;
+  private _liveRegion?: HTMLElement;
   private _state: SelectState;
   private _pageCache: PageCache = {};
   private _resizeObserver?: ResizeObserver;
   private _intersectionObserver?: IntersectionObserver;
   private _busyTimeout?: number;
+  private _typeBuffer = '';
+  private _typeTimeout?: number;
+  private _uniqueId: string;
+  private _hasError = false;
+  private _errorMessage = '';
+  private _boundArrowClick: ((e: Event) => void) | null = null;
+  private _arrowContainer?: HTMLElement;
 
   constructor() {
     super();
     this._shadow = this.attachShadow({ mode: 'open' });
+    this._uniqueId = `enhanced-select-${Math.random().toString(36).substr(2, 9)}`;
     
     // Merge global config with component-level config
     this._config = selectConfig.getConfig() as GlobalSelectConfig;
@@ -59,14 +73,21 @@ export class EnhancedSelect extends HTMLElement {
       activeIndex: -1,
       searchQuery: '',
       loadedItems: [],
+      groupedItems: [],
+      preserveScrollPosition: false,
+      lastScrollPosition: 0,
+      lastNotifiedQuery: null,
+      lastNotifiedResultCount: 0,
     };
     
     // Create DOM structure
     this._container = this._createContainer();
     this._inputContainer = this._createInputContainer();
     this._input = this._createInput();
+    this._arrowContainer = this._createArrowContainer();
     this._dropdown = this._createDropdown();
     this._optionsContainer = this._createOptionsContainer();
+    this._liveRegion = this._createLiveRegion();
     
     this._assembleDOM();
     this._initializeStyles();
@@ -91,6 +112,12 @@ export class EnhancedSelect extends HTMLElement {
     this._resizeObserver?.disconnect();
     this._intersectionObserver?.disconnect();
     if (this._busyTimeout) clearTimeout(this._busyTimeout);
+    if (this._typeTimeout) clearTimeout(this._typeTimeout);
+    
+    // Cleanup arrow click listener
+    if (this._boundArrowClick && this._arrowContainer) {
+      this._arrowContainer.removeEventListener('click', this._boundArrowClick);
+    }
   }
 
   private _createContainer(): HTMLElement {
@@ -165,14 +192,46 @@ export class EnhancedSelect extends HTMLElement {
     return container;
   }
 
+  private _createLiveRegion(): HTMLElement {
+    const liveRegion = document.createElement('div');
+    liveRegion.setAttribute('role', 'status');
+    liveRegion.setAttribute('aria-live', 'polite');
+    liveRegion.setAttribute('aria-atomic', 'true');
+    liveRegion.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;';
+    return liveRegion;
+  }
+
+  private _createArrowContainer(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'dropdown-arrow-container';
+    container.innerHTML = `
+      <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    return container;
+  }
+
   private _assembleDOM(): void {
     this._inputContainer.appendChild(this._input);
+    if (this._arrowContainer) {
+      this._inputContainer.appendChild(this._arrowContainer);
+    }
     this._container.appendChild(this._inputContainer);
     
     this._dropdown.appendChild(this._optionsContainer);
     this._container.appendChild(this._dropdown);
     
     this._shadow.appendChild(this._container);
+    if (this._liveRegion) {
+      this._shadow.appendChild(this._liveRegion);
+    }
+    
+    // Set ARIA relationships
+    const listboxId = `${this._uniqueId}-listbox`;
+    this._dropdown.id = listboxId;
+    this._input.setAttribute('aria-controls', listboxId);
+    this._input.setAttribute('aria-owns', listboxId);
   }
 
   private _initializeStyles(): void {
@@ -194,9 +253,63 @@ export class EnhancedSelect extends HTMLElement {
         width: 100%;
       }
       
+      /* Gradient separator before arrow */
+      .input-container::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 40px;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 0, 0, 0.1) 20%,
+          rgba(0, 0, 0, 0.1) 80%,
+          transparent 100%
+        );
+        pointer-events: none;
+      }
+      
+      .dropdown-arrow-container {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-radius: 0 4px 4px 0;
+      }
+      
+      .dropdown-arrow-container:hover {
+        background-color: rgba(102, 126, 234, 0.08);
+      }
+      
+      .dropdown-arrow {
+        width: 16px;
+        height: 16px;
+        color: #667eea;
+        transition: transform 0.2s ease, color 0.2s ease;
+        transform: translateY(0);
+      }
+      
+      .dropdown-arrow-container:hover .dropdown-arrow {
+        color: #667eea;
+      }
+      
+      .dropdown-arrow.open {
+        transform: rotate(180deg);
+      }
+      
       .select-input {
         width: 100%;
-        padding: 8px 12px;
+        padding: 8px 52px 8px 12px;
+        min-height: 44px;
         border: 1px solid var(--select-border-color, #ccc);
         border-radius: var(--select-border-radius, 4px);
         font-size: 14px;
@@ -207,6 +320,8 @@ export class EnhancedSelect extends HTMLElement {
       .select-input:focus {
         border-color: var(--select-border-focus-color, #1976d2);
         box-shadow: 0 0 0 2px var(--select-shadow-focus-color, rgba(25, 118, 210, 0.1));
+        outline: 2px solid var(--select-border-focus-color, #1976d2);
+        outline-offset: 2px;
       }
       
       .select-input:disabled {
@@ -285,11 +400,93 @@ export class EnhancedSelect extends HTMLElement {
         text-align: center;
         color: var(--select-empty-color, #999);
       }
+      
+      /* Error states */
+      .select-input[aria-invalid="true"] {
+        border-color: var(--select-error-border, #dc2626);
+      }
+      
+      .select-input[aria-invalid="true"]:focus {
+        border-color: var(--select-error-border, #dc2626);
+        box-shadow: 0 0 0 2px var(--select-error-shadow, rgba(220, 38, 38, 0.1));
+        outline-color: var(--select-error-border, #dc2626);
+      }
+      
+      /* Accessibility: Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      
+      /* Accessibility: Dark mode */
+      @media (prefers-color-scheme: dark) {
+        .select-input {
+          background: var(--select-dark-bg, #1f2937);
+          color: var(--select-dark-text, #f9fafb);
+          border-color: var(--select-dark-border, #4b5563);
+        }
+        
+        .select-dropdown {
+          background: var(--select-dark-dropdown-bg, #1f2937);
+          border-color: var(--select-dark-dropdown-border, #4b5563);
+          color: var(--select-dark-text, #f9fafb);
+        }
+        
+        .busy-bucket {
+          color: var(--select-dark-busy-color, #9ca3af);
+        }
+      }
+      
+      /* Accessibility: High contrast mode */
+      @media (prefers-contrast: high) {
+        .select-input:focus {
+          outline-width: 3px;
+          outline-color: Highlight;
+        }
+        
+        .select-input {
+          border-width: 2px;
+        }
+      }
+      
+      /* Touch targets (WCAG 2.5.5) */
+      .load-more-button,
+      select-option {
+        min-height: 44px;
+      }
     `;
     this._shadow.appendChild(style);
   }
 
   private _attachEventListeners(): void {
+    // Arrow click handler
+    if (this._arrowContainer) {
+      this._boundArrowClick = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const wasOpen = this._state.isOpen;
+        this._state.isOpen = !this._state.isOpen;
+        this._updateDropdownVisibility();
+        this._updateArrowRotation();
+        
+        if (this._state.isOpen && this._config.callbacks.onOpen) {
+          this._config.callbacks.onOpen();
+        } else if (!this._state.isOpen && this._config.callbacks.onClose) {
+          this._config.callbacks.onClose();
+        }
+        
+        // Scroll to selected when opening
+        if (!wasOpen && this._state.isOpen && this._state.selectedIndices.size > 0) {
+          setTimeout(() => this._scrollToSelected(), 50);
+        }
+      };
+      this._arrowContainer.addEventListener('click', this._boundArrowClick);
+    }
+    
     // Input focus/blur
     this._input.addEventListener('focus', () => this._handleOpen());
     this._input.addEventListener('blur', (e) => {
@@ -368,6 +565,7 @@ export class EnhancedSelect extends HTMLElement {
     this._state.isOpen = true;
     this._dropdown.style.display = 'block';
     this._input.setAttribute('aria-expanded', 'true');
+    this._updateArrowRotation();
     
     this._emit('open', {});
     this._config.callbacks.onOpen?.();
@@ -384,15 +582,57 @@ export class EnhancedSelect extends HTMLElement {
     this._state.isOpen = false;
     this._dropdown.style.display = 'none';
     this._input.setAttribute('aria-expanded', 'false');
+    this._updateArrowRotation();
     
     this._emit('close', {});
     this._config.callbacks.onClose?.();
   }
 
+  private _updateDropdownVisibility(): void {
+    if (this._state.isOpen) {
+      this._dropdown.style.display = 'block';
+      this._input.setAttribute('aria-expanded', 'true');
+    } else {
+      this._dropdown.style.display = 'none';
+      this._input.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  private _updateArrowRotation(): void {
+    if (this._arrowContainer) {
+      const arrow = this._arrowContainer.querySelector('.dropdown-arrow');
+      if (arrow) {
+        if (this._state.isOpen) {
+          arrow.classList.add('open');
+        } else {
+          arrow.classList.remove('open');
+        }
+      }
+    }
+  }
+
   private _handleSearch(query: string): void {
-    this._emit('search', { query });
-    this._config.callbacks.onSearch?.(query);
-    // Implement filtering logic here or delegate to parent
+    // Get filtered items based on search query
+    const filteredItems = query 
+      ? this._state.loadedItems.filter((item: any) => {
+          const label = item?.label || String(item);
+          return label.toLowerCase().includes(query.toLowerCase());
+        })
+      : this._state.loadedItems;
+    
+    const count = filteredItems.length;
+    
+    // Only notify if query or result count changed to prevent infinite loops
+    if (query !== this._state.lastNotifiedQuery || count !== this._state.lastNotifiedResultCount) {
+      this._state.lastNotifiedQuery = query;
+      this._state.lastNotifiedResultCount = count;
+      
+      // Use setTimeout to avoid synchronous state updates during render
+      setTimeout(() => {
+        this._emit('search', { query, results: filteredItems, count });
+        this._config.callbacks.onSearch?.(query);
+      }, 0);
+    }
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
@@ -407,7 +647,36 @@ export class EnhancedSelect extends HTMLElement {
         break;
       case 'ArrowUp':
         e.preventDefault();
-        this._moveActive(-1);
+        if (!this._state.isOpen) {
+          this._handleOpen();
+        } else {
+          this._moveActive(-1);
+        }
+        break;
+      case 'Home':
+        e.preventDefault();
+        if (this._state.isOpen) {
+          this._setActive(0);
+        }
+        break;
+      case 'End':
+        e.preventDefault();
+        if (this._state.isOpen) {
+          const options = Array.from(this._optionsContainer.children) as SelectOption[];
+          this._setActive(options.length - 1);
+        }
+        break;
+      case 'PageDown':
+        e.preventDefault();
+        if (this._state.isOpen) {
+          this._moveActive(10);
+        }
+        break;
+      case 'PageUp':
+        e.preventDefault();
+        if (this._state.isOpen) {
+          this._moveActive(-10);
+        }
         break;
       case 'Enter':
         e.preventDefault();
@@ -419,23 +688,102 @@ export class EnhancedSelect extends HTMLElement {
         e.preventDefault();
         this._handleClose();
         break;
+      case 'a':
+      case 'A':
+        if ((e.ctrlKey || e.metaKey) && this._config.selection.mode === 'multi') {
+          e.preventDefault();
+          this._selectAll();
+        }
+        break;
+      default:
+        // Type-ahead search
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+          this._handleTypeAhead(e.key);
+        }
+        break;
     }
   }
 
   private _moveActive(delta: number): void {
     const options = Array.from(this._optionsContainer.children) as SelectOption[];
     const next = Math.max(0, Math.min(options.length - 1, this._state.activeIndex + delta));
+    this._setActive(next);
+  }
+
+  private _setActive(index: number): void {
+    const options = Array.from(this._optionsContainer.children) as SelectOption[];
     
-    // Update active state
+    // Clear previous active state
     if (this._state.activeIndex >= 0 && options[this._state.activeIndex]) {
       options[this._state.activeIndex].setActive(false);
     }
     
-    this._state.activeIndex = next;
+    this._state.activeIndex = index;
     
-    if (options[next]) {
-      options[next].setActive(true);
-      options[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // Set new active state
+    if (options[index]) {
+      options[index].setActive(true);
+      options[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      
+      // Announce position for screen readers
+      const total = options.length;
+      this._announce(`Item ${index + 1} of ${total}`);
+      
+      // Update aria-activedescendant
+      const optionId = `${this._uniqueId}-option-${index}`;
+      this._input.setAttribute('aria-activedescendant', optionId);
+    }
+  }
+
+  private _handleTypeAhead(char: string): void {
+    if (this._typeTimeout) clearTimeout(this._typeTimeout);
+    
+    this._typeBuffer += char.toLowerCase();
+    this._typeTimeout = window.setTimeout(() => {
+      this._typeBuffer = '';
+    }, 500);
+    
+    // Find first matching option
+    const getValue = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
+    const matchIndex = this._state.loadedItems.findIndex((item) =>
+      getValue(item).toLowerCase().startsWith(this._typeBuffer)
+    );
+    
+    if (matchIndex >= 0) {
+      this._setActive(matchIndex);
+    }
+  }
+
+  private _selectAll(): void {
+    if (this._config.selection.mode !== 'multi') return;
+    
+    const options = Array.from(this._optionsContainer.children) as SelectOption[];
+    const maxSelections = this._config.selection.maxSelections || 0;
+    
+    options.forEach((option, index) => {
+      if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
+        return;
+      }
+      
+      if (!this._state.selectedIndices.has(index)) {
+        const config = option.getConfig();
+        this._state.selectedIndices.add(index);
+        this._state.selectedItems.set(index, config.item);
+        option.setSelected(true);
+      }
+    });
+    
+    this._updateInputDisplay();
+    this._emitChange();
+    this._announce(`Selected all ${options.length} items`);
+  }
+
+  private _announce(message: string): void {
+    if (this._liveRegion) {
+      this._liveRegion.textContent = message;
+      setTimeout(() => {
+        if (this._liveRegion) this._liveRegion.textContent = '';
+      }, 1000);
     }
   }
 
@@ -550,6 +898,31 @@ export class EnhancedSelect extends HTMLElement {
     
     this._setBusy(true);
     
+    // Save scroll position before loading
+    if (this._dropdown) {
+      console.log('[InfiniteScroll] loadMore: before render', {
+        scrollTop: this._dropdown.scrollTop,
+        scrollHeight: this._dropdown.scrollHeight,
+        clientHeight: this._dropdown.clientHeight
+      });
+      
+      // Remember the exact scrollTop so we can restore it
+      // after new items are appended.
+      this._state.lastScrollPosition = this._dropdown.scrollTop;
+      this._state.preserveScrollPosition = true;
+      
+      // Update dropdown to show loading indicator but keep the
+      // same scrollTop so the visible items don't move.
+      this._renderOptions();
+      this._dropdown.scrollTop = this._state.lastScrollPosition;
+      
+      console.log('[InfiniteScroll] loadMore: after render (with loader)', {
+        scrollTop: this._dropdown.scrollTop,
+        scrollHeight: this._dropdown.scrollHeight,
+        clientHeight: this._dropdown.clientHeight
+      });
+    }
+    
     try {
       // Simulate loading more items (replace with actual data fetching)
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -644,7 +1017,74 @@ export class EnhancedSelect extends HTMLElement {
    * Set items to display in the select
    */
   setItems(items: unknown[]): void {
+    const previousLength = this._state.loadedItems.length;
     this._state.loadedItems = items;
+    
+    // If grouped items exist, flatten them to items
+    if (this._state.groupedItems.length > 0) {
+      this._state.loadedItems = this._state.groupedItems.flatMap(group => group.options);
+    }
+    
+    const newLength = this._state.loadedItems.length;
+    
+    // When infinite scroll is active (preserveScrollPosition = true),
+    // we need to maintain scroll position during the update
+    if (this._state.preserveScrollPosition && this._dropdown) {
+      const targetScrollTop = this._state.lastScrollPosition;
+      
+      console.log('[InfiniteScroll] setItems: before render', {
+        previousLength,
+        newLength,
+        lastScrollPosition: this._state.lastScrollPosition,
+        scrollTop: this._dropdown.scrollTop,
+        scrollHeight: this._dropdown.scrollHeight,
+        clientHeight: this._dropdown.clientHeight
+      });
+      
+      // Only clear loading if we actually got more items
+      if (newLength > previousLength) {
+        this._state.isBusy = false;
+      }
+      
+      this._renderOptions();
+      
+      // Restore the exact scrollTop we had before loading
+      // so the previously visible items stay in place and
+      // new ones simply appear below.
+      this._dropdown.scrollTop = targetScrollTop;
+      
+      // Ensure it sticks after layout
+      requestAnimationFrame(() => {
+        if (this._dropdown) {
+          this._dropdown.scrollTop = targetScrollTop;
+          
+          console.log('[InfiniteScroll] setItems: after render', {
+            newLength,
+            lastScrollPosition: this._state.lastScrollPosition,
+            scrollTop: this._dropdown.scrollTop,
+            scrollHeight: this._dropdown.scrollHeight,
+            clientHeight: this._dropdown.clientHeight
+          });
+        }
+      });
+      
+      // Only clear preserveScrollPosition if we got new items
+      if (newLength > previousLength) {
+        this._state.preserveScrollPosition = false;
+      }
+    } else {
+      // Normal update - just render normally
+      this._state.isBusy = false;
+      this._renderOptions();
+    }
+  }
+
+  /**
+   * Set grouped items
+   */
+  setGroupedItems(groupedItems: GroupedItem[]): void {
+    this._state.groupedItems = groupedItems;
+    this._state.loadedItems = groupedItems.flatMap(group => group.options);
     this._renderOptions();
   }
 
@@ -757,6 +1197,51 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   /**
+   * Set error state
+   */
+  setError(message: string): void {
+    this._hasError = true;
+    this._errorMessage = message;
+    this._input.setAttribute('aria-invalid', 'true');
+    this._announce(`Error: ${message}`);
+  }
+
+  /**
+   * Clear error state
+   */
+  clearError(): void {
+    this._hasError = false;
+    this._errorMessage = '';
+    this._input.removeAttribute('aria-invalid');
+  }
+
+  /**
+   * Set required state
+   */
+  setRequired(required: boolean): void {
+    if (required) {
+      this._input.setAttribute('aria-required', 'true');
+      this._input.setAttribute('required', '');
+    } else {
+      this._input.removeAttribute('aria-required');
+      this._input.removeAttribute('required');
+    }
+  }
+
+  /**
+   * Validate selection (for required fields)
+   */
+  validate(): boolean {
+    const isRequired = this._input.hasAttribute('required');
+    if (isRequired && this._state.selectedIndices.size === 0) {
+      this.setError('Selection is required');
+      return false;
+    }
+    this.clearError();
+    return true;
+  }
+
+  /**
    * Render options based on current state
    */
   private _renderOptions(): void {
@@ -791,13 +1276,18 @@ export class EnhancedSelect extends HTMLElement {
       
       const option = new SelectOption(optionConfig);
       
+      // Set unique ID for aria-activedescendant
+      option.id = `${this._uniqueId}-option-${index}`;
+      
       // Listen to option events
       option.addEventListener('optionSelect', ((e: CustomEvent<OptionEventDetail>) => {
         this._selectOption(e.detail.index);
+        this._announce(`Selected ${getLabel(item)}`);
       }) as EventListener);
       
       option.addEventListener('optionRemove', ((e: CustomEvent<OptionEventDetail>) => {
         this._handleOptionRemove(e.detail.index);
+        this._announce(`Removed ${getLabel(item)}`);
       }) as EventListener);
       
       this._optionsContainer.appendChild(option);
