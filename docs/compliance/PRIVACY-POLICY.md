@@ -644,7 +644,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 ```
 
 **Notification Channels:**
-- Email: privacy@smilodon.dev
+- Email: navidrezadoost07@gmail.com
 - GitHub: Security Advisory
 - Website: Incident banner
 - Social media: @nativeselect
@@ -695,7 +695,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 
 ### 14.1 Privacy Inquiries
 
-**Email:** privacy@smilodon.dev  
+**Email:** navidrezadoost07@gmail.com 
 **Response time:** 5 business days  
 **Languages:** English
 
@@ -709,7 +709,7 @@ localStorage.setItem('telemetry-consent', JSON.stringify({
 ### 14.2 Data Protection Officer
 
 **Role:** Open source project maintainer  
-**Email:** dpo@smilodon.dev  
+**Email:** navidrezadoost07@gmail.com 
 **Responsibilities:** Privacy policy compliance, data subject requests
 
 ### 14.3 Supervisory Authority

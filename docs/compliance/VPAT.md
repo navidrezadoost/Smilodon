@@ -240,7 +240,7 @@ This Voluntary Product Accessibility Template (VPAT®) is provided for informati
 ## Contact Information
 
 **Accessibility Support:**  
-Email: accessibility@smilodon.dev  
+Email: navidrezadoost07@gmail.com
 Response time: 3-5 business days
 
 **Report Accessibility Issues:**  
@@ -248,7 +248,7 @@ GitHub: https://github.com/native-select/native-select/issues
 Label: `accessibility`
 
 **Third-Party Audit Requests:**  
-Email: enterprise@smilodon.dev
+Email: navidrezadoost07@gmail.com
 
 ---
 

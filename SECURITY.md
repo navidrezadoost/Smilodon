@@ -354,7 +354,7 @@ jobs:
 
 ## Security Contacts
 
-- **Email**: security@smilodon.dev
+- **Email**: navidrezadoost07@gmail.com
 - **Response Time**: 48 hours
 - **PGP Key**: Available upon request
 

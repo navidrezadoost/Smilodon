@@ -298,7 +298,7 @@ We welcome contributions! Please see:
 
 ## 💬 Support
 
-- 📧 Email: support@smilodon.dev
+- 📧 Email: navidrezadoost07@gmail.com
 - 💬 Discord: [Join our community](https://discord.gg/smilodon)
 - 🐛 Issues: [GitHub Issues](https://github.com/navidrezadoost/smilodon/issues)
 - 📖 Docs: [Documentation](https://smilodon.dev/docs)
