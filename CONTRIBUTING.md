@@ -876,7 +876,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 - **GitHub Issues**: Bug reports, feature requests
 - **GitHub Discussions**: Questions, ideas, help
-- **Email**: support@smilodon.dev
+- **Email**: navidrezadoost07@gmail.com
 
 ### First-Time Contributors
 

@@ -544,7 +544,7 @@ Public Disclosure (as appropriate)
 ```
 
 **Notification Channels:**
-- Email: security@smilodon.dev
+- Email: navidrezadoost07@gmail.com
 - GitHub: Security Advisory
 - Website: Status banner
 - Social Media: @nativeselect (Twitter/X)
@@ -652,7 +652,7 @@ All controls operating effectively as designed.
 ### Appendix A: Security Contacts
 
 **Primary Contact:**  
-Email: security@smilodon.dev  
+Email: navidrezadoost07@gmail.com 
 PGP Key: [Fingerprint TBD]  
 Response SLA: 24 hours
 

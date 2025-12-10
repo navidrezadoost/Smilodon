@@ -352,7 +352,7 @@ Use this template to document your testing:
 
 ### Report Issues
 - **GitHub Issues:** https://github.com/navidrezadoost/smilodon/issues
-- **Email:** support@smilodon.dev
+- **Email:** navidrezadoost07@gmail.com
 
 ### Get Help
 - **Documentation:** `/docs/GETTING-STARTED.md`
