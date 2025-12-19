@@ -8,9 +8,9 @@
   "types": "./dist/types/src/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/src/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/types/src/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
   },
@@ -44,5 +44,9 @@
     "vitest": "^1.6.0",
     "jsdom": "^24.0.0"
   },
-  "sideEffects": false
+  "sideEffects": [
+    "./src/components/enhanced-select.ts",
+    "./src/components/native-select.ts",
+    "./dist/**/*.js"
+  ]
 }

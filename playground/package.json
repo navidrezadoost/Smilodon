@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@smilodon/core": "workspace:*"
+    "@smilodon/core": "*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

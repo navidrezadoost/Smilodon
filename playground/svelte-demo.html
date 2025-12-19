@@ -47,7 +47,8 @@
     select.setAttribute('placeholder', 'Select a fruit');
 
     select.addEventListener('change', (e) => {
-      const value = e.detail?.selectedValues?.[0] || '';\n      selectedText.textContent = value ? `Selected: ${value}` : '';
+      const value = e.detail?.selectedValues?.[0] || '';
+      selectedText.textContent = value ? `Selected: ${value}` : '';
     });
   </script>
 </body>

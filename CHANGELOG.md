@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🛠️ Fixed
+- Angular: packaged `@smilodon/angular` with correct type export paths and single-instance Angular resolution to prevent NG0203 injector/runtime crashes in local consumer apps.
+
 ### ✨ Component Enhancements
 
 #### Enhanced Select Component
