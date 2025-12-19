@@ -5,10 +5,10 @@
   "type": "module",
   "main": "./dist/fesm2022/smilodon-angular.mjs",
   "module": "./dist/fesm2022/smilodon-angular.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/smilodon-angular.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/types/smilodon-angular.d.ts",
       "esm": "./dist/fesm2022/smilodon-angular.mjs",
       "default": "./dist/fesm2022/smilodon-angular.mjs"
     }
@@ -23,22 +23,22 @@
     "size": "gzip -c dist/fesm2022/smilodon-angular.mjs | wc -c"
   },
   "peerDependencies": {
-    "@angular/common": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0",
-    "@angular/core": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0",
-    "@angular/forms": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0",
+    "@angular/common": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0",
+    "@angular/core": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0",
+    "@angular/forms": "^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0",
     "@smilodon/core": "^1.0.0"
   },
   "devDependencies": {
-    "@angular/common": "^17.0.0",
-    "@angular/core": "^17.0.0",
-    "@angular/compiler": "^17.0.0",
-    "@angular/compiler-cli": "^17.0.0",
-    "@angular/forms": "^17.0.0",
-    "ng-packagr": "^17.0.0",
-    "typescript": "~5.2.0",
+    "@angular/common": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/compiler-cli": "^21.0.0",
+    "@angular/forms": "^21.0.0",
+    "ng-packagr": "^21.0.0",
+    "typescript": "~5.9.0",
     "rxjs": "^7.8.0",
     "tslib": "^2.6.0",
-    "zone.js": "^0.14.0"
+    "zone.js": "^0.15.0"
   },
   "keywords": [
     "angular",

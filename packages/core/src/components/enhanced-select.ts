@@ -39,7 +39,7 @@ export class EnhancedSelect extends HTMLElement {
   private _input: HTMLInputElement;
   private _dropdown: HTMLElement;
   private _optionsContainer: HTMLElement;
-  private _loadMoreButton?: HTMLButtonElement;
+  private _loadMoreTrigger?: HTMLElement;
   private _busyBucket?: HTMLElement;
   private _liveRegion?: HTMLElement;
   private _state: SelectState;
@@ -412,6 +412,28 @@ export class EnhancedSelect extends HTMLElement {
         position: relative;
         transition: opacity 0.2s ease-in-out;
       }
+
+      .option {
+        padding: 8px 12px;
+        cursor: pointer;
+        color: inherit;
+        transition: background-color 0.15s ease;
+        user-select: none;
+      }
+
+      .option:hover {
+        background-color: #f3f4f6;
+      }
+
+      .option.selected {
+        background-color: #e0e7ff;
+        color: #4338ca;
+        font-weight: 500;
+      }
+
+      .option.active {
+        background-color: #f3f4f6;
+      }
       
       .load-more-container {
         padding: 12px;
@@ -513,6 +535,19 @@ export class EnhancedSelect extends HTMLElement {
           color: var(--select-dark-text, #f9fafb);
         }
         
+        .option:hover {
+          background-color: var(--select-dark-option-hover-bg, #374151);
+        }
+        
+        .option.selected {
+          background-color: var(--select-dark-option-selected-bg, #3730a3);
+          color: var(--select-dark-option-selected-text, #e0e7ff);
+        }
+        
+        .option.active {
+          background-color: var(--select-dark-option-active-bg, #374151);
+        }
+        
         .busy-bucket {
           color: var(--select-dark-busy-color, #9ca3af);
         }
@@ -603,13 +638,22 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _initializeObservers(): void {
+    // Disconnect existing observer if any
+    if (this._intersectionObserver) {
+      this._intersectionObserver.disconnect();
+      this._intersectionObserver = undefined;
+    }
+
     // Intersection observer for infinite scroll
     if (this._config.infiniteScroll.enabled) {
       this._intersectionObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && !this._state.isBusy) {
-              this._loadMoreItems();
+            if (entry.isIntersecting) {
+              console.log('[InfiniteScroll] Sentinel intersected. isBusy:', this._state.isBusy);
+              if (!this._state.isBusy) {
+                this._loadMoreItems();
+              }
             }
           });
         },
@@ -1104,18 +1148,11 @@ export class EnhancedSelect extends HTMLElement {
   private async _loadMoreItems(): Promise<void> {
     if (this._state.isBusy) return;
     
+    console.log('[InfiniteScroll] _loadMoreItems triggered');
     this._setBusy(true);
     
     // Save scroll position before loading
     if (this._dropdown) {
-      console.log('[InfiniteScroll] loadMore: before render', {
-        scrollTop: this._dropdown.scrollTop,
-        scrollHeight: this._dropdown.scrollHeight,
-        clientHeight: this._dropdown.clientHeight
-      });
-      
-      // Remember the exact scrollTop so we can restore it
-      // after new items are appended.
       this._state.lastScrollPosition = this._dropdown.scrollTop;
       this._state.preserveScrollPosition = true;
       
@@ -1123,30 +1160,22 @@ export class EnhancedSelect extends HTMLElement {
       // same scrollTop so the visible items don't move.
       this._renderOptions();
       this._dropdown.scrollTop = this._state.lastScrollPosition;
-      
-      console.log('[InfiniteScroll] loadMore: after render (with loader)', {
-        scrollTop: this._dropdown.scrollTop,
-        scrollHeight: this._dropdown.scrollHeight,
-        clientHeight: this._dropdown.clientHeight
-      });
     }
     
     try {
-      // Simulate loading more items (replace with actual data fetching)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      const itemsToLoad = this._config.loadMore.itemsPerLoad;
-      // const newItems = await fetchItems(this._state.currentPage + 1, itemsToLoad);
-      
-      // For now, just emit event for parent to handle
+      // Emit event for parent to handle
       this._state.currentPage++;
       
+      console.log(`[InfiniteScroll] Emitting loadMore event for page ${this._state.currentPage}`);
       this._emit('loadMore', { page: this._state.currentPage, items: [] });
       this._config.callbacks.onLoadMore?.(this._state.currentPage);
+      
+      // NOTE: We do NOT set isBusy = false here.
+      // The parent component MUST call setItems() or similar to clear the busy state.
+      // This prevents the sentinel from reappearing before new items are loaded.
     } catch (error) {
       this._handleError(error as Error);
-    } finally {
-      this._setBusy(false);
+      this._setBusy(false); // Only clear on error
     }
   }
 
@@ -1270,6 +1299,13 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   /**
+   * Get all loaded items
+   */
+  get loadedItems(): unknown[] {
+    return this._state.loadedItems;
+  }
+
+  /**
    * Get currently selected values
    */
   getSelectedValues(): unknown[] {
@@ -1374,6 +1410,9 @@ export class EnhancedSelect extends HTMLElement {
       this._input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
     }
     
+    // Re-initialize observers in case infinite scroll was enabled/disabled
+    this._initializeObservers();
+    
     this._renderOptions();
   }
 
@@ -1429,8 +1468,8 @@ export class EnhancedSelect extends HTMLElement {
     console.log('[EnhancedSelect] _renderOptions called');
     
     // Cleanup observer
-    if (this._loadMoreButton && this._intersectionObserver) {
-      this._intersectionObserver.unobserve(this._loadMoreButton);
+    if (this._loadMoreTrigger && this._intersectionObserver) {
+      this._intersectionObserver.unobserve(this._loadMoreTrigger);
     }
     
     // Clear options container
@@ -1538,9 +1577,9 @@ export class EnhancedSelect extends HTMLElement {
       
       this._optionsContainer.appendChild(busyBucket);
     }
-    // Append Load More Button (Trigger) if enabled and not busy
-    else if (this._config.loadMore.enabled && this._state.loadedItems.length > 0) {
-      this._addLoadMoreButton();
+    // Append Load More Trigger (Button or Sentinel) if enabled and not busy
+    else if ((this._config.loadMore.enabled || this._config.infiniteScroll.enabled) && this._state.loadedItems.length > 0) {
+      this._addLoadMoreTrigger();
     }
   }
 
@@ -1573,22 +1612,38 @@ export class EnhancedSelect extends HTMLElement {
     this._optionsContainer.appendChild(option);
   }
 
-  private _addLoadMoreButton(): void {
+  private _addLoadMoreTrigger(): void {
     const container = document.createElement('div');
     container.className = 'load-more-container';
     
-    this._loadMoreButton = document.createElement('button');
-    this._loadMoreButton.className = 'load-more-button';
-    this._loadMoreButton.textContent = `Load ${this._config.loadMore.itemsPerLoad} more`;
+    if (this._config.infiniteScroll.enabled) {
+      // Infinite Scroll: Render an invisible sentinel
+      // It must have some height to be intersected
+      const sentinel = document.createElement('div');
+      sentinel.className = 'infinite-scroll-sentinel';
+      sentinel.style.height = '10px';
+      sentinel.style.width = '100%';
+      sentinel.style.opacity = '0'; // Invisible
+      
+      this._loadMoreTrigger = sentinel;
+      container.appendChild(sentinel);
+    } else {
+      // Manual Load More: Render a button
+      const button = document.createElement('button');
+      button.className = 'load-more-button';
+      button.textContent = `Load ${this._config.loadMore.itemsPerLoad} more`;
+      button.addEventListener('click', () => this._loadMoreItems());
+      
+      this._loadMoreTrigger = button;
+      container.appendChild(button);
+    }
     
-    this._loadMoreButton.addEventListener('click', () => this._loadMoreItems());
-    
-    container.appendChild(this._loadMoreButton);
     this._optionsContainer.appendChild(container);
     
     // Setup intersection observer for auto-load
-    if (this._intersectionObserver) {
-      this._intersectionObserver.observe(this._loadMoreButton);
+    if (this._intersectionObserver && this._loadMoreTrigger) {
+      console.log('[InfiniteScroll] Observing sentinel');
+      this._intersectionObserver.observe(this._loadMoreTrigger);
     }
   }
 }

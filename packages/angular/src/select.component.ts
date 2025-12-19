@@ -27,6 +27,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import '@smilodon/core'; // Register web components
 import type {
   SelectEventDetail,
   ChangeEventDetail,
@@ -100,6 +101,7 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
   @Input() placement: 'bottom' | 'top' | 'auto' = 'auto';
   @Input() className = '';
   @Input() style: { [key: string]: string } = {};
+  @Input() config: any = {};
 
   // Events
   @Output() selectEvent = new EventEmitter<{ item: SelectItem; index: number }>();
@@ -136,6 +138,10 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
       const values = Array.isArray(this.value) ? this.value : [this.value];
       element.setSelectedValues(values);
     }
+
+    if (this.config) {
+      element.updateConfig(this.config);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -145,6 +151,10 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
     // Update items
     if (changes['items'] && !changes['items'].firstChange) {
       element.setItems(this.items);
+    }
+
+    if (changes['config'] && !changes['config'].firstChange) {
+      element.updateConfig(this.config);
     }
 
     // Update grouped items
