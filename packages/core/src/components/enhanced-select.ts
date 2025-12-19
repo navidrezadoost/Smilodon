@@ -16,6 +16,7 @@ interface PageCache {
 interface SelectState {
   isOpen: boolean;
   isBusy: boolean;
+  isSearching: boolean;
   currentPage: number;
   totalPages: number;
   selectedIndices: Set<number>;
@@ -46,6 +47,7 @@ export class EnhancedSelect extends HTMLElement {
   private _resizeObserver?: ResizeObserver;
   private _intersectionObserver?: IntersectionObserver;
   private _busyTimeout?: number;
+  private _searchTimeout?: number;
   private _typeBuffer = '';
   private _typeTimeout?: number;
   private _uniqueId: string;
@@ -66,6 +68,7 @@ export class EnhancedSelect extends HTMLElement {
     this._state = {
       isOpen: false,
       isBusy: false,
+      isSearching: false,
       currentPage: this._config.infiniteScroll.initialPage || 1,
       totalPages: 1,
       selectedIndices: new Set(),
@@ -113,6 +116,7 @@ export class EnhancedSelect extends HTMLElement {
     this._intersectionObserver?.disconnect();
     if (this._busyTimeout) clearTimeout(this._busyTimeout);
     if (this._typeTimeout) clearTimeout(this._typeTimeout);
+    if (this._searchTimeout) clearTimeout(this._searchTimeout);
     
     // Cleanup arrow click listener
     if (this._boundArrowClick && this._arrowContainer) {
@@ -148,6 +152,13 @@ export class EnhancedSelect extends HTMLElement {
     input.placeholder = this._config.placeholder || 'Select an option...';
     input.disabled = !this._config.enabled;
     input.readOnly = !this._config.searchable;
+    
+    // Update readonly when input is focused if searchable
+    input.addEventListener('focus', () => {
+      if (this._config.searchable) {
+        input.readOnly = false;
+      }
+    });
     
     if (this._config.styles.classNames?.input) {
       input.className += ' ' + this._config.styles.classNames.input;
@@ -251,6 +262,22 @@ export class EnhancedSelect extends HTMLElement {
       .input-container {
         position: relative;
         width: 100%;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px 52px 6px 8px;
+        min-height: 44px;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+      }
+      
+      .input-container:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
       }
       
       /* Gradient separator before arrow */
@@ -270,6 +297,7 @@ export class EnhancedSelect extends HTMLElement {
           transparent 100%
         );
         pointer-events: none;
+        z-index: 1;
       }
       
       .dropdown-arrow-container {
@@ -284,6 +312,7 @@ export class EnhancedSelect extends HTMLElement {
         cursor: pointer;
         transition: background-color 0.2s ease;
         border-radius: 0 4px 4px 0;
+        z-index: 2;
       }
       
       .dropdown-arrow-container:hover {
@@ -307,21 +336,55 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .select-input {
-        width: 100%;
-        padding: 8px 52px 8px 12px;
-        min-height: 44px;
-        border: 1px solid var(--select-border-color, #ccc);
-        border-radius: var(--select-border-radius, 4px);
+        flex: 1;
+        min-width: 120px;
+        padding: 4px;
+        border: none;
         font-size: 14px;
+        line-height: 1.5;
+        color: #1f2937;
+        background: transparent;
+        box-sizing: border-box;
         outline: none;
-        transition: border-color 0.2s ease;
       }
       
-      .select-input:focus {
-        border-color: var(--select-border-focus-color, #1976d2);
-        box-shadow: 0 0 0 2px var(--select-shadow-focus-color, rgba(25, 118, 210, 0.1));
-        outline: 2px solid var(--select-border-focus-color, #1976d2);
-        outline-offset: 2px;
+      .select-input::placeholder {
+        color: #9ca3af;
+      }
+      
+      .selection-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #667eea;
+        color: white;
+        border-radius: 4px;
+        font-size: 13px;
+        line-height: 1;
+      }
+      
+      .badge-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        margin-left: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .badge-remove:hover {
+        background: rgba(255, 255, 255, 0.5);
       }
       
       .select-input:disabled {
@@ -331,6 +394,7 @@ export class EnhancedSelect extends HTMLElement {
       
       .select-dropdown {
         position: absolute;
+        scroll-behavior: smooth;
         top: 100%;
         left: 0;
         right: 0;
@@ -346,6 +410,7 @@ export class EnhancedSelect extends HTMLElement {
       
       .options-container {
         position: relative;
+        transition: opacity 0.2s ease-in-out;
       }
       
       .load-more-container {
@@ -399,6 +464,19 @@ export class EnhancedSelect extends HTMLElement {
         padding: 24px;
         text-align: center;
         color: var(--select-empty-color, #999);
+      }
+      
+      .searching-state {
+        padding: 24px;
+        text-align: center;
+        color: #667eea;
+        font-style: italic;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
       }
       
       /* Error states */
@@ -487,6 +565,11 @@ export class EnhancedSelect extends HTMLElement {
       this._arrowContainer.addEventListener('click', this._boundArrowClick);
     }
     
+    // Input container click - prevent event from reaching document listener
+    this._container.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    
     // Input focus/blur
     this._input.addEventListener('focus', () => this._handleOpen());
     this._input.addEventListener('blur', (e) => {
@@ -499,19 +582,21 @@ export class EnhancedSelect extends HTMLElement {
     });
     
     // Input search
-    if (this._config.searchable) {
-      this._input.addEventListener('input', (e) => {
-        this._state.searchQuery = (e.target as HTMLInputElement).value;
-        this._handleSearch(this._state.searchQuery);
-      });
-    }
+    this._input.addEventListener('input', (e) => {
+      if (!this._config.searchable) return;
+      console.log('[EnhancedSelect] Input event fired', (e.target as HTMLInputElement).value);
+      const query = (e.target as HTMLInputElement).value;
+      this._handleSearch(query);
+    });
     
     // Keyboard navigation
     this._input.addEventListener('keydown', (e) => this._handleKeydown(e));
     
     // Click outside to close
     document.addEventListener('click', (e) => {
-      if (!this._container.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // Check if click is outside shadow root
+      if (!this._shadow.contains(target) && !this._container.contains(target)) {
         this._handleClose();
       }
     });
@@ -567,12 +652,28 @@ export class EnhancedSelect extends HTMLElement {
     this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
     
+    // Clear search query when opening to show all options
+    // This ensures we can scroll to selected item
+    if (this._config.searchable) {
+        this._state.searchQuery = '';
+        // Don't clear input value if it represents selection
+        // But if we want to search, we might want to clear it?
+        // Standard behavior: input keeps value (label), but dropdown shows all options
+        // until user types.
+        // However, our filtering logic uses _state.searchQuery.
+        // So clearing it here resets the filter.
+    }
+
+    // Render options when opening
+    this._renderOptions();
+    
     this._emit('open', {});
     this._config.callbacks.onOpen?.();
     
     // Scroll to selected if configured
     if (this._config.scrollToSelected.enabled) {
-      this._scrollToSelected();
+      // Use setTimeout to allow render to complete
+      setTimeout(() => this._scrollToSelected(), 0);
     }
   }
 
@@ -612,15 +713,52 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _handleSearch(query: string): void {
-    // Get filtered items based on search query
-    const filteredItems = query 
+    console.log('[EnhancedSelect] _handleSearch called with:', JSON.stringify(query));
+    this._state.searchQuery = query;
+    
+    // Clear previous search timeout
+    if (this._searchTimeout) {
+      clearTimeout(this._searchTimeout);
+    }
+    
+    // Search immediately - no debouncing for better responsiveness
+    // Users expect instant feedback as they type
+    this._state.isSearching = false;
+    
+    // Ensure dropdown is open when searching
+    if (!this._state.isOpen) {
+      console.log('[EnhancedSelect] Opening dropdown for search');
+      this._handleOpen();
+    } else {
+      // Filter and render options immediately
+      console.log('[EnhancedSelect] Dropdown already open, re-rendering options');
+      this._renderOptions();
+    }
+    
+    // Get filtered items based on search query - searches ENTIRE phrase
+    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
+    // FIX: Do not trim query to allow searching for phrases with spaces
+    const searchQuery = query.toLowerCase();
+    
+    const filteredItems = searchQuery
       ? this._state.loadedItems.filter((item: any) => {
-          const label = item?.label || String(item);
-          return label.toLowerCase().includes(query.toLowerCase());
+          try {
+            const label = String(getLabel(item)).toLowerCase();
+            // Match the entire search phrase
+            return label.includes(searchQuery);
+          } catch (e) {
+            return false;
+          }
         })
       : this._state.loadedItems;
     
     const count = filteredItems.length;
+    console.log(`[EnhancedSelect] Search results: ${count} items found for query "${searchQuery}"`);
+    
+    // Announce search results for accessibility
+    if (searchQuery) {
+      this._announce(`${count} result${count !== 1 ? 's' : ''} found for "${query}"`);
+    }
     
     // Only notify if query or result count changed to prevent infinite loops
     if (query !== this._state.lastNotifiedQuery || count !== this._state.lastNotifiedResultCount) {
@@ -788,48 +926,54 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _selectOption(index: number): void {
-    const option = this._optionsContainer.children[index] as SelectOption;
-    if (!option) return;
+    // FIX: Do not rely on this._optionsContainer.children[index] because filtering changes the children
+    // Instead, use the index to update state directly
     
-    const config = option.getConfig();
+    const item = this._state.loadedItems[index];
+    if (!item) return;
+    
+    const config = { item }; // Minimal config needed
     const isCurrentlySelected = this._state.selectedIndices.has(index);
     
     if (this._config.selection.mode === 'single') {
       // Single select: clear previous and select new
+      const wasSelected = this._state.selectedIndices.has(index);
       this._state.selectedIndices.clear();
       this._state.selectedItems.clear();
       
-      if (!isCurrentlySelected || this._config.selection.allowDeselect) {
-        const newSelected = !isCurrentlySelected;
-        
-        if (newSelected) {
-          this._state.selectedIndices.add(index);
-          this._state.selectedItems.set(index, config.item);
-        }
-        
-        option.setSelected(newSelected);
+      if (!wasSelected) {
+        // Select this option
+        this._state.selectedIndices.add(index);
+        this._state.selectedItems.set(index, item);
       }
+      
+      // Re-render to update all option styles
+      this._renderOptions();
       
       if (this._config.selection.closeOnSelect) {
         this._handleClose();
       }
     } else {
-      // Multi select
+      // Multi select with toggle
       const maxSelections = this._config.selection.maxSelections || 0;
       
       if (isCurrentlySelected) {
+        // Deselect (toggle off)
         this._state.selectedIndices.delete(index);
         this._state.selectedItems.delete(index);
-        option.setSelected(false);
       } else {
+        // Select (toggle on)
         if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
+          this._announce(`Maximum ${maxSelections} selections allowed`);
           return; // Max selections reached
         }
         
         this._state.selectedIndices.add(index);
-        this._state.selectedItems.set(index, config.item);
-        option.setSelected(true);
+        this._state.selectedItems.set(index, item);
       }
+      
+      // Re-render to update styles (safer than trying to find the element in filtered list)
+      this._renderOptions();
     }
     
     this._updateInputDisplay();
@@ -840,10 +984,10 @@ export class EnhancedSelect extends HTMLElement {
     const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
     
     this._config.callbacks.onSelect?.({
-      item: config.item,
+      item: item,
       index,
-      value: getValue(config.item),
-      label: getLabel(config.item),
+      value: getValue(item),
+      label: getLabel(item),
       selected: this._state.selectedIndices.has(index),
     });
   }
@@ -870,11 +1014,58 @@ export class EnhancedSelect extends HTMLElement {
     if (selectedItems.length === 0) {
       this._input.value = '';
       this._input.placeholder = this._config.placeholder || 'Select an option...';
+      // Clear any badges
+      const existingBadges = this._inputContainer.querySelectorAll('.selection-badge');
+      existingBadges.forEach(badge => badge.remove());
     } else if (this._config.selection.mode === 'single') {
       this._input.value = getLabel(selectedItems[0]);
     } else {
-      this._input.value = `${selectedItems.length} selected`;
+      // Multi-select: show badges instead of text in input
+      this._input.value = '';
+      this._input.placeholder = '';
+      
+      // Clear existing badges
+      const existingBadges = this._inputContainer.querySelectorAll('.selection-badge');
+      existingBadges.forEach(badge => badge.remove());
+      
+      // Create badges for each selected item
+      const selectedEntries = Array.from(this._state.selectedItems.entries());
+      selectedEntries.forEach(([index, item]) => {
+        const badge = document.createElement('span');
+        badge.className = 'selection-badge';
+        badge.textContent = getLabel(item);
+        
+        // Add remove button to badge
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'badge-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.setAttribute('aria-label', `Remove ${getLabel(item)}`);
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this._state.selectedIndices.delete(index);
+          this._state.selectedItems.delete(index);
+          this._updateInputDisplay();
+          this._renderOptions();
+          this._emitChange();
+        });
+        
+        badge.appendChild(removeBtn);
+        this._inputContainer.insertBefore(badge, this._input);
+      });
     }
+  }
+
+  private _renderOptionsWithAnimation(): void {
+    // Add fade-out animation
+    this._optionsContainer.style.opacity = '0';
+    this._optionsContainer.style.transition = 'opacity 0.15s ease-out';
+    
+    setTimeout(() => {
+      this._renderOptions();
+      // Fade back in
+      this._optionsContainer.style.opacity = '1';
+      this._optionsContainer.style.transition = 'opacity 0.2s ease-in';
+    }, 150);
   }
 
   private _scrollToSelected(): void {
@@ -884,11 +1075,28 @@ export class EnhancedSelect extends HTMLElement {
     const indices = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
     const targetIndex = target === 'first' ? indices[0] : indices[indices.length - 1];
     
-    const option = this._optionsContainer.children[targetIndex] as SelectOption;
+    // FIX: Find the option element by ID instead of index in children
+    // because children list might be filtered or reordered
+    const optionId = `${this._uniqueId}-option-${targetIndex}`;
+    // We need to search in shadow root or options container
+    // Since options are custom elements, we can find them by ID if we set it (we do)
+    // But wait, we set ID on the element instance, but is it in the DOM?
+    // If filtered out, it won't be in the DOM.
+    
+    // If we are searching, we might not want to scroll to selected if it's not visible
+    // But if we just opened the dropdown, we usually want to see the selected item.
+    // If the selected item is filtered out, we can't scroll to it.
+    
+    // Try to find the element in the options container
+    // Note: querySelector on shadowRoot works if we set the ID attribute
+    // In _renderOptions we set: option.id = ...
+    
+    const option = this._optionsContainer.querySelector(`[id="${optionId}"]`);
+    
     if (option) {
       option.scrollIntoView({
-        block: this._config.scrollToSelected.block || 'nearest',
-        behavior: this._config.scrollToSelected.behavior || 'smooth',
+        block: this._config.scrollToSelected.block || 'center',
+        behavior: 'smooth',
       });
     }
   }
@@ -945,51 +1153,17 @@ export class EnhancedSelect extends HTMLElement {
   private _setBusy(busy: boolean): void {
     this._state.isBusy = busy;
     
-    if (!this._config.busyBucket.enabled) return;
-    
-    if (busy) {
-      const minDisplay = this._config.busyBucket.minDisplayTime || 200;
-      
-      this._busyTimeout = window.setTimeout(() => {
-        this._showBusyBucket();
-      }, 0);
-    } else {
-      if (this._busyTimeout) {
-        clearTimeout(this._busyTimeout);
-        this._busyTimeout = undefined;
-      }
-      
-      setTimeout(() => {
-        this._hideBusyBucket();
-      }, this._config.busyBucket.minDisplayTime || 200);
-    }
+    // Trigger re-render to show/hide busy indicator
+    // We use _renderOptions to handle the UI update
+    this._renderOptions();
   }
 
   private _showBusyBucket(): void {
-    if (!this._busyBucket) {
-      this._busyBucket = document.createElement('div');
-      this._busyBucket.className = 'busy-bucket';
-      
-      if (this._config.busyBucket.showSpinner) {
-        const spinner = document.createElement('div');
-        spinner.className = 'spinner';
-        this._busyBucket.appendChild(spinner);
-      }
-      
-      if (this._config.busyBucket.message) {
-        const message = document.createElement('div');
-        message.textContent = this._config.busyBucket.message;
-        this._busyBucket.appendChild(message);
-      }
-    }
-    
-    this._dropdown.appendChild(this._busyBucket);
+    // Deprecated: Logic moved to _renderOptions
   }
 
   private _hideBusyBucket(): void {
-    if (this._busyBucket && this._busyBucket.parentNode) {
-      this._busyBucket.parentNode.removeChild(this._busyBucket);
-    }
+    // Deprecated: Logic moved to _renderOptions
   }
 
   private _handleError(error: Error): void {
@@ -1193,6 +1367,13 @@ export class EnhancedSelect extends HTMLElement {
    */
   updateConfig(config: Partial<GlobalSelectConfig>): void {
     this._config = selectConfig.mergeWithComponentConfig(config);
+    
+    // Update input state based on new config
+    if (this._input) {
+      this._input.readOnly = !this._config.searchable;
+      this._input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
+    }
+    
     this._renderOptions();
   }
 
@@ -1245,58 +1426,151 @@ export class EnhancedSelect extends HTMLElement {
    * Render options based on current state
    */
   private _renderOptions(): void {
+    console.log('[EnhancedSelect] _renderOptions called');
+    
+    // Cleanup observer
+    if (this._loadMoreButton && this._intersectionObserver) {
+      this._intersectionObserver.unobserve(this._loadMoreButton);
+    }
+    
+    // Clear options container
     this._optionsContainer.innerHTML = '';
     
-    if (this._state.loadedItems.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'No options available';
-      this._optionsContainer.appendChild(empty);
+    // Ensure dropdown only contains options container (cleanup legacy direct children)
+    // We need to preserve optionsContainer, so we can't just clear dropdown.innerHTML
+    // But we can check if there are other children and remove them
+    Array.from(this._dropdown.children).forEach(child => {
+      if (child !== this._optionsContainer) {
+        this._dropdown.removeChild(child);
+      }
+    });
+    
+    // Ensure dropdown is visible if we are rendering options
+    if (this._state.isOpen && this._dropdown.style.display === 'none') {
+      this._dropdown.style.display = 'block';
+    }
+    
+    // Show searching state (exclusive state)
+    if (this._state.isSearching) {
+      const searching = document.createElement('div');
+      searching.className = 'searching-state';
+      searching.textContent = 'Searching...';
+      this._optionsContainer.appendChild(searching);
       return;
     }
     
     const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
     const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
     
-    this._state.loadedItems.forEach((item, index) => {
-      const isSelected = this._state.selectedIndices.has(index);
-      
-      const optionConfig: OptionConfig = {
-        item,
-        index,
-        selected: isSelected,
-        getValue,
-        getLabel,
-        showRemoveButton: this._config.selection.showRemoveButton && this._config.selection.mode === 'multi',
-        style: isSelected ? this._config.styles.selectedOption : this._config.styles.option,
-        className: isSelected 
-          ? this._config.styles.classNames?.selectedOption 
-          : this._config.styles.classNames?.option,
-      };
-      
-      const option = new SelectOption(optionConfig);
-      
-      // Set unique ID for aria-activedescendant
-      option.id = `${this._uniqueId}-option-${index}`;
-      
-      // Listen to option events
-      option.addEventListener('optionSelect', ((e: CustomEvent<OptionEventDetail>) => {
-        this._selectOption(e.detail.index);
-        this._announce(`Selected ${getLabel(item)}`);
-      }) as EventListener);
-      
-      option.addEventListener('optionRemove', ((e: CustomEvent<OptionEventDetail>) => {
-        this._handleOptionRemove(e.detail.index);
-        this._announce(`Removed ${getLabel(item)}`);
-      }) as EventListener);
-      
-      this._optionsContainer.appendChild(option);
-    });
+    // Filter items by search query
+    const query = this._state.searchQuery.toLowerCase();
     
-    // Add load more button if configured
-    if (this._config.loadMore.enabled && this._state.loadedItems.length > 0) {
+    // Handle Grouped Items Rendering (when no search query)
+    if (this._state.groupedItems.length > 0 && !query) {
+      this._state.groupedItems.forEach(group => {
+        const header = document.createElement('div');
+        header.className = 'group-header';
+        header.textContent = group.label;
+        Object.assign(header.style, {
+          padding: '8px 12px',
+          fontWeight: '600',
+          color: '#6b7280',
+          backgroundColor: '#f3f4f6',
+          fontSize: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          position: 'sticky',
+          top: '0',
+          zIndex: '1',
+          borderBottom: '1px solid #e5e7eb'
+        });
+        this._optionsContainer.appendChild(header);
+        
+        group.options.forEach(item => {
+          this._renderSingleOption(item, getValue, getLabel);
+        });
+      });
+    } else {
+      // Normal rendering (flat list or filtered)
+      const itemsToRender = query
+        ? this._state.loadedItems.filter((item) => {
+            try {
+              const label = String(getLabel(item)).toLowerCase();
+              return label.includes(query);
+            } catch (e) {
+              return false;
+            }
+          })
+        : this._state.loadedItems;
+      
+      if (itemsToRender.length === 0 && !this._state.isBusy) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        if (query) {
+          empty.textContent = `No results found for "${this._state.searchQuery}"`;
+        } else {
+          empty.textContent = 'No options available';
+        }
+        this._optionsContainer.appendChild(empty);
+      } else {
+        itemsToRender.forEach((item) => {
+          this._renderSingleOption(item, getValue, getLabel);
+        });
+      }
+    }
+    
+    // Append Busy Indicator if busy
+    if (this._state.isBusy && this._config.busyBucket.enabled) {
+      const busyBucket = document.createElement('div');
+      busyBucket.className = 'busy-bucket';
+      
+      if (this._config.busyBucket.showSpinner) {
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        busyBucket.appendChild(spinner);
+      }
+      
+      if (this._config.busyBucket.message) {
+        const message = document.createElement('div');
+        message.textContent = this._config.busyBucket.message;
+        busyBucket.appendChild(message);
+      }
+      
+      this._optionsContainer.appendChild(busyBucket);
+    }
+    // Append Load More Button (Trigger) if enabled and not busy
+    else if (this._config.loadMore.enabled && this._state.loadedItems.length > 0) {
       this._addLoadMoreButton();
     }
+  }
+
+  private _renderSingleOption(item: any, getValue: (item: any) => any, getLabel: (item: any) => string) {
+    const option = document.createElement('div');
+    option.className = 'option';
+    const value = getValue(item);
+    const label = getLabel(item);
+    
+    option.textContent = label;
+    option.dataset.value = String(value);
+    
+    // Check if selected using selectedItems map
+    const isSelected = Array.from(this._state.selectedItems.values()).some(selectedItem => {
+        const selectedValue = getValue(selectedItem);
+        return selectedValue === value;
+    });
+    
+    if (isSelected) {
+      option.classList.add('selected');
+    }
+    
+    option.addEventListener('click', () => {
+      const index = this._state.loadedItems.indexOf(item);
+      if (index !== -1) {
+        this._selectOption(index);
+      }
+    });
+    
+    this._optionsContainer.appendChild(option);
   }
 
   private _addLoadMoreButton(): void {
@@ -1306,10 +1580,11 @@ export class EnhancedSelect extends HTMLElement {
     this._loadMoreButton = document.createElement('button');
     this._loadMoreButton.className = 'load-more-button';
     this._loadMoreButton.textContent = `Load ${this._config.loadMore.itemsPerLoad} more`;
+    
     this._loadMoreButton.addEventListener('click', () => this._loadMoreItems());
     
     container.appendChild(this._loadMoreButton);
-    this._dropdown.appendChild(container);
+    this._optionsContainer.appendChild(container);
     
     // Setup intersection observer for auto-load
     if (this._intersectionObserver) {
