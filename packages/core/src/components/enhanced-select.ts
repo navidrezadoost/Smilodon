@@ -619,7 +619,6 @@ export class EnhancedSelect extends HTMLElement {
     // Input search
     this._input.addEventListener('input', (e) => {
       if (!this._config.searchable) return;
-      console.log('[EnhancedSelect] Input event fired', (e.target as HTMLInputElement).value);
       const query = (e.target as HTMLInputElement).value;
       this._handleSearch(query);
     });
@@ -650,7 +649,6 @@ export class EnhancedSelect extends HTMLElement {
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              console.log('[InfiniteScroll] Sentinel intersected. isBusy:', this._state.isBusy);
               if (!this._state.isBusy) {
                 this._loadMoreItems();
               }
@@ -757,7 +755,6 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _handleSearch(query: string): void {
-    console.log('[EnhancedSelect] _handleSearch called with:', JSON.stringify(query));
     this._state.searchQuery = query;
     
     // Clear previous search timeout
@@ -771,11 +768,9 @@ export class EnhancedSelect extends HTMLElement {
     
     // Ensure dropdown is open when searching
     if (!this._state.isOpen) {
-      console.log('[EnhancedSelect] Opening dropdown for search');
       this._handleOpen();
     } else {
       // Filter and render options immediately
-      console.log('[EnhancedSelect] Dropdown already open, re-rendering options');
       this._renderOptions();
     }
     
@@ -797,7 +792,6 @@ export class EnhancedSelect extends HTMLElement {
       : this._state.loadedItems;
     
     const count = filteredItems.length;
-    console.log(`[EnhancedSelect] Search results: ${count} items found for query "${searchQuery}"`);
     
     // Announce search results for accessibility
     if (searchQuery) {
@@ -1148,7 +1142,6 @@ export class EnhancedSelect extends HTMLElement {
   private async _loadMoreItems(): Promise<void> {
     if (this._state.isBusy) return;
     
-    console.log('[InfiniteScroll] _loadMoreItems triggered');
     this._setBusy(true);
     
     // Save scroll position before loading
@@ -1166,7 +1159,6 @@ export class EnhancedSelect extends HTMLElement {
       // Emit event for parent to handle
       this._state.currentPage++;
       
-      console.log(`[InfiniteScroll] Emitting loadMore event for page ${this._state.currentPage}`);
       this._emit('loadMore', { page: this._state.currentPage, items: [] });
       this._config.callbacks.onLoadMore?.(this._state.currentPage);
       
@@ -1235,15 +1227,6 @@ export class EnhancedSelect extends HTMLElement {
     if (this._state.preserveScrollPosition && this._dropdown) {
       const targetScrollTop = this._state.lastScrollPosition;
       
-      console.log('[InfiniteScroll] setItems: before render', {
-        previousLength,
-        newLength,
-        lastScrollPosition: this._state.lastScrollPosition,
-        scrollTop: this._dropdown.scrollTop,
-        scrollHeight: this._dropdown.scrollHeight,
-        clientHeight: this._dropdown.clientHeight
-      });
-      
       // Only clear loading if we actually got more items
       if (newLength > previousLength) {
         this._state.isBusy = false;
@@ -1260,14 +1243,6 @@ export class EnhancedSelect extends HTMLElement {
       requestAnimationFrame(() => {
         if (this._dropdown) {
           this._dropdown.scrollTop = targetScrollTop;
-          
-          console.log('[InfiniteScroll] setItems: after render', {
-            newLength,
-            lastScrollPosition: this._state.lastScrollPosition,
-            scrollTop: this._dropdown.scrollTop,
-            scrollHeight: this._dropdown.scrollHeight,
-            clientHeight: this._dropdown.clientHeight
-          });
         }
       });
       
@@ -1465,8 +1440,6 @@ export class EnhancedSelect extends HTMLElement {
    * Render options based on current state
    */
   private _renderOptions(): void {
-    console.log('[EnhancedSelect] _renderOptions called');
-    
     // Cleanup observer
     if (this._loadMoreTrigger && this._intersectionObserver) {
       this._intersectionObserver.unobserve(this._loadMoreTrigger);
@@ -1642,7 +1615,6 @@ export class EnhancedSelect extends HTMLElement {
     
     // Setup intersection observer for auto-load
     if (this._intersectionObserver && this._loadMoreTrigger) {
-      console.log('[InfiniteScroll] Observing sentinel');
       this._intersectionObserver.observe(this._loadMoreTrigger);
     }
   }
