@@ -1111,31 +1111,53 @@ export class EnhancedSelect extends HTMLElement {
     
     const target = this._config.scrollToSelected.multiSelectTarget;
     const indices = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
-    const targetIndex = target === 'first' ? indices[0] : indices[indices.length - 1];
     
-    // FIX: Find the option element by ID instead of index in children
-    // because children list might be filtered or reordered
+    // For multi-select, find the closest selected item to the current scroll position
+    let targetIndex: number;
+    
+    if (this._config.selection.mode === 'multi' && indices.length > 1) {
+      // Calculate which selected item is closest to the center of the viewport
+      const dropdownRect = this._dropdown.getBoundingClientRect();
+      const viewportCenter = this._dropdown.scrollTop + (dropdownRect.height / 2);
+      
+      // Find the selected item closest to viewport center
+      let closestIndex = indices[0];
+      let closestDistance = Infinity;
+      
+      for (const index of indices) {
+        const optionId = `${this._uniqueId}-option-${index}`;
+        const option = this._optionsContainer.querySelector(`[id="${optionId}"]`) as HTMLElement;
+        
+        if (option) {
+          const optionTop = option.offsetTop;
+          const distance = Math.abs(optionTop - viewportCenter);
+          
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = index;
+          }
+        }
+      }
+      
+      targetIndex = closestIndex;
+    } else {
+      // For single select or only one selected item, use the configured target
+      targetIndex = target === 'first' ? indices[0] : indices[indices.length - 1];
+    }
+    
+    // Find and scroll to the target option
     const optionId = `${this._uniqueId}-option-${targetIndex}`;
-    // We need to search in shadow root or options container
-    // Since options are custom elements, we can find them by ID if we set it (we do)
-    // But wait, we set ID on the element instance, but is it in the DOM?
-    // If filtered out, it won't be in the DOM.
-    
-    // If we are searching, we might not want to scroll to selected if it's not visible
-    // But if we just opened the dropdown, we usually want to see the selected item.
-    // If the selected item is filtered out, we can't scroll to it.
-    
-    // Try to find the element in the options container
-    // Note: querySelector on shadowRoot works if we set the ID attribute
-    // In _renderOptions we set: option.id = ...
-    
-    const option = this._optionsContainer.querySelector(`[id="${optionId}"]`);
+    const option = this._optionsContainer.querySelector(`[id="${optionId}"]`) as HTMLElement;
     
     if (option) {
+      // Use smooth scrolling with center alignment for better UX
       option.scrollIntoView({
         block: this._config.scrollToSelected.block || 'center',
         behavior: 'smooth',
       });
+      
+      // Also set it as active for keyboard navigation
+      this._setActive(targetIndex);
     }
   }
 
