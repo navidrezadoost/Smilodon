@@ -77,13 +77,14 @@ import '@smilodon/core';
 <smilodon-select ref={selectRef} />
 ```
 
-**Optional Framework Adapters** (coming soon):
-- **React**: `@smilodon/react` - React hooks and components
-- **Vue**: `@smilodon/vue` - Vue composables and components  
-- **Svelte**: `@smilodon/svelte` - Svelte stores and components
-- **Angular**: `@smilodon/angular` - Angular directives and services
+**Optional Framework Adapters** (for enhanced developer experience):
+- **React**: `npm install @smilodon/react` - React hooks and components
+- **Vue**: `npm install @smilodon/vue` - Vue composables and components  
+- **Svelte**: `npm install @smilodon/svelte` - Svelte stores and components
+- **Angular**: `npm install @smilodon/angular` - Angular directives and services
+- **Vanilla**: `npm install @smilodon/vanilla` - Vanilla JS helpers
 
-These adapters provide framework-native APIs for enhanced developer experience, but are **not required** - the core package works everywhere!
+These adapters provide framework-native APIs (hooks, composables, directives) for enhanced developer experience, but are **not required** - the core package works everywhere!
 
 See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) for framework-specific examples.
 
