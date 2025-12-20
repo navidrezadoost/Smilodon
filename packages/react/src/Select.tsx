@@ -226,20 +226,33 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   const [internalValue, setInternalValue] = useState(defaultValue);
 
   // Register custom element if not already registered
+  const [isElementReady, setIsElementReady] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && !customElements.get('enhanced-select')) {
-      import('@smilodon/core').then((module) => {
-        if (!customElements.get('enhanced-select')) {
-          customElements.define('enhanced-select', module.EnhancedSelect);
-        }
-      });
+    if (typeof window !== 'undefined') {
+      if (customElements.get('enhanced-select')) {
+        setIsElementReady(true);
+      } else {
+        import('@smilodon/core').then((module) => {
+          if (!customElements.get('enhanced-select')) {
+            customElements.define('enhanced-select', module.EnhancedSelect);
+          }
+          setIsElementReady(true);
+        });
+      }
     }
   }, []);
 
   // Initialize component
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
+    if (!element || !isElementReady) return;
+
+    // Wait for the element to be fully upgraded
+    if (!element.setItems) {
+      console.warn('Enhanced select element not fully initialized yet');
+      return;
+    }
 
     // Set initial items
     if (groupedItems) {
@@ -287,18 +300,19 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, []);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled]);
 
   // Update items when they change
   useEffect(() => {
-    if (!elementRef.current) return;
+    const element = elementRef.current;
+    if (!element || !isElementReady || !element.setItems) return;
     
     if (groupedItems) {
-      elementRef.current.setGroupedItems(groupedItems);
-    } else if (items.length > 0) {
-      elementRef.current.setItems(items);
+      element.setGroupedItems(groupedItems);
+    } else {
+      element.setItems(items);
     }
-  }, [items, groupedItems]);
+  }, [items, groupedItems, isElementReady]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
