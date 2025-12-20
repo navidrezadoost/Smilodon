@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build": "tsc --emitDeclarationOnly --outDir dist/types && vite build",
-    "size": "gzip -c dist/index.mjs | wc -c"
+    "size": "gzip -c dist/index.mjs | wc -c",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@smilodon/core": "^1.0.0"
@@ -46,11 +47,22 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/navidrezadoost/smilodon.git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
     "directory": "packages/vanilla"
   },
-  "bugs": "https://github.com/navidrezadoost/smilodon/issues",
+  "bugs": {
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
+  },
   "homepage": "https://github.com/navidrezadoost/smilodon#readme",
+  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
   "license": "MIT",
-  "sideEffects": false
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build": "vue-tsc --declaration --emitDeclarationOnly --outDir dist/types && vite build && node scripts/cleanup-types.js",
-    "size": "gzip -c dist/index.js | wc -c"
+    "size": "gzip -c dist/index.js | wc -c",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@smilodon/core": "^1.0.0",
@@ -51,14 +52,23 @@
     "composition-api"
   ],
   "license": "MIT",
+  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/smilodon.git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
     "directory": "packages/vue"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/smilodon/issues"
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
   },
-  "homepage": "https://github.com/yourusername/smilodon#readme"
+  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }
