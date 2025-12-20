@@ -1,6 +1,7 @@
 {
   "name": "@smilodon/monorepo",
   "version": "0.0.1",
+  "description": "Smilodon monorepo: high-performance select components for React, Vue, Svelte, Angular, and Web Components.",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -37,8 +38,19 @@
     "lint": "eslint .",
     "size": "npm run size --workspaces --if-present",
     "perf": "npm run build:core && node scripts/perf.js",
-    "playwright:install": "playwright install"
+    "playwright:install": "playwright install",
+    "version:core": "npm version patch -w @smilodon/core",
+    "publish:core": "npm publish -w @smilodon/core",
+    "release:core": "npm run version:core && npm run publish:core"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/navidrezadoost/smilodon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
+  },
+  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
   "devDependencies": {
     "@playwright/test": "^1.46.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
