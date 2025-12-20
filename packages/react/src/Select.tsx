@@ -316,17 +316,19 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
-    if (!elementRef.current || !isControlled) return;
+    const element = elementRef.current;
+    if (!element || !isControlled || !isElementReady || !element.setSelectedValues) return;
     
     if (value !== undefined) {
       const values = Array.isArray(value) ? value : [value];
-      elementRef.current.setSelectedValues(values);
+      element.setSelectedValues(values);
     }
-  }, [value, isControlled]);
+  }, [value, isControlled, isElementReady]);
 
   // Update config when props change
   useEffect(() => {
-    if (!elementRef.current) return;
+    const element = elementRef.current;
+    if (!element || !isElementReady || !element.updateConfig) return;
 
     const config = {
       searchable,
@@ -342,25 +344,27 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       },
     };
 
-    elementRef.current.updateConfig(config);
-  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize]);
+    element.updateConfig(config);
+  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, isElementReady]);
 
   // Update error state
   useEffect(() => {
-    if (!elementRef.current) return;
+    const element = elementRef.current;
+    if (!element || !isElementReady) return;
 
     if (error) {
-      elementRef.current.setError(errorMessage || 'Invalid selection');
+      if (element.setError) element.setError(errorMessage || 'Invalid selection');
     } else {
-      elementRef.current.clearError();
+      if (element.clearError) element.clearError();
     }
-  }, [error, errorMessage]);
+  }, [error, errorMessage, isElementReady]);
 
   // Update required state
   useEffect(() => {
-    if (!elementRef.current) return;
-    elementRef.current.setRequired(required);
-  }, [required]);
+    const element = elementRef.current;
+    if (!element || !isElementReady || !element.setRequired) return;
+    element.setRequired(required);
+  }, [required, isElementReady]);
 
   // Event handlers
   useEffect(() => {
