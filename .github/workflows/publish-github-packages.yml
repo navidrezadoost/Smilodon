@@ -1,0 +1,37 @@
+name: Publish to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish (e.g., core)'
+        required: true
+        default: 'core'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@smilodon'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build package
+        run: npm --workspace @smilodon/${{ github.event.inputs.package }} run build
+      
+      - name: Publish to GitHub Packages
+        run: npm publish --workspace @smilodon/${{ github.event.inputs.package }} --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

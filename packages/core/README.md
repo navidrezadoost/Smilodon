@@ -65,14 +65,25 @@ npm install @smilodon/core
 </html>
 ```
 
-### With Framework Adapters
+### Framework Usage
 
-Smilodon provides native adapters for all major frameworks:
+**`@smilodon/core` works directly in all frameworks** as a Web Component - no adapters needed!
 
-- **React**: `npm install @smilodon/react`
-- **Vue**: `npm install @smilodon/vue`
-- **Svelte**: `npm install @smilodon/svelte`
-- **Angular**: `npm install @smilodon/angular`
+Simply import and use `<smilodon-select>` in React, Vue, Angular, Svelte, or any framework:
+
+```jsx
+// React, Vue, Svelte, Angular - all work the same way
+import '@smilodon/core';
+<smilodon-select ref={selectRef} />
+```
+
+**Optional Framework Adapters** (coming soon):
+- **React**: `@smilodon/react` - React hooks and components
+- **Vue**: `@smilodon/vue` - Vue composables and components  
+- **Svelte**: `@smilodon/svelte` - Svelte stores and components
+- **Angular**: `@smilodon/angular` - Angular directives and services
+
+These adapters provide framework-native APIs for enhanced developer experience, but are **not required** - the core package works everywhere!
 
 See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) for framework-specific examples.
 
