@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "High-performance native select component with extreme-scale virtualization",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -39,7 +39,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/navidrezadoost/smilodon.git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
     "directory": "packages/core"
   },
   "homepage": "https://github.com/navidrezadoost/smilodon#readme",
