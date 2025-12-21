@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/angular",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Production-ready, accessible select component for Angular - part of the Smilodon UI toolkit",
   "type": "module",
   "files": [
