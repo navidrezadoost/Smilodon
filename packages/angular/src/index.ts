@@ -6,6 +6,9 @@
  * @packageDocumentation
  */
 
+// Import core to register the web component
+import '@smilodon/core';
+
 export { SelectComponent } from './select.component';
 export { SmilodonSelectModule } from './select.module';
 
