@@ -20,6 +20,7 @@ import {
   ViewChild,
   ElementRef,
   OnInit,
+  AfterViewInit,
   OnDestroy,
   OnChanges,
   SimpleChanges,
@@ -27,7 +28,6 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import '@smilodon/core'; // Register web components
 import type {
   SelectEventDetail,
   ChangeEventDetail,
@@ -72,17 +72,17 @@ export interface SelectItem {
     ></enhanced-select>
   `,
   providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => SelectComponent),
-      multi: true,
-    },
+    // {
+    //   provide: NG_VALUE_ACCESSOR,
+    //   useExisting: forwardRef(() => SelectComponent),
+    //   multi: true,
+    // },
   ],
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlValueAccessor {
-  @ViewChild('selectElement', { static: true }) selectElementRef!: ElementRef<HTMLElement>;
+export class SelectComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges, ControlValueAccessor {
+  @ViewChild('selectElement', { static: false }) selectElementRef!: ElementRef<HTMLElement>;
 
   // Props
   @Input() items: SelectItem[] = [];
@@ -123,50 +123,61 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
   }
 
   ngOnInit(): void {
-    const element = this.selectElementRef.nativeElement as any;
+    // Defer initialization until AfterViewInit when ViewChild is guaranteed to be available
+  }
 
-    // Set initial items
-    if (this.items?.length) {
-      element.setItems(this.items);
-    }
-    if (this.groupedItems?.length) {
-      element.setGroupedItems(this.groupedItems);
-    }
+  ngAfterViewInit(): void {
+    const element = this.selectElementRef?.nativeElement as any;
+    if (!element) return;
 
-    // Set initial value
-    if (this.value !== undefined) {
-      const values = Array.isArray(this.value) ? this.value : [this.value];
-      element.setSelectedValues(values);
-    }
+    // Wait for custom element to be defined
+    customElements.whenDefined('enhanced-select').then(() => {
+      // Set initial items
+      if (this.items?.length) {
+        element.setItems(this.items);
+      }
+      if (this.groupedItems?.length) {
+        element.setGroupedItems(this.groupedItems);
+      }
 
-    if (this.config) {
-      element.updateConfig(this.config);
-    }
+      // Set initial value
+      if (this.value !== undefined) {
+        const values = Array.isArray(this.value) ? this.value : [this.value];
+        element.setSelectedValues(values);
+      }
+
+      if (this.config) {
+        element.updateConfig(this.config);
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     const element = this.selectElementRef?.nativeElement as any;
     if (!element) return;
 
-    // Update items
-    if (changes['items'] && !changes['items'].firstChange) {
-      element.setItems(this.items);
-    }
+    // Wait for custom element to be defined before updating
+    customElements.whenDefined('enhanced-select').then(() => {
+      // Update items
+      if (changes['items'] && !changes['items'].firstChange) {
+        element.setItems(this.items);
+      }
 
-    if (changes['config'] && !changes['config'].firstChange) {
-      element.updateConfig(this.config);
-    }
+      if (changes['config'] && !changes['config'].firstChange) {
+        element.updateConfig(this.config);
+      }
 
-    // Update grouped items
-    if (changes['groupedItems'] && !changes['groupedItems'].firstChange) {
-      element.setGroupedItems(this.groupedItems);
-    }
+      // Update grouped items
+      if (changes['groupedItems'] && !changes['groupedItems'].firstChange) {
+        element.setGroupedItems(this.groupedItems);
+      }
 
-    // Update value
-    if (changes['value'] && !changes['value'].firstChange && this.value !== undefined) {
-      const values = Array.isArray(this.value) ? this.value : [this.value];
-      element.setSelectedValues(values);
-    }
+      // Update value
+      if (changes['value'] && !changes['value'].firstChange && this.value !== undefined) {
+        const values = Array.isArray(this.value) ? this.value : [this.value];
+        element.setSelectedValues(values);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -225,8 +236,10 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
       this.value = value;
       const element = this.selectElementRef?.nativeElement as any;
       if (element) {
-        const values = Array.isArray(value) ? value : [value];
-        element.setSelectedValues(values);
+        customElements.whenDefined('enhanced-select').then(() => {
+          const values = Array.isArray(value) ? value : [value];
+          element.setSelectedValues(values);
+        });
       }
     }
   }
@@ -245,11 +258,15 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
 
   // Public API methods
   open(): void {
-    (this.selectElementRef.nativeElement as any)?.open();
+    customElements.whenDefined('enhanced-select').then(() => {
+      (this.selectElementRef.nativeElement as any)?.open();
+    });
   }
 
   close(): void {
-    (this.selectElementRef.nativeElement as any)?.close();
+    customElements.whenDefined('enhanced-select').then(() => {
+      (this.selectElementRef.nativeElement as any)?.close();
+    });
   }
 
   focus(): void {
@@ -258,18 +275,24 @@ export class SelectComponent implements OnInit, OnDestroy, OnChanges, ControlVal
 
   setItems(items: SelectItem[]): void {
     this.items = items;
-    (this.selectElementRef.nativeElement as any)?.setItems(items);
+    customElements.whenDefined('enhanced-select').then(() => {
+      (this.selectElementRef.nativeElement as any)?.setItems(items);
+    });
   }
 
   setGroupedItems(groups: GroupedItem[]): void {
     this.groupedItems = groups;
-    (this.selectElementRef.nativeElement as any)?.setGroupedItems(groups);
+    customElements.whenDefined('enhanced-select').then(() => {
+      (this.selectElementRef.nativeElement as any)?.setGroupedItems(groups);
+    });
   }
 
   clear(): void {
-    (this.selectElementRef.nativeElement as any)?.setSelectedValues([]);
-    const newValue = this.multiple ? [] : '';
-    this.onChange(newValue);
-    this.changeEvent.emit({ value: newValue as any, selectedItems: [] });
+    customElements.whenDefined('enhanced-select').then(() => {
+      (this.selectElementRef.nativeElement as any)?.setSelectedValues([]);
+      const newValue = this.multiple ? [] : '';
+      this.onChange(newValue);
+      this.changeEvent.emit({ value: newValue as any, selectedItems: [] });
+    });
   }
 }
