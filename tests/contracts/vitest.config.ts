@@ -31,7 +31,6 @@ export default defineConfig({
       '@smilodon/react': resolve(__dirname, '../../packages/react/dist/index.js'),
       '@smilodon/vue': resolve(__dirname, '../../packages/vue/dist/index.js'),
       '@smilodon/svelte': resolve(__dirname, '../../packages/svelte/dist/index.mjs'),
-      '@smilodon/angular': resolve(__dirname, '../../packages/angular/dist/fesm2022/smilodon-angular.mjs'),
       '@smilodon/vanilla': resolve(__dirname, '../../packages/vanilla/dist/index.mjs'),
       '@smilodon/core': resolve(__dirname, '../../packages/core/src/index.ts'),
     },
