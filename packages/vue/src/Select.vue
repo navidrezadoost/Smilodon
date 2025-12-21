@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
-import {
+import type {
   SelectEventDetail,
   OpenEventDetail,
   CloseEventDetail,
@@ -82,6 +82,8 @@ export interface SelectProps {
   className?: string;
   /** Custom inline styles */
   style?: Record<string, string>;
+  /** Enable expandable dropdown */
+  expandable?: boolean;
 }
 
 export interface SelectEmits {
@@ -119,9 +121,49 @@ const props = withDefaults(defineProps<SelectProps>(), {
 const emit = defineEmits<SelectEmits>();
 
 const selectRef = ref<HTMLElement | null>(null);
+const isElementReady = ref(false);
 const internalValue = ref<string | number | (string | number)[] | undefined>(
   props.defaultValue
 );
+
+const waitForUpgrade = async () => {
+  if (typeof window === 'undefined') return;
+
+  // Ensure the module is loaded (it registers the custom element on import)
+  if (!customElements.get('enhanced-select')) {
+    await import('@smilodon/core');
+  }
+
+  const el = selectRef.value as any;
+  if (!el) return;
+
+  // Wait until the element is upgraded and its methods exist.
+  // In some environments, the tag can be defined but the particular instance
+  // hasn't been upgraded yet when watchers/mounted run.
+  try {
+    await customElements.whenDefined('enhanced-select');
+  } catch {
+    // ignore
+  }
+
+  // Retry a few frames to let the browser upgrade the instance.
+  for (let i = 0; i < 5; i++) {
+    const candidate = selectRef.value as any;
+    if (candidate && typeof candidate.setItems === 'function') {
+      isElementReady.value = true;
+      return;
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  isElementReady.value = typeof (selectRef.value as any)?.setItems === 'function';
+};
+
+const safeCall = (fn: (el: any) => void) => {
+  const el = selectRef.value as any;
+  if (!el || !isElementReady.value) return;
+  fn(el);
+};
 
 // Check if component is controlled
 const isControlled = computed(() => props.modelValue !== undefined);
@@ -135,9 +177,9 @@ const currentValue = computed(() =>
 watch(
   () => props.items,
   (newItems) => {
-    if (selectRef.value && newItems) {
-      (selectRef.value as any).setItems(newItems);
-    }
+    safeCall((el) => {
+      if (newItems) el.setItems(newItems);
+    });
   },
   { deep: true }
 );
@@ -146,9 +188,9 @@ watch(
 watch(
   () => props.groupedItems,
   (newGroups) => {
-    if (selectRef.value && newGroups) {
-      (selectRef.value as any).setGroupedItems(newGroups);
-    }
+    safeCall((el) => {
+      if (newGroups) el.setGroupedItems(newGroups);
+    });
   },
   { deep: true }
 );
@@ -157,74 +199,54 @@ watch(
 watch(
   currentValue,
   (newValue) => {
-    if (selectRef.value && newValue !== undefined) {
-      const values = Array.isArray(newValue) ? newValue : [newValue];
-      (selectRef.value as any).setSelectedValues(values);
-    }
+    safeCall((el) => {
+      if (newValue !== undefined) {
+        const values = Array.isArray(newValue) ? newValue : [newValue];
+        el.setSelectedValues(values);
+      }
+    });
   },
   { immediate: true }
 );
 
-// Sync other props
-watch(
-  () => props.placeholder,
-  (newPlaceholder) => {
-    if (selectRef.value && newPlaceholder) {
-      selectRef.value.setAttribute('placeholder', newPlaceholder);
-    }
-  }
-);
+// Sync configuration
+const updateConfig = () => {
+  safeCall((el) => {
+    const config = {
+      searchable: props.searchable,
+      placeholder: props.placeholder,
+      enabled: !props.disabled,
+      virtualize: props.virtualized,
+      selection: {
+        mode: props.multiple ? 'multi' : 'single',
+        maxSelections: props.maxSelections,
+      },
+      infiniteScroll: {
+        enabled: props.infiniteScroll,
+        pageSize: props.pageSize,
+      },
+      expandable: {
+        enabled: props.expandable,
+      },
+    };
+
+    el.updateConfig(config);
+  });
+};
 
 watch(
-  () => props.disabled,
-  (newDisabled) => {
-    if (selectRef.value) {
-      if (newDisabled) {
-        selectRef.value.setAttribute('disabled', '');
-      } else {
-        selectRef.value.removeAttribute('disabled');
-      }
-    }
-  }
-);
-
-watch(
-  () => props.searchable,
-  (newSearchable) => {
-    if (selectRef.value) {
-      if (newSearchable) {
-        selectRef.value.setAttribute('searchable', '');
-      } else {
-        selectRef.value.removeAttribute('searchable');
-      }
-    }
-  }
-);
-
-watch(
-  () => props.multiple,
-  (newMultiple) => {
-    if (selectRef.value) {
-      if (newMultiple) {
-        selectRef.value.setAttribute('multiple', '');
-      } else {
-        selectRef.value.removeAttribute('multiple');
-      }
-    }
-  }
-);
-
-watch(
-  () => props.virtualized,
-  (newVirtualized) => {
-    if (selectRef.value) {
-      if (newVirtualized) {
-        selectRef.value.setAttribute('virtualized', '');
-      } else {
-        selectRef.value.removeAttribute('virtualized');
-      }
-    }
-  }
+  [
+    () => props.searchable,
+    () => props.placeholder,
+    () => props.disabled,
+    () => props.multiple,
+    () => props.maxSelections,
+    () => props.infiniteScroll,
+    () => props.pageSize,
+    () => props.virtualized,
+    () => props.expandable,
+  ],
+  updateConfig
 );
 
 // Event handlers
@@ -275,52 +297,25 @@ const handleCreate = (e: Event) => {
 };
 
 // Setup event listeners
-onMounted(() => {
-  if (!selectRef.value) return;
+onMounted(async () => {
+  await waitForUpgrade();
+  if (!selectRef.value || !isElementReady.value) return;
 
-  const element = selectRef.value;
+  const element = selectRef.value as any;
 
-  // Set initial attributes
-  if (props.placeholder) {
-    element.setAttribute('placeholder', props.placeholder);
-  }
-  if (props.disabled) {
-    element.setAttribute('disabled', '');
-  }
-  if (props.required) {
-    element.setAttribute('required', '');
-  }
-  if (props.error) {
-    element.setAttribute('error', '');
-  }
-  if (props.searchable) {
-    element.setAttribute('searchable', '');
-  }
-  if (props.multiple) {
-    element.setAttribute('multiple', '');
-  }
-  if (props.virtualized) {
-    element.setAttribute('virtualized', '');
-  }
-  if (props.infiniteScroll) {
-    element.setAttribute('infinite-scroll', '');
-  }
-  if (props.pageSize) {
-    element.setAttribute('page-size', String(props.pageSize));
-  }
-  if (props.maxSelections) {
-    element.setAttribute('max-selections', String(props.maxSelections));
-  }
+  // Initial configuration
+  updateConfig();
+
   if (props.placement) {
     element.setAttribute('placement', props.placement);
   }
 
   // Set initial items
   if (props.items?.length) {
-    (element as any).setItems(props.items);
+    element.setItems(props.items);
   }
   if (props.groupedItems?.length) {
-    (element as any).setGroupedItems(props.groupedItems);
+    element.setGroupedItems(props.groupedItems);
   }
 
   // Set initial value
@@ -328,7 +323,7 @@ onMounted(() => {
     const values = Array.isArray(currentValue.value)
       ? currentValue.value
       : [currentValue.value];
-    (element as any).setSelectedValues(values);
+    element.setSelectedValues(values);
   }
 
   // Add event listeners

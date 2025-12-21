@@ -1,4 +1,23 @@
 export * from './types.js';
+export type {
+  SelectEventDetail,
+  OpenEventDetail,
+  CloseEventDetail,
+  SearchEventDetail,
+  ChangeEventDetail,
+  LoadMoreEventDetail,
+  RemoveEventDetail,
+  ErrorEventDetail,
+  PageLoadedEventDetail,
+  GroupedItem,
+  RemoteConfig,
+  Placement,
+  Strategy,
+  NativeSelectOptions,
+  RendererHelpers,
+  SelectEventsDetailMap,
+  SelectEventName
+} from './types.js';
 export * from './renderers/contracts.js';
 export * from './components/native-select.js';
 export * from './components/enhanced-select.js';

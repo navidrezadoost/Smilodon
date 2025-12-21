@@ -69,10 +69,10 @@ npm install @smilodon/core
 
 **`@smilodon/core` works directly in all frameworks** as a Web Component - no adapters needed!
 
-Simply import and use `<smilodon-select>` in React, Vue, Angular, Svelte, or any framework:
+Simply import and use `<smilodon-select>` in React, Vue, Svelte, or any framework:
 
 ```jsx
-// React, Vue, Svelte, Angular - all work the same way
+// React, Vue, Svelte - all work the same way
 import '@smilodon/core';
 <smilodon-select ref={selectRef} />
 ```
@@ -81,10 +81,11 @@ import '@smilodon/core';
 - **React**: `npm install @smilodon/react` - React hooks and components
 - **Vue**: `npm install @smilodon/vue` - Vue composables and components  
 - **Svelte**: `npm install @smilodon/svelte` - Svelte stores and components
-- **Angular**: `npm install @smilodon/angular` - Angular directives and services
 - **Vanilla**: `npm install @smilodon/vanilla` - Vanilla JS helpers
 
-These adapters provide framework-native APIs (hooks, composables, directives) for enhanced developer experience, but are **not required** - the core package works everywhere!
+These adapters provide framework-native APIs (hooks, composables) for enhanced developer experience, but are **not required** - the core package works everywhere!
+
+**Note:** Angular support has been discontinued as of December 2025.
 
 See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) for framework-specific examples.
 
@@ -99,7 +100,7 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 ### 🎯 Production Ready
 - **TypeScript First**: Complete type definitions included
 - **Zero Dependencies**: 6.6 KB gzipped runtime
-- **Framework Agnostic**: Works with React, Vue, Svelte, Angular, or vanilla JS
+- **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JS
 - **Accessibility**: WCAG 2.2 AA compliant with ARIA 1.2
 
 ### 🔒 Enterprise Grade

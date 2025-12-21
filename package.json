@@ -1,7 +1,7 @@
 {
   "name": "@smilodon/monorepo",
   "version": "0.0.1",
-  "description": "Smilodon monorepo: high-performance select components for React, Vue, Svelte, Angular, and Web Components.",
+  "description": "Smilodon monorepo: high-performance select components for React, Vue, Svelte, and Web Components.",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -14,7 +14,6 @@
     "build:react": "npm run build -w @smilodon/react",
     "build:vue": "npm run build -w @smilodon/vue",
     "build:svelte": "npm run build -w @smilodon/svelte",
-    "build:angular": "npm run build -w @smilodon/angular",
     "build:vanilla": "npm run build -w @smilodon/vanilla",
     "test": "npm run test:unit && npm run test:contracts",
     "test:unit": "vitest run --config packages/core/vitest.config.ts",
@@ -23,13 +22,11 @@
     "test:contracts:react": "vitest run tests/contracts/react.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:vue": "vitest run tests/contracts/vue.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:svelte": "vitest run tests/contracts/svelte.contract.spec.ts --config tests/contracts/vitest.config.ts",
-    "test:contracts:angular": "vitest run tests/contracts/angular.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:vanilla": "vitest run tests/contracts/vanilla.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:react": "playwright test --grep @react",
     "test:e2e:vue": "playwright test --grep @vue",
     "test:e2e:svelte": "playwright test --grep @svelte",
-    "test:e2e:angular": "playwright test --grep @angular",
     "test:e2e:vanilla": "playwright test --grep @vanilla",
     "test:e2e:critical": "playwright test --grep @critical",
     "test:e2e:ui": "playwright test --ui",
@@ -39,9 +36,9 @@
     "size": "npm run size --workspaces --if-present",
     "perf": "npm run build:core && node scripts/perf.js",
     "playwright:install": "playwright install",
-  "ws:version:core": "npm version patch -w @smilodon/core",
-  "ws:publish:core": "npm publish --workspace @smilodon/core",
-  "ws:release:core": "npm run ws:version:core && npm run ws:publish:core"
+    "ws:version:core": "npm version patch -w @smilodon/core",
+    "ws:publish:core": "npm publish --workspace @smilodon/core",
+    "ws:release:core": "npm run ws:version:core && npm run ws:publish:core"
   },
   "repository": {
     "type": "git",
@@ -63,6 +60,8 @@
     "@testing-library/vue": "^8.1.0",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
     "@vitest/ui": "^1.6.0",
     "esbuild": "^0.21.0",
     "eslint": "^8.57.0",

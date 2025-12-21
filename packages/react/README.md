@@ -378,7 +378,8 @@ MIT © Smilodon
 
 ## Related Packages
 
+
 - `@smilodon/core` - Core web component
 - `@smilodon/vue` - Vue 3 adapter
-- `@smilodon/angular` - Angular adapter  
 - `@smilodon/svelte` - Svelte adapter
+

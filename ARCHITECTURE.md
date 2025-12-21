@@ -44,12 +44,12 @@ Smilodon is an enterprise-grade select component library built with Web Componen
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Application Layer                        │
-│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐   │
-│  │  React   │   Vue    │  Svelte  │ Angular  │  Vanilla │   │
-│  │  Wrapper │  Wrapper │  Wrapper │  Wrapper │   JS     │   │
-│  └────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬─────┘   │
-│       │          │          │          │          │         │
-│       └──────────┴──────────┴──────────┴──────────┘         │
+│  ┌──────────┬──────────┬──────────┬──────────┐              │
+│  │  React   │   Vue    │  Svelte  │  Vanilla │              │
+│  │  Wrapper │  Wrapper │  Wrapper │   JS     │              │
+│  └────┬─────┴────┬─────┴────┬─────┴────┬─────┘              │
+│       │          │          │          │                    │
+│       └──────────┴──────────┴──────────┘                    │
 │                           │                                  │
 └───────────────────────────┼──────────────────────────────────┘
                             │
@@ -796,7 +796,6 @@ npm registry
 ├── @smilodon/react@0.2.0 (+787 B)
 ├── @smilodon/vue@0.2.0 (+668 B)
 ├── @smilodon/svelte@0.2.0 (+1.2 KB)
-├── @smilodon/angular@0.2.0 (+892 B)
 └── @smilodon/vanilla@0.2.0 (6.6 KB)
 ```
 

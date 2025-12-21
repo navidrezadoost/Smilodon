@@ -34,7 +34,7 @@
 import Select from './Select.vue';
 
 // Re-export useful types from core
-export {
+export type {
   SelectEventDetail,
   OpenEventDetail,
   CloseEventDetail,
