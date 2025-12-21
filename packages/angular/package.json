@@ -1,8 +1,20 @@
 {
   "name": "@smilodon/angular",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Production-ready, accessible select component for Angular - part of the Smilodon UI toolkit",
   "type": "module",
+  "main": "./dist/fesm2022/smilodon-angular.mjs",
+  "module": "./dist/fesm2022/smilodon-angular.mjs",
+  "typings": "./dist/types/smilodon-angular.d.ts",
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "types": "./dist/types/smilodon-angular.d.ts",
+      "default": "./dist/fesm2022/smilodon-angular.mjs"
+    }
+  },
   "files": [
     "dist",
     "README.md"
