@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### 🛠️ Fixed
-- **Angular v1.0.1**: Fixed critical timing issue where items weren't appearing in select dropdowns
+- **Angular v1.0.3**: Fixed critical timing issue where items weren't appearing in select dropdowns
   - Added `customElements.whenDefined()` to all web component method calls
   - Ensures `<enhanced-select>` is fully registered before calling setItems/setValue
   - Resolves race condition in ngAfterViewInit and ngOnChanges
   - All select scenarios (single, multi, infinite scroll, grouped) now work correctly
+  - Published to npm: `npm install @smilodon/angular@^1.0.3`
 - Angular: packaged `@smilodon/angular` with correct type export paths and single-instance Angular resolution to prevent NG0203 injector/runtime crashes in local consumer apps.
 
 ### ✨ Component Enhancements
