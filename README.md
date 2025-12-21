@@ -32,7 +32,7 @@
 
 ## Chapter 1 — Product Overview
 
-Smilodon is a Web Component powered select/dropdown system that remains responsive even when navigating millions of records. It exposes consistent ergonomics across React, Vue, Svelte, Angular, and Vanilla JavaScript while keeping the core bundle at **6.6 KB gzipped**.
+Smilodon is a Web Component powered select/dropdown system that remains responsive even when navigating millions of records. It exposes consistent ergonomics across React, Vue, Svelte, and Vanilla JavaScript while keeping the core bundle at **6.6 KB gzipped**.
 
 | Characteristic | Smilodon | Legacy Select Libraries |
 | --- | --- | --- |
@@ -125,7 +125,6 @@ Dataset Size    │ First Paint │ Interactive │ Search (p95) │ Memory │ 
 | React | MUI Autocomplete | Full list render; filter on main thread; accessibility partial | **<100 ms @100K**, WCAG AA, worker search | Smilodon worker filtering + ARIA patterns in [docs/ALGORITHMS.md](./docs/ALGORITHMS.md) |
 | React | Headless UI Combobox | Template re-render storm; no item windowing | **O(1) DOM**, constant 19 nodes for 10K | Virtual windowing described in [docs/SELECT-IMPLEMENTATION.md](./docs/SELECT-IMPLEMENTATION.md) |
 | Vue | Vue Select | Template re-render; CPU-bound filter | **<100 ms @100K** vs seconds | Perf matrix above; Vue Select docs note filtering in UI thread |
-| Angular | ng-select / mat-select | Limited virtualization; heavy change detection | **Stable 60 FPS** with worker debounce | Worker offload + buffer tuning in [docs/PERFORMANCE.md](./docs/PERFORMANCE.md#virtualizer-tuning) |
 | Svelte | svelte-select | Renders full list; memory pressure beyond 10K | **8–12 MB @100K** vs hundreds MB | Memory table above; smilodon ring buffer design |
 | Vanilla | Choices.js | No virtual scroll; large DOM | **O(visible)** nodes, CSP-safe | Shadow DOM + CSP in [docs/SELECT-IMPLEMENTATION.md](./docs/SELECT-IMPLEMENTATION.md) |
 
@@ -252,44 +251,7 @@ npm install @smilodon/svelte
 />
 ```
 
-### 5.4 Angular (standalone component)
-
-```bash
-npm install @smilodon/angular
-```
-
-```ts
-import { Component } from '@angular/core';
-import { SmilodonSelectModule } from '@smilodon/angular';
-
-@Component({
-  standalone: true,
-  selector: 'app-region-filter',
-  template: `
-    <smilodon-select
-      [items]="regions"
-      [searchable]="true"
-      [multiSelect]="true"
-      placeholder="Regions"
-      (change)="onChange($event)">
-    </smilodon-select>
-  `,
-  imports: [SmilodonSelectModule]
-})
-export class RegionFilterComponent {
-  regions = [
-    { value: 'emea', label: 'EMEA' },
-    { value: 'apac', label: 'APAC' },
-    { value: 'amer', label: 'Americas' }
-  ];
-
-  onChange(event: CustomEvent) {
-    console.log(event.detail.selectedValues);
-  }
-}
-```
-
-### 5.5 Vanilla Web Components
+### 5.4 Vanilla Web Components
 
 ```bash
 npm install @smilodon/core
@@ -348,7 +310,7 @@ Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md) and [tests/README.md
 
 ## Chapter 8 — Adoption, Tooling & Support
 
-- **Playground** — `/playground` Vite workspace with Angular, React, Svelte, Vue demos plus performance overlays.
+- **Playground** — `/playground` Vite workspace with React, Svelte, Vue demos plus performance overlays.
 - **Deployment** — `npm publish` ready packages inside `packages/*` with semantic versioning.
 - **Community Channels**
   - Email: navidrezadoost07@gmail.com

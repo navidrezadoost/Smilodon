@@ -5,7 +5,7 @@ A highly configurable, framework-agnostic select component with advanced feature
 ## Features
 
 ✅ **High Cohesion, Low Coupling**: Independent option components that handle their own state and events
-✅ **Framework Support**: React, Vue, Svelte, Angular adapters included
+✅ **Framework Support**: React, Vue, Svelte adapters included
 ✅ **Multi & Single Select**: Configurable selection modes with validation
 ✅ **Global Configuration**: Define defaults globally, override at component level
 ✅ **Full Customization**: Every visual detail is customizable via CSS variables and inline styles
@@ -19,6 +19,8 @@ A highly configurable, framework-agnostic select component with advanced feature
 ✅ **Search/Filter**: Optional searchable dropdown
 ✅ **Callbacks**: Rich event system with user-defined callbacks
 
+**Note:** Angular support has been discontinued. Use React, Vue, Svelte, or Vanilla JavaScript.
+
 ## Installation
 
 ```bash
@@ -27,7 +29,6 @@ npm install @smilodon/core
 npm install @smilodon/react
 npm install @smilodon/vue
 npm install @smilodon/svelte
-npm install @smilodon/angular
 ```
 
 ## Quick Start
@@ -153,11 +154,14 @@ const handleSelect = (data) => {
 />
 ```
 
-### Angular
+### Vanilla JavaScript
 
-```typescript
-import { Component } from '@angular/core';
-import { SmilodonSelectModule, configureSelect } from '@smilodon/angular';
+```html
+<enhanced-select id="my-select"></enhanced-select>
+
+<script type="module">
+import '@smilodon/core';
+import { configureSelect } from '@smilodon/core';
 
 // Global configuration
 configureSelect({
@@ -165,36 +169,25 @@ configureSelect({
   busyBucket: { enabled: true },
 });
 
-@Component({
-  selector: 'app-root',
-  template: `
-    <smilodon-select
-      [items]="items"
-      [config]="config"
-      (change)="handleChange($event)"
-      (select)="handleSelect($event)"
-    ></smilodon-select>
-  `,
-})
-export class AppComponent {
-  items = [
-    { value: 1, label: 'Option 1' },
-    { value: 2, label: 'Option 2' },
-  ];
-  
-  config = {
-    selection: { mode: 'multi' },
-    loadMore: { enabled: true },
-  };
-  
-  handleChange(event: any) {
-    console.log('Changed:', event.values);
-  }
-  
-  handleSelect(event: any) {
-    console.log('Selected:', event.value, event.label);
-  }
-}
+const selectEl = document.getElementById('my-select');
+selectEl.setItems([
+  { value: 1, label: 'Option 1' },
+  { value: 2, label: 'Option 2' },
+]);
+
+selectEl.configure({
+  selection: { mode: 'multi' },
+  loadMore: { enabled: true },
+});
+
+selectEl.addEventListener('change', (event) => {
+  console.log('Changed:', event.detail.values);
+});
+
+selectEl.addEventListener('select', (event) => {
+  console.log('Selected:', event.detail.value, event.detail.label);
+});
+</script>
 ```
 
 ## Global Configuration

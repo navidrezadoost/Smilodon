@@ -7,17 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## ⚠️ IMPORTANT NOTICE
+
+**Angular support has been discontinued as of December 2025.** The `@smilodon/angular` package is no longer maintained or supported. Smilodon now focuses exclusively on React, Vue, Svelte, and Vanilla JavaScript implementations. All Angular-related code, documentation, and packages have been removed from the repository.
+
+Historical Angular-related changelog entries below are preserved for reference only.
+
+---
+
 ## [Unreleased]
 
-### 🛠️ Fixed
-- **Angular v1.0.4**: Fixed critical timing issue where items weren't appearing in select dropdowns
+### �️ Removed
+- **Angular Support**: Completely removed Angular package, components, and documentation
+  - Deleted `packages/angular/` directory
+  - Removed `angular-enhanced-select.ts` from core
+  - Removed Angular playground files
+  - Updated all documentation to remove Angular references
+  - Package no longer available: `@smilodon/angular` is deprecated
+
+### �🛠️ Fixed (Historical - Angular v1.0.4)
+- Fixed critical timing issue where items weren't appearing in select dropdowns
   - Added `customElements.whenDefined()` to all web component method calls
   - Ensures `<enhanced-select>` is fully registered before calling setItems/setValue
   - Resolves race condition in ngAfterViewInit and ngOnChanges
   - Added proper `main`, `module`, `typings`, and `exports` fields to package.json
   - Fixes TypeScript module resolution with published package
   - All select scenarios (single, multi, infinite scroll, grouped) now work correctly
-  - Published to npm: `npm install @smilodon/angular@^1.0.4`
 - Angular: packaged `@smilodon/angular` with correct type export paths and single-instance Angular resolution to prevent NG0203 injector/runtime crashes in local consumer apps.
 
 ### ✨ Component Enhancements

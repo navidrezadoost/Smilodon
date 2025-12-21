@@ -25,8 +25,9 @@ npm install @smilodon/core
 npm install @smilodon/react
 npm install @smilodon/vue
 npm install @smilodon/svelte
-npm install @smilodon/angular
 ```
+
+**Note:** Angular support has been discontinued. Smilodon now supports React, Vue, Svelte, and Vanilla JavaScript only.
 
 ## Migration by Framework
 
@@ -134,43 +135,31 @@ function handleSelect(event) {
 />
 ```
 
-### Angular Migration
+### Vanilla JavaScript Migration
 
 **Before:**
-```typescript
-<mat-select
-  [(ngModel)]="selected"
-  [multiple]="true"
->
-  <mat-option *ngFor="let option of options" [value]="option.value">
-    {{ option.label }}
-  </mat-option>
-</mat-select>
+```html
+<select id="my-select" multiple>
+  <option value="1">Option 1</option>
+  <option value="2">Option 2</option>
+</select>
 ```
 
 **After:**
-```typescript
-import { SmilodonSelectModule } from '@smilodon/angular';
-
-@Component({
-  template: `
-    <smilodon-select
-      [items]="items"
-      [config]="config"
-      [(ngModel)]="selectedValues"
-      (select)="handleSelect($event)"
-    ></smilodon-select>
-  `,
-})
-export class MyComponent {
-  config = {
-    selection: { mode: 'multi' },
-  };
+```html
+<enhanced-select id="my-select"></enhanced-select>
+<script type="module">
+  import '@smilodon/core';
   
-  handleSelect(event: any) {
-    console.log('Selected:', event.value, event.label);
-  }
-}
+  const select = document.getElementById('my-select');
+  select.setItems([
+    { value: '1', label: 'Option 1' },
+    { value: '2', label: 'Option 2' }
+  ]);
+  select.configure({ 
+    selection: { mode: 'multi' } 
+  });
+</script>
 ```
 
 ## Configuration Migration

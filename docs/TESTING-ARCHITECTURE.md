@@ -1,6 +1,6 @@
-# Cross-Framework Testing Architecture
+# Testing Architecture
 
-This document outlines the comprehensive testing strategy for the Smilodon UI toolkit, ensuring consistent behavior, performance, and API across all framework adapters (React, Vue, Svelte, Angular, and Vanilla JS).
+This document outlines the comprehensive testing strategy for the Smilodon UI toolkit, ensuring consistent behavior, performance, and API across all framework adapters (React, Vue, Svelte, and Vanilla JS).
 
 ## Testing Philosophy
 

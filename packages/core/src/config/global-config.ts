@@ -36,6 +36,19 @@ export interface BusyBucketConfig {
   minDisplayTime?: number;
 }
 
+export interface ExpandableConfig {
+  /** Enable expandable dropdown height */
+  enabled: boolean;
+  /** Height when collapsed (default) */
+  collapsedHeight?: string;
+  /** Height when expanded */
+  expandedHeight?: string;
+  /** Label for the expand button */
+  expandLabel?: string;
+  /** Label for the collapse button */
+  collapseLabel?: string;
+}
+
 export interface SelectionConfig {
   /** Single or multi-select mode */
   mode: 'single' | 'multi';
@@ -143,6 +156,8 @@ export interface GlobalSelectConfig {
   serverSide: ServerSideConfig;
   /** Infinite scroll configuration */
   infiniteScroll: InfiniteScrollConfig;
+  /** Expandable dropdown configuration */
+  expandable: ExpandableConfig;
   /** Callbacks */
   callbacks: CallbackConfig;
   /** Enable/disable entire component */
@@ -202,6 +217,13 @@ const defaultConfig: GlobalSelectConfig = {
     maxCachedPages: 10,
     preloadAdjacent: true,
     scrollRestoration: 'auto',
+  },
+  expandable: {
+    enabled: false,
+    collapsedHeight: '300px',
+    expandedHeight: '500px',
+    expandLabel: 'Show more',
+    collapseLabel: 'Show less',
   },
   callbacks: {},
   enabled: true,

@@ -1,0 +1,78 @@
+<div class="page">
+  <header class="header">
+    <h1>Smilodon • Angular Demo</h1>
+    <p>Single, Multi, Infinite Scroll, Expandable — aligned with the React/Vue demo scenarios.</p>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Single select</h2>
+      <p class="sub">1000 items • searchable • default value</p>
+      <smilodon-select
+        [items]="singleItems"
+        [value]="singleValue"
+        [searchable]="true"
+        placeholder="Pick one…"
+        [virtualized]="true"
+        [config]="singleConfig"
+        (changeEvent)="onChangeSingle($event)"
+        (searchEvent)="log('single.search', $event)"
+      ></smilodon-select>
+      <pre class="state">value: {{ singleValue | json }}</pre>
+    </div>
+
+    <div class="card">
+      <h2>Multi select</h2>
+      <p class="sub">500 items • max selections • searchable</p>
+      <smilodon-select
+        [items]="multiItems"
+        [value]="multiValue"
+        [multiple]="true"
+        [maxSelections]="3"
+        [searchable]="true"
+        placeholder="Pick up to 3…"
+        [virtualized]="true"
+        [config]="multiConfig"
+        (changeEvent)="onChangeMulti($event)"
+      ></smilodon-select>
+      <pre class="state">values: {{ multiValue | json }}</pre>
+    </div>
+
+    <div class="card">
+      <h2>Infinite scroll</h2>
+      <p class="sub">Simulated pages • emits loadMoreEvent</p>
+      <smilodon-select
+        [items]="infiniteItems"
+        [value]="infiniteValue"
+        [searchable]="true"
+        placeholder="Scroll to load more…"
+        [infiniteScroll]="true"
+        [pageSize]="50"
+        [virtualized]="true"
+        [config]="infiniteConfig"
+        (loadMoreEvent)="onLoadMore($event)"
+        (changeEvent)="onChangeInfinite($event)"
+      ></smilodon-select>
+      <div class="row">
+        <button class="btn" (click)="resetInfinite()">Reset dataset</button>
+        <span class="hint">Loaded: {{ infiniteItems.length }}</span>
+      </div>
+      <pre class="state">value: {{ infiniteValue | json }}</pre>
+    </div>
+
+    <div class="card">
+      <h2>Expandable dropdown</h2>
+      <p class="sub">Uses core config.expandable (collapsed vs expanded height)</p>
+      <smilodon-select
+        [items]="expandableItems"
+        [value]="expandableValue"
+        [searchable]="true"
+        placeholder="Try expanding…"
+        [virtualized]="true"
+        [config]="expandableConfig"
+        (changeEvent)="onChangeExpandable($event)"
+      ></smilodon-select>
+      <pre class="state">value: {{ expandableValue | json }}</pre>
+    </div>
+  </section>
+</div>

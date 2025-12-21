@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/vue",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Vue 3 adapter for @smilodon/core - Production-ready accessible select component",
   "type": "module",
   "main": "./dist/index.cjs",
