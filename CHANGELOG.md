@@ -17,15 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-### �️ Removed
-- **Angular Support**: Completely removed Angular package, components, and documentation
-  - Deleted `packages/angular/` directory
-  - Removed `angular-enhanced-select.ts` from core
-  - Removed Angular playground files
-  - Updated all documentation to remove Angular references
-  - Package no longer available: `@smilodon/angular` is deprecated
+### Removed
+- **Angular Support**: Removed the `packages/angular/` package and build/test wiring; `@smilodon/angular` is deprecated and no longer shipped.
 
-### �🛠️ Fixed (Historical - Angular v1.0.4)
+### Fixed (Historical - Angular v1.0.4)
 - Fixed critical timing issue where items weren't appearing in select dropdowns
   - Added `customElements.whenDefined()` to all web component method calls
   - Ensures `<enhanced-select>` is fully registered before calling setItems/setValue
@@ -33,7 +28,6 @@ Historical Angular-related changelog entries below are preserved for reference o
   - Added proper `main`, `module`, `typings`, and `exports` fields to package.json
   - Fixes TypeScript module resolution with published package
   - All select scenarios (single, multi, infinite scroll, grouped) now work correctly
-- Angular: packaged `@smilodon/angular` with correct type export paths and single-instance Angular resolution to prevent NG0203 injector/runtime crashes in local consumer apps.
 
 ### ✨ Component Enhancements
 
