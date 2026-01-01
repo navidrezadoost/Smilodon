@@ -1,6 +1,8 @@
 import type { NativeSelectOptions, SelectEventName, SelectEventsDetailMap, RendererHelpers } from '../types';
 import { createRendererHelpers, OptionRenderer, OptionTemplate, renderTemplate } from '../renderers/contracts';
 import { Virtualizer } from '../utils/virtualizer';
+import { OptionRenderer as UnifiedOptionRenderer } from '../utils/option-renderer';
+import type { OptionRendererConfig } from '../utils/option-renderer';
 
 export class NativeSelectElement extends HTMLElement {
   static get observedAttributes(): string[] {
@@ -13,6 +15,7 @@ export class NativeSelectElement extends HTMLElement {
   private _items: unknown[] = [];
   private _helpers: RendererHelpers;
   private _virtualizer?: Virtualizer;
+  private _unifiedRenderer?: UnifiedOptionRenderer;
   
   // Multi-select & interaction state
   private _selectedSet = new Set<number>(); // indices
@@ -58,13 +61,54 @@ export class NativeSelectElement extends HTMLElement {
     this._listRoot.setAttribute('role', 'listbox');
     this._listRoot.setAttribute('aria-label', 'Options list');
     if (this._multi) this._listRoot.setAttribute('aria-multiselectable', 'true');
+    this._initializeOptionRenderer();
     this._emit('open', {});
   }
 
   disconnectedCallback() {
     this._emit('close', {});
+    // Cleanup unified renderer
+    if (this._unifiedRenderer) {
+      this._unifiedRenderer.unmountAll();
+    }
     // Cleanup: remove listeners if any were added outside constructor
     if (this._typeTimeout) window.clearTimeout(this._typeTimeout);
+  }
+
+  private _initializeOptionRenderer(): void {
+    const getValue = (item: unknown) => (item as any)?.value ?? item;
+    const getLabel = (item: unknown) => (item as any)?.label ?? String(item);
+    const getDisabled = (item: unknown) => (item as any)?.disabled ?? false;
+    
+    const rendererConfig: OptionRendererConfig = {
+      enableRecycling: true,
+      maxPoolSize: 100,
+      getValue,
+      getLabel,
+      getDisabled,
+      onSelect: (index: number) => {
+        const item = this._items[index];
+        this._onSelect(item, index);
+      },
+      onCustomEvent: (index: number, eventName: string, data: unknown) => {
+        // Emit custom events from option components
+        this.dispatchEvent(new CustomEvent('option:custom-event', {
+          detail: { index, eventName, data },
+          bubbles: true,
+          composed: true
+        }));
+      },
+      onError: (index: number, error: Error) => {
+        console.error(`[NativeSelect] Error in option ${index}:`, error);
+        this.dispatchEvent(new CustomEvent('option:mount-error', {
+          detail: { index, error },
+          bubbles: true,
+          composed: true
+        }));
+      }
+    };
+    
+    this._unifiedRenderer = new UnifiedOptionRenderer(rendererConfig);
   }
 
   attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
@@ -203,6 +247,37 @@ export class NativeSelectElement extends HTMLElement {
       this._listRoot.removeAttribute('aria-activedescendant');
     }
 
+    // Check if any items have custom components
+    const hasCustomComponents = this._items.some(item => 
+      typeof item === 'object' && item !== null && 'optionComponent' in item
+    );
+
+    // Use unified renderer if we have custom components
+    if (hasCustomComponents && this._unifiedRenderer) {
+      this._listRoot.replaceChildren(); // Clear existing content
+      const frag = document.createDocumentFragment();
+      
+      for (let i = 0; i < this._items.length; i++) {
+        const item = this._items[i];
+        const isSelected = this._selectedSet.has(i);
+        const isFocused = this._activeIndex === i;
+        
+        const optionElement = this._unifiedRenderer.render(
+          item,
+          i,
+          isSelected,
+          isFocused,
+          `native-${this.getAttribute('id') || 'default'}`
+        );
+        
+        frag.appendChild(optionElement);
+      }
+      
+      this._listRoot.appendChild(frag);
+      return;
+    }
+
+    // Fall back to original rendering logic for lightweight options
     if (this._virtualizer) {
       const { startIndex, endIndex } = this._virtualizer.computeWindow(scrollTop, viewportHeight);
       this._virtualizer.render(startIndex, endIndex, (node, item, i) => {

@@ -15,6 +15,29 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [1.2.2] - 2026-01-01
+
+### Added
+- **Custom Option Component Support for NativeSelectElement**: `smilodon-select` now supports custom option components via the `optionComponent` property
+  - Items can now include `{label, value, optionComponent}` where `optionComponent` is a `CustomOptionFactory`
+  - Unified rendering with `OptionRenderer` for both lightweight `{label, value}` objects and custom components
+  - Automatic component pooling and lifecycle management
+  - Event delegation for custom component interactions
+  - Maintains backward compatibility with simple `{label, value}` objects and primitives
+
+### Changed
+- Integrated `OptionRenderer` utility for consistent rendering behavior between `NativeSelectElement` and `EnhancedSelect`
+- Enhanced render method to detect and handle custom option components
+- Added cleanup for unified renderer in `disconnectedCallback()`
+
+### Technical Details
+- Custom components must implement `CustomOptionContract` interface
+- Factory function pattern for creating component instances
+- Supports single-select and multi-select modes
+- Full backward compatibility with v1.2.0 and v1.2.1
+
+---
+
 ## [1.2.1] - 2026-01-01
 
 ### Fixed
