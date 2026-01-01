@@ -128,6 +128,69 @@ export class NativeSelectElement extends HTMLElement {
     this.render();
   }
 
+  /**
+   * Public API: setItems() method for compatibility with EnhancedSelect
+   * Accepts an array of items which can be:
+   * - Simple primitives (string, number)
+   * - Objects with {label, value} structure
+   * - Objects with {label, value, optionComponent} for custom rendering (v1.2.0+)
+   */
+  setItems(items: unknown[]): void {
+    this.items = items ?? [];
+  }
+
+  /**
+   * Public API: setValue() method to programmatically select an item
+   * For single select: clears selection and selects the item matching the value
+   * For multi-select: adds to selection if not already selected
+   */
+  setValue(value: unknown): void {
+    if (value === null || value === undefined || value === '') {
+      // Clear selection
+      this._selectedSet.clear();
+      this._selectedItems.clear();
+      this._activeIndex = -1;
+      this.render();
+      return;
+    }
+
+    // Find item by value
+    const index = this._items.findIndex(item => {
+      if (typeof item === 'object' && item !== null && 'value' in item) {
+        return (item as any).value === value;
+      }
+      return item === value;
+    });
+
+    if (index >= 0) {
+      const item = this._items[index];
+      if (!this._multi) {
+        // Single select: clear and set
+        this._selectedSet.clear();
+        this._selectedItems.clear();
+      }
+      this._selectedSet.add(index);
+      this._selectedItems.set(index, item);
+      this._activeIndex = index;
+      this.render();
+    }
+  }
+
+  /**
+   * Public API: getValue() method to get currently selected value(s)
+   * Returns single value for single-select, array for multi-select
+   */
+  getValue(): unknown | unknown[] {
+    const values = Array.from(this._selectedItems.values()).map(item => {
+      if (typeof item === 'object' && item !== null && 'value' in item) {
+        return (item as any).value;
+      }
+      return item;
+    });
+    
+    return this._multi ? values : (values[0] ?? null);
+  }
+
   render() {
     const { optionTemplate, optionRenderer } = this._options;
     const viewportHeight = this.getBoundingClientRect().height || 300;
@@ -154,7 +217,11 @@ export class NativeSelectElement extends HTMLElement {
           const el = wrapper.firstElementChild as HTMLElement | null;
           node.replaceChildren(el ?? document.createTextNode(String(item)));
         } else {
-          node.textContent = String(item);
+          // Handle {label, value} objects or primitives
+          const displayText = (typeof item === 'object' && item !== null && 'label' in item)
+            ? String((item as any).label)
+            : String(item);
+          node.textContent = displayText;
         }
       });
       return;
@@ -178,7 +245,11 @@ export class NativeSelectElement extends HTMLElement {
         return; // rendering complete
       } else {
         const el = document.createElement('div');
-        el.textContent = String(item);
+        // Handle {label, value} objects or primitives
+        const displayText = (typeof item === 'object' && item !== null && 'label' in item)
+          ? String((item as any).label)
+          : String(item);
+        el.textContent = displayText;
         el.setAttribute('data-selectable', '');
         el.setAttribute('data-index', String(i));
         this._applyOptionAttrs(el, i);
@@ -231,15 +302,26 @@ export class NativeSelectElement extends HTMLElement {
     
     // Emit with all required fields
     const selected = this._selectedSet.has(index);
+    const value = (item as any)?.value ?? item;
+    const label = (item as any)?.label ?? String(item);
+    
     this._emit('select', { 
       item, 
       index, 
-      value: (item as any)?.value ?? item,
-      label: (item as any)?.label ?? String(item),
+      value,
+      label,
       selected,
       multi: this._multi 
     });
-    this._announce(`Selected ${String(item)}`);
+    
+    // Emit 'change' event for better React compatibility
+    this._emit('change', { 
+      selectedItems: Array.from(this._selectedItems.values()),
+      selectedValues: Array.from(this._selectedItems.values()).map(i => (i as any)?.value ?? i),
+      selectedIndices: Array.from(this._selectedSet)
+    });
+    
+    this._announce(`Selected ${label}`);
   }
 
   private _onKeydown(e: KeyboardEvent) {

@@ -15,6 +15,24 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [1.2.1] - 2026-01-01
+
+### Fixed
+- **Critical Bug Fix**: Added `setItems()` and `setValue()` methods to `NativeSelectElement` (smilodon-select)
+  - Previously these methods were only available on `EnhancedSelect` but not on the main `smilodon-select` component
+  - React integration was failing because `setItems()` method was not defined
+  - Added `getValue()` method for programmatic value retrieval
+  - Enhanced rendering to properly display `{label, value}` objects
+  - Added `change` event emission for better React compatibility
+  - Fixed race condition with `customElements.whenDefined()`
+
+### Changed
+- Improved label/value object handling in default rendering
+- Both virtualized and non-virtualized rendering now support `{label, value}` structure
+- Better compatibility with React and other frameworks
+
+---
+
 ## [1.2.0] - 2026-01-01
 
 ### Added
