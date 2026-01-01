@@ -8,6 +8,8 @@ import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
 import type { SelectEventName, SelectEventsDetailMap, GroupedItem } from '../types';
 import { SelectOption } from './select-option';
+import { OptionRenderer } from '../utils/option-renderer';
+import type { OptionRendererConfig } from '../utils/option-renderer';
 
 interface PageCache {
   [page: number]: unknown[];
@@ -56,6 +58,7 @@ export class EnhancedSelect extends HTMLElement {
   private _errorMessage = '';
   private _boundArrowClick: ((e: Event) => void) | null = null;
   private _arrowContainer?: HTMLElement;
+  private _optionRenderer?: OptionRenderer;
 
   constructor() {
     super();
@@ -109,6 +112,11 @@ export class EnhancedSelect extends HTMLElement {
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
     console.log('[EnhancedSelect] Styles initialized');
+    
+    // Initialize option renderer
+    this._initializeOptionRenderer();
+    console.log('[EnhancedSelect] Option renderer initialized');
+    
     this._assembleDOM();
     console.log('[EnhancedSelect] DOM assembled');
     this._attachEventListeners();
@@ -147,6 +155,12 @@ export class EnhancedSelect extends HTMLElement {
     if (this._busyTimeout) clearTimeout(this._busyTimeout);
     if (this._typeTimeout) clearTimeout(this._typeTimeout);
     if (this._searchTimeout) clearTimeout(this._searchTimeout);
+    
+    // Cleanup option renderer
+    if (this._optionRenderer) {
+      this._optionRenderer.unmountAll();
+      console.log('[EnhancedSelect] Option renderer cleaned up');
+    }
     
     // Cleanup arrow click listener
     if (this._boundArrowClick && this._arrowContainer) {
@@ -729,6 +743,43 @@ export class EnhancedSelect extends HTMLElement {
         { threshold: 0.1 }
       );
     }
+  }
+
+  private _initializeOptionRenderer(): void {
+    const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
+    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
+    const getDisabled = (item: unknown) => (item as any)?.disabled ?? false;
+    
+    const rendererConfig: OptionRendererConfig = {
+      enableRecycling: true,
+      maxPoolSize: 100,
+      getValue,
+      getLabel,
+      getDisabled,
+      onSelect: (index: number) => {
+        this._selectOption(index);
+      },
+      onCustomEvent: (index: number, eventName: string, data: unknown) => {
+        console.log(`[EnhancedSelect] Custom event from option ${index}: ${eventName}`, data);
+        // Emit as a generic event since these aren't in the standard event map
+        this.dispatchEvent(new CustomEvent('option:custom-event', {
+          detail: { index, eventName, data },
+          bubbles: true,
+          composed: true
+        }));
+      },
+      onError: (index: number, error: Error) => {
+        console.error(`[EnhancedSelect] Error in option ${index}:`, error);
+        this.dispatchEvent(new CustomEvent('option:mount-error', {
+          detail: { index, error },
+          bubbles: true,
+          composed: true
+        }));
+      }
+    };
+    
+    this._optionRenderer = new OptionRenderer(rendererConfig);
+    console.log('[EnhancedSelect] Option renderer initialized with config:', rendererConfig);
   }
 
   private async _loadInitialSelectedItems(): Promise<void> {
@@ -1563,6 +1614,12 @@ export class EnhancedSelect extends HTMLElement {
       this._intersectionObserver.unobserve(this._loadMoreTrigger);
     }
     
+    // Cleanup all rendered options (including custom components)
+    if (this._optionRenderer) {
+      this._optionRenderer.unmountAll();
+      console.log('[EnhancedSelect] Unmounted all option components');
+    }
+    
     // Clear options container
     console.log('[EnhancedSelect] Clearing options container, previous children:', this._optionsContainer.children.length);
     this._optionsContainer.innerHTML = '';
@@ -1692,33 +1749,33 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _renderSingleOption(item: any, index: number, getValue: (item: any) => any, getLabel: (item: any) => string) {
-    const option = document.createElement('div');
-    option.className = 'option';
-    option.id = `${this._uniqueId}-option-${index}`;
-    const value = getValue(item);
-    const label = getLabel(item);
-    
-    console.log('[EnhancedSelect] Rendering option', index, ':', { value, label });
-    
-    option.textContent = label;
-    option.dataset.value = String(value);
-    option.dataset.index = String(index); // Also useful for debugging/selectors
-    
-    // Check if selected using selectedItems map
-    const isSelected = this._state.selectedIndices.has(index);
-    
-    if (isSelected) {
-      option.classList.add('selected');
-      option.setAttribute('aria-selected', 'true');
-    } else {
-      option.setAttribute('aria-selected', 'false');
+    if (!this._optionRenderer) {
+      console.error('[EnhancedSelect] Option renderer not initialized');
+      return;
     }
     
-    option.addEventListener('click', () => {
-      this._selectOption(index);
+    // Check if selected
+    const isSelected = this._state.selectedIndices.has(index);
+    const isFocused = this._state.activeIndex === index;
+    
+    console.log('[EnhancedSelect] Rendering option', index, ':', { 
+      value: getValue(item), 
+      label: getLabel(item),
+      isSelected,
+      isFocused,
+      hasCustomComponent: !!(item as any).optionComponent
     });
     
-    this._optionsContainer.appendChild(option);
+    // Use the OptionRenderer to render both lightweight and custom component options
+    const optionElement = this._optionRenderer.render(
+      item,
+      index,
+      isSelected,
+      isFocused,
+      this._uniqueId
+    );
+    
+    this._optionsContainer.appendChild(optionElement);
     console.log('[EnhancedSelect] Option', index, 'appended to optionsContainer');
   }
 

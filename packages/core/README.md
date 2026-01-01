@@ -97,6 +97,13 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 - **Sub-millisecond Search**: Fenwick tree indexing for O(log n) queries
 - **60 FPS Scrolling**: Hardware-accelerated virtualization
 
+### ✨ Custom Components (NEW in v1.2.0)
+- **Framework Components**: Pass React, Vue, or Svelte components for option rendering
+- **Component Pooling**: Automatic recycling of up to 100 component instances
+- **Lifecycle Management**: Full mount/unmount/update lifecycle control
+- **Mixed Mode**: Use custom components alongside lightweight options
+- **See**: [Custom Option Components Guide](https://github.com/navidrezadoost/smilodon/blob/main/docs/CUSTOM-OPTION-COMPONENTS.md)
+
 ### 🎯 Production Ready
 - **TypeScript First**: Complete type definitions included
 - **Zero Dependencies**: 6.6 KB gzipped runtime
@@ -130,6 +137,7 @@ interface SelectItem {
   value: any;                    // Value (can be any type)
   disabled?: boolean;            // Disable this option
   group?: string;                // Optgroup name
+  optionComponent?: CustomOptionFactory;  // (v1.2.0+) Custom component for this option
 }
 ```
 

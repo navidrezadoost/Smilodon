@@ -15,6 +15,33 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [1.2.0] - 2026-01-01
+
+### Added
+- **Custom Option Components Feature**: Major architectural enhancement allowing users to pass custom framework components for rendering select options
+  - New `CustomOptionContract` interface for component lifecycle management (mount, unmount, update)
+  - `CustomOptionPool` utility for high-performance component recycling (up to 100 instances)
+  - `OptionRenderer` class supporting dual-mode rendering (lightweight + custom components)
+  - `ExtendedSelectItem` type supporting `optionComponent` property for framework components
+  - Comprehensive documentation in `docs/CUSTOM-OPTION-COMPONENTS.md` with React and Vue examples
+  - Full backward compatibility maintained with existing lightweight option rendering
+  - Contract-based architecture with high cohesion and low coupling
+  - Object pooling for optimal performance and memory management
+  - Error handling with automatic fallback to lightweight rendering
+  - Custom event system for component communication (`option:custom-event`, `option:mount-error`)
+
+### Changed
+- Enhanced `EnhancedSelect` component with integrated `OptionRenderer`
+- Updated core exports to include new custom option types and utilities
+- Improved component lifecycle management with proper cleanup on disconnect
+
+### Performance
+- Added component instance recycling to reduce DOM operations
+- Implemented lazy mounting for custom components
+- Optimized state updates for selected and focused states
+
+---
+
 ## [Unreleased]
 
 ### Removed

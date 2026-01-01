@@ -68,6 +68,7 @@ Deep dives: [ARCHITECTURE.md](./ARCHITECTURE.md), [docs/SELECT-IMPLEMENTATION.md
 | Data scale | 1M rows validated, configurable buffering, streaming hydration |
 | Accessibility | Full ARIA pattern, screen reader announcements, focus trapping, 44px touch targets |
 | Custom UI | Slot templates, theme tokens, light/dark theming, design-token aware |
+| **Custom Components** | **Pass framework components (React/Vue/Svelte) for rendering options with lifecycle management** |
 | Observability | Perf heat-map overlay (playground), console instrumentation, metrics exporter |
 
 ### Representative Workloads

@@ -18,6 +18,15 @@ export type {
   SelectEventsDetailMap,
   SelectEventName
 } from './types.js';
+export type {
+  CustomOptionContract,
+  CustomOptionContext,
+  CustomOptionFactory,
+  ExtendedSelectItem,
+  OptionRendererMode,
+  CustomOptionConfig,
+  CustomOptionEvents
+} from './types/custom-option.js';
 export * from './renderers/contracts.js';
 export * from './components/native-select.js';
 export * from './components/enhanced-select.js';
@@ -28,6 +37,8 @@ export { DOMPool } from './utils/dom-pool.js';
 export { WorkerManager, getWorkerManager } from './utils/worker-manager.js';
 export { PerformanceTelemetry, getTelemetry, measureAsync, measureSync } from './utils/telemetry.js';
 export { Virtualizer } from './utils/virtualizer.js';
+export { OptionRenderer } from './utils/option-renderer.js';
+export { CustomOptionPool } from './utils/custom-option-pool.js';
 
 // Security & CSP utilities
 export { 
