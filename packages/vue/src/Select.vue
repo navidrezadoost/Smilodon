@@ -201,8 +201,18 @@ watch(
   (newValue) => {
     safeCall((el) => {
       if (newValue !== undefined) {
-        const values = Array.isArray(newValue) ? newValue : [newValue];
-        el.setSelectedValues(values);
+        // Get current selected values from the element to avoid infinite loop
+        const currentSelected = el.getSelectedValues?.() || [];
+        const newValues = Array.isArray(newValue) ? newValue : [newValue];
+        
+        // Only update if values have actually changed
+        const hasChanged = 
+          currentSelected.length !== newValues.length ||
+          !currentSelected.every((v: any, i: number) => v === newValues[i]);
+        
+        if (hasChanged) {
+          el.setSelectedValues(newValues);
+        }
       }
     });
   },

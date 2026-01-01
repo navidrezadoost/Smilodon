@@ -17,6 +17,17 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-01-01 (Vue Package)
+
+### 🐛 Bug Fixes
+- **Fixed infinite loop in Vue Select component** - Prevented recursive reactive updates
+- Added value change detection to avoid unnecessary `setSelectedValues()` calls
+- Fixed "Maximum recursive updates exceeded" error in multi-select mode
+- Component now checks if values have actually changed before updating the web component
+
+### 📦 Package Updates
+- **@smilodon/vue@1.0.8** - Published with infinite loop fix
+
 ## [1.3.2] - 2026-01-01
 
 ### 🐛 Bug Fixes
