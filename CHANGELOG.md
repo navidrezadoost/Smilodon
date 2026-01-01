@@ -17,6 +17,17 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-01-01
+
+### 🐛 Bug Fixes
+- **Fixed setActive() error with lightweight options** - Enhanced-select component now properly handles both custom SelectOption elements and lightweight DOM elements
+- Fixed `TypeError: options[index].setActive is not a function` error when using keyboard navigation or arrow clicks
+- Added fallback handling for lightweight options in `_setActive()` and `_selectAll()` methods
+
+### 📦 Package Updates
+- **@smilodon/core@1.3.2** - Published with bug fix
+- **@smilodon/vue@1.0.7** - Rebuilt and published with updated core
+
 ## [1.3.1] - 2026-01-01
 
 ### ✅ Published to npm

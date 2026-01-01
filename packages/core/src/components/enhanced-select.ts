@@ -8,8 +8,6 @@ import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
 import type { SelectEventName, SelectEventsDetailMap, GroupedItem } from '../types';
 import { SelectOption } from './select-option';
-import { OptionRenderer } from '../utils/option-renderer';
-import type { OptionRendererConfig } from '../utils/option-renderer';
 
 interface PageCache {
   [page: number]: unknown[];
@@ -58,7 +56,6 @@ export class EnhancedSelect extends HTMLElement {
   private _errorMessage = '';
   private _boundArrowClick: ((e: Event) => void) | null = null;
   private _arrowContainer?: HTMLElement;
-  private _optionRenderer?: OptionRenderer;
 
   constructor() {
     super();
@@ -112,11 +109,6 @@ export class EnhancedSelect extends HTMLElement {
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
     console.log('[EnhancedSelect] Styles initialized');
-    
-    // Initialize option renderer
-    this._initializeOptionRenderer();
-    console.log('[EnhancedSelect] Option renderer initialized');
-    
     this._assembleDOM();
     console.log('[EnhancedSelect] DOM assembled');
     this._attachEventListeners();
@@ -155,12 +147,6 @@ export class EnhancedSelect extends HTMLElement {
     if (this._busyTimeout) clearTimeout(this._busyTimeout);
     if (this._typeTimeout) clearTimeout(this._typeTimeout);
     if (this._searchTimeout) clearTimeout(this._searchTimeout);
-    
-    // Cleanup option renderer
-    if (this._optionRenderer) {
-      this._optionRenderer.unmountAll();
-      console.log('[EnhancedSelect] Option renderer cleaned up');
-    }
     
     // Cleanup arrow click listener
     if (this._boundArrowClick && this._arrowContainer) {
@@ -745,43 +731,6 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  private _initializeOptionRenderer(): void {
-    const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
-    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
-    const getDisabled = (item: unknown) => (item as any)?.disabled ?? false;
-    
-    const rendererConfig: OptionRendererConfig = {
-      enableRecycling: true,
-      maxPoolSize: 100,
-      getValue,
-      getLabel,
-      getDisabled,
-      onSelect: (index: number) => {
-        this._selectOption(index);
-      },
-      onCustomEvent: (index: number, eventName: string, data: unknown) => {
-        console.log(`[EnhancedSelect] Custom event from option ${index}: ${eventName}`, data);
-        // Emit as a generic event since these aren't in the standard event map
-        this.dispatchEvent(new CustomEvent('option:custom-event', {
-          detail: { index, eventName, data },
-          bubbles: true,
-          composed: true
-        }));
-      },
-      onError: (index: number, error: Error) => {
-        console.error(`[EnhancedSelect] Error in option ${index}:`, error);
-        this.dispatchEvent(new CustomEvent('option:mount-error', {
-          detail: { index, error },
-          bubbles: true,
-          composed: true
-        }));
-      }
-    };
-    
-    this._optionRenderer = new OptionRenderer(rendererConfig);
-    console.log('[EnhancedSelect] Option renderer initialized with config:', rendererConfig);
-  }
-
   private async _loadInitialSelectedItems(): Promise<void> {
     if (!this._config.serverSide.fetchSelectedItems || !this._config.serverSide.initialSelectedValues) {
       return;
@@ -1014,19 +963,37 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _setActive(index: number): void {
-    const options = Array.from(this._optionsContainer.children) as SelectOption[];
+    const options = Array.from(this._optionsContainer.children);
     
     // Clear previous active state
     if (this._state.activeIndex >= 0 && options[this._state.activeIndex]) {
-      options[this._state.activeIndex].setActive(false);
+      const prevOption = options[this._state.activeIndex];
+      // Check if it's a custom SelectOption or a lightweight DOM element
+      if ('setActive' in prevOption && typeof (prevOption as any).setActive === 'function') {
+        (prevOption as SelectOption).setActive(false);
+      } else {
+        // Lightweight option - remove active class
+        (prevOption as HTMLElement).classList.remove('smilodon-option--active');
+        (prevOption as HTMLElement).setAttribute('aria-selected', 'false');
+      }
     }
     
     this._state.activeIndex = index;
     
     // Set new active state
     if (options[index]) {
-      options[index].setActive(true);
-      options[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const option = options[index];
+      
+      // Check if it's a custom SelectOption or a lightweight DOM element
+      if ('setActive' in option && typeof (option as any).setActive === 'function') {
+        (option as SelectOption).setActive(true);
+      } else {
+        // Lightweight option - add active class
+        (option as HTMLElement).classList.add('smilodon-option--active');
+        (option as HTMLElement).setAttribute('aria-selected', 'true');
+      }
+      
+      (option as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       
       // Announce position for screen readers
       const total = options.length;
@@ -1060,7 +1027,7 @@ export class EnhancedSelect extends HTMLElement {
   private _selectAll(): void {
     if (this._config.selection.mode !== 'multi') return;
     
-    const options = Array.from(this._optionsContainer.children) as SelectOption[];
+    const options = Array.from(this._optionsContainer.children);
     const maxSelections = this._config.selection.maxSelections || 0;
     
     options.forEach((option, index) => {
@@ -1069,10 +1036,22 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       if (!this._state.selectedIndices.has(index)) {
-        const config = option.getConfig();
-        this._state.selectedIndices.add(index);
-        this._state.selectedItems.set(index, config.item);
-        option.setSelected(true);
+        // Check if it's a custom SelectOption or a lightweight DOM element
+        if ('getConfig' in option && typeof (option as any).getConfig === 'function') {
+          const config = (option as SelectOption).getConfig();
+          this._state.selectedIndices.add(index);
+          this._state.selectedItems.set(index, config.item);
+          (option as SelectOption).setSelected(true);
+        } else {
+          // Lightweight option - get item from data attribute or state
+          const item = this._state.loadedItems[index];
+          if (item) {
+            this._state.selectedIndices.add(index);
+            this._state.selectedItems.set(index, item);
+            (option as HTMLElement).classList.add('smilodon-option--selected');
+            (option as HTMLElement).setAttribute('aria-selected', 'true');
+          }
+        }
       }
     });
     
@@ -1614,12 +1593,6 @@ export class EnhancedSelect extends HTMLElement {
       this._intersectionObserver.unobserve(this._loadMoreTrigger);
     }
     
-    // Cleanup all rendered options (including custom components)
-    if (this._optionRenderer) {
-      this._optionRenderer.unmountAll();
-      console.log('[EnhancedSelect] Unmounted all option components');
-    }
-    
     // Clear options container
     console.log('[EnhancedSelect] Clearing options container, previous children:', this._optionsContainer.children.length);
     this._optionsContainer.innerHTML = '';
@@ -1749,33 +1722,33 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _renderSingleOption(item: any, index: number, getValue: (item: any) => any, getLabel: (item: any) => string) {
-    if (!this._optionRenderer) {
-      console.error('[EnhancedSelect] Option renderer not initialized');
-      return;
+    const option = document.createElement('div');
+    option.className = 'option';
+    option.id = `${this._uniqueId}-option-${index}`;
+    const value = getValue(item);
+    const label = getLabel(item);
+    
+    console.log('[EnhancedSelect] Rendering option', index, ':', { value, label });
+    
+    option.textContent = label;
+    option.dataset.value = String(value);
+    option.dataset.index = String(index); // Also useful for debugging/selectors
+    
+    // Check if selected using selectedItems map
+    const isSelected = this._state.selectedIndices.has(index);
+    
+    if (isSelected) {
+      option.classList.add('selected');
+      option.setAttribute('aria-selected', 'true');
+    } else {
+      option.setAttribute('aria-selected', 'false');
     }
     
-    // Check if selected
-    const isSelected = this._state.selectedIndices.has(index);
-    const isFocused = this._state.activeIndex === index;
-    
-    console.log('[EnhancedSelect] Rendering option', index, ':', { 
-      value: getValue(item), 
-      label: getLabel(item),
-      isSelected,
-      isFocused,
-      hasCustomComponent: !!(item as any).optionComponent
+    option.addEventListener('click', () => {
+      this._selectOption(index);
     });
     
-    // Use the OptionRenderer to render both lightweight and custom component options
-    const optionElement = this._optionRenderer.render(
-      item,
-      index,
-      isSelected,
-      isFocused,
-      this._uniqueId
-    );
-    
-    this._optionsContainer.appendChild(optionElement);
+    this._optionsContainer.appendChild(option);
     console.log('[EnhancedSelect] Option', index, 'appended to optionsContainer');
   }
 
