@@ -258,7 +258,6 @@ export async function measureAsync<T>(
   const result = await fn();
   const duration = performance.now() - start;
   
-  console.log(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
   
   return { result, duration };
 }
@@ -274,7 +273,6 @@ export function measureSync<T>(
   const result = fn();
   const duration = performance.now() - start;
   
-  console.log(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
   
   return { result, duration };
 }

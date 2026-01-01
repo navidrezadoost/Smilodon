@@ -502,6 +502,4 @@ export async function cli(args: string[]): Promise<void> {
   // Write output
   await fs.writeFile(outputFile, output, 'utf-8');
   
-  console.log(`✅ Imported ${tokens.size} tokens from ${source}`);
-  console.log(`📝 Written to ${outputFile}`);
 }

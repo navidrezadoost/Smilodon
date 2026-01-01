@@ -205,7 +205,6 @@ export class OptionRenderer {
     
     this._mountedElements.set(index, option);
     
-    console.log(`[OptionRenderer] Rendered lightweight option ${index}: ${label}`);
     
     return option;
   }
@@ -280,7 +279,6 @@ export class OptionRenderer {
         });
       }
       
-      console.log(`[OptionRenderer] Rendered custom component option ${index}: ${label}`);
       
     } catch (error) {
       console.error(`[OptionRenderer] Failed to render custom component at index ${index}:`, error);

@@ -54,12 +54,10 @@ export class CustomOptionPool {
       component = pooled.instance;
       pooled.inUse = true;
       pooled.lastUsedIndex = index;
-      console.log(`[CustomOptionPool] Reusing component for index ${index}`);
     } else {
       // Create new component
       try {
         component = factory(item, index);
-        console.log(`[CustomOptionPool] Created new component for index ${index}`);
         
         // Add to pool if under limit
         const pool = this._pool.get(factoryKey) || [];
@@ -111,7 +109,6 @@ export class CustomOptionPool {
       const pooled = pool.find(p => p.instance === component);
       if (pooled) {
         pooled.inUse = false;
-        console.log(`[CustomOptionPool] Released component from index ${index}`);
         break;
       }
     }
@@ -121,7 +118,6 @@ export class CustomOptionPool {
    * Release all active components
    */
   releaseAll(): void {
-    console.log(`[CustomOptionPool] Releasing ${this._activeComponents.size} active components`);
     const indices = Array.from(this._activeComponents.keys());
     indices.forEach(index => this.release(index));
   }
@@ -168,7 +164,6 @@ export class CustomOptionPool {
   clear(): void {
     this.releaseAll();
     this._pool.clear();
-    console.log('[CustomOptionPool] Pool cleared');
   }
   
   /**
