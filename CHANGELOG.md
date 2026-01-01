@@ -19,6 +19,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [1.3.1] - 2026-01-01
 
+### ✅ Published to npm
+- **@smilodon/core@1.3.1** - Published successfully
+- **@smilodon/react@1.1.1** - Published successfully
+
 ### ✅ Tested & Verified
 - **Complete Regression Testing**
   - Created comprehensive React test suite with 6 test scenarios
