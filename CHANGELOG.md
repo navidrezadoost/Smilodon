@@ -15,94 +15,37 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
-## [1.2.3] - 2026-01-01
-
-### Fixed
-- **Critical Rendering Bug**: Fixed custom component detection logic in `NativeSelectElement`
-  - Options were not displaying because the `'optionComponent' in item` check was incorrectly triggering for all objects
-  - Changed to use `hasOwnProperty` check to only detect items that actually have `optionComponent` property
-  - Now properly falls back to lightweight rendering for `{label, value}` objects
-  - Fixes issue where select dropdowns appeared empty in React test app
-
-### Technical Details
-- Changed detection from `'optionComponent' in item` to `Object.prototype.hasOwnProperty.call(item, 'optionComponent')`
-- Added additional type check to ensure `optionComponent` is a function
-- Lightweight `{label, value}` objects now render correctly without triggering unified renderer
-
----
-
-## [1.2.2] - 2026-01-01
-
-### Added
-- **Custom Option Component Support for NativeSelectElement**: `smilodon-select` now supports custom option components via the `optionComponent` property
-  - Items can now include `{label, value, optionComponent}` where `optionComponent` is a `CustomOptionFactory`
-  - Unified rendering with `OptionRenderer` for both lightweight `{label, value}` objects and custom components
-  - Automatic component pooling and lifecycle management
-  - Event delegation for custom component interactions
-  - Maintains backward compatibility with simple `{label, value}` objects and primitives
-
-### Changed
-- Integrated `OptionRenderer` utility for consistent rendering behavior between `NativeSelectElement` and `EnhancedSelect`
-- Enhanced render method to detect and handle custom option components
-- Added cleanup for unified renderer in `disconnectedCallback()`
-
-### Technical Details
-- Custom components must implement `CustomOptionContract` interface
-- Factory function pattern for creating component instances
-- Supports single-select and multi-select modes
-- Full backward compatibility with v1.2.0 and v1.2.1
-
----
-
-## [1.2.1] - 2026-01-01
-
-### Fixed
-- **Critical Bug Fix**: Added `setItems()` and `setValue()` methods to `NativeSelectElement` (smilodon-select)
-  - Previously these methods were only available on `EnhancedSelect` but not on the main `smilodon-select` component
-  - React integration was failing because `setItems()` method was not defined
-  - Added `getValue()` method for programmatic value retrieval
-  - Enhanced rendering to properly display `{label, value}` objects
-  - Added `change` event emission for better React compatibility
-  - Fixed race condition with `customElements.whenDefined()`
-
-### Changed
-- Improved label/value object handling in default rendering
-- Both virtualized and non-virtualized rendering now support `{label, value}` structure
-- Better compatibility with React and other frameworks
-
----
-
-## [1.2.0] - 2026-01-01
-
-### Added
-- **Custom Option Components Feature**: Major architectural enhancement allowing users to pass custom framework components for rendering select options
-  - New `CustomOptionContract` interface for component lifecycle management (mount, unmount, update)
-  - `CustomOptionPool` utility for high-performance component recycling (up to 100 instances)
-  - `OptionRenderer` class supporting dual-mode rendering (lightweight + custom components)
-  - `ExtendedSelectItem` type supporting `optionComponent` property for framework components
-  - Comprehensive documentation in `docs/CUSTOM-OPTION-COMPONENTS.md` with React and Vue examples
-  - Full backward compatibility maintained with existing lightweight option rendering
-  - Contract-based architecture with high cohesion and low coupling
-  - Object pooling for optimal performance and memory management
-  - Error handling with automatic fallback to lightweight rendering
-  - Custom event system for component communication (`option:custom-event`, `option:mount-error`)
-
-### Changed
-- Enhanced `EnhancedSelect` component with integrated `OptionRenderer`
-- Updated core exports to include new custom option types and utilities
-- Improved component lifecycle management with proper cleanup on disconnect
-
-### Performance
-- Added component instance recycling to reduce DOM operations
-- Implemented lazy mounting for custom components
-- Optimized state updates for selected and focused states
-
----
-
 ## [Unreleased]
 
-### Removed
-- **Angular Support**: Removed the `packages/angular/` package and build/test wiring; `@smilodon/angular` is deprecated and no longer shipped.
+## [1.3.0] - 2026-01-01
+
+### 🗑️ Removed
+- **Angular Support Completely Discontinued**
+  - Removed entire `packages/angular/` directory and all related code
+  - Deleted `angular-enhanced-select.ts` component from core
+  - Removed Angular playground files and documentation
+  - Updated all documentation to remove Angular references
+  - Removed Angular build scripts from package.json
+  - Package `@smilodon/angular` is now deprecated on npm
+  - See `ANGULAR-REMOVAL-SUMMARY.md` for complete details
+
+### 🎯 Breaking Changes
+- **BREAKING**: Angular support has been discontinued
+  - Users must migrate to React, Vue, Svelte, or Vanilla JavaScript
+  - The `@smilodon/angular` package will no longer receive updates
+
+### ✨ Improvements
+- Focused codebase on React, Vue, Svelte, and Vanilla JS frameworks
+- Improved Web Component compatibility
+- Cleaner architecture without framework-specific workarounds
+- Better documentation for supported frameworks
+- Reduced package size by removing Angular-specific code
+
+### 📚 Documentation
+- Updated all documentation to reflect supported frameworks only
+- Added migration guide for Angular users
+- Enhanced Vanilla JavaScript usage examples
+- Updated README with clearer framework support information
 
 ### Fixed (Historical - Angular v1.0.4)
 - Fixed critical timing issue where items weren't appearing in select dropdowns
