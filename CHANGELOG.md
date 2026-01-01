@@ -17,6 +17,42 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-01-01
+
+### ✅ Tested & Verified
+- **Complete Regression Testing**
+  - Created comprehensive React test suite with 6 test scenarios
+  - Verified all functionality works correctly in real-world React applications
+  - Tested with React 19.2.0 and latest Vite 7.3.0
+  - All packages installed from npm registry (not linked locally)
+  - Zero console errors or warnings
+
+### 🧪 Test Coverage
+- **Test 1:** Basic single select (5 items)
+- **Test 2:** Multi-select with grouped options (6 items, 2 groups)
+- **Test 3:** Searchable multi-select (50 items)
+- **Test 4:** Large dataset with virtual scrolling (1000 items)
+- **Test 5:** String array input support (8 items)
+- **Test 6:** Number array input support (10 items)
+
+### ✨ Features Verified
+- ✅ Single and multi-select modes
+- ✅ Grouped options display
+- ✅ Search functionality
+- ✅ Virtual scrolling for large datasets
+- ✅ String array auto-conversion to SelectItem format
+- ✅ Number array auto-conversion to SelectItem format
+- ✅ Keyboard navigation (Tab, Arrows, Enter, Escape)
+- ✅ Click outside to close
+- ✅ TypeScript types working correctly
+- ✅ Full-width responsive layout
+
+### 📚 Documentation
+- Updated React README with comprehensive examples
+- Updated Core README with API documentation
+- Added regression test documentation
+- Improved installation and usage instructions
+
 ## [1.3.0] - 2026-01-01
 
 ### 🗑️ Removed

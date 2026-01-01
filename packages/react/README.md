@@ -64,6 +64,7 @@ function MyApp() {
 
 ```tsx
 import { Select } from '@smilodon/react';
+import { useState } from 'react';
 
 function BasicExample() {
   const [value, setValue] = useState('');
@@ -83,10 +84,56 @@ function BasicExample() {
 }
 ```
 
-### Multi-Select
+### String Array Input (Auto-converted)
 
 ```tsx
 import { Select } from '@smilodon/react';
+import { useState } from 'react';
+
+function StringArrayExample() {
+  const [values, setValues] = useState<Array<string | number>>([]);
+
+  return (
+    <Select
+      items={['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry']}
+      value={values}
+      onChange={(val) => setValues(val as Array<string | number>)}
+      multiple
+      placeholder="Select fruits..."
+    />
+  );
+}
+```
+
+> **Note:** String arrays are automatically converted to `SelectItem` format internally. Each string becomes `{ value: string, label: string }`.
+
+### Number Array Input (Auto-converted)
+
+```tsx
+import { Select } from '@smilodon/react';
+import { useState } from 'react';
+
+function NumberArrayExample() {
+  const [value, setValue] = useState<string | number>('');
+
+  return (
+    <Select
+      items={[1, 2, 3, 5, 8, 13, 21, 34, 55, 89]}
+      value={value}
+      onChange={(val) => setValue(val)}
+      placeholder="Select a Fibonacci number..."
+    />
+  );
+}
+```
+
+> **Note:** Number arrays are automatically converted to `SelectItem` format internally. Each number becomes `{ value: number, label: string }`.
+
+### Multi-Select with Object Array
+
+```tsx
+import { Select } from '@smilodon/react';
+import { useState } from 'react';
 
 function MultiSelectExample() {
   const [values, setValues] = useState<Array<string | number>>([]);

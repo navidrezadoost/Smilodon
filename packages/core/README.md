@@ -97,13 +97,6 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 - **Sub-millisecond Search**: Fenwick tree indexing for O(log n) queries
 - **60 FPS Scrolling**: Hardware-accelerated virtualization
 
-### ✨ Custom Components (NEW in v1.2.0)
-- **Framework Components**: Pass React, Vue, or Svelte components for option rendering
-- **Component Pooling**: Automatic recycling of up to 100 component instances
-- **Lifecycle Management**: Full mount/unmount/update lifecycle control
-- **Mixed Mode**: Use custom components alongside lightweight options
-- **See**: [Custom Option Components Guide](https://github.com/navidrezadoost/smilodon/blob/main/docs/CUSTOM-OPTION-COMPONENTS.md)
-
 ### 🎯 Production Ready
 - **TypeScript First**: Complete type definitions included
 - **Zero Dependencies**: 6.6 KB gzipped runtime
@@ -122,7 +115,7 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 
 ```typescript
 interface SmilodonSelectElement extends HTMLElement {
-  items: SelectItem[];           // Dataset (can be millions of items)
+  items: SelectItem[] | string[] | number[];  // Dataset (can be millions of items)
   value: any;                    // Current selected value
   placeholder?: string;          // Placeholder text
   searchable?: boolean;          // Enable search (default: true)
@@ -137,8 +130,45 @@ interface SelectItem {
   value: any;                    // Value (can be any type)
   disabled?: boolean;            // Disable this option
   group?: string;                // Optgroup name
-  optionComponent?: CustomOptionFactory;  // (v1.2.0+) Custom component for this option
 }
+```
+
+> **Flexible Input Formats:**
+> - **Object arrays**: `[{ value: '1', label: 'Option 1' }, ...]`
+> - **String arrays**: `['Apple', 'Banana', 'Cherry']` - automatically converted to `SelectItem` format
+> - **Number arrays**: `[1, 2, 3, 5, 8]` - automatically converted to `SelectItem` format
+
+### Examples with Different Input Types
+
+#### Object Array (Traditional)
+```javascript
+select.items = [
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana' },
+  { value: 'cherry', label: 'Cherry' }
+];
+```
+
+#### String Array (Auto-converted)
+```javascript
+select.items = ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry'];
+// Automatically becomes:
+// [
+//   { value: 'Apple', label: 'Apple' },
+//   { value: 'Banana', label: 'Banana' },
+//   ...
+// ]
+```
+
+#### Number Array (Auto-converted)
+```javascript
+select.items = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+// Automatically becomes:
+// [
+//   { value: 1, label: '1' },
+//   { value: 2, label: '2' },
+//   ...
+// ]
 ```
 
 ### Events
