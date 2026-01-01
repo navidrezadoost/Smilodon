@@ -15,6 +15,22 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [1.2.3] - 2026-01-01
+
+### Fixed
+- **Critical Rendering Bug**: Fixed custom component detection logic in `NativeSelectElement`
+  - Options were not displaying because the `'optionComponent' in item` check was incorrectly triggering for all objects
+  - Changed to use `hasOwnProperty` check to only detect items that actually have `optionComponent` property
+  - Now properly falls back to lightweight rendering for `{label, value}` objects
+  - Fixes issue where select dropdowns appeared empty in React test app
+
+### Technical Details
+- Changed detection from `'optionComponent' in item` to `Object.prototype.hasOwnProperty.call(item, 'optionComponent')`
+- Added additional type check to ensure `optionComponent` is a function
+- Lightweight `{label, value}` objects now render correctly without triggering unified renderer
+
+---
+
 ## [1.2.2] - 2026-01-01
 
 ### Added

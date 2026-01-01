@@ -249,7 +249,10 @@ export class NativeSelectElement extends HTMLElement {
 
     // Check if any items have custom components
     const hasCustomComponents = this._items.some(item => 
-      typeof item === 'object' && item !== null && 'optionComponent' in item
+      typeof item === 'object' && 
+      item !== null && 
+      Object.prototype.hasOwnProperty.call(item, 'optionComponent') &&
+      typeof (item as any).optionComponent === 'function'
     );
 
     // Use unified renderer if we have custom components
