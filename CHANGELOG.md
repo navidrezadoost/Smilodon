@@ -17,6 +17,22 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-01-02
+
+### 🎉 Production Release
+- **Removed all debug console.log statements** for production-ready code
+- Cleaned up development logging from enhanced-select, option-renderer, and custom-option-pool
+
+###  ✅ Vue Package Fully Tested & Validated
+- Completed comprehensive regression testing with 6 test scenarios
+- All features working perfectly in Vue 3.5.26 + TypeScript environment
+- Zero console errors, production-ready
+
+### 📦 Package Updates
+- **@smilodon/core@1.3.3** - Production build without debug logs
+- **@smilodon/react@1.1.1** - Validated and documented
+- **@smilodon/vue@1.0.8** - Fully tested and validated
+
 ## [1.0.8] - 2026-01-01 (Vue Package)
 
 ### 🐛 Bug Fixes

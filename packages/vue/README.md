@@ -4,16 +4,18 @@ Production-ready, accessible select component for Vue 3 applications.
 
 ## Features
 
-- ✨ **Single & Multi-Select** - Flexible selection modes
-- 🔍 **Searchable** - Built-in search with client or server-side filtering
-- ♿ **Fully Accessible** - WCAG 2.1 AAA compliant with complete keyboard navigation
-- 🚀 **Virtual Scrolling** - Handle thousands of items efficiently
-- ∞ **Infinite Scroll** - Load more items on demand
-- 📦 **Grouped Options** - Organize items with group headers
-- 🎨 **Themeable** - Multiple built-in themes or custom styles
-- 💪 **TypeScript** - Full type safety and intellisense
-- 🪶 **Lightweight** - Only 2.0KB gzipped
-- 🎯 **Vue 3 Composition API** - Modern Vue patterns with v-model support
+- ✅ **Vue 3 Native** - Built for Vue 3 with Composition API and `<script setup>` support
+- ✅ **v-model Support** - Two-way binding that feels natural in Vue
+- ✅ **Fully Typed** - Complete TypeScript support with detailed type definitions
+- ✅ **Single & Multi-select** - One prop to switch modes
+- ✅ **Searchable** - Built-in filtering with customizable behavior
+- ✅ **Infinite Scroll** - Handle massive datasets efficiently
+- ✅ **Virtual Scrolling** - Render only visible items for performance
+- ✅ **Grouped Options** - Organize items into categories
+- ✅ **Accessible** - WCAG 2.1 AAA compliant, full keyboard navigation
+- ✅ **Flexible Input** - Accepts SelectItem objects, string arrays, or number arrays
+- ✅ **Customizable** - Custom renderers, styles, and behaviors
+- ✅ **Tiny Bundle** - Optimized for production
 
 ## Installation
 
@@ -21,15 +23,29 @@ Production-ready, accessible select component for Vue 3 applications.
 npm install @smilodon/vue @smilodon/core
 ```
 
+or
+
+```bash
+yarn add @smilodon/vue @smilodon/core
+```
+
+or
+
+```bash
+pnpm add @smilodon/vue @smilodon/core
+```
+
 ## Quick Start
 
 ```vue
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
-const selectedValue = ref('');
-const items = [
+const selectedValue = ref<string | number>('');
+
+const items: SelectItem[] = [
   { value: 'apple', label: 'Apple' },
   { value: 'banana', label: 'Banana' },
   { value: 'cherry', label: 'Cherry' },
@@ -51,12 +67,14 @@ const items = [
 ### Basic Single Select
 
 ```vue
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
-const value = ref('');
-const items = [
+const selectedValue = ref<string | number>('');
+
+const items: SelectItem[] = [
   { value: '1', label: 'Option 1' },
   { value: '2', label: 'Option 2' },
   { value: '3', label: 'Option 3' },
@@ -64,16 +82,180 @@ const items = [
 </script>
 
 <template>
-  <div>
-    <Select
-      :items="items"
-      v-model="value"
-      placeholder="Choose an option..."
-    />
-    <p>Selected: {{ value }}</p>
+  <Select
+    :items="items"
+    v-model="selectedValue"
+    placeholder="Choose an option"
+  />
+  
+  <div v-if="selectedValue">
+    Selected: {{ selectedValue }}
   </div>
 </template>
 ```
+
+### String Array Input (Auto-converted)
+
+The Select component accepts string arrays and automatically converts them to the SelectItem format:
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const selectedFruits = ref<Array<string | number>>([]);
+
+const fruits = ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry', 'Fig', 'Grape', 'Honeydew'];
+</script>
+
+<template>
+  <Select
+    :items="fruits"
+    v-model="selectedFruits"
+    placeholder="Select fruits..."
+    searchable
+    multiple
+  />
+  
+  <div v-if="selectedFruits.length">
+    Selected: {{ selectedFruits.join(', ') }}
+  </div>
+</template>
+```
+
+**Note:** String arrays are automatically converted to `SelectItem` objects where both `value` and `label` equal the string:
+- `"Apple"` becomes `{ value: "Apple", label: "Apple" }`
+
+### Number Array Input (Auto-converted)
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const selectedNumber = ref<string | number>(0);
+
+const fibonacciNumbers = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+</script>
+
+<template>
+  <Select
+    :items="fibonacciNumbers"
+    v-model="selectedNumber"
+    placeholder="Select a Fibonacci number"
+  />
+  
+  <div v-if="selectedNumber">
+    Selected: {{ selectedNumber }}
+  </div>
+</template>
+```
+
+**Note:** Number arrays are automatically converted to `SelectItem` objects:
+- `42` becomes `{ value: 42, label: "42" }`
+
+## Complete Examples
+
+## Complete Examples
+
+### Multi-Select with Groups
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
+
+const selectedValues = ref<Array<string | number>>([]);
+
+const groupedItems: SelectItem[] = [
+  { value: 'apple', label: 'Apple', group: 'Fruits' },
+  { value: 'banana', label: 'Banana', group: 'Fruits' },
+  { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+  { value: 'broccoli', label: 'Broccoli', group: 'Vegetables' },
+];
+</script>
+
+<template>
+  <Select
+    :items="groupedItems"
+    v-model="selectedValues"
+    placeholder="Select items..."
+    searchable
+    multiple
+  />
+  
+  <div v-if="selectedValues.length">
+    Selected ({{ selectedValues.length }}): {{ selectedValues.join(', ') }}
+  </div>
+</template>
+```
+
+### Searchable Multi-Select (50 items)
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
+
+const selectedValues = ref<Array<string | number>>([]);
+
+// Generate 50 items
+const items: SelectItem[] = Array.from({ length: 50 }, (_, i) => ({
+  value: `item-${i + 1}`,
+  label: `Item ${i + 1}`,
+}));
+</script>
+
+<template>
+  <Select
+    :items="items"
+    v-model="selectedValues"
+    placeholder="Search and select..."
+    searchable
+    multiple
+  />
+  
+  <div v-if="selectedValues.length">
+    Selected: {{ selectedValues.length }} items
+  </div>
+</template>
+```
+
+### Large Dataset with Virtual Scrolling (1000 items)
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
+
+const selectedValue = ref<string | number>('');
+
+// Generate 1000 items
+const largeDataset: SelectItem[] = Array.from({ length: 1000 }, (_, i) => ({
+  value: `item-${i + 1}`,
+  label: `Item ${i + 1} - Large Dataset`,
+}));
+</script>
+
+<template>
+  <Select
+    :items="largeDataset"
+    v-model="selectedValue"
+    placeholder="Select from 1000 items..."
+    searchable
+    :virtualScroll="true"
+  />
+  
+  <div v-if="selectedValue">
+    Selected: {{ selectedValue }}
+  </div>
+</template>
+```
+
+
 
 ### Multi-Select
 

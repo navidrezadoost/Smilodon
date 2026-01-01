@@ -59,15 +59,12 @@ export class EnhancedSelect extends HTMLElement {
 
   constructor() {
     super();
-    console.log('[EnhancedSelect] Constructor called');
     
     this._shadow = this.attachShadow({ mode: 'open' });
-    console.log('[EnhancedSelect] Shadow root attached:', this._shadow);
     this._uniqueId = `enhanced-select-${Math.random().toString(36).substr(2, 9)}`;
     
     // Merge global config with component-level config
     this._config = selectConfig.getConfig() as GlobalSelectConfig;
-    console.log('[EnhancedSelect] Config loaded');
     
     // Initialize state
     this._state = {
@@ -88,45 +85,30 @@ export class EnhancedSelect extends HTMLElement {
       lastNotifiedResultCount: 0,
       isExpanded: false,
     };
-    console.log('[EnhancedSelect] State initialized');
     
     // Create DOM structure
     this._container = this._createContainer();
-    console.log('[EnhancedSelect] Container created:', this._container);
     this._inputContainer = this._createInputContainer();
-    console.log('[EnhancedSelect] Input container created');
     this._input = this._createInput();
-    console.log('[EnhancedSelect] Input created:', this._input);
     this._arrowContainer = this._createArrowContainer();
-    console.log('[EnhancedSelect] Arrow container created');
     this._dropdown = this._createDropdown();
-    console.log('[EnhancedSelect] Dropdown created');
     this._optionsContainer = this._createOptionsContainer();
-    console.log('[EnhancedSelect] Options container created');
     this._liveRegion = this._createLiveRegion();
-    console.log('[EnhancedSelect] Live region created');
     
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
-    console.log('[EnhancedSelect] Styles initialized');
     this._assembleDOM();
-    console.log('[EnhancedSelect] DOM assembled');
     this._attachEventListeners();
-    console.log('[EnhancedSelect] Event listeners attached');
     this._initializeObservers();
-    console.log('[EnhancedSelect] Observers initialized');
-    console.log('[EnhancedSelect] Constructor complete, shadow DOM children:', this._shadow.children.length);
   }
 
   connectedCallback(): void {
-    console.log('[EnhancedSelect] connectedCallback called');
     
     // WORKAROUND: Force display style on host element for Angular compatibility
     // Angular's rendering seems to not apply :host styles correctly in some cases
     // Must be done in connectedCallback when element is attached to DOM
     this.style.display = 'block';
     this.style.width = '100%';
-    console.log('[EnhancedSelect] Forced host display styles');
     
     // Load initial data if server-side is enabled
     if (this._config.serverSide.enabled && this._config.serverSide.initialSelectedValues) {
@@ -137,7 +119,6 @@ export class EnhancedSelect extends HTMLElement {
     if (this._config.callbacks.onOpen) {
       this._config.callbacks.onOpen();
     }
-    console.log('[EnhancedSelect] connectedCallback complete');
   }
 
   disconnectedCallback(): void {
@@ -254,52 +235,31 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _assembleDOM(): void {
-    console.log('[EnhancedSelect] _assembleDOM: Starting DOM assembly');
-    console.log('[EnhancedSelect] _assembleDOM: Elements to assemble:', {
-      inputContainer: !!this._inputContainer,
-      input: !!this._input,
-      arrowContainer: !!this._arrowContainer,
-      container: !!this._container,
-      dropdown: !!this._dropdown,
-      optionsContainer: !!this._optionsContainer,
-      shadow: !!this._shadow,
-      liveRegion: !!this._liveRegion
-    });
     
     this._inputContainer.appendChild(this._input);
-    console.log('[EnhancedSelect] _assembleDOM: Appended input to inputContainer');
     
     if (this._arrowContainer) {
       this._inputContainer.appendChild(this._arrowContainer);
-      console.log('[EnhancedSelect] _assembleDOM: Appended arrowContainer to inputContainer');
     }
     
     this._container.appendChild(this._inputContainer);
-    console.log('[EnhancedSelect] _assembleDOM: Appended inputContainer to container');
     
     this._dropdown.appendChild(this._optionsContainer);
-    console.log('[EnhancedSelect] _assembleDOM: Appended optionsContainer to dropdown');
     
     this._container.appendChild(this._dropdown);
-    console.log('[EnhancedSelect] _assembleDOM: Appended dropdown to container');
     
     this._shadow.appendChild(this._container);
-    console.log('[EnhancedSelect] _assembleDOM: Appended container to shadow root');
     
     if (this._liveRegion) {
       this._shadow.appendChild(this._liveRegion);
-      console.log('[EnhancedSelect] _assembleDOM: Appended liveRegion to shadow root');
     }
     
-    console.log('[EnhancedSelect] _assembleDOM: Shadow root children count:', this._shadow.children.length);
-    console.log('[EnhancedSelect] _assembleDOM: Shadow root HTML length:', this._shadow.innerHTML.length);
     
     // Set ARIA relationships
     const listboxId = `${this._uniqueId}-listbox`;
     this._dropdown.id = listboxId;
     this._input.setAttribute('aria-controls', listboxId);
     this._input.setAttribute('aria-owns', listboxId);
-    console.log('[EnhancedSelect] _assembleDOM: Set ARIA relationships with listboxId:', listboxId);
   }
 
   private _initializeStyles(): void {
@@ -630,8 +590,6 @@ export class EnhancedSelect extends HTMLElement {
         min-height: 44px;
       }
     `;
-    console.log('[EnhancedSelect] _initializeStyles: Created style element, content length:', style.textContent?.length || 0);
-    console.log('[EnhancedSelect] _initializeStyles: Shadow root children BEFORE:', this._shadow.children.length);
     
     // Insert as first child to ensure styles are processed first
     if (this._shadow.firstChild) {
@@ -640,9 +598,6 @@ export class EnhancedSelect extends HTMLElement {
       this._shadow.appendChild(style);
     }
     
-    console.log('[EnhancedSelect] _initializeStyles: Style inserted, shadow root children AFTER:', this._shadow.children.length);
-    console.log('[EnhancedSelect] _initializeStyles: Shadow root has style element:', !!this._shadow.querySelector('style'));
-    console.log('[EnhancedSelect] _initializeStyles: Style sheet rules:', style.sheet?.cssRules?.length || 'NOT PARSED');
   }
 
   private _attachEventListeners(): void {
@@ -1340,8 +1295,6 @@ export class EnhancedSelect extends HTMLElement {
    * Set items to display in the select
    */
   setItems(items: unknown[]): void {
-    console.log('[EnhancedSelect] setItems called with', items?.length || 0, 'items');
-    console.log('[EnhancedSelect] Items:', items);
     
     const previousLength = this._state.loadedItems.length;
     this._state.loadedItems = items;
@@ -1349,24 +1302,20 @@ export class EnhancedSelect extends HTMLElement {
     // If grouped items exist, flatten them to items
     if (this._state.groupedItems.length > 0) {
       this._state.loadedItems = this._state.groupedItems.flatMap(group => group.options);
-      console.log('[EnhancedSelect] Flattened grouped items to', this._state.loadedItems.length, 'items');
     }
     
     const newLength = this._state.loadedItems.length;
-    console.log('[EnhancedSelect] State.loadedItems updated:', previousLength, '→', newLength);
     
     // When infinite scroll is active (preserveScrollPosition = true),
     // we need to maintain scroll position during the update
     if (this._state.preserveScrollPosition && this._dropdown) {
       const targetScrollTop = this._state.lastScrollPosition;
-      console.log('[EnhancedSelect] Preserving scroll position:', targetScrollTop);
       
       // Only clear loading if we actually got more items
       if (newLength > previousLength) {
         this._state.isBusy = false;
       }
       
-      console.log('[EnhancedSelect] Calling _renderOptions (with scroll preservation)...');
       this._renderOptions();
       
       // Restore the exact scrollTop we had before loading
@@ -1388,11 +1337,9 @@ export class EnhancedSelect extends HTMLElement {
     } else {
       // Normal update - just render normally
       this._state.isBusy = false;
-      console.log('[EnhancedSelect] Calling _renderOptions (normal)...');
       this._renderOptions();
     }
     
-    console.log('[EnhancedSelect] setItems complete');
   }
 
   /**
@@ -1578,15 +1525,6 @@ export class EnhancedSelect extends HTMLElement {
    * Render options based on current state
    */
   private _renderOptions(): void {
-    console.log('[EnhancedSelect] _renderOptions called');
-    console.log('[EnhancedSelect] State:', {
-      loadedItems: this._state.loadedItems.length,
-      groupedItems: this._state.groupedItems.length,
-      isOpen: this._state.isOpen,
-      isSearching: this._state.isSearching,
-      searchQuery: this._state.searchQuery,
-      isBusy: this._state.isBusy
-    });
     
     // Cleanup observer
     if (this._loadMoreTrigger && this._intersectionObserver) {
@@ -1594,7 +1532,6 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     // Clear options container
-    console.log('[EnhancedSelect] Clearing options container, previous children:', this._optionsContainer.children.length);
     this._optionsContainer.innerHTML = '';
     
     // Ensure dropdown only contains options container (cleanup legacy direct children)
@@ -1609,7 +1546,6 @@ export class EnhancedSelect extends HTMLElement {
     // Ensure dropdown is visible if we are rendering options
     if (this._state.isOpen && this._dropdown.style.display === 'none') {
       this._dropdown.style.display = 'block';
-      console.log('[EnhancedSelect] Dropdown display set to block');
     }
     
     // Show searching state (exclusive state)
@@ -1618,7 +1554,6 @@ export class EnhancedSelect extends HTMLElement {
       searching.className = 'searching-state';
       searching.textContent = 'Searching...';
       this._optionsContainer.appendChild(searching);
-      console.log('[EnhancedSelect] Added searching state');
       return;
     }
     
@@ -1630,7 +1565,6 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      console.log('[EnhancedSelect] Rendering grouped items:', this._state.groupedItems.length, 'groups');
       this._state.groupedItems.forEach(group => {
         const header = document.createElement('div');
         header.className = 'group-header';
@@ -1660,7 +1594,6 @@ export class EnhancedSelect extends HTMLElement {
       });
     } else {
       // Normal rendering (flat list or filtered)
-      console.log('[EnhancedSelect] Rendering flat list:', this._state.loadedItems.length, 'items');
       let hasRenderedItems = false;
       
       this._state.loadedItems.forEach((item, index) => {
@@ -1678,7 +1611,6 @@ export class EnhancedSelect extends HTMLElement {
         this._renderSingleOption(item, index, getValue, getLabel);
       });
       
-      console.log('[EnhancedSelect] Rendered', hasRenderedItems ? 'items' : 'no items');
       
       if (!hasRenderedItems && !this._state.isBusy) {
         const empty = document.createElement('div');
@@ -1689,7 +1621,6 @@ export class EnhancedSelect extends HTMLElement {
           empty.textContent = 'No options available';
         }
         this._optionsContainer.appendChild(empty);
-        console.log('[EnhancedSelect] Added empty state');
       }
     }
     
@@ -1711,14 +1642,12 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       this._optionsContainer.appendChild(busyBucket);
-      console.log('[EnhancedSelect] Added busy bucket');
     }
     // Append Load More Trigger (Button or Sentinel) if enabled and not busy
     else if ((this._config.loadMore.enabled || this._config.infiniteScroll.enabled) && this._state.loadedItems.length > 0) {
       this._addLoadMoreTrigger();
     }
     
-    console.log('[EnhancedSelect] _renderOptions complete, optionsContainer children:', this._optionsContainer.children.length);
   }
 
   private _renderSingleOption(item: any, index: number, getValue: (item: any) => any, getLabel: (item: any) => string) {
@@ -1728,7 +1657,6 @@ export class EnhancedSelect extends HTMLElement {
     const value = getValue(item);
     const label = getLabel(item);
     
-    console.log('[EnhancedSelect] Rendering option', index, ':', { value, label });
     
     option.textContent = label;
     option.dataset.value = String(value);
@@ -1749,7 +1677,6 @@ export class EnhancedSelect extends HTMLElement {
     });
     
     this._optionsContainer.appendChild(option);
-    console.log('[EnhancedSelect] Option', index, 'appended to optionsContainer');
   }
 
   private _addLoadMoreTrigger(): void {
