@@ -189,6 +189,307 @@ select.items = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 // ]
 ```
 
+---
+
+## 🎯 Two Ways to Specify Options
+
+Smilodon provides **two powerful approaches** for defining select options, each optimized for different use cases:
+
+### Method 1: Data-Driven (Object Arrays) 📊
+
+**Use when**: You have structured data and want simple, declarative option rendering.
+
+**Advantages**:
+- ✅ Simple and declarative
+- ✅ Auto-conversion from strings/numbers
+- ✅ Perfect for basic dropdowns
+- ✅ Zero boilerplate code
+- ✅ Extremely performant (millions of items)
+- ✅ Built-in search and filtering
+- ✅ TypeScript type safety
+
+**Examples**:
+
+```javascript
+// Simple object array
+const select = document.querySelector('enhanced-select');
+
+select.items = [
+  { value: '1', label: 'Apple' },
+  { value: '2', label: 'Banana' },
+  { value: '3', label: 'Cherry' }
+];
+
+// With additional metadata
+select.items = [
+  { value: 'us', label: 'United States', disabled: false },
+  { value: 'ca', label: 'Canada', disabled: false },
+  { value: 'mx', label: 'Mexico', disabled: true }  // Disabled option
+];
+
+// With grouping
+select.items = [
+  { value: 'apple', label: 'Apple', group: 'Fruits' },
+  { value: 'banana', label: 'Banana', group: 'Fruits' },
+  { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+  { value: 'broccoli', label: 'Broccoli', group: 'Vegetables' }
+];
+
+// Auto-conversion from strings
+select.items = ['Red', 'Green', 'Blue', 'Yellow'];
+
+// Auto-conversion from numbers
+select.items = [10, 20, 30, 40, 50];
+
+// Large datasets (millions of items)
+select.items = Array.from({ length: 1_000_000 }, (_, i) => ({
+  value: i,
+  label: `Item ${i + 1}`
+}));
+```
+
+### Method 2: Component-Driven (Custom Renderers) 🎨
+
+**Use when**: You need rich, interactive option content with custom HTML/styling.
+
+**Advantages**:
+- ✅ Full control over option rendering
+- ✅ Rich content (images, icons, badges, multi-line text)
+- ✅ Custom HTML and styling
+- ✅ Interactive elements within options
+- ✅ Conditional rendering based on item data
+- ✅ Perfect for complex UIs (user cards, product listings, etc.)
+
+**How it works**: Provide an `optionTemplate` function that returns HTML string for each option.
+
+**Examples**:
+
+```javascript
+const select = document.querySelector('enhanced-select');
+
+// Example 1: Simple custom template with icons
+const items = [
+  { value: 'js', label: 'JavaScript', icon: '🟨', description: 'Dynamic scripting language' },
+  { value: 'py', label: 'Python', icon: '🐍', description: 'General-purpose programming' },
+  { value: 'rs', label: 'Rust', icon: '🦀', description: 'Systems programming language' }
+];
+
+select.items = items;
+select.optionTemplate = (item, index) => `
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <span style="font-size: 24px;">${item.icon}</span>
+    <div>
+      <div style="font-weight: 600;">${item.label}</div>
+      <div style="font-size: 12px; color: #6b7280;">${item.description}</div>
+    </div>
+  </div>
+`;
+
+// Example 2: User selection with avatars
+const users = [
+  { 
+    value: '1', 
+    label: 'John Doe', 
+    email: 'john@example.com',
+    avatar: 'https://i.pravatar.cc/150?img=1',
+    role: 'Admin'
+  },
+  { 
+    value: '2', 
+    label: 'Jane Smith', 
+    email: 'jane@example.com',
+    avatar: 'https://i.pravatar.cc/150?img=2',
+    role: 'User'
+  },
+  { 
+    value: '3', 
+    label: 'Bob Johnson', 
+    email: 'bob@example.com',
+    avatar: 'https://i.pravatar.cc/150?img=3',
+    role: 'Moderator'
+  }
+];
+
+select.items = users;
+select.optionTemplate = (item, index) => `
+  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
+    <img 
+      src="${item.avatar}" 
+      alt="${item.label}"
+      style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
+    />
+    <div style="flex: 1;">
+      <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
+      <div style="font-size: 13px; color: #6b7280;">${item.email}</div>
+    </div>
+    <span style="
+      padding: 4px 8px;
+      background: ${item.role === 'Admin' ? '#dbeafe' : '#f3f4f6'};
+      color: ${item.role === 'Admin' ? '#1e40af' : '#374151'};
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    ">${item.role}</span>
+  </div>
+`;
+
+// Example 3: Product selection with images and pricing
+const products = [
+  { 
+    value: 'p1', 
+    label: 'Premium Laptop', 
+    price: 1299.99, 
+    stock: 15,
+    image: 'https://via.placeholder.com/60',
+    badge: 'Best Seller'
+  },
+  { 
+    value: 'p2', 
+    label: 'Wireless Mouse', 
+    price: 29.99, 
+    stock: 150,
+    image: 'https://via.placeholder.com/60',
+    badge: null
+  },
+  { 
+    value: 'p3', 
+    label: 'Mechanical Keyboard', 
+    price: 89.99, 
+    stock: 0,
+    image: 'https://via.placeholder.com/60',
+    badge: 'Out of Stock'
+  }
+];
+
+select.items = products;
+select.optionTemplate = (item, index) => `
+  <div style="display: flex; align-items: center; gap: 12px; opacity: ${item.stock === 0 ? '0.5' : '1'};">
+    <img 
+      src="${item.image}" 
+      alt="${item.label}"
+      style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb;"
+    />
+    <div style="flex: 1;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
+        ${item.badge ? `
+          <span style="
+            padding: 2px 6px;
+            background: ${item.badge === 'Best Seller' ? '#dcfce7' : '#fee2e2'};
+            color: ${item.badge === 'Best Seller' ? '#166534' : '#991b1b'};
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+          ">${item.badge}</span>
+        ` : ''}
+      </div>
+      <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 16px; font-weight: 700; color: #059669;">$${item.price.toFixed(2)}</span>
+        <span style="font-size: 12px; color: #6b7280;">${item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}</span>
+      </div>
+    </div>
+  </div>
+`;
+
+// Example 4: Status indicators with conditional styling
+const tasks = [
+  { value: 't1', label: 'Design Homepage', status: 'completed', priority: 'high', assignee: 'John' },
+  { value: 't2', label: 'API Integration', status: 'in-progress', priority: 'high', assignee: 'Jane' },
+  { value: 't3', label: 'Write Documentation', status: 'pending', priority: 'medium', assignee: 'Bob' },
+  { value: 't4', label: 'Bug Fixes', status: 'in-progress', priority: 'low', assignee: 'Alice' }
+];
+
+const statusColors = {
+  'completed': { bg: '#dcfce7', color: '#166534', icon: '✓' },
+  'in-progress': { bg: '#dbeafe', color: '#1e40af', icon: '⟳' },
+  'pending': { bg: '#fef3c7', color: '#92400e', icon: '○' }
+};
+
+const priorityColors = {
+  'high': '#ef4444',
+  'medium': '#f59e0b',
+  'low': '#10b981'
+};
+
+select.items = tasks;
+select.optionTemplate = (item, index) => {
+  const status = statusColors[item.status];
+  return `
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 0;">
+      <div style="
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: ${status.bg};
+        color: ${status.color};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      ">${status.icon}</div>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
+        <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+          Assigned to ${item.assignee}
+        </div>
+      </div>
+      <div style="
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: ${priorityColors[item.priority]};
+      " title="${item.priority} priority"></div>
+    </div>
+  `;
+};
+```
+
+### Comparison: When to Use Each Method
+
+| Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
+|---------|------------------------|---------------------------|
+| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
+| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
+| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
+| **Use Case** | Standard dropdowns | Rich, complex UIs |
+| **Code Amount** | Minimal | More code |
+| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
+| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
+| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
+
+**Best Practices**:
+
+✅ **Use Method 1 (Object Arrays) when**:
+- You need simple text-based options
+- Performance is critical (millions of items)
+- You want minimal code
+- Built-in search/filter is sufficient
+
+✅ **Use Method 2 (Custom Renderers) when**:
+- You need images, icons, or badges
+- Options require multiple lines of text
+- Custom styling/layout is important
+- Conditional rendering based on data
+- Rich user experience is priority
+
+### Combining Both Methods
+
+You can start with Method 1 and add Method 2 later as your UI evolves:
+
+```javascript
+// Start simple
+select.items = ['Option 1', 'Option 2', 'Option 3'];
+
+// Later, add custom rendering without changing items
+select.optionTemplate = (item, index) => `
+  <div style="padding: 8px; background: ${index % 2 ? '#f9fafb' : 'white'};">
+    <strong>${item.label || item}</strong>
+  </div>
+`;
+```
+
+---
+
 ### Events
 
 ```typescript

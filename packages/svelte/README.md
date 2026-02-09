@@ -338,6 +338,558 @@ interface GroupedItem {
 }
 ```
 
+---
+
+## 🎯 Two Ways to Specify Options
+
+Smilodon Svelte provides **two powerful approaches** for defining select options, each optimized for different use cases:
+
+### Method 1: Data-Driven (Object Arrays) 📊
+
+**Use when**: You have structured data and want simple, declarative option rendering.
+
+**Advantages**:
+- ✅ Simple and declarative - Svelte-friendly
+- ✅ Auto-conversion from strings/numbers
+- ✅ Perfect for basic dropdowns
+- ✅ Works seamlessly with Svelte stores
+- ✅ Extremely performant (millions of items)
+- ✅ Built-in search and filtering
+- ✅ Full TypeScript type safety
+
+**Examples**:
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 1: Simple object array
+  let value = '';
+
+  const items = [
+    { value: '1', label: 'Apple' },
+    { value: '2', label: 'Banana' },
+    { value: '3', label: 'Cherry' }
+  ];
+</script>
+
+<Select
+  items={items}
+  bind:value
+  placeholder="Select a fruit..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 2: With metadata and disabled options
+  let country = '';
+
+  const countries = [
+    { value: 'us', label: 'United States', disabled: false },
+    { value: 'ca', label: 'Canada', disabled: false },
+    { value: 'mx', label: 'Mexico', disabled: true }
+  ];
+</script>
+
+<Select
+  items={countries}
+  bind:value={country}
+  placeholder="Select a country..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 3: With grouping
+  let food = '';
+
+  const foods = [
+    { value: 'apple', label: 'Apple', group: 'Fruits' },
+    { value: 'banana', label: 'Banana', group: 'Fruits' },
+    { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+    { value: 'broccoli', label: 'Broccoli', group: 'Vegetables' }
+  ];
+</script>
+
+<Select
+  items={foods}
+  bind:value={food}
+  placeholder="Select food..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 4: Auto-conversion from strings
+  let color = '';
+  const colors = ['Red', 'Green', 'Blue', 'Yellow'];
+</script>
+
+<Select
+  items={colors}
+  bind:value={color}
+  placeholder="Select a color..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 5: Auto-conversion from numbers
+  let size: number | string = '';
+  const sizes = [10, 20, 30, 40, 50];
+</script>
+
+<Select
+  items={sizes}
+  bind:value={size}
+  placeholder="Select size..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  // Example 6: Large datasets with reactive statement
+  let id = '';
+
+  $: items = Array.from({ length: 100_000 }, (_, i) => ({
+    value: i.toString(),
+    label: `Item ${i + 1}`
+  }));
+</script>
+
+<Select
+  items={items}
+  bind:value={id}
+  virtualized
+  placeholder="Select from 100K items..."
+/>
+```
+
+### Method 2: Component-Driven (Custom Renderers) 🎨
+
+**Use when**: You need rich, interactive option content with custom HTML/styling.
+
+**Advantages**:
+- ✅ Full control over option rendering
+- ✅ Rich content (images, icons, badges, multi-line text)
+- ✅ Custom HTML and styling
+- ✅ Reactive data binding
+- ✅ Conditional rendering based on item data
+- ✅ Works with Svelte stores
+- ✅ Perfect for complex UIs (user cards, product listings, etc.)
+
+**How it works**: Provide an `optionTemplate` function that returns HTML string for each option.
+
+**Examples**:
+
+```svelte
+<script lang="ts">
+  import { Select, type SelectItem } from '@smilodon/svelte';
+
+  // Example 1: Simple custom template with icons
+  interface Language extends SelectItem {
+    icon: string;
+    description: string;
+  }
+
+  let lang = '';
+
+  const languages: Language[] = [
+    { value: 'js', label: 'JavaScript', icon: '🟨', description: 'Dynamic scripting language' },
+    { value: 'py', label: 'Python', icon: '🐍', description: 'General-purpose programming' },
+    { value: 'rs', label: 'Rust', icon: '🦀', description: 'Systems programming language' }
+  ];
+
+  const languageRenderer = (item: Language, index: number) => `
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 24px;">${item.icon}</span>
+      <div>
+        <div style="font-weight: 600;">${item.label}</div>
+        <div style="font-size: 12px; color: #6b7280;">${item.description}</div>
+      </div>
+    </div>
+  `;
+</script>
+
+<Select
+  items={languages}
+  bind:value={lang}
+  optionTemplate={languageRenderer}
+  placeholder="Select a language..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select, type SelectItem } from '@smilodon/svelte';
+
+  // Example 2: User selection with avatars
+  interface User extends SelectItem {
+    email: string;
+    avatar: string;
+    role: 'Admin' | 'User' | 'Moderator';
+  }
+
+  let userId = '';
+
+  const users: User[] = [
+    {
+      value: '1',
+      label: 'John Doe',
+      email: 'john@example.com',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      role: 'Admin'
+    },
+    {
+      value: '2',
+      label: 'Jane Smith',
+      email: 'jane@example.com',
+      avatar: 'https://i.pravatar.cc/150?img=2',
+      role: 'User'
+    },
+    {
+      value: '3',
+      label: 'Bob Johnson',
+      email: 'bob@example.com',
+      avatar: 'https://i.pravatar.cc/150?img=3',
+      role: 'Moderator'
+    }
+  ];
+
+  const userRenderer = (item: User) => `
+    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
+      <img
+        src="${item.avatar}"
+        alt="${item.label}"
+        style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
+      />
+      <div style="flex: 1;">
+        <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
+        <div style="font-size: 13px; color: #6b7280;">${item.email}</div>
+      </div>
+      <span style="
+        padding: 4px 8px;
+        background: ${item.role === 'Admin' ? '#dbeafe' : '#f3f4f6'};
+        color: ${item.role === 'Admin' ? '#1e40af' : '#374151'};
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+      ">${item.role}</span>
+    </div>
+  `;
+</script>
+
+<Select
+  items={users}
+  bind:value={userId}
+  optionTemplate={userRenderer}
+  placeholder="Select a user..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select, type SelectItem } from '@smilodon/svelte';
+
+  // Example 3: Product selection with images and pricing
+  interface Product extends SelectItem {
+    price: number;
+    stock: number;
+    image: string;
+    badge?: string;
+  }
+
+  let productId = '';
+
+  const products: Product[] = [
+    {
+      value: 'p1',
+      label: 'Premium Laptop',
+      price: 1299.99,
+      stock: 15,
+      image: 'https://via.placeholder.com/60',
+      badge: 'Best Seller'
+    },
+    {
+      value: 'p2',
+      label: 'Wireless Mouse',
+      price: 29.99,
+      stock: 150,
+      image: 'https://via.placeholder.com/60'
+    },
+    {
+      value: 'p3',
+      label: 'Mechanical Keyboard',
+      price: 89.99,
+      stock: 0,
+      image: 'https://via.placeholder.com/60',
+      badge: 'Out of Stock'
+    }
+  ];
+
+  const productRenderer = (item: Product) => `
+    <div style="display: flex; align-items: center; gap: 12px; opacity: ${item.stock === 0 ? '0.5' : '1'};">
+      <img
+        src="${item.image}"
+        alt="${item.label}"
+        style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb;"
+      />
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
+          ${item.badge ? `
+            <span style="
+              padding: 2px 6px;
+              background: ${item.badge === 'Best Seller' ? '#dcfce7' : '#fee2e2'};
+              color: ${item.badge === 'Best Seller' ? '#166534' : '#991b1b'};
+              border-radius: 4px;
+              font-size: 10px;
+              font-weight: 600;
+            ">${item.badge}</span>
+          ` : ''}
+        </div>
+        <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 16px; font-weight: 700; color: #059669;">$${item.price.toFixed(2)}</span>
+          <span style="font-size: 12px; color: #6b7280;">${item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+</script>
+
+<Select
+  items={products}
+  bind:value={productId}
+  optionTemplate={productRenderer}
+  placeholder="Select a product..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select, type SelectItem } from '@smilodon/svelte';
+
+  // Example 4: Status indicators with conditional styling
+  interface Task extends SelectItem {
+    status: 'completed' | 'in-progress' | 'pending';
+    priority: 'high' | 'medium' | 'low';
+    assignee: string;
+  }
+
+  let taskId = '';
+
+  const tasks: Task[] = [
+    { value: 't1', label: 'Design Homepage', status: 'completed', priority: 'high', assignee: 'John' },
+    { value: 't2', label: 'API Integration', status: 'in-progress', priority: 'high', assignee: 'Jane' },
+    { value: 't3', label: 'Write Documentation', status: 'pending', priority: 'medium', assignee: 'Bob' },
+    { value: 't4', label: 'Bug Fixes', status: 'in-progress', priority: 'low', assignee: 'Alice' }
+  ];
+
+  const statusConfig = {
+    'completed': { bg: '#dcfce7', color: '#166534', icon: '✓' },
+    'in-progress': { bg: '#dbeafe', color: '#1e40af', icon: '⟳' },
+    'pending': { bg: '#fef3c7', color: '#92400e', icon: '○' }
+  };
+
+  const priorityColors = {
+    'high': '#ef4444',
+    'medium': '#f59e0b',
+    'low': '#10b981'
+  };
+
+  const taskRenderer = (item: Task) => {
+    const status = statusConfig[item.status];
+    return `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 4px 0;">
+        <div style="
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: ${status.bg};
+          color: ${status.color};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+        ">${status.icon}</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+            Assigned to ${item.assignee}
+          </div>
+        </div>
+        <div style="
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: ${priorityColors[item.priority]};
+        " title="${item.priority} priority"></div>
+      </div>
+    `;
+  };
+</script>
+
+<Select
+  items={tasks}
+  bind:value={taskId}
+  optionTemplate={taskRenderer}
+  placeholder="Select a task..."
+/>
+```
+
+```svelte
+<script lang="ts">
+  import { Select, type SelectItem } from '@smilodon/svelte';
+  import { writable } from 'svelte/store';
+
+  // Example 5: Using Svelte stores
+  interface Tag extends SelectItem {
+    color: string;
+    count: number;
+  }
+
+  const tag = writable('');
+
+  const tags: Tag[] = [
+    { value: 'react', label: 'React', color: 'blue', count: 1250 },
+    { value: 'vue', label: 'Vue', color: 'green', count: 850 },
+    { value: 'angular', label: 'Angular', color: 'red', count: 420 }
+  ];
+
+  const tagRenderer = (item: Tag) => `
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 12px; height: 12px; border-radius: 50%; background: ${item.color};"></span>
+        <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
+      </div>
+      <span style="font-size: 14px; color: #6b7280;">${item.count} posts</span>
+    </div>
+  `;
+</script>
+
+<Select
+  items={tags}
+  bind:value={$tag}
+  optionTemplate={tagRenderer}
+  placeholder="Select a tag..."
+/>
+```
+
+### Comparison: When to Use Each Method
+
+| Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
+|---------|------------------------|---------------------------|
+| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
+| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
+| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
+| **Svelte Integration** | ⭐⭐⭐ Seamless | ⭐⭐⭐ Seamless |
+| **Store Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
+| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
+| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
+| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
+
+**Best Practices**:
+
+✅ **Use Method 1 (Object Arrays) when**:
+- You need simple text-based options
+- Performance is critical (millions of items)
+- You want minimal code
+- Built-in search/filter is sufficient
+- Working with external APIs returning plain data
+
+✅ **Use Method 2 (Custom Renderers) when**:
+- You need images, icons, or badges
+- Options require multiple lines of text
+- Custom styling/layout is important
+- Conditional rendering based on data
+- Rich user experience is priority
+- Need to integrate with Svelte stores in rendering
+
+### Combining Both Methods
+
+You can start with Method 1 and add Method 2 later as your UI evolves:
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  let value = '';
+
+  // Start simple
+  const items = ['Option 1', 'Option 2', 'Option 3'];
+
+  // Later, add custom rendering without changing items
+  const customRenderer = (item: any, index: number) => `
+    <div style="padding: 8px; background: ${index % 2 ? '#f9fafb' : 'white'};">
+      <strong>${item.label || item}</strong>
+    </div>
+  `;
+</script>
+
+<Select
+  items={items}
+  bind:value
+  optionTemplate={customRenderer}
+/>
+```
+
+### Performance Tips
+
+**For Method 1**:
+- Use reactive statements (`$:`) to memoize large item arrays
+- Enable `virtualized` prop for 1000+ items
+- Enable `infiniteScroll` for dynamic loading
+
+**For Method 2**:
+- Keep renderer function pure (no side effects)
+- Avoid heavy computations in renderer
+- Cache renderer functions when possible
+- Use template literals for cleaner HTML strings
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  let value = '';
+
+  // Memoize items with reactive statement
+  $: items = Array.from({ length: 10000 }, (_, i) => ({
+    value: i.toString(),
+    label: `Item ${i + 1}`,
+    description: `Description for item ${i + 1}`
+  }));
+
+  // Pure renderer function
+  const renderer = (item: any, index: number) => `
+    <div>
+      <div style="font-weight: 600;">${item.label}</div>
+      <div style="font-size: 12px; color: #666;">${item.description}</div>
+    </div>
+  `;
+</script>
+
+<Select
+  items={items}
+  bind:value
+  optionTemplate={renderer}
+  virtualized
+  estimatedItemHeight={60}
+/>
+```
+
+---
+
 ## Styling
 
 The component uses CSS variables for easy customization:
