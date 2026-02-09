@@ -17,6 +17,48 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-02-09
+
+### 🎨 Styling Fixes
+- **Fixed default theme to be light mode** instead of automatic dark mode (Issue #1)
+- **Removed automatic dark mode media query** - dark mode is now opt-in only
+- **Added CSS variable support** for all option styles to enable easy customization
+- **Made styles easily overridable** with CSS variables and explicit defaults
+- Dark mode can now be enabled by adding `class="dark-mode"` or `data-theme="dark"` to the component
+
+### 🔧 Style Improvements
+- Added explicit white background for options container and dropdown
+- Added CSS variables for all option states (normal, hover, selected, active)
+- Fixed color inheritance issues - options now have explicit colors
+- Enhanced CSS variable fallbacks for better customization support
+
+### 📝 CSS Variables Added
+- `--select-options-bg` - Options container background (default: white)
+- `--select-option-color` - Option text color (default: #1f2937)
+- `--select-option-bg` - Option background (default: white)
+- `--select-option-padding` - Option padding (default: 8px 12px)
+- `--select-option-hover-bg` - Hover background (default: #f3f4f6)
+- `--select-option-hover-color` - Hover text color (default: #1f2937)
+- `--select-option-selected-bg` - Selected background (default: #e0e7ff)
+- `--select-option-selected-color` - Selected text color (default: #4338ca)
+- `--select-option-active-bg` - Active/focused background (default: #f3f4f6)
+- `--select-option-active-color` - Active/focused text color (default: #1f2937)
+
+### 💡 Usage Examples
+```css
+/* Override light mode colors */
+enhanced-select {
+  --select-option-bg: #ffffff;
+  --select-option-color: #000000;
+  --select-option-hover-bg: #e5e7eb;
+}
+
+/* Enable dark mode */
+<enhanced-select class="dark-mode">
+  <!-- or -->
+<enhanced-select data-theme="dark">
+```
+
 ## [1.3.3] - 2026-01-02
 
 ### 🎉 Production Release

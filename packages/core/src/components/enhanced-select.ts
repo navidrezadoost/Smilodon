@@ -430,28 +430,32 @@ export class EnhancedSelect extends HTMLElement {
         max-height: 300px;
         overflow: auto;
         transition: opacity 0.2s ease-in-out;
+        background: var(--select-options-bg, white);
       }
 
       .option {
-        padding: 8px 12px;
+        padding: var(--select-option-padding, 8px 12px);
         cursor: pointer;
-        color: inherit;
+        color: var(--select-option-color, #1f2937);
+        background: var(--select-option-bg, white);
         transition: background-color 0.15s ease;
         user-select: none;
       }
 
       .option:hover {
-        background-color: #f3f4f6;
+        background-color: var(--select-option-hover-bg, #f3f4f6);
+        color: var(--select-option-hover-color, #1f2937);
       }
 
       .option.selected {
-        background-color: #e0e7ff;
-        color: #4338ca;
+        background-color: var(--select-option-selected-bg, #e0e7ff);
+        color: var(--select-option-selected-color, #4338ca);
         font-weight: 500;
       }
 
       .option.active {
-        background-color: #f3f4f6;
+        background-color: var(--select-option-active-bg, #f3f4f6);
+        color: var(--select-option-active-color, #1f2937);
       }
       
       .load-more-container {
@@ -540,22 +544,39 @@ export class EnhancedSelect extends HTMLElement {
         }
       }
       
-      /* Accessibility: Dark mode */
-      @media (prefers-color-scheme: dark) {
-        .select-input {
+      /* Dark mode - Opt-in via class or data attribute */
+      :host(.dark-mode),
+      :host([data-theme="dark"]) {
+        .input-container {
           background: var(--select-dark-bg, #1f2937);
-          color: var(--select-dark-text, #f9fafb);
           border-color: var(--select-dark-border, #4b5563);
+        }
+        
+        .select-input {
+          color: var(--select-dark-text, #f9fafb);
+        }
+        
+        .select-input::placeholder {
+          color: var(--select-dark-placeholder, #6b7280);
         }
         
         .select-dropdown {
           background: var(--select-dark-dropdown-bg, #1f2937);
           border-color: var(--select-dark-dropdown-border, #4b5563);
-          color: var(--select-dark-text, #f9fafb);
+        }
+        
+        .options-container {
+          background: var(--select-dark-options-bg, #1f2937);
+        }
+        
+        .option {
+          color: var(--select-dark-option-color, #f9fafb);
+          background: var(--select-dark-option-bg, #1f2937);
         }
         
         .option:hover {
           background-color: var(--select-dark-option-hover-bg, #374151);
+          color: var(--select-dark-option-hover-color, #f9fafb);
         }
         
         .option.selected {
@@ -565,10 +586,22 @@ export class EnhancedSelect extends HTMLElement {
         
         .option.active {
           background-color: var(--select-dark-option-active-bg, #374151);
+          color: var(--select-dark-option-active-color, #f9fafb);
         }
         
-        .busy-bucket {
+        .busy-bucket,
+        .empty-state {
           color: var(--select-dark-busy-color, #9ca3af);
+        }
+        
+        .input-container::after {
+          background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 20%,
+            rgba(255, 255, 255, 0.1) 80%,
+            transparent 100%
+          );
         }
       }
       

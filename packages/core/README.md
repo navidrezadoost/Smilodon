@@ -216,19 +216,124 @@ const filtered = select.getFilteredItems();
 
 ### Custom Styling
 
-Smilodon uses CSS custom properties for theming:
+Smilodon uses CSS custom properties (CSS variables) for easy theming and customization. The default theme is **light mode** with a clean white background.
+
+#### Basic Customization
 
 ```css
-smilodon-select {
-  --smilodon-border-color: #d1d5db;
-  --smilodon-focus-color: #3b82f6;
-  --smilodon-bg-color: #ffffff;
-  --smilodon-text-color: #1f2937;
-  --smilodon-hover-bg: #f3f4f6;
-  --smilodon-selected-bg: #dbeafe;
-  --smilodon-font-family: system-ui, -apple-system, sans-serif;
-  --smilodon-border-radius: 0.375rem;
+enhanced-select {
+  /* Options styling */
+  --select-option-bg: #ffffff;
+  --select-option-color: #1f2937;
+  --select-option-padding: 8px 12px;
+  
+  /* Hover state */
+  --select-option-hover-bg: #f3f4f6;
+  --select-option-hover-color: #1f2937;
+  
+  /* Selected state */
+  --select-option-selected-bg: #e0e7ff;
+  --select-option-selected-color: #4338ca;
+  
+  /* Active/focused state */
+  --select-option-active-bg: #f3f4f6;
+  --select-option-active-color: #1f2937;
+  
+  /* Dropdown */
+  --select-dropdown-bg: white;
+  --select-dropdown-border: #ccc;
+  --select-dropdown-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
+```
+
+#### Dark Mode (Opt-in)
+
+Dark mode is **opt-in only** and can be enabled by adding a class or data attribute:
+
+```html
+<!-- Using class -->
+<enhanced-select class="dark-mode"></enhanced-select>
+
+<!-- Using data attribute -->
+<enhanced-select data-theme="dark"></enhanced-select>
+```
+
+```css
+/* Custom dark mode colors */
+enhanced-select.dark-mode {
+  --select-dark-bg: #1f2937;
+  --select-dark-text: #f9fafb;
+  --select-dark-border: #4b5563;
+  --select-dark-dropdown-bg: #1f2937;
+  --select-dark-option-color: #f9fafb;
+  --select-dark-option-bg: #1f2937;
+  --select-dark-option-hover-bg: #374151;
+  --select-dark-option-selected-bg: #3730a3;
+}
+```
+
+#### Available CSS Variables
+
+**Light Mode (Default)**
+```css
+--select-options-bg           /* Options container background (white) */
+--select-option-color          /* Option text color (#1f2937) */
+--select-option-bg             /* Option background (white) */
+--select-option-padding        /* Option padding (8px 12px) */
+--select-option-hover-bg       /* Hover background (#f3f4f6) */
+--select-option-hover-color    /* Hover text color (#1f2937) */
+--select-option-selected-bg    /* Selected background (#e0e7ff) */
+--select-option-selected-color /* Selected text color (#4338ca) */
+--select-option-active-bg      /* Active background (#f3f4f6) */
+--select-option-active-color   /* Active text color (#1f2937) */
+--select-dropdown-bg           /* Dropdown background (white) */
+--select-dropdown-border       /* Dropdown border color (#ccc) */
+--select-dropdown-shadow       /* Dropdown shadow */
+```
+
+**Dark Mode (Opt-in)**
+```css
+--select-dark-bg               /* Dark input background (#1f2937) */
+--select-dark-text             /* Dark text color (#f9fafb) */
+--select-dark-border           /* Dark border color (#4b5563) */
+--select-dark-dropdown-bg      /* Dark dropdown background (#1f2937) */
+--select-dark-options-bg       /* Dark options container bg (#1f2937) */
+--select-dark-option-color     /* Dark option text (#f9fafb) */
+--select-dark-option-bg        /* Dark option background (#1f2937) */
+--select-dark-option-hover-bg  /* Dark hover background (#374151) */
+--select-dark-option-selected-bg /* Dark selected bg (#3730a3) */
+```
+
+#### Framework-Specific Examples
+
+**React**
+```jsx
+import { Select } from '@smilodon/react';
+
+function App() {
+  return (
+    <Select
+      items={items}
+      className="dark-mode"
+      style={{
+        '--select-option-hover-bg': '#2563eb'
+      }}
+    />
+  );
+}
+```
+
+**Vue**
+```vue
+<template>
+  <Select
+    :items="items"
+    class="dark-mode"
+    :style="{
+      '--select-option-hover-bg': '#2563eb'
+    }"
+  />
+</template>
 ```
 
 ### Server-Side Rendering (SSR)
