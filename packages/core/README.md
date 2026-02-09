@@ -310,12 +310,52 @@ See the [full CSS variables reference](https://github.com/navidrezadoost/smilodo
 - Input container (gap, padding, height, borders, focus states)
 - Input field (width, padding, font, colors)
 - Arrow/icon (size, color, hover states, position)
-- Separator line (width, height, gradient)
-- Selection badges (padding, colors, remove button)
+- **Separator line** (width, height, gradient, position)
+- **Selection badges** (padding, colors, **remove/delete button**)
 - Dropdown (margins, max-height, borders, shadows)
 - Options (font size, line height, borders, transitions)
 - Load more button (padding, borders, colors, hover states)
 - Loading/empty states (padding, colors, backgrounds, spinner)
+
+#### Highlighted Customization Features
+
+**Separator Line Between Input and Arrow**
+The vertical separator line that appears between the input area and the dropdown arrow is fully customizable:
+
+```css
+enhanced-select {
+  /* Customize the separator line */
+  --select-separator-width: 2px;           /* Line thickness */
+  --select-separator-height: 80%;          /* Line height */
+  --select-separator-position: 40px;       /* Distance from right edge */
+  --select-separator-gradient: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #3b82f6 20%,
+    #3b82f6 80%,
+    transparent 100%
+  );
+}
+```
+
+**Badge Remove/Delete Button (Multi-Select)**
+The × button that removes selected items in multi-select mode is fully customizable:
+
+```css
+enhanced-select {
+  /* Customize badge appearance */
+  --select-badge-bg: #10b981;              /* Badge background */
+  --select-badge-color: white;             /* Badge text color */
+  --select-badge-padding: 6px 10px;        /* Badge spacing */
+  
+  /* Customize the × (remove/delete) button */
+  --select-badge-remove-size: 18px;        /* Button size */
+  --select-badge-remove-bg: rgba(255, 255, 255, 0.3);  /* Button background */
+  --select-badge-remove-color: white;      /* × symbol color */
+  --select-badge-remove-font-size: 18px;   /* × symbol size */
+  --select-badge-remove-hover-bg: rgba(255, 255, 255, 0.6);  /* Hover state */
+}
+```
 
 #### Real-World Customization Examples
 
@@ -379,7 +419,7 @@ enhanced-select {
 
 #### Framework-Specific Examples
 
-**React**
+**React - Customizing Separator & Badge Remove Button**
 ```jsx
 import { Select } from '@smilodon/react';
 
@@ -387,30 +427,67 @@ function App() {
   return (
     <Select
       items={items}
-      className="dark-mode"
+      multiple
       style={{
         '--select-option-hover-bg': '#2563eb',
         '--select-option-padding': '12px 16px',
-        '--select-badge-bg': '#3b82f6'
+        '--select-badge-bg': '#3b82f6',
+        '--select-badge-remove-bg': 'rgba(255, 255, 255, 0.4)',
+        '--select-badge-remove-hover-bg': 'rgba(255, 255, 255, 0.7)',
+        '--select-separator-gradient': 'linear-gradient(to bottom, transparent 0%, #3b82f6 20%, #3b82f6 80%, transparent 100%)'
       }}
     />
   );
 }
 ```
 
-**Vue**
+**Vue - Complete Customization**
 ```vue
 <template>
   <Select
     :items="items"
-    class="dark-mode"
+    multiple
     :style="{
       '--select-option-hover-bg': '#2563eb',
       '--select-option-padding': '12px 16px',
-      '--select-badge-bg': '#3b82f6'
+      '--select-badge-bg': '#3b82f6',
+      '--select-badge-remove-size': '20px',
+      '--select-badge-remove-bg': 'rgba(255, 255, 255, 0.4)',
+      '--select-separator-width': '2px',
+      '--select-separator-height': '70%'
     }"
   />
 </template>
+```
+
+**Svelte - Themed Components**
+```svelte
+<script>
+  import { Select } from '@smilodon/svelte';
+</script>
+
+<Select
+  items={items}
+  multiple
+  style="
+    --select-badge-bg: #10b981;
+    --select-badge-remove-bg: rgba(255, 255, 255, 0.3);
+    --select-badge-remove-hover-bg: rgba(255, 255, 255, 0.6);
+    --select-separator-gradient: linear-gradient(to bottom, transparent, #10b981, transparent);
+  "
+/>
+```
+
+**Vanilla JS - Dynamic Styling**
+```javascript
+const select = document.querySelector('enhanced-select');
+
+// Apply custom separator and badge styles
+select.style.setProperty('--select-separator-width', '2px');
+select.style.setProperty('--select-separator-gradient', 'linear-gradient(to bottom, transparent, #ff6b6b, transparent)');
+select.style.setProperty('--select-badge-bg', '#ff6b6b');
+select.style.setProperty('--select-badge-remove-size', '18px');
+select.style.setProperty('--select-badge-remove-bg', 'rgba(255, 255, 255, 0.3)');
 ```
 
 ### Server-Side Rendering (SSR)

@@ -17,6 +17,27 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-02-09
+
+### 📖 Enhanced Documentation
+- **Highlighted separator line customization** - The vertical separator between input and dropdown arrow
+- **Highlighted badge remove button customization** - The × deletion button in multi-select mode
+- **Added comprehensive framework examples** showing separator and badge customization for:
+  - React with inline styles
+  - Vue with dynamic style binding
+  - Svelte with style props
+  - Vanilla JS with dynamic setProperty
+- **Enhanced CSS variables documentation** with specific focus on:
+  - `--select-separator-*` variables (width, height, gradient, position)
+  - `--select-badge-remove-*` variables (size, colors, hover states)
+
+### 💡 What Users Can Customize
+This release clarifies that **every visual element** is fully customizable:
+- ✅ Separator line between input field and dropdown arrow
+- ✅ Badge removal (×) button in multi-select mode
+- ✅ All colors, sizes, spacing, borders, shadows, and animations
+- ✅ 60+ CSS variables for complete control
+
 ## [1.3.5] - 2026-02-09
 
 ### 🎨 Complete Style Customization
@@ -128,6 +149,18 @@ enhanced-select {
   --select-arrow-color: #0d6efd;
 }
 ```
+
+### 🎯 Highlighted Features
+**All UI elements are now fully customizable, including:**
+- **Separator Line**: The vertical line between input and dropdown arrow can be styled (width, height, gradient, position)
+- **Badge Remove Button**: The × button in multi-select badges is fully customizable (size, colors, hover states)
+- **All visual properties**: Every color, size, spacing, border, and shadow has a CSS variable
+
+### 📚 Documentation
+- Added comprehensive README with 60+ CSS variables reference
+- Added 4 real-world examples: Bootstrap, Material Design, Tailwind, Custom Brand
+- Added framework-specific examples for React, Vue, Svelte, and Vanilla JS
+- Detailed customization guide in CHANGELOG
 
 ## [1.3.4] - 2026-02-09
 
