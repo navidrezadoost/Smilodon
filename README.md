@@ -142,6 +142,28 @@ Dataset Size    │ First Paint │ Interactive │ Search (p95) │ Memory │ 
 
 Each playbook contains installation, configuration, and a realistic example showcasing search, multi-select, keyboard control, and async data.
 
+### 📚 Complete Framework-Specific Guides
+
+For **comprehensive, unambiguous documentation** covering all features, styling options, and framework-specific patterns:
+
+- **React**: [packages/react/COMPLETE-GUIDE.md](./packages/react/COMPLETE-GUIDE.md) - Hooks, controlled components, React Hook Form integration
+- **Vue**: [packages/vue/COMPLETE-GUIDE.md](./packages/vue/COMPLETE-GUIDE.md) - Composition API, v-model, Pinia integration
+- **Svelte**: [packages/svelte/COMPLETE-GUIDE.md](./packages/svelte/COMPLETE-GUIDE.md) - Reactive statements, stores, Context API
+- **Vanilla JS**: [packages/vanilla/COMPLETE-GUIDE.md](./packages/vanilla/COMPLETE-GUIDE.md) - Web Components, DOM manipulation, no framework
+
+Each guide includes:
+- ✅ All 60+ CSS variables for complete customization
+- ✅ Framework-native patterns and best practices
+- ✅ TypeScript integration examples
+- ✅ Performance optimization techniques
+- ✅ Accessibility information (WCAG 2.1 AAA)
+- ✅ Real-world advanced patterns
+- ✅ Troubleshooting sections
+
+---
+
+### Quick Start Examples
+
 ### 5.1 React (hooks + refs)
 
 ```bash

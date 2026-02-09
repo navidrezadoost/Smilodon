@@ -10,6 +10,24 @@
   </p>
 </div>
 
+## 📖 Documentation
+
+**For comprehensive documentation covering all features, styling options, and advanced patterns:**
+
+👉 **[Complete Vanilla JS Guide](../vanilla/COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ All 60+ CSS variables for complete customization
+- ✅ Vanilla JavaScript patterns (DOM manipulation, event listeners)
+- ✅ Complete API reference with all properties and methods
+- ✅ CDN usage and module bundler integration
+- ✅ Custom renderers with HTML templates
+- ✅ Theme examples and dynamic styling
+- ✅ Advanced patterns (async loading, local storage, dependent selects)
+- ✅ Troubleshooting and accessibility information
+
+---
+
 ## Why Smilodon?
 
 Smilodon is a Web Component that renders **1,000,000+ items at 60 FPS** with constant DOM size, sub-millisecond search, and zero framework lock-in. Built for extreme-scale data applications where legacy libraries crash or lag.

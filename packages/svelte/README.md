@@ -2,6 +2,24 @@
 
 Production-ready, accessible select component for Svelte applications. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
+## 📖 Documentation
+
+**For comprehensive documentation covering all features, styling options, and advanced patterns:**
+
+👉 **[Complete Svelte Guide](./COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ All 60+ CSS variables for complete customization
+- ✅ Svelte-specific patterns (reactive statements, stores, bind:value)
+- ✅ Complete API reference with TypeScript types
+- ✅ Svelte stores integration (writable, derived)
+- ✅ Custom renderers returning HTML strings
+- ✅ Theme examples with :global() styling
+- ✅ Advanced patterns (Context API, reactive dependencies)
+- ✅ Troubleshooting and accessibility information
+
+---
+
 ## Features
 
 - ✨ **Single & Multi-Select** - Choose one or multiple options

@@ -2,6 +2,24 @@
 
 Production-ready, accessible Select component for React applications.
 
+## 📖 Documentation
+
+**For comprehensive documentation covering all features, styling options, and advanced patterns:**
+
+👉 **[Complete React Guide](./COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ All 60+ CSS variables for complete customization
+- ✅ React-specific patterns (hooks, controlled components, refs)
+- ✅ Complete API reference with TypeScript types
+- ✅ React Hook Form integration examples
+- ✅ Performance optimization with useMemo/useCallback
+- ✅ Custom renderers and theme examples
+- ✅ Advanced patterns (dependent selects, async loading)
+- ✅ Troubleshooting and accessibility information
+
+---
+
 ## Features
 
 - ✅ **Simple API** - Clean, intuitive props that feel natural in React

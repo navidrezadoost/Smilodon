@@ -17,6 +17,81 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.7] - 2026-02-09
+
+### 📚 Comprehensive Framework Documentation
+
+#### New Complete Guides
+Added **four comprehensive framework-specific guides** eliminating all ambiguity for developers:
+
+- **[packages/react/COMPLETE-GUIDE.md](./packages/react/COMPLETE-GUIDE.md)** (1,200+ lines)
+  - React hooks, controlled components, useState/useCallback/useMemo patterns
+  - React Hook Form integration examples
+  - React.CSSProperties for inline CSS variables styling
+  - 18 comprehensive sections covering all features
+
+- **[packages/vue/COMPLETE-GUIDE.md](./packages/vue/COMPLETE-GUIDE.md)** (1,150+ lines)
+  - Vue 3 Composition API with `<script setup>`
+  - v-model two-way binding patterns
+  - Pinia store integration
+  - h() function for custom renderers
+  - Vite configuration for custom elements
+  - 18 comprehensive sections
+
+- **[packages/svelte/COMPLETE-GUIDE.md](./packages/svelte/COMPLETE-GUIDE.md)** (1,100+ lines)
+  - bind:value reactive binding
+  - Reactive statements ($:) for computed values
+  - Svelte stores (writable, derived) integration
+  - Context API (setContext, getContext) patterns
+  - :global() styling for shadow DOM
+  - 18 comprehensive sections
+
+- **[packages/vanilla/COMPLETE-GUIDE.md](./packages/vanilla/COMPLETE-GUIDE.md)** (1,200+ lines)
+  - Web Components with no framework dependencies
+  - DOM manipulation and event listeners
+  - CDN usage and module bundler integration
+  - Dynamic property setting and method calls
+  - 18 comprehensive sections
+
+#### What Each Guide Includes
+Every guide contains complete documentation with:
+- ✅ **Installation & Setup** - Package managers, imports, configuration
+- ✅ **All 60+ CSS Variables** - Complete styling reference with framework-specific examples
+- ✅ **Complete API Reference** - All props, methods, events with types
+- ✅ **Input Formats** - Object arrays, string arrays, number arrays with auto-conversion
+- ✅ **Single & Multi-Selection** - Comprehensive examples with form integration
+- ✅ **Searchable Select** - Search callbacks, event handling, debouncing
+- ✅ **Grouped Options** - Basic and complex group structures
+- ✅ **Disabled States** - Component-level, option-level, conditional disabling
+- ✅ **Event Handling** - onChange, onOpen, onClose, onSearch with full examples
+- ✅ **Styling & Theming** - 4 theme examples (Bootstrap, Material Design, Dark Mode, Custom)
+- ✅ **Custom Renderers** - Framework-specific rendering with complex examples
+- ✅ **Performance Optimization** - Virtualization, memoization, best practices
+- ✅ **TypeScript Integration** - Full type safety, generic components, type utilities
+- ✅ **Accessibility** - WCAG 2.1 AAA compliance, keyboard navigation, ARIA attributes
+- ✅ **Advanced Patterns** - Dependent selects, async loading, store integration
+- ✅ **Troubleshooting** - Common issues and solutions
+- ✅ **Real-World Examples** - 30+ code examples per guide
+
+#### Updated Package READMEs
+Enhanced all package README files to prominently feature complete guides:
+- `packages/react/README.md` - Added complete guide reference at top
+- `packages/vue/README.md` - Added complete guide reference at top
+- `packages/svelte/README.md` - Added complete guide reference at top
+- `packages/core/README.md` - Added vanilla guide reference at top
+
+#### Updated Main Documentation
+- **README.md** - Added "Complete Framework-Specific Guides" section in Chapter 5
+- Highlights all four guides with feature checkmarks
+- Clear navigation to framework-specific documentation
+
+### 🎯 Developer Experience Improvements
+- **Zero Ambiguity** - Every framework has dedicated, specialized documentation
+- **Framework-Native Patterns** - Examples use idiomatic code for each ecosystem
+- **Complete Coverage** - All features documented in every framework context
+- **Easy Discovery** - Guides linked from main README and package READMEs
+- **3,650+ Lines** of new documentation across all frameworks
+
 ## [1.3.6] - 2026-02-09
 
 ### 📖 Enhanced Documentation

@@ -2,6 +2,24 @@
 
 Production-ready, accessible select component for Vue 3 applications.
 
+## 📖 Documentation
+
+**For comprehensive documentation covering all features, styling options, and advanced patterns:**
+
+👉 **[Complete Vue Guide](./COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ All 60+ CSS variables for complete customization
+- ✅ Vue 3-specific patterns (Composition API, v-model, computed)
+- ✅ Complete API reference with TypeScript types
+- ✅ Pinia store integration examples
+- ✅ Custom renderers with h() function and VNodes
+- ✅ Theme examples and styling techniques
+- ✅ Advanced patterns (dependent selects, async onMounted)
+- ✅ Troubleshooting and accessibility information
+
+---
+
 ## Features
 
 - ✅ **Vue 3 Native** - Built for Vue 3 with Composition API and `<script setup>` support
