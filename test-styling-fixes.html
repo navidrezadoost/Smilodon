@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smilodon Styling Fixes Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 40px;
+    }
+    
+    .test-section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .test-section h2 {
+      color: #667eea;
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+    
+    .test-section .description {
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .select-wrapper {
+      margin-bottom: 30px;
+    }
+    
+    .select-wrapper label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .code-block {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Custom arrow size example */
+    .custom-arrow-size {
+      --select-arrow-size: 24px;
+      --select-arrow-stroke-width: 3;
+      --select-arrow-color: #10b981;
+      --select-arrow-hover-color: #059669;
+    }
+
+    /* Custom separator example */
+    .custom-separator {
+      --select-separator-width: 3px;
+      --select-separator-height: 80%;
+      --select-separator-bg: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);
+      --select-separator-position: 50px;
+    }
+
+    /* Custom dropdown background */
+    .custom-dropdown-bg {
+      --select-dropdown-bg: #f9fafb;
+      --select-options-bg: #f9fafb;
+      --select-option-bg: #f9fafb;
+      --select-option-hover-bg: #e5e7eb;
+    }
+
+    /* Option borders example */
+    .option-borders {
+      --select-option-border: 1px solid #e5e7eb;
+      --select-option-border-bottom: 1px solid #d1d5db;
+      --select-option-padding: 12px 16px;
+    }
+
+    /* Combined custom styling */
+    .fully-customized {
+      --select-arrow-size: 20px;
+      --select-arrow-stroke-width: 2.5;
+      --select-arrow-color: #8b5cf6;
+      --select-arrow-hover-bg: rgba(139, 92, 246, 0.1);
+      
+      --select-separator-width: 2px;
+      --select-separator-bg: #8b5cf6;
+      --select-separator-height: 70%;
+      
+      --select-dropdown-bg: #faf5ff;
+      --select-options-bg: #faf5ff;
+      --select-option-bg: #faf5ff;
+      --select-option-hover-bg: #f3e8ff;
+      --select-option-selected-bg: #e9d5ff;
+      
+      --select-option-border: 1px solid #e9d5ff;
+      --select-option-padding: 14px 18px;
+      
+      --select-input-border: 2px solid #8b5cf6;
+      --select-input-border-radius: 8px;
+    }
+
+    /* Dark theme example */
+    .dark-theme {
+      --select-arrow-size: 18px;
+      --select-arrow-color: #818cf8;
+      --select-arrow-stroke-width: 2;
+      
+      --select-separator-bg: linear-gradient(to bottom, transparent, #4b5563, transparent);
+      
+      --select-input-bg: #1f2937;
+      --select-input-border: 1px solid #4b5563;
+      --select-input-color: #f9fafb;
+      
+      --select-dropdown-bg: #1f2937;
+      --select-options-bg: #1f2937;
+      --select-option-bg: #1f2937;
+      --select-option-color: #f9fafb;
+      --select-option-hover-bg: #374151;
+      --select-option-selected-bg: #4338ca;
+      --select-option-border: none;
+      --select-option-border-bottom: 1px solid #374151;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Smilodon Styling Fixes Test</h1>
+  <p class="subtitle">Testing all CSS customization capabilities - Arrow SVG, Separator, Dropdown Background, and Option Borders</p>
+
+  <!-- Test 1: Arrow SVG Size Control -->
+  <div class="test-section">
+    <h2>1. Arrow SVG Size & Stroke Width Control</h2>
+    <p class="description">✅ Fixed: Arrow now respects CSS variables for width, height, and stroke-width</p>
+    
+    <div class="select-wrapper">
+      <label>Default Arrow (16px, stroke-width: 2)</label>
+      <enhanced-select id="test1-default"></enhanced-select>
+    </div>
+
+    <div class="select-wrapper">
+      <label>Large Arrow (24px, stroke-width: 3, green color)</label>
+      <enhanced-select id="test1-large" class="custom-arrow-size"></enhanced-select>
+      <div class="code-block">
+--select-arrow-size: 24px;
+--select-arrow-stroke-width: 3;
+--select-arrow-color: #10b981;
+--select-arrow-hover-color: #059669;
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 2: Separator Control -->
+  <div class="test-section">
+    <h2>2. Separator Line Customization</h2>
+    <p class="description">✅ Fixed: Added --select-separator-bg for solid colors, works alongside --select-separator-gradient</p>
+    
+    <div class="select-wrapper">
+      <label>Default Separator (gradient)</label>
+      <enhanced-select id="test2-default"></enhanced-select>
+    </div>
+
+    <div class="select-wrapper">
+      <label>Custom Separator (3px, 80% height, gradient background)</label>
+      <enhanced-select id="test2-custom" class="custom-separator"></enhanced-select>
+      <div class="code-block">
+--select-separator-width: 3px;
+--select-separator-height: 80%;
+--select-separator-bg: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);
+--select-separator-position: 50px;
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 3: Dropdown Background -->
+  <div class="test-section">
+    <h2>3. Dropdown & Options Background</h2>
+    <p class="description">✅ Working: Dropdown and options backgrounds are fully customizable</p>
+    
+    <div class="select-wrapper">
+      <label>Default White Background</label>
+      <enhanced-select id="test3-default"></enhanced-select>
+    </div>
+
+    <div class="select-wrapper">
+      <label>Custom Gray Background</label>
+      <enhanced-select id="test3-custom" class="custom-dropdown-bg"></enhanced-select>
+      <div class="code-block">
+--select-dropdown-bg: #f9fafb;
+--select-options-bg: #f9fafb;
+--select-option-bg: #f9fafb;
+--select-option-hover-bg: #e5e7eb;
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 4: Option Borders -->
+  <div class="test-section">
+    <h2>4. Option Borders in Multi-Select</h2>
+    <p class="description">✅ Fixed: Added --select-option-border for controlling option borders</p>
+    
+    <div class="select-wrapper">
+      <label>Options with Borders</label>
+      <enhanced-select id="test4-borders" class="option-borders" multiple></enhanced-select>
+      <div class="code-block">
+--select-option-border: 1px solid #e5e7eb;
+--select-option-border-bottom: 1px solid #d1d5db;
+--select-option-padding: 12px 16px;
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 5: All Fixes Combined -->
+  <div class="test-section">
+    <h2>5. All Customizations Combined</h2>
+    <p class="description">Fully customized select with all new CSS variables</p>
+    
+    <div class="select-wrapper">
+      <label>Purple Theme (All Fixes Applied)</label>
+      <enhanced-select id="test5-combined" class="fully-customized" multiple></enhanced-select>
+      <div class="code-block">
+/* Arrow */
+--select-arrow-size: 20px;
+--select-arrow-stroke-width: 2.5;
+--select-arrow-color: #8b5cf6;
+
+/* Separator */
+--select-separator-width: 2px;
+--select-separator-bg: #8b5cf6;
+
+/* Dropdown & Options */
+--select-dropdown-bg: #faf5ff;
+--select-option-bg: #faf5ff;
+--select-option-hover-bg: #f3e8ff;
+
+/* Option Borders */
+--select-option-border: 1px solid #e9d5ff;
+--select-option-padding: 14px 18px;
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 6: Dark Theme -->
+  <div class="test-section">
+    <h2>6. Dark Theme Example</h2>
+    <p class="description">Complete dark theme utilizing all customization options</p>
+    
+    <div class="select-wrapper">
+      <label>Dark Mode Select</label>
+      <enhanced-select id="test6-dark" class="dark-theme" multiple></enhanced-select>
+      <div class="code-block">
+/* Arrow */
+--select-arrow-size: 18px;
+--select-arrow-color: #818cf8;
+--select-arrow-stroke-width: 2;
+
+/* Separator */
+--select-separator-bg: linear-gradient(to bottom, transparent, #4b5563, transparent);
+
+/* Dark backgrounds */
+--select-input-bg: #1f2937;
+--select-dropdown-bg: #1f2937;
+--select-option-bg: #1f2937;
+--select-option-color: #f9fafb;
+
+/* Option styling */
+--select-option-border: none;
+--select-option-border-bottom: 1px solid #374151;
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import '@smilodon/core';
+
+    const items = [
+      { value: '1', label: 'Apple 🍎' },
+      { value: '2', label: 'Banana 🍌' },
+      { value: '3', label: 'Cherry 🍒' },
+      { value: '4', label: 'Dragon Fruit 🐉' },
+      { value: '5', label: 'Elderberry 🫐' },
+      { value: '6', label: 'Fig 🌰' },
+      { value: '7', label: 'Grape 🍇' },
+      { value: '8', label: 'Honeydew 🍈' },
+    ];
+
+    // Initialize all selects
+    document.querySelectorAll('enhanced-select').forEach(select => {
+      select.items = items;
+      select.searchable = true;
+      select.placeholder = 'Select fruits...';
+    });
+  </script>
+</body>
+</html>

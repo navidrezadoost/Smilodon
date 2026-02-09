@@ -17,6 +17,173 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.8] - 2026-02-09
+
+### 🐛 Critical Bug Fixes - CSS Customization Issues (#2)
+
+#### Fixed Issues
+This release addresses critical customization limitations reported in [Issue #2](https://github.com/navidrezadoost/smilodon/issues/2):
+
+**1. ✅ Arrow SVG Width/Height Control**
+- **Problem**: Hardcoded `width="16" height="16"` attributes in SVG prevented CSS variable control
+- **Fix**: Removed hardcoded dimensions, now fully controlled by `--select-arrow-size`
+- **New**: Added `--select-arrow-stroke-width` variable for controlling arrow thickness
+
+**2. ✅ Separator Background Control**  
+- **Problem**: Limited to gradient only via `--select-separator-gradient`
+- **Fix**: Added `--select-separator-bg` variable that accepts solid colors or gradients
+- **Behavior**: `--select-separator-bg` takes precedence, falls back to `--select-separator-gradient`
+
+**3. ✅ Dropdown Background Consistency**
+- **Problem**: Confusion about which variables control dropdown/options backgrounds
+- **Clarification**: Both `--select-dropdown-bg` and `--select-options-bg` work correctly
+- **Documentation**: Added clear examples showing proper usage
+
+**4. ✅ Option Borders in Multi-Select Mode**
+- **Problem**: No CSS variable for option borders, only `--select-option-border-bottom` existed
+- **Fix**: Added `--select-option-border` variable for full border control
+- **Use Case**: Enables card-style options with borders on all sides
+
+### 🎨 New CSS Variables
+
+```css
+/* Arrow SVG Control */
+--select-arrow-stroke-width: 2;        /* Controls SVG path stroke thickness */
+
+/* Separator Background (New Priority) */
+--select-separator-bg: #667eea;        /* Solid color or gradient background */
+/* Note: Use --select-separator-bg for solid colors, it overrides --select-separator-gradient */
+
+/* Option Border Control */
+--select-option-border: 1px solid #e5e7eb;  /* Border on all sides of options */
+```
+
+### 📖 Comprehensive Examples Added
+
+**Test Files:**
+- `test-styling-fixes.html` - Vanilla JS examples with 6 test scenarios
+- `examples/react-styling-fixes.tsx` - React examples with inline styles
+- `examples/vue-styling-fixes.vue` - Vue 3 examples with dynamic :style binding
+- `examples/svelte-styling-fixes.svelte` - Svelte examples with style attribute
+
+**Example Scenarios:**
+1. Arrow size and stroke width control (16px → 24px, stroke 2 → 3)
+2. Custom separator styling (width, height, solid/gradient backgrounds)
+3. Dropdown and options background customization
+4. Option borders for card-style layouts
+5. Complete purple theme (all fixes combined)
+6. Dark mode theme with all customizations
+
+### 🔧 Technical Changes
+
+**Core Component (`enhanced-select.ts`)**:
+```typescript
+// Before:
+<svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 16 16">
+
+// After:
+<svg class="dropdown-arrow" viewBox="0 0 16 16">
+// Now respects --select-arrow-size CSS variable
+```
+
+**CSS Updates**:
+```css
+/* New arrow path control */
+.dropdown-arrow path {
+  stroke-width: var(--select-arrow-stroke-width, 2);
+}
+
+/* Enhanced separator control */
+.input-container::after {
+  background: var(--select-separator-bg, var(--select-separator-gradient, linear-gradient(...)));
+}
+
+/* Complete option border control */
+.option {
+  border: var(--select-option-border, none);
+  border-bottom: var(--select-option-border-bottom, none);
+}
+```
+
+### 📚 Usage Examples
+
+#### React (Inline Styles)
+```tsx
+<Select
+  items={items}
+  style={{
+    '--select-arrow-size': '24px',
+    '--select-arrow-stroke-width': '3',
+    '--select-separator-bg': '#667eea',
+    '--select-option-border': '1px solid #e5e7eb',
+  } as React.CSSProperties}
+/>
+```
+
+#### Vue (Dynamic Binding)
+```vue
+<Select
+  :items="items"
+  :style="{
+    '--select-arrow-size': '24px',
+    '--select-arrow-stroke-width': '3',
+    '--select-separator-bg': '#667eea',
+    '--select-option-border': '1px solid #e5e7eb',
+  }"
+/>
+```
+
+#### Svelte (Style Attribute)
+```svelte
+<Select
+  {items}
+  style="
+    --select-arrow-size: 24px;
+    --select-arrow-stroke-width: 3;
+    --select-separator-bg: #667eea;
+    --select-option-border: 1px solid #e5e7eb;
+  "
+/>
+```
+
+#### Vanilla JS (Dynamic setProperty)
+```javascript
+const select = document.querySelector('enhanced-select');
+select.style.setProperty('--select-arrow-size', '24px');
+select.style.setProperty('--select-arrow-stroke-width', '3');
+select.style.setProperty('--select-separator-bg', '#667eea');
+select.style.setProperty('--select-option-border', '1px solid #e5e7eb');
+```
+
+### ✅ Verified Fixes
+
+All reported issues have been tested and verified across:
+- ✅ Vanilla JavaScript (Web Components)
+- ✅ React (with React.CSSProperties)
+- ✅ Vue 3 (with :style binding)
+- ✅ Svelte (with style attribute)
+
+### 🎯 Breaking Changes
+
+**None** - All changes are additive. Existing code continues to work without modifications.
+
+### 📦 Migration Guide
+
+**No migration required** - Simply update to v1.3.8 and start using the new CSS variables:
+
+```css
+/* Old way (still works) */
+--select-arrow-size: 16px;
+--select-separator-gradient: linear-gradient(...);
+--select-option-border-bottom: 1px solid #ccc;
+
+/* New enhanced way */
+--select-arrow-size: 20px;
+--select-arrow-stroke-width: 2.5;              /* NEW */
+--select-separator-bg: #667eea;                /* NEW - Simpler than gradient */
+--select-option-border: 1px solid #e5e7eb;    /* NEW - Full border control */
+```
+
 ## [1.3.7] - 2026-02-09
 
 ### 📚 Comprehensive Framework Documentation

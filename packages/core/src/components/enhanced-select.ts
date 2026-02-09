@@ -227,7 +227,7 @@ export class EnhancedSelect extends HTMLElement {
     const container = document.createElement('div');
     container.className = 'dropdown-arrow-container';
     container.innerHTML = `
-      <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="dropdown-arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
@@ -306,13 +306,13 @@ export class EnhancedSelect extends HTMLElement {
         transform: translateY(-50%);
         width: var(--select-separator-width, 1px);
         height: var(--select-separator-height, 60%);
-        background: var(--select-separator-gradient, linear-gradient(
+        background: var(--select-separator-bg, var(--select-separator-gradient, linear-gradient(
           to bottom,
           transparent 0%,
           rgba(0, 0, 0, 0.1) 20%,
           rgba(0, 0, 0, 0.1) 80%,
           transparent 100%
-        ));
+        )));
         pointer-events: none;
         z-index: 1;
       }
@@ -342,6 +342,10 @@ export class EnhancedSelect extends HTMLElement {
         color: var(--select-arrow-color, #667eea);
         transition: transform 0.2s ease, color 0.2s ease;
         transform: translateY(0);
+      }
+      
+      .dropdown-arrow path {
+        stroke-width: var(--select-arrow-stroke-width, 2);
       }
       
       .dropdown-arrow-container:hover .dropdown-arrow {
@@ -443,6 +447,7 @@ export class EnhancedSelect extends HTMLElement {
         user-select: none;
         font-size: var(--select-option-font-size, 14px);
         line-height: var(--select-option-line-height, 1.5);
+        border: var(--select-option-border, none);
         border-bottom: var(--select-option-border-bottom, none);
       }
 
