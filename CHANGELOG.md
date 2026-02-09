@@ -17,6 +17,118 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-02-09
+
+### 🎨 Complete Style Customization
+- **Added 60+ CSS variables** for full control over every visual aspect
+- **All styles are now fully customizable** - users have complete control
+- Every color, size, spacing, and visual property can now be overridden
+
+### 🔧 New CSS Variables
+**Input Container:**
+- `--select-input-gap` - Gap between elements (6px)
+- `--select-input-padding` - Container padding (6px 52px 6px 8px)
+- `--select-input-min-height` - Minimum height (44px)
+- `--select-input-bg` - Background color (white)
+- `--select-input-border` - Border style (1px solid #d1d5db)
+- `--select-input-border-radius` - Border radius (6px)
+- `--select-input-focus-border` - Focus border color (#667eea)
+- `--select-input-focus-shadow` - Focus shadow (0 0 0 3px rgba(102, 126, 234, 0.1))
+
+**Input Field:**
+- `--select-input-min-width` - Minimum width (120px)
+- `--select-input-field-padding` - Field padding (4px)
+- `--select-input-font-size` - Font size (14px)
+- `--select-input-line-height` - Line height (1.5)
+- `--select-input-color` - Text color (#1f2937)
+- `--select-input-placeholder-color` - Placeholder color (#9ca3af)
+- `--select-font-family` - Font family (inherit)
+
+**Arrow/Dropdown Icon:**
+- `--select-arrow-width` - Arrow container width (40px)
+- `--select-arrow-size` - Arrow icon size (16px)
+- `--select-arrow-color` - Arrow color (#667eea)
+- `--select-arrow-hover-color` - Arrow hover color (#667eea)
+- `--select-arrow-hover-bg` - Arrow hover background (rgba(102, 126, 234, 0.08))
+- `--select-arrow-border-radius` - Arrow container border radius (0 4px 4px 0)
+
+**Separator:**
+- `--select-separator-position` - Separator position from right (40px)
+- `--select-separator-width` - Separator width (1px)
+- `--select-separator-height` - Separator height (60%)
+- `--select-separator-gradient` - Separator gradient
+
+**Selection Badges (Multi-select):**
+- `--select-badge-gap` - Gap inside badge (4px)
+- `--select-badge-padding` - Badge padding (4px 8px)
+- `--select-badge-margin` - Badge margin (2px)
+- `--select-badge-bg` - Badge background (#667eea)
+- `--select-badge-color` - Badge text color (white)
+- `--select-badge-border-radius` - Badge border radius (4px)
+- `--select-badge-font-size` - Badge font size (13px)
+- `--select-badge-remove-size` - Remove button size (16px)
+- `--select-badge-remove-bg` - Remove button background (rgba(255, 255, 255, 0.3))
+- `--select-badge-remove-color` - Remove button color (white)
+- `--select-badge-remove-font-size` - Remove button font (16px)
+- `--select-badge-remove-hover-bg` - Remove button hover (rgba(255, 255, 255, 0.5))
+
+**Dropdown Container:**
+- `--select-dropdown-margin-top` - Space above dropdown (4px)
+- `--select-dropdown-max-height` - Maximum height (300px)
+- `--select-dropdown-border-radius` - Border radius (4px)
+
+**Options List:**
+- `--select-options-max-height` - Maximum height (300px)
+- `--select-option-font-size` - Option font size (14px)
+- `--select-option-line-height` - Option line height (1.5)
+- `--select-option-border-bottom` - Border between options (none)
+- `--select-option-transition` - Transition effect (background-color 0.15s ease)
+- `--select-option-selected-weight` - Selected font weight (500)
+
+**Load More Button:**
+- `--select-load-more-padding` - Container padding (12px)
+- `--select-load-more-bg` - Container background (white)
+- `--select-divider-border` - Border above button (1px solid #e0e0e0)
+- `--select-button-padding` - Button padding (8px 16px)
+- `--select-button-border` - Button border (1px solid #1976d2)
+- `--select-button-bg` - Button background (white)
+- `--select-button-color` - Button text color (#1976d2)
+- `--select-button-border-radius` - Button border radius (4px)
+- `--select-button-font-size` - Button font size (14px)
+- `--select-button-hover-bg` - Button hover background (#1976d2)
+- `--select-button-hover-color` - Button hover text (white)
+- `--select-button-disabled-opacity` - Disabled opacity (0.5)
+
+**Loading/Empty States:**
+- `--select-busy-padding` - Busy state padding (16px)
+- `--select-busy-bg` - Busy state background (white)
+- `--select-busy-font-size` - Busy state font size (14px)
+- `--select-spinner-size` - Spinner size (20px)
+- `--select-spinner-border` - Spinner border (2px solid #ccc)
+- `--select-spinner-active-color` - Spinner active color (#1976d2)
+- `--select-empty-padding` - Empty state padding (24px)
+- `--select-empty-bg` - Empty state background (white)
+- `--select-empty-font-size` - Empty state font size (14px)
+- `--select-searching-padding` - Searching state padding (24px)
+- `--select-searching-color` - Searching text color (#667eea)
+- `--select-searching-bg` - Searching background (white)
+- `--select-searching-font-size` - Searching font size (14px)
+
+### 💡 Usage Example
+```css
+enhanced-select {
+  /* Customize everything */
+  --select-input-bg: #f8f9fa;
+  --select-input-border: 2px solid #dee2e6;
+  --select-input-border-radius: 8px;
+  --select-option-padding: 12px 16px;
+  --select-option-font-size: 16px;
+  --select-option-hover-bg: #e9ecef;
+  --select-badge-bg: #0d6efd;
+  --select-arrow-color: #0d6efd;
+}
+```
+
 ## [1.3.4] - 2026-02-09
 
 ### 🎨 Styling Fixes

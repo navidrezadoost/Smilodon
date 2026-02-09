@@ -304,6 +304,79 @@ enhanced-select.dark-mode {
 --select-dark-option-selected-bg /* Dark selected bg (#3730a3) */
 ```
 
+**Complete CSS Variables List (60+ variables)**
+
+See the [full CSS variables reference](https://github.com/navidrezadoost/smilodon/blob/main/CHANGELOG.md#135---2026-02-09) for all 60+ customizable properties including:
+- Input container (gap, padding, height, borders, focus states)
+- Input field (width, padding, font, colors)
+- Arrow/icon (size, color, hover states, position)
+- Separator line (width, height, gradient)
+- Selection badges (padding, colors, remove button)
+- Dropdown (margins, max-height, borders, shadows)
+- Options (font size, line height, borders, transitions)
+- Load more button (padding, borders, colors, hover states)
+- Loading/empty states (padding, colors, backgrounds, spinner)
+
+#### Real-World Customization Examples
+
+**Example 1: Bootstrap-style Select**
+```css
+enhanced-select {
+  --select-input-border: 1px solid #ced4da;
+  --select-input-border-radius: 0.375rem;
+  --select-input-focus-border: #86b7fe;
+  --select-input-focus-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  --select-option-hover-bg: #e9ecef;
+  --select-option-selected-bg: #0d6efd;
+  --select-option-selected-color: white;
+  --select-badge-bg: #0d6efd;
+}
+```
+
+**Example 2: Material Design**
+```css
+enhanced-select {
+  --select-input-border-radius: 4px;
+  --select-input-focus-border: #1976d2;
+  --select-input-focus-shadow: none;
+  --select-option-padding: 16px;
+  --select-option-hover-bg: rgba(0, 0, 0, 0.04);
+  --select-option-selected-bg: #e3f2fd;
+  --select-option-selected-color: #1976d2;
+  --select-badge-bg: #1976d2;
+  --select-badge-border-radius: 16px;
+}
+```
+
+**Example 3: Tailwind-style**
+```css
+enhanced-select {
+  --select-input-border: 1px solid #e5e7eb;
+  --select-input-border-radius: 0.5rem;
+  --select-input-focus-border: #3b82f6;
+  --select-input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  --select-option-padding: 0.5rem 0.75rem;
+  --select-option-hover-bg: #f3f4f6;
+  --select-option-selected-bg: #dbeafe;
+  --select-option-selected-color: #1e40af;
+}
+```
+
+**Example 4: Custom Brand Colors**
+```css
+enhanced-select {
+  /* Your brand colors */
+  --select-input-focus-border: #ff6b6b;
+  --select-arrow-color: #ff6b6b;
+  --select-badge-bg: #ff6b6b;
+  --select-option-selected-bg: #ffe0e0;
+  --select-option-selected-color: #c92a2a;
+  --select-button-border: 1px solid #ff6b6b;
+  --select-button-color: #ff6b6b;
+  --select-button-hover-bg: #ff6b6b;
+}
+```
+
 #### Framework-Specific Examples
 
 **React**
@@ -316,7 +389,9 @@ function App() {
       items={items}
       className="dark-mode"
       style={{
-        '--select-option-hover-bg': '#2563eb'
+        '--select-option-hover-bg': '#2563eb',
+        '--select-option-padding': '12px 16px',
+        '--select-badge-bg': '#3b82f6'
       }}
     />
   );
@@ -330,7 +405,9 @@ function App() {
     :items="items"
     class="dark-mode"
     :style="{
-      '--select-option-hover-bg': '#2563eb'
+      '--select-option-hover-bg': '#2563eb',
+      '--select-option-padding': '12px 16px',
+      '--select-badge-bg': '#3b82f6'
     }"
   />
 </template>

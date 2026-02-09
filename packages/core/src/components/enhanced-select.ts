@@ -282,19 +282,19 @@ export class EnhancedSelect extends HTMLElement {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 6px;
-        padding: 6px 52px 6px 8px;
-        min-height: 44px;
-        background: white;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
+        gap: var(--select-input-gap, 6px);
+        padding: var(--select-input-padding, 6px 52px 6px 8px);
+        min-height: var(--select-input-min-height, 44px);
+        background: var(--select-input-bg, white);
+        border: var(--select-input-border, 1px solid #d1d5db);
+        border-radius: var(--select-input-border-radius, 6px);
         box-sizing: border-box;
         transition: all 0.2s ease;
       }
       
       .input-container:focus-within {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: var(--select-input-focus-border, #667eea);
+        box-shadow: var(--select-input-focus-shadow, 0 0 0 3px rgba(102, 126, 234, 0.1));
       }
       
       /* Gradient separator before arrow */
@@ -302,17 +302,17 @@ export class EnhancedSelect extends HTMLElement {
         content: '';
         position: absolute;
         top: 50%;
-        right: 40px;
+        right: var(--select-separator-position, 40px);
         transform: translateY(-50%);
-        width: 1px;
-        height: 60%;
-        background: linear-gradient(
+        width: var(--select-separator-width, 1px);
+        height: var(--select-separator-height, 60%);
+        background: var(--select-separator-gradient, linear-gradient(
           to bottom,
           transparent 0%,
           rgba(0, 0, 0, 0.1) 20%,
           rgba(0, 0, 0, 0.1) 80%,
           transparent 100%
-        );
+        ));
         pointer-events: none;
         z-index: 1;
       }
@@ -322,30 +322,30 @@ export class EnhancedSelect extends HTMLElement {
         top: 0;
         right: 0;
         bottom: 0;
-        width: 40px;
+        width: var(--select-arrow-width, 40px);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: background-color 0.2s ease;
-        border-radius: 0 4px 4px 0;
+        border-radius: var(--select-arrow-border-radius, 0 4px 4px 0);
         z-index: 2;
       }
       
       .dropdown-arrow-container:hover {
-        background-color: rgba(102, 126, 234, 0.08);
+        background-color: var(--select-arrow-hover-bg, rgba(102, 126, 234, 0.08));
       }
       
       .dropdown-arrow {
-        width: 16px;
-        height: 16px;
-        color: #667eea;
+        width: var(--select-arrow-size, 16px);
+        height: var(--select-arrow-size, 16px);
+        color: var(--select-arrow-color, #667eea);
         transition: transform 0.2s ease, color 0.2s ease;
         transform: translateY(0);
       }
       
       .dropdown-arrow-container:hover .dropdown-arrow {
-        color: #667eea;
+        color: var(--select-arrow-hover-color, #667eea);
       }
       
       .dropdown-arrow.open {
@@ -354,31 +354,32 @@ export class EnhancedSelect extends HTMLElement {
       
       .select-input {
         flex: 1;
-        min-width: 120px;
-        padding: 4px;
+        min-width: var(--select-input-min-width, 120px);
+        padding: var(--select-input-field-padding, 4px);
         border: none;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #1f2937;
+        font-size: var(--select-input-font-size, 14px);
+        line-height: var(--select-input-line-height, 1.5);
+        color: var(--select-input-color, #1f2937);
         background: transparent;
         box-sizing: border-box;
         outline: none;
+        font-family: var(--select-font-family, inherit);
       }
       
       .select-input::placeholder {
-        color: #9ca3af;
+        color: var(--select-input-placeholder-color, #9ca3af);
       }
       
       .selection-badge {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 4px 8px;
-        margin: 2px;
-        background: #667eea;
-        color: white;
-        border-radius: 4px;
-        font-size: 13px;
+        gap: var(--select-badge-gap, 4px);
+        padding: var(--select-badge-padding, 4px 8px);
+        margin: var(--select-badge-margin, 2px);
+        background: var(--select-badge-bg, #667eea);
+        color: var(--select-badge-color, white);
+        border-radius: var(--select-badge-border-radius, 4px);
+        font-size: var(--select-badge-font-size, 13px);
         line-height: 1;
       }
       
@@ -386,22 +387,22 @@ export class EnhancedSelect extends HTMLElement {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 16px;
-        height: 16px;
+        width: var(--select-badge-remove-size, 16px);
+        height: var(--select-badge-remove-size, 16px);
         padding: 0;
         margin-left: 4px;
-        background: rgba(255, 255, 255, 0.3);
+        background: var(--select-badge-remove-bg, rgba(255, 255, 255, 0.3));
         border: none;
         border-radius: 50%;
-        color: white;
-        font-size: 16px;
+        color: var(--select-badge-remove-color, white);
+        font-size: var(--select-badge-remove-font-size, 16px);
         line-height: 1;
         cursor: pointer;
         transition: background 0.2s;
       }
       
       .badge-remove:hover {
-        background: rgba(255, 255, 255, 0.5);
+        background: var(--select-badge-remove-hover-bg, rgba(255, 255, 255, 0.5));
       }
       
       .select-input:disabled {
@@ -415,19 +416,19 @@ export class EnhancedSelect extends HTMLElement {
         top: 100%;
         left: 0;
         right: 0;
-        margin-top: 4px;
-        max-height: 300px;
+        margin-top: var(--select-dropdown-margin-top, 4px);
+        max-height: var(--select-dropdown-max-height, 300px);
         overflow: hidden;
         background: var(--select-dropdown-bg, white);
-        border: 1px solid var(--select-dropdown-border, #ccc);
-        border-radius: var(--select-border-radius, 4px);
+        border: var(--select-dropdown-border, 1px solid #ccc);
+        border-radius: var(--select-dropdown-border-radius, 4px);
         box-shadow: var(--select-dropdown-shadow, 0 4px 6px rgba(0,0,0,0.1));
         z-index: var(--select-dropdown-z-index, 1000);
       }
       
       .options-container {
         position: relative;
-        max-height: 300px;
+        max-height: var(--select-options-max-height, 300px);
         overflow: auto;
         transition: opacity 0.2s ease-in-out;
         background: var(--select-options-bg, white);
@@ -438,8 +439,11 @@ export class EnhancedSelect extends HTMLElement {
         cursor: pointer;
         color: var(--select-option-color, #1f2937);
         background: var(--select-option-bg, white);
-        transition: background-color 0.15s ease;
+        transition: var(--select-option-transition, background-color 0.15s ease);
         user-select: none;
+        font-size: var(--select-option-font-size, 14px);
+        line-height: var(--select-option-line-height, 1.5);
+        border-bottom: var(--select-option-border-bottom, none);
       }
 
       .option:hover {
@@ -450,7 +454,7 @@ export class EnhancedSelect extends HTMLElement {
       .option.selected {
         background-color: var(--select-option-selected-bg, #e0e7ff);
         color: var(--select-option-selected-color, #4338ca);
-        font-weight: 500;
+        font-weight: var(--select-option-selected-weight, 500);
       }
 
       .option.active {
@@ -459,19 +463,21 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .load-more-container {
-        padding: 12px;
+        padding: var(--select-load-more-padding, 12px);
         text-align: center;
-        border-top: 1px solid var(--select-divider-color, #e0e0e0);
+        border-top: var(--select-divider-border, 1px solid #e0e0e0);
+        background: var(--select-load-more-bg, white);
       }
       
       .load-more-button {
-        padding: 8px 16px;
-        border: 1px solid var(--select-button-border, #1976d2);
+        padding: var(--select-button-padding, 8px 16px);
+        border: var(--select-button-border, 1px solid #1976d2);
         background: var(--select-button-bg, white);
         color: var(--select-button-color, #1976d2);
-        border-radius: 4px;
+        border-radius: var(--select-button-border-radius, 4px);
         cursor: pointer;
-        font-size: 14px;
+        font-size: var(--select-button-font-size, 14px);
+        font-family: var(--select-font-family, inherit);
         transition: all 0.2s ease;
       }
       
@@ -481,21 +487,23 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .load-more-button:disabled {
-        opacity: 0.5;
+        opacity: var(--select-button-disabled-opacity, 0.5);
         cursor: not-allowed;
       }
       
       .busy-bucket {
-        padding: 16px;
+        padding: var(--select-busy-padding, 16px);
         text-align: center;
         color: var(--select-busy-color, #666);
+        background: var(--select-busy-bg, white);
+        font-size: var(--select-busy-font-size, 14px);
       }
       
       .spinner {
         display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--select-spinner-color, #ccc);
+        width: var(--select-spinner-size, 20px);
+        height: var(--select-spinner-size, 20px);
+        border: var(--select-spinner-border, 2px solid #ccc);
         border-top-color: var(--select-spinner-active-color, #1976d2);
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
@@ -506,16 +514,20 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .empty-state {
-        padding: 24px;
+        padding: var(--select-empty-padding, 24px);
         text-align: center;
         color: var(--select-empty-color, #999);
+        font-size: var(--select-empty-font-size, 14px);
+        background: var(--select-empty-bg, white);
       }
       
       .searching-state {
-        padding: 24px;
+        padding: var(--select-searching-padding, 24px);
         text-align: center;
-        color: #667eea;
+        color: var(--select-searching-color, #667eea);
+        font-size: var(--select-searching-font-size, 14px);
         font-style: italic;
+        background: var(--select-searching-bg, white);
         animation: pulse 1.5s ease-in-out infinite;
       }
       
