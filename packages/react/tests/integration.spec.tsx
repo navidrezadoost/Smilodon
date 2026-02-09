@@ -12,7 +12,7 @@ describe('NativeSelect React Integration', () => {
   beforeAll(async () => {
     // Ensure custom element is registered
     if (!customElements.get('smilodon-select')) {
-      const module = await import('@native-select/core');
+      const module = await import('@smilodon/core');
       customElements.define('smilodon-select', module.NativeSelectElement);
     }
   });

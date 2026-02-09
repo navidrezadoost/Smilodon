@@ -11,7 +11,7 @@ export default [
       format: 'esm',
       sourcemap: true,
     },
-    external: ['vue', '@native-select/core'],
+    external: ['vue', '@smilodon/core'],
     plugins: [
       resolve(),
       typescript({
@@ -28,7 +28,7 @@ export default [
       format: 'esm',
       sourcemap: true,
     },
-    external: ['vue', '@native-select/core'],
+    external: ['vue', '@smilodon/core'],
     plugins: [
       resolve(),
       typescript({
@@ -47,7 +47,7 @@ export default [
       sourcemap: true,
       exports: 'named',
     },
-    external: ['vue', '@native-select/core'],
+    external: ['vue', '@smilodon/core'],
     plugins: [
       resolve(),
       typescript({

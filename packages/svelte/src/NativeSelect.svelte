@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { NativeSelectOptions } from '@native-select/core';
+  import type { NativeSelectOptions } from '@smilodon/core';
 
   export let items: unknown[] = [];
   export let multi: boolean = false;
@@ -13,7 +13,7 @@
   // Register custom element
   onMount(async () => {
     if (typeof window !== 'undefined' && !customElements.get('native-select')) {
-      const module = await import('@native-select/core');
+      const module = await import('@smilodon/core');
       if (!customElements.get('native-select')) {
         customElements.define('native-select', module.NativeSelectElement);
       }

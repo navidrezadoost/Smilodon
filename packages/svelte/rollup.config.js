@@ -12,7 +12,7 @@ export default [
       format: 'esm',
       sourcemap: true,
     },
-    external: ['svelte', 'svelte/internal', '@native-select/core'],
+    external: ['svelte', 'svelte/internal', '@smilodon/core'],
     plugins: [
       svelte({
         preprocess: sveltePreprocess(),
@@ -31,7 +31,7 @@ export default [
       format: 'esm',
       sourcemap: true,
     },
-    external: ['svelte', 'svelte/internal', '@native-select/core'],
+    external: ['svelte', 'svelte/internal', '@smilodon/core'],
     plugins: [
       svelte({
         preprocess: sveltePreprocess(),

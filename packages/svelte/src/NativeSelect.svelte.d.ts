@@ -1,5 +1,5 @@
 import { SvelteComponentTyped } from 'svelte';
-import type { NativeSelectOptions } from '@native-select/core';
+import type { NativeSelectOptions } from '@smilodon/core';
 
 export interface NativeSelectProps {
   items?: unknown[];
