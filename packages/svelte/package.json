@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/svelte",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Production-ready, accessible select component for Svelte - part of the Smilodon UI toolkit",
   "type": "module",
   "svelte": "./dist/index.mjs",

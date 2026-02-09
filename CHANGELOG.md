@@ -17,6 +17,56 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.3.9] - 2026-02-09
+
+### 📚 Major Documentation Update - Two Ways to Specify Options
+
+#### Added
+**Comprehensive documentation for two option specification methods:**
+
+**Method 1: Data-Driven (Object Arrays) 📊**
+- Complete examples for all frameworks (Core, React, Vue, Svelte)
+- Auto-conversion from strings/numbers
+- Grouped options examples
+- Large dataset handling (100K+ items)
+- Perfect for simple, performant dropdowns
+
+**Method 2: Component-Driven (Custom Renderers) 🎨**
+- Framework-specific custom renderer examples:
+  - **Core**: `optionTemplate` returning HTML strings
+  - **React**: `customRenderer` returning React.ReactNode
+  - **Vue**: Custom renderers using `h()` function returning VNode
+  - **Svelte**: `optionTemplate` returning HTML strings
+- Real-world use cases:
+  - User selection with avatars and roles
+  - Product listings with images and pricing
+  - Status indicators with conditional styling
+  - Task management with priority badges
+  - Tag selection with counts
+- Rich content: images, icons, badges, multi-line text
+- Conditional rendering based on item data
+
+**Documentation Enhancements:**
+- Added detailed comparison table for both methods
+- Performance tips for each method
+- Best practices and when to use each approach
+- Combining both methods examples
+- Framework-specific patterns and idioms
+- TypeScript examples with proper typing
+
+#### Updated Packages
+- `@smilodon/core@1.3.9`: Core package README updated
+- `@smilodon/react@1.2.0`: React package README updated
+- `@smilodon/vue@1.1.0`: Vue package README updated
+- `@smilodon/svelte@1.1.0`: Svelte package README updated
+
+### 📦 Package Updates
+- Bumped React adapter to v1.2.0 (minor version bump for documentation)
+- Bumped Vue adapter to v1.1.0 (minor version bump for documentation)
+- Bumped Svelte adapter to v1.1.0 (minor version bump for documentation)
+
+---
+
 ## [1.3.8] - 2026-02-09
 
 ### 🐛 Critical Bug Fixes - CSS Customization Issues (#2)
