@@ -65,6 +65,37 @@
     // Intercept console methods
     const originalConsole = { ...console };
     const consoleEl = document.getElementById('console');
+
+    // FPS tracker
+    const fpsStats = {
+      samples: [],
+      last: 0,
+      min: null,
+      max: null,
+      avg: null
+    };
+
+    let fpsFrames = 0;
+    let fpsLastTime = performance.now();
+
+    function fpsTick(now) {
+      fpsFrames += 1;
+      if (now - fpsLastTime >= 1000) {
+        const fps = Math.round(fpsFrames / ((now - fpsLastTime) / 1000));
+        fpsStats.last = fps;
+        fpsStats.samples.push(fps);
+        if (fpsStats.samples.length > 120) fpsStats.samples.shift();
+        fpsStats.min = fpsStats.min === null ? fps : Math.min(fpsStats.min, fps);
+        fpsStats.max = fpsStats.max === null ? fps : Math.max(fpsStats.max, fps);
+        const sum = fpsStats.samples.reduce((a, b) => a + b, 0);
+        fpsStats.avg = fpsStats.samples.length ? sum / fpsStats.samples.length : null;
+        fpsFrames = 0;
+        fpsLastTime = now;
+      }
+      requestAnimationFrame(fpsTick);
+    }
+
+    requestAnimationFrame(fpsTick);
     
     function addConsoleEntry(type, args) {
       const entry = document.createElement('div');
@@ -98,6 +129,18 @@
           // Clear previous content
           document.getElementById('app').innerHTML = '';
           consoleEl.innerHTML = '';
+
+          // Clear previous smilodon perf entries
+          const clearEntries = (type, clearFn) => {
+            if (!performance.getEntriesByType) return;
+            performance.getEntriesByType(type).forEach(entry => {
+              if (entry.name && entry.name.startsWith('smilodon-')) {
+                clearFn(entry.name);
+              }
+            });
+          };
+          if (performance.clearMarks) clearEntries('mark', performance.clearMarks.bind(performance));
+          if (performance.clearMeasures) clearEntries('measure', performance.clearMeasures.bind(performance));
           
           // Mark execution start
           const startTime = performance.now();
@@ -170,6 +213,31 @@
         window.parent.postMessage({
           type: 'metrics',
           data: metrics
+        }, '*');
+      }
+
+      if (event.data.type === 'get-perf-entries') {
+        const measures = performance.getEntriesByType ? performance.getEntriesByType('measure') : [];
+        const marks = performance.getEntriesByType ? performance.getEntriesByType('mark') : [];
+        const entries = [...measures, ...marks]
+          .filter(entry => entry.name && entry.name.startsWith('smilodon-'))
+          .map(entry => ({
+            name: entry.name,
+            entryType: entry.entryType,
+            startTime: entry.startTime,
+            duration: entry.duration
+          }));
+
+        window.parent.postMessage({
+          type: 'perf-entries',
+          data: entries
+        }, '*');
+      }
+
+      if (event.data.type === 'get-fps-stats') {
+        window.parent.postMessage({
+          type: 'fps-stats',
+          data: fpsStats
         }, '*');
       }
     });

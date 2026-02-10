@@ -311,13 +311,20 @@ npm install @smilodon/core
 Run locally:
 
 ```bash
+npx playwright install --with-deps
 npm run test:unit
+npm run test:contracts
 npm run test:e2e
 npm run test:coverage
 npm run perf
 ```
 
-Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md) and [tests/README.md](./tests/README.md).
+Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md), [tests/README.md](./tests/README.md), and [SETUP.md](./SETUP.md).
+
+### Current Status & Known Issues
+
+- Known limitations: [docs/KNOWN-LIMITATIONS.md](./docs/KNOWN-LIMITATIONS.md)
+- Playwright browser install may require manual OS-specific steps on non-Ubuntu Linux distributions (see [SETUP.md](./SETUP.md)).
 
 ---
 

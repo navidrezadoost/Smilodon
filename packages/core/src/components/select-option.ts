@@ -8,6 +8,8 @@ export interface OptionConfig {
   item: unknown;
   /** The index of this option */
   index: number;
+  /** Optional custom id for aria-activedescendant */
+  id?: string;
   /** Whether this option is selected */
   selected: boolean;
   /** Whether this option is disabled */
@@ -180,7 +182,7 @@ export class SelectOption extends HTMLElement {
     this.setAttribute('role', 'option');
     this.setAttribute('aria-selected', String(selected));
     if (disabled) this.setAttribute('aria-disabled', 'true');
-    this.id = `select-option-${index}`;
+    this.id = this._config.id || `select-option-${index}`;
   }
 
   private _attachEventListeners(): void {

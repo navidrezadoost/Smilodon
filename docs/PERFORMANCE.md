@@ -14,6 +14,7 @@ Optimize `@smilodon` for maximum performance.
 6. [Bundle Size Optimization](#bundle-size-optimization)
 7. [Profiling & Monitoring](#profiling--monitoring)
 8. [Troubleshooting](#troubleshooting)
+9. [Performance Runbook](#performance-runbook)
 
 ---
 
@@ -40,6 +41,11 @@ Optimize `@smilodon` for maximum performance.
 | 1,000,000 | <200ms | 18 MB | 60 FPS |
 
 ---
+
+## Performance Runbook
+
+For step-by-step, repeatable **manual browser measurements**, see
+[`PERFORMANCE-RUNBOOK.md`](./PERFORMANCE-RUNBOOK.md).
 
 ## Quick Wins
 

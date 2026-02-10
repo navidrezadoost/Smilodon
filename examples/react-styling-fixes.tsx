@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select } from '@smilodon/react';
-import type { SelectItem } from '@smilodon/core';
+import type { SelectItem } from '@smilodon/react';
 
 const items: SelectItem[] = [
   { value: '1', label: 'Apple 🍎' },

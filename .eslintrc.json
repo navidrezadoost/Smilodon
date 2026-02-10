@@ -20,7 +20,29 @@
       },
       "rules": {
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+        "no-undef": "off",
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.config.js",
+        "**/*.config.ts",
+        "**/*.config.cjs",
+        "**/*.config.mjs",
+        "**/scripts/**/*.{js,ts}",
+        "**/tests/**/*.{js,ts}",
+        "**/*.spec.{js,ts}",
+        "**/*.spec.{tsx,jsx}",
+        "**/*.cjs"
+      ],
+      "env": {
+        "node": true
+      },
+      "globals": {
+        "__dirname": "readonly",
+        "process": "readonly",
+        "global": "readonly"
       }
     }
   ],

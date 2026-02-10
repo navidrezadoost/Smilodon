@@ -19,6 +19,12 @@ export interface Scenario {
     scrollFPS?: number;
     memory?: number;
   };
+  perfMeta?: {
+    mode?: 'single' | 'multi';
+    search?: 'none' | 'internal' | 'external-debounced';
+    debounceMs?: number;
+    render?: 'simple' | 'medium' | 'heavy';
+  };
 }
 
 /**
@@ -390,6 +396,202 @@ app.appendChild(stats);
 app.appendChild(select);
 
 console.log('✓ 50K item select initialized');
+`
+    }
+  },
+
+  {
+    id: 'perf-100k',
+    title: 'Perf: 100K Items (Dry Run)',
+    description: '100,000 items with multi-select and debounced external search',
+    difficulty: 'advanced',
+    category: 'Performance',
+    datasetSize: 100000,
+    expectedMetrics: {
+      renderTime: 80,
+      scrollFPS: 60,
+      memory: 18
+    },
+    perfMeta: {
+      mode: 'multi',
+      search: 'external-debounced',
+      debounceMs: 300,
+      render: 'simple'
+    },
+    code: {
+      typescript: `import { NativeSelectElement } from '@smilodon/core';
+
+customElements.define('smilodon-select', NativeSelectElement);
+
+const app = document.getElementById('app');
+
+const info = document.createElement('div');
+info.style.cssText = 'background:#f9fafb;border:1px solid #e5e7eb;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-family:system-ui;';
+info.innerHTML = 
+  '<strong>Perf: 100K Dry Run</strong><br/>' +
+  'Multi-select enabled, external search (debounced 300ms), simple render.';
+
+const searchInput = document.createElement('input');
+searchInput.placeholder = 'Search (debounced 300ms)...';
+searchInput.style.cssText = 'width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;';
+
+console.time('Generate 100K items');
+const items = Array.from({ length: 100000 }, (_, i) => ({
+  id: i,
+  label: 'Item ' + (i + 1).toLocaleString(),
+  group: ['Alpha', 'Beta', 'Gamma', 'Delta'][i % 4]
+}));
+console.timeEnd('Generate 100K items');
+
+const select = document.createElement('smilodon-select');
+select.multi = true;
+select.items = items;
+select.searchable = false; // external debounced search
+select.estimatedItemHeight = 44;
+select.buffer = 15;
+
+const debounce = (fn, ms = 300) => {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+};
+
+const applySearch = debounce((query) => {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    select.items = items;
+    return;
+  }
+  const filtered = items.filter(item => item.label.toLowerCase().includes(q));
+  select.items = filtered;
+}, 300);
+
+searchInput.addEventListener('input', (e) => {
+  applySearch(e.target.value);
+});
+
+select.addEventListener('select', (event) => {
+  console.log('Selected count:', event.detail.items.length);
+});
+
+app.appendChild(info);
+app.appendChild(searchInput);
+app.appendChild(select);
+
+console.log('✓ Perf 100K scenario ready');
+`
+    }
+  },
+
+  {
+    id: 'perf-1m-heavy',
+    title: 'Perf: 1M Items (Heavy Render)',
+    description: '1,000,000 items, multi-select, debounced search, heavy custom render',
+    difficulty: 'advanced',
+    category: 'Performance',
+    datasetSize: 1000000,
+    expectedMetrics: {
+      renderTime: 120,
+      scrollFPS: 58,
+      memory: 120
+    },
+    perfMeta: {
+      mode: 'multi',
+      search: 'external-debounced',
+      debounceMs: 300,
+      render: 'heavy'
+    },
+    code: {
+      typescript: `import { NativeSelectElement } from '@smilodon/core';
+
+customElements.define('smilodon-select', NativeSelectElement);
+
+const app = document.getElementById('app');
+
+const info = document.createElement('div');
+info.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-family:system-ui;';
+info.innerHTML = 
+  '<strong>Perf: 1M Heavy</strong><br/>' +
+  'Multi-select + debounced search + heavy custom render. Expect high CPU cost.';
+
+const searchInput = document.createElement('input');
+searchInput.placeholder = 'Search (debounced 300ms)...';
+searchInput.style.cssText = 'width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;';
+
+const status = document.createElement('div');
+status.style.cssText = 'margin-bottom:12px;font-family:system-ui;font-size:13px;color:#6b7280;';
+status.textContent = 'Generating 1,000,000 items...';
+
+console.time('Generate 1M items');
+const items = Array.from({ length: 1000000 }, (_, i) => ({
+  id: i,
+  label: 'Item ' + (i + 1).toLocaleString(),
+  subtitle: 'Group ' + ['A','B','C','D'][i % 4] + ' • Score ' + (Math.random() * 100).toFixed(1),
+  badge: ['NEW', 'HOT', 'PRO', 'VIP'][i % 4],
+  color: ['#0ea5e9', '#6366f1', '#10b981', '#f97316'][i % 4]
+}));
+console.timeEnd('Generate 1M items');
+
+status.textContent = '✓ 1M items ready. Use search + heavy rendering.';
+
+const select = document.createElement('smilodon-select');
+select.multi = true;
+select.items = items;
+select.searchable = false; // external debounced search
+select.estimatedItemHeight = 68;
+select.buffer = 20;
+
+select.optionTemplate = (item) =>
+  '<div style="display:flex;gap:12px;align-items:center;padding:6px 2px;">' +
+    '<div style="width:36px;height:36px;border-radius:50%;background:' + item.color + ';display:flex;align-items:center;justify-content:center;color:white;font-weight:600;flex-shrink:0;">' +
+      item.label.slice(5, 7) +
+    '</div>' +
+    '<div style="flex:1;min-width:0;">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;">' +
+        '<strong style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + item.label + '</strong>' +
+        '<span style="background:#111827;color:white;border-radius:999px;padding:2px 8px;font-size:11px;">' + item.badge + '</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + item.subtitle + '</div>' +
+      '<div style="margin-top:4px;font-size:11px;color:#9ca3af;">★ ★ ★ ★ ☆</div>' +
+    '</div>' +
+  '</div>';
+
+const debounce = (fn, ms = 300) => {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+};
+
+const applySearch = debounce((query) => {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    select.items = items;
+    return;
+  }
+  console.time('Filter 1M');
+  const filtered = items.filter(item => item.label.toLowerCase().includes(q));
+  console.timeEnd('Filter 1M');
+  select.items = filtered;
+}, 300);
+
+searchInput.addEventListener('input', (e) => {
+  applySearch(e.target.value);
+});
+
+select.addEventListener('select', (event) => {
+  console.log('Selected count:', event.detail.items.length);
+});
+
+app.appendChild(info);
+app.appendChild(status);
+app.appendChild(searchInput);
+app.appendChild(select);
+
+console.log('✓ Perf 1M heavy scenario ready');
 `
     }
   },

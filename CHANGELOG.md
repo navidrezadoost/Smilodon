@@ -17,6 +17,19 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### ✨ Added
+- Performance runbook for repeatable manual profiling (`docs/PERFORMANCE-RUNBOOK.md`).
+- Playground performance scenarios for 100K and 1M datasets, plus FPS overlay and auto-logging utilities.
+
+### 🔄 Changed
+- Selection interactions: shift-range support, improved keyboard navigation, and clearer active/pressed styling.
+- Accessibility polish: `aria-labelledby`, live announcements for open/close and selection state, and busy-state updates.
+- Option rendering defaults aligned with `select-option` elements for consistent events and testing.
+
+### 🧪 Testing
+- E2E stability improvements for click selection, change events, and multi-select keyboard flows.
+- WebKit Playwright note: Linux/Arch hosts may require Docker-based execution due to missing legacy deps.
+
 ## [1.3.9] - 2026-02-09
 
 ### 📚 Major Documentation Update - Two Ways to Specify Options
