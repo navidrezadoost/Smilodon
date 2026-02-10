@@ -1,5 +1,5 @@
-<script lang="ts">
-  import Select from '@smilodon/svelte';
+<script>
+  import Select from '../packages/svelte/src/Select.svelte';
   
   const items = [
     { value: '1', label: 'Apple 🍎' },
@@ -25,7 +25,7 @@
     <p class="description">✅ Fixed: Arrow now respects CSS variables</p>
 
     <div class="select-wrapper">
-      <label>Default Arrow (16px, stroke-width: 2)</label>
+  <div class="select-label">Default Arrow (16px, stroke-width: 2)</div>
       <Select
         {items}
         searchable
@@ -34,7 +34,7 @@
     </div>
 
     <div class="select-wrapper">
-      <label>Large Arrow (24px, stroke-width: 3)</label>
+  <div class="select-label">Large Arrow (24px, stroke-width: 3)</div>
       <Select
         {items}
         searchable
@@ -63,7 +63,7 @@ style="
     <p class="description">✅ Fixed: Added --select-separator-bg for solid colors</p>
 
     <div class="select-wrapper">
-      <label>Custom Separator (3px, gradient)</label>
+  <div class="select-label">Custom Separator (3px, gradient)</div>
       <Select
         {items}
         searchable
@@ -92,7 +92,7 @@ style="
     <p class="description">✅ Working: Fully customizable backgrounds</p>
 
     <div class="select-wrapper">
-      <label>Custom Gray Background</label>
+  <div class="select-label">Custom Gray Background</div>
       <Select
         {items}
         searchable
@@ -121,7 +121,7 @@ style="
     <p class="description">✅ Fixed: Added --select-option-border</p>
 
     <div class="select-wrapper">
-      <label>Options with Borders</label>
+  <div class="select-label">Options with Borders</div>
       <Select
         {items}
         searchable
@@ -149,7 +149,7 @@ style="
     <p class="description">Complete customization example</p>
 
     <div class="select-wrapper">
-      <label>Fully Customized Select</label>
+  <div class="select-label">Fully Customized Select</div>
       <Select
         {items}
         searchable
@@ -206,7 +206,7 @@ style="
     <p class="description">Complete dark theme</p>
 
     <div class="select-wrapper">
-      <label>Dark Mode Select</label>
+  <div class="select-label">Dark Mode Select</div>
       <Select
         {items}
         searchable
@@ -275,7 +275,7 @@ style="
     margin-bottom: 30px;
   }
 
-  .select-wrapper label {
+  .select-label {
     display: block;
     font-weight: 600;
     margin-bottom: 8px;

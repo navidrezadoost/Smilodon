@@ -28,7 +28,7 @@ jobs:
       - name: Install browsers
         run: npx playwright install --with-deps
       - name: E2E tests
-        run: npm run e2e
+        run: npm run test:e2e
       - name: Bundle size (gzipped)
         run: |
           ls -lh dist/smilodon.js || true

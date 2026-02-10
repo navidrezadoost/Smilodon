@@ -3,8 +3,10 @@
   "compilerOptions": {
     "outDir": "./dist",
     "declaration": true,
-    "declarationDir": "./dist/types"
+    "declarationDir": "./dist/types",
+    "emitDeclarationOnly": true,
+    "noEmit": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["src/**/*.d.ts", "**/*.test.ts", "node_modules", "dist"]
 }

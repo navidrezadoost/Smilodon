@@ -22,7 +22,6 @@ export default defineConfig({
         react: './react-demo.html',
         vue: './vue-demo.html',
         svelte: './svelte-demo.html',
-        angular: './angular-demo.html',
         vanilla: './vanilla-demo.html'
       }
     }

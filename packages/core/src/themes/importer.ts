@@ -417,13 +417,14 @@ export function exportTokens(
         2
       );
     
-    case 'scss':
+    case 'scss': {
       let scss = '';
       tokens.forEach((token) => {
         const scssVarName = token.name.replace(/^--ns-/, '$ns-');
         scss += `${scssVarName}: ${token.value};\n`;
       });
       return scss;
+    }
     
     case 'js':
       return `export const tokens = ${JSON.stringify(

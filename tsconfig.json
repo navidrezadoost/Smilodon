@@ -9,12 +9,22 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
     "sourceMap": true,
+    "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@smilodon/core": ["packages/core/src/index.ts"],
+      "@smilodon/react": ["packages/react/src/index.tsx"],
+      "@smilodon/vue": ["packages/vue/src/index.ts"],
+      "@smilodon/svelte": ["packages/svelte/src/index.ts"],
+      "@smilodon/vanilla": ["packages/vanilla/src/index.ts"]
+    }
   }
 }

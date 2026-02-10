@@ -304,6 +304,42 @@
       font-weight: 600;
       font-family: var(--font-mono);
     }
+
+    .metrics-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .btn-small.primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+    }
+
+    .perf-log {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 160px;
+      overflow: auto;
+      color: var(--text-secondary);
+    }
     
     /* Loading state */
     .loading {
@@ -383,6 +419,14 @@
           
           <div class="metrics-panel" id="metrics-panel">
             <h3 style="margin-bottom: 16px;">Performance Metrics</h3>
+
+            <div class="metrics-actions">
+              <button class="btn-small" id="perf-refresh-btn">Refresh Perf</button>
+              <button class="btn-small" id="perf-auto-btn">Auto Log: Off</button>
+              <button class="btn-small primary" id="perf-copy-json-btn">Copy JSON</button>
+              <button class="btn-small" id="perf-download-json-btn">Download JSON</button>
+              <button class="btn-small" id="perf-copy-md-btn">Copy Markdown</button>
+            </div>
             
             <div class="metric-card">
               <div class="metric-label">Render Time</div>
@@ -402,6 +446,23 @@
             <div class="metric-card">
               <div class="metric-label">Items Rendered</div>
               <div class="metric-value" id="metric-items">—</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Perf Measures (ms)</div>
+              <div class="metric-value" id="metric-perf-dropdown">—</div>
+              <div class="metric-label" style="margin-top:6px;">Search to Render</div>
+              <div class="metric-value" id="metric-perf-search">—</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Test Duration</div>
+              <div class="metric-value" id="metric-duration">—</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-label">Perf Log</div>
+              <div class="perf-log" id="perf-log">No entries yet.</div>
             </div>
           </div>
         </div>

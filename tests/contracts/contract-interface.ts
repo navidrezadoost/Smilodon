@@ -12,6 +12,7 @@ export interface ContractTestResult {
   actualValue?: any;
   expectedValue?: any;
   timing?: number;
+  pending?: boolean;
 }
 
 /**
@@ -187,12 +188,17 @@ export abstract class ContractTestRunner implements SelectContract {
     
     for (const [name, testFn] of tests) {
       if (this.shouldSkip(name)) {
-        this.results.set(name, { success: true }); // Skip
+        this.results.set(name, { success: true, pending: true, error: 'Skipped' });
         continue;
       }
       
       try {
         const result = await testFn.call(this);
+        if (!result) {
+          this.results.set(name, { success: true, pending: true, error: 'Not implemented' });
+          continue;
+        }
+
         this.results.set(name, result);
       } catch (error) {
         this.results.set(name, {
@@ -203,15 +209,17 @@ export abstract class ContractTestRunner implements SelectContract {
     }
     
     const duration = Date.now() - startTime;
-    const passed = Array.from(this.results.values()).filter(r => r.success).length;
-    const failed = Array.from(this.results.values()).filter(r => !r.success).length;
+    const resultValues = Array.from(this.results.values());
+    const passed = resultValues.filter(r => r.success && !r.pending).length;
+    const failed = resultValues.filter(r => !r.success).length;
+    const skipped = resultValues.filter(r => r.pending).length;
     
     return {
       framework: this.config.framework,
       totalTests: tests.size,
       passed,
       failed,
-      skipped: tests.size - passed - failed,
+      skipped,
       duration,
       results: this.results,
     };

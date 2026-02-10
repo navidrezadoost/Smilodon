@@ -8,9 +8,8 @@
     "dev:react": "vite --config vite.config.react.ts",
     "dev:vue": "vite --config vite.config.vue.ts",
     "dev:svelte": "vite --config vite.config.svelte.ts",
-    "dev:angular": "vite --config vite.config.angular.ts",
     "dev:vanilla": "vite --config vite.config.vanilla.ts",
-    "dev:all": "concurrently \"npm:dev:react\" \"npm:dev:vue\" \"npm:dev:svelte\" \"npm:dev:angular\" \"npm:dev:vanilla\"",
+  "dev:all": "concurrently \"npm:dev:react\" \"npm:dev:vue\" \"npm:dev:svelte\" \"npm:dev:vanilla\"",
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"

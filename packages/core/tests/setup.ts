@@ -49,12 +49,13 @@ if (typeof Worker === 'undefined') {
           let result: any;
           
           switch (type) {
-            case 'transform':
+            case 'transform': {
               const { items: tItems, transformer } = payload;
               const fn = new Function('item', 'index', `return (${transformer})(item, index)`);
               result = tItems.map((item: any, i: number) => fn(item, i));
               break;
-            case 'search':
+            }
+            case 'search': {
               const { items: sItems, query, fuzzy } = payload;
               const lowerQuery = query.toLowerCase();
               result = [];
@@ -75,16 +76,19 @@ if (typeof Worker === 'undefined') {
                 }
               });
               break;
-            case 'filter':
+            }
+            case 'filter': {
               const { items: fItems, predicate } = payload;
               const filterFn = new Function('item', 'index', `return (${predicate})(item, index)`);
               result = fItems.filter((item: any, i: number) => filterFn(item, i));
               break;
-            case 'sort':
+            }
+            case 'sort': {
               const { items: sortItems, comparator } = payload;
               const compareFn = new Function('a', 'b', `return (${comparator})(a, b)`) as (a: any, b: any) => number;
               result = [...sortItems].sort(compareFn);
               break;
+            }
             default:
               throw new Error(`Unknown operation: ${type}`);
           }

@@ -16,6 +16,11 @@
 
 👉 **[Complete Vanilla JS Guide](../vanilla/COMPLETE-GUIDE.md)** 👈
 
+Additional references:
+- **Performance Runbook**: [`docs/PERFORMANCE-RUNBOOK.md`](../../docs/PERFORMANCE-RUNBOOK.md)
+- **Performance Guide**: [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md)
+- **Known Limitations**: [`docs/KNOWN-LIMITATIONS.md`](../../docs/KNOWN-LIMITATIONS.md)
+
 The complete guide includes:
 - ✅ All 60+ CSS variables for complete customization
 - ✅ Vanilla JavaScript patterns (DOM manipulation, event listeners)
@@ -25,6 +30,8 @@ The complete guide includes:
 - ✅ Theme examples and dynamic styling
 - ✅ Advanced patterns (async loading, local storage, dependent selects)
 - ✅ Troubleshooting and accessibility information
+
+> **WebKit e2e note (Linux/Arch)**: WebKit Playwright binaries depend on older system libraries; on Arch-based distros we recommend running WebKit tests via the Playwright Docker image.
 
 ---
 
