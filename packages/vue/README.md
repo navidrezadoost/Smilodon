@@ -24,6 +24,27 @@ The complete guide includes:
 
 - New: `optionRenderer` prop mirrors the Web Component Option B API (returns an HTMLElement for full DOM control).
 
+### Advanced scenarios (Vue)
+- **A11y-first**: wrap with label/description and bind ARIA:
+  ```vue
+  <label id="team-label" for="team-picker">Team</label>
+  <Select id="team-picker" :aria-labelledby="'team-label'" />
+  ```
+- **Server-side lookup**: fetch on `search` and call `setItems` on the element ref:
+  ```vue
+  <Select ref="picker" searchable @search="onSearch" />
+  
+  const onSearch = async (query) => {
+    const res = await fetch(`/api/teams?q=${encodeURIComponent(query)}`);
+    const items = await res.json();
+    (picker.value as any)?.setItems(items);
+  };
+  ```
+- **Heavy lists (100k+)**: enable virtualization and pass an estimated height:
+  ```vue
+  <Select :items="bigList" virtualized :estimated-item-height="44" />
+  ```
+
 - ✅ **Vue 3 Native** - Built for Vue 3 with Composition API and `<script setup>` support
 - ✅ **v-model Support** - Two-way binding that feels natural in Vue
 - ✅ **Fully Typed** - Complete TypeScript support with detailed type definitions

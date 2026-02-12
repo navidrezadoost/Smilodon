@@ -466,6 +466,34 @@ function LargeDatasetExample() {
 
 Now also supports the native `optionRenderer` hook (Option B) that returns an `HTMLElement` for maximum control (e.g., non-React DOM fragments). Pass `optionRenderer={(item, index, helpers) => { const el = document.createElement('div'); el.textContent = item.label; return el; }}` to mirror the Web Component API.
 
+#### Advanced scenarios (React)
+- **A11y-first**: provide `aria-labelledby`/`aria-describedby` on the wrapper, and announce changes:
+  ```tsx
+  <label id="user-label" htmlFor="user-picker">Pick a user</label>
+  <Select id="user-picker" aria-labelledby="user-label" onChange={(v, items) => {
+    console.log('Selected', items);
+  }}/>
+  ```
+- **Server-side lookup**: debounce and push items into the web component:
+  ```tsx
+  const fetchUsers = useMemo(() => debounce(async (q) => {
+    const res = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+    const items = await res.json();
+    selectRef.current?.setItems(items);
+  }, 200), []);
+
+  <Select
+    searchable
+    onSearch={(q) => fetchUsers(q)}
+    ref={selectRef}
+  />
+  ```
+- **Heavy lists (100k+)**: rely on virtualization with an accurate height:
+  ```tsx
+  const big = useMemo(() => Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Row ${i}` })), []);
+  <Select items={big} virtualized estimatedItemHeight={44} />
+  ```
+
 **Use when**: You need rich, interactive option content with custom React components.
 
 **Advantages**:

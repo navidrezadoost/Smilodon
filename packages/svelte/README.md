@@ -24,6 +24,30 @@ The complete guide includes:
 
 - New: `optionRenderer` prop (Option B) lets you return an `HTMLElement` for custom DOM-driven option layouts.
 
+### Advanced scenarios (Svelte)
+- **A11y-first**:
+  ```svelte
+  <label id="city-label" for="city-picker">City</label>
+  <Select id="city-picker" aria-labelledby="city-label" />
+  ```
+- **Server-side lookup**:
+  ```svelte
+  <Select bind:this={picker} searchable on:search={(e) => load(e.detail.query)} />
+
+  async function load(q) {
+    const res = await fetch(`/api/cities?q=${encodeURIComponent(q)}`);
+    const items = await res.json();
+    picker?.setItems(items);
+  }
+  ```
+- **Heavy lists (100k+)**:
+  ```svelte
+  <Select {items} virtualized estimatedItemHeight={44} />
+  <script>
+    export let items = Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Item ${i}` }));
+  </script>
+  ```
+
 - ✨ **Single & Multi-Select** - Choose one or multiple options
 - 🔍 **Searchable** - Filter options with built-in or custom search
 - ♿ **Fully Accessible** - WCAG 2.1 AAA compliant
