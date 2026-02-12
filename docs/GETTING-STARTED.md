@@ -520,6 +520,42 @@ console.log('Metrics:', telemetry.getMetrics());
    };
    ```
 
+2. **High-A11y Pattern** - Explicit labelling + live updates
+   ```html
+   <label id="user-picker-label" for="user-picker">Choose a user</label>
+   <enhanced-select id="user-picker" aria-labelledby="user-picker-label" aria-describedby="user-picker-help"></enhanced-select>
+   <p id="user-picker-help">Type to search; results update as you type.</p>
+   <script>
+     const el = document.querySelector('enhanced-select');
+     el.updateConfig({ searchable: true, callbacks: { onChange: (items) => {
+       el.setAttribute('aria-live', 'polite');
+       el.setAttribute('aria-atomic', 'true');
+     }}});
+   </script>
+   ```
+
+3. **Server-Side Lookup** - Stream results as you fetch
+   ```typescript
+   const el = document.querySelector('enhanced-select');
+   el.updateConfig({ searchable: true, serverSide: { enabled: true } });
+   let controller: AbortController | null = null;
+   el.addEventListener('search', async (e: CustomEvent) => {
+     controller?.abort();
+     controller = new AbortController();
+     const resp = await fetch(`/api/users?q=${encodeURIComponent(e.detail.query)}`, { signal: controller.signal });
+     const items = await resp.json();
+     el.setItems(items);
+   });
+   ```
+
+4. **Heavy List Virtualization (100k+)** - Tune buffers for smooth scroll
+   ```typescript
+   const items = Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Item ${i}` }));
+   const el = document.querySelector('enhanced-select');
+   el.updateConfig({ virtualize: true, estimatedItemHeight: 44 });
+   el.setItems(items);
+   ```
+
 2. **Portal Mode** - Render outside overflow:hidden
    ```tsx
    <NativeSelect items={items} portal={true} />
