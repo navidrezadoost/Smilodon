@@ -22,6 +22,8 @@ The complete guide includes:
 
 ## Features
 
+- New: `optionRenderer` prop mirrors the Web Component Option B API (returns an HTMLElement for full DOM control).
+
 - ✅ **Vue 3 Native** - Built for Vue 3 with Composition API and `<script setup>` support
 - ✅ **v-model Support** - Two-way binding that feels natural in Vue
 - ✅ **Fully Typed** - Complete TypeScript support with detailed type definitions

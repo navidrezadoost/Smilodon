@@ -6,7 +6,8 @@
 
 import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
-import type { SelectEventName, SelectEventsDetailMap, GroupedItem } from '../types';
+import type { SelectEventName, SelectEventsDetailMap, GroupedItem, RendererHelpers } from '../types';
+import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
 import { SelectOption } from './select-option';
 
 interface PageCache {
@@ -59,12 +60,15 @@ export class EnhancedSelect extends HTMLElement {
   private _pendingFirstRenderMark = false;
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
+  private _optionRenderer?: OptionRendererFn;
+  private _rendererHelpers: RendererHelpers;
 
   constructor() {
     super();
     
     this._shadow = this.attachShadow({ mode: 'open' });
     this._uniqueId = `enhanced-select-${Math.random().toString(36).substr(2, 9)}`;
+    this._rendererHelpers = this._buildRendererHelpers();
     
     // Merge global config with component-level config
     this._config = selectConfig.getConfig() as GlobalSelectConfig;
@@ -1161,6 +1165,23 @@ export class EnhancedSelect extends HTMLElement {
     return this._optionsContainer.querySelector(`[data-index="${index}"]`) as HTMLElement | null;
   }
 
+  private _buildRendererHelpers(): RendererHelpers {
+    return {
+      onSelect: (_item: unknown, index: number) => this._selectOption(index),
+      getIndex: (node: Element | null) => {
+        const el = node?.closest?.('[data-selectable]') as HTMLElement | null;
+        if (!el) return null;
+        const idx = Number(el.dataset.index);
+        return Number.isFinite(idx) ? idx : null;
+      },
+      keyboardFocus: (index: number) => {
+        this._setActive(index);
+        const el = this._getOptionElementByIndex(index);
+        el?.focus?.();
+      },
+    };
+  }
+
   private _handleTypeAhead(char: string): void {
     if (this._typeTimeout) clearTimeout(this._typeTimeout);
     
@@ -1519,15 +1540,6 @@ export class EnhancedSelect extends HTMLElement {
     // Trigger re-render to show/hide busy indicator
     // We use _renderOptions to handle the UI update
     this._renderOptions();
-  this._announce(`${this._state.selectedIndices.size} items selected`);
-  }
-
-  private _showBusyBucket(): void {
-    // Deprecated: Logic moved to _renderOptions
-  }
-
-  private _hideBusyBucket(): void {
-    // Deprecated: Logic moved to _renderOptions
   }
 
   private _handleError(error: Error): void {
@@ -1550,6 +1562,15 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   // Public API
+
+  get optionRenderer(): OptionRendererFn | undefined {
+    return this._optionRenderer;
+  }
+
+  set optionRenderer(renderer: OptionRendererFn | undefined) {
+    this._optionRenderer = renderer;
+    this._renderOptions();
+  }
   
   /**
    * Set items to display in the select
@@ -1927,6 +1948,22 @@ export class EnhancedSelect extends HTMLElement {
     const isSelected = this._state.selectedIndices.has(index);
     const isDisabled = Boolean((item as any)?.disabled);
     const optionId = `${this._uniqueId}-option-${index}`;
+
+    if (this._optionRenderer) {
+      const rendered = this._optionRenderer(item, index, this._rendererHelpers);
+      const optionElement = this._normalizeCustomOptionElement(rendered, {
+        index,
+        value: getValue(item),
+        label: getLabel(item),
+        selected: isSelected,
+        active: this._state.activeIndex === index,
+        disabled: isDisabled,
+        id: optionId,
+      });
+      this._optionsContainer.appendChild(optionElement);
+      return;
+    }
+
     const option = new SelectOption({
       item,
       index,
@@ -1941,7 +1978,7 @@ export class EnhancedSelect extends HTMLElement {
 
     option.dataset.index = String(index);
     option.dataset.value = String(getValue(item));
-  option.id = option.id || optionId;
+    option.id = option.id || optionId;
 
     option.addEventListener('click', (e) => {
       const mouseEvent = e as MouseEvent;
@@ -1958,6 +1995,69 @@ export class EnhancedSelect extends HTMLElement {
     });
 
     this._optionsContainer.appendChild(option);
+  }
+
+  private _normalizeCustomOptionElement(element: HTMLElement | null | undefined, meta: {
+    index: number;
+    value: unknown;
+    label: string;
+    selected: boolean;
+    active: boolean;
+    disabled: boolean;
+    id: string;
+  }): HTMLElement {
+    const optionEl = element instanceof HTMLElement ? element : document.createElement('div');
+
+    optionEl.classList.add('smilodon-option');
+    optionEl.classList.toggle('smilodon-option--selected', meta.selected);
+    optionEl.classList.toggle('smilodon-option--active', meta.active);
+    optionEl.classList.toggle('smilodon-option--disabled', meta.disabled);
+
+    if (!optionEl.hasAttribute('data-selectable')) {
+      optionEl.setAttribute('data-selectable', '');
+    }
+    optionEl.dataset.index = String(meta.index);
+    optionEl.dataset.value = String(meta.value);
+    optionEl.id = optionEl.id || meta.id;
+
+    if (!optionEl.getAttribute('role')) {
+      optionEl.setAttribute('role', 'option');
+    }
+    if (!optionEl.getAttribute('aria-label')) {
+      optionEl.setAttribute('aria-label', meta.label);
+    }
+    optionEl.setAttribute('aria-selected', String(meta.selected));
+    if (meta.disabled) {
+      optionEl.setAttribute('aria-disabled', 'true');
+    } else {
+      optionEl.removeAttribute('aria-disabled');
+    }
+
+    if (!optionEl.hasAttribute('tabindex')) {
+      optionEl.tabIndex = -1;
+    }
+
+    if (!meta.disabled) {
+      optionEl.addEventListener('click', (e) => {
+        const mouseEvent = e as MouseEvent;
+        this._selectOption(meta.index, {
+          shiftKey: mouseEvent.shiftKey,
+          toggleKey: mouseEvent.ctrlKey || mouseEvent.metaKey,
+        });
+      });
+
+      optionEl.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this._selectOption(meta.index, {
+            shiftKey: e.shiftKey,
+            toggleKey: e.ctrlKey || e.metaKey,
+          });
+        }
+      });
+    }
+
+    return optionEl;
   }
 
   private _addLoadMoreTrigger(): void {
