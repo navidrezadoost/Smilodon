@@ -37,6 +37,7 @@ import type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  RendererHelpers,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -84,6 +85,9 @@ export interface SelectProps {
   style?: Record<string, string>;
   /** Enable expandable dropdown */
   expandable?: boolean;
+
+  /** Custom option renderer returning an HTMLElement */
+  optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
 }
 
 export interface SelectEmits {
@@ -151,12 +155,18 @@ const waitForUpgrade = async () => {
     const candidate = selectRef.value as any;
     if (candidate && typeof candidate.setItems === 'function') {
       isElementReady.value = true;
+      if (props.optionRenderer) {
+        (candidate as any).optionRenderer = props.optionRenderer;
+      }
       return;
     }
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
   isElementReady.value = typeof (selectRef.value as any)?.setItems === 'function';
+  if (isElementReady.value && props.optionRenderer) {
+    (selectRef.value as any).optionRenderer = props.optionRenderer;
+  }
 };
 
 const safeCall = (fn: (el: any) => void) => {
@@ -193,6 +203,17 @@ watch(
     });
   },
   { deep: true }
+);
+
+// Sync custom option renderer
+watch(
+  () => props.optionRenderer,
+  (renderer) => {
+    safeCall((el) => {
+      (el as any).optionRenderer = renderer;
+    });
+  },
+  { immediate: true }
 );
 
 // Sync value to web component

@@ -464,6 +464,8 @@ function LargeDatasetExample() {
 
 ### Method 2: Component-Driven (Custom Renderers) 🎨
 
+Now also supports the native `optionRenderer` hook (Option B) that returns an `HTMLElement` for maximum control (e.g., non-React DOM fragments). Pass `optionRenderer={(item, index, helpers) => { const el = document.createElement('div'); el.textContent = item.label; return el; }}` to mirror the Web Component API.
+
 **Use when**: You need rich, interactive option content with custom React components.
 
 **Advantages**:

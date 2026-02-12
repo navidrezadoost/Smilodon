@@ -57,6 +57,7 @@
   export let placement: 'bottom' | 'top' | 'auto' = 'auto';
   export let className: string = '';
   export let style: string = '';
+  export let optionRenderer: ((item: SelectItem, index: number, helpers: any) => HTMLElement) | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
     change: { value: string | number | (string | number)[]; selectedItems: SelectItem[] };
@@ -140,6 +141,10 @@
     if (maxSelections) element.setAttribute('max-selections', String(maxSelections));
     if (placement) element.setAttribute('placement', placement);
 
+    if (optionRenderer) {
+      (element as any).optionRenderer = optionRenderer;
+    }
+
     // Set initial items
     if (items?.length) {
       (element as any).setItems(items);
@@ -214,6 +219,10 @@
       selectRef.setAttribute('virtualized', '');
     } else {
       selectRef.removeAttribute('virtualized');
+    }
+
+    if (optionRenderer) {
+      (selectRef as any).optionRenderer = optionRenderer;
     }
   }
 

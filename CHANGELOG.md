@@ -20,6 +20,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### ✨ Added
 - Performance runbook for repeatable manual profiling (`docs/PERFORMANCE-RUNBOOK.md`).
 - Playground performance scenarios for 100K and 1M datasets, plus FPS overlay and auto-logging utilities.
+- Option B custom `optionRenderer` support in `enhanced-select`, exposed through React/Vue/Svelte wrappers and documented usage examples.
 
 ### 🔄 Changed
 - Selection interactions: shift-range support, improved keyboard navigation, and clearer active/pressed styling.

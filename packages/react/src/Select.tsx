@@ -7,6 +7,7 @@ import type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  RendererHelpers,
 } from '@smilodon/core';
 
 /**
@@ -82,6 +83,9 @@ export interface SelectProps {
   
   /** Custom item renderer */
   renderItem?: (item: SelectItem, index: number) => React.ReactNode;
+
+  /** Custom option renderer (DOM). Returns an HTMLElement for full control. */
+  optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
   
   /** Custom selected value renderer */
   renderValue?: (selectedItems: SelectItem[]) => React.ReactNode;
@@ -210,6 +214,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     style,
     renderItem,
     renderValue,
+  optionRenderer,
     onChange,
     onSelect,
     onOpen,
@@ -261,6 +266,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.setItems(items);
     }
 
+    if (optionRenderer) {
+      element.optionRenderer = optionRenderer;
+    }
+
     // Configure component
     const config = {
       searchable,
@@ -300,7 +309,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled, optionRenderer]);
 
   // Update items when they change
   useEffect(() => {

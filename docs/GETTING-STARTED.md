@@ -508,17 +508,16 @@ console.log('Metrics:', telemetry.getMetrics());
 
 ### Advanced Features
 
-1. **Custom Renderers** - Full control over rendering
+1. **Custom Renderers (Option B)** - Full control over rendering with a DOM return
    ```typescript
-   import { OptionRenderer } from '@smilodon/core';
-   
-   class CustomRenderer implements OptionRenderer {
-     render(item, index, helpers) {
-       const el = document.createElement('div');
-       el.textContent = item.label;
-       return el;
-     }
-   }
+   // Works with the web component and wrappers (React/Vue/Svelte) as `optionRenderer`
+   const optionRenderer = (item, index, helpers) => {
+     const el = document.createElement('div');
+     el.className = 'my-option';
+     el.textContent = `${index + 1}. ${item.label}`;
+     el.addEventListener('click', () => helpers.onSelect(item, index));
+     return el; // Must return an HTMLElement
+   };
    ```
 
 2. **Portal Mode** - Render outside overflow:hidden

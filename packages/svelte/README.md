@@ -22,6 +22,8 @@ The complete guide includes:
 
 ## Features
 
+- New: `optionRenderer` prop (Option B) lets you return an `HTMLElement` for custom DOM-driven option layouts.
+
 - ✨ **Single & Multi-Select** - Choose one or multiple options
 - 🔍 **Searchable** - Filter options with built-in or custom search
 - ♿ **Fully Accessible** - WCAG 2.1 AAA compliant
