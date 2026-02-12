@@ -19,6 +19,16 @@
   />
 -->
 
+<script lang="ts" context="module">
+  export interface SelectItem {
+    value: string | number;
+    label: string;
+    disabled?: boolean;
+    group?: string;
+    [key: string]: any;
+  }
+</script>
+
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import type {
@@ -30,14 +40,6 @@
     LoadMoreEventDetail,
     GroupedItem,
   } from '@smilodon/core';
-
-  export interface SelectItem {
-    value: string | number;
-    label: string;
-    disabled?: boolean;
-    group?: string;
-    [key: string]: any;
-  }
 
   // Props
   export let items: SelectItem[] = [];
