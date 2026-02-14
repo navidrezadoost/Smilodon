@@ -734,6 +734,17 @@ export class EnhancedSelect extends HTMLElement {
       };
       this._arrowContainer.addEventListener('click', this._boundArrowClick);
     }
+
+    // Input container click - focus input and open dropdown
+    this._inputContainer.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!this._config.enabled) return;
+      if (target && target.closest('.dropdown-arrow-container')) return;
+      if (!this._state.isOpen) {
+        this._handleOpen();
+      }
+      this._input.focus();
+    });
     
     // Input container click - prevent event from reaching document listener
     this._container.addEventListener('click', (e) => {
@@ -1951,6 +1962,7 @@ export class EnhancedSelect extends HTMLElement {
 
     if (this._optionRenderer) {
       const rendered = this._optionRenderer(item, index, this._rendererHelpers);
+      // Ensure the returned element has the correct classes and listeners
       const optionElement = this._normalizeCustomOptionElement(rendered, {
         index,
         value: getValue(item),
