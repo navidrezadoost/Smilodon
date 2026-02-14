@@ -2020,10 +2020,31 @@ export class EnhancedSelect extends HTMLElement {
   }): HTMLElement {
     const optionEl = element instanceof HTMLElement ? element : document.createElement('div');
 
-    optionEl.classList.add('smilodon-option');
-    optionEl.classList.toggle('smilodon-option--selected', meta.selected);
-    optionEl.classList.toggle('smilodon-option--active', meta.active);
-    optionEl.classList.toggle('smilodon-option--disabled', meta.disabled);
+    // Add both semantic namespaced classes and the legacy internal classes that CSS uses
+    optionEl.classList.add('smilodon-option', 'option');
+    
+    // Toggle state classes
+    const isSelected = meta.selected;
+    const isActive = meta.active;
+    const isDisabled = meta.disabled;
+
+    if (isSelected) {
+      optionEl.classList.add('smilodon-option--selected', 'selected');
+    } else {
+      optionEl.classList.remove('smilodon-option--selected', 'selected');
+    }
+
+    if (isActive) {
+      optionEl.classList.add('smilodon-option--active', 'active');
+    } else {
+      optionEl.classList.remove('smilodon-option--active', 'active');
+    }
+
+    if (isDisabled) {
+      optionEl.classList.add('smilodon-option--disabled', 'disabled');
+    } else {
+      optionEl.classList.remove('smilodon-option--disabled', 'disabled');
+    }
 
     if (!optionEl.hasAttribute('data-selectable')) {
       optionEl.setAttribute('data-selectable', '');
