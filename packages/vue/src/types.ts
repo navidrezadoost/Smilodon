@@ -1,5 +1,6 @@
 import {
   GroupedItem,
+  RendererHelpers,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -45,6 +46,12 @@ export interface SelectProps {
   className?: string;
   /** Custom inline styles */
   style?: Record<string, string>;
+
+  /** Custom option renderer returning an HTMLElement */
+  optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
+
+  /** Custom Vue renderer returning a VNode */
+  customRenderer?: (item: SelectItem, index: number) => unknown;
 }
 
 export interface SelectEmits {

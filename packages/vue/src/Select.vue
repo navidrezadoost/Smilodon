@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, computed, render, isVNode, h } from 'vue';
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -88,6 +88,9 @@ export interface SelectProps {
 
   /** Custom option renderer returning an HTMLElement */
   optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
+
+  /** Custom Vue renderer returning a VNode */
+  customRenderer?: (item: SelectItem, index: number) => ReturnType<typeof h>;
 }
 
 export interface SelectEmits {
@@ -129,6 +132,31 @@ const isElementReady = ref(false);
 const internalValue = ref<string | number | (string | number)[] | undefined>(
   props.defaultValue
 );
+const customRendererCache = new Map<number, HTMLElement>();
+
+const resolvedOptionRenderer = computed(() => {
+  if (props.optionRenderer) return props.optionRenderer;
+  if (!props.customRenderer) return undefined;
+
+  return (item: SelectItem, index: number) => {
+    let container = customRendererCache.get(index);
+    if (!container) {
+      container = document.createElement('div');
+      customRendererCache.set(index, container);
+    }
+
+    const node = props.customRenderer?.(item, index);
+    if (node && isVNode(node)) {
+      render(node, container);
+    } else if (node) {
+      render(h('span', String(node)), container);
+    } else {
+      render(null, container);
+    }
+
+    return container;
+  };
+});
 
 const waitForUpgrade = async () => {
   if (typeof window === 'undefined') return;
@@ -155,8 +183,8 @@ const waitForUpgrade = async () => {
     const candidate = selectRef.value as any;
     if (candidate && typeof candidate.setItems === 'function') {
       isElementReady.value = true;
-      if (props.optionRenderer) {
-        (candidate as any).optionRenderer = props.optionRenderer;
+      if (resolvedOptionRenderer.value) {
+        (candidate as any).optionRenderer = resolvedOptionRenderer.value;
       }
       return;
     }
@@ -164,8 +192,8 @@ const waitForUpgrade = async () => {
   }
 
   isElementReady.value = typeof (selectRef.value as any)?.setItems === 'function';
-  if (isElementReady.value && props.optionRenderer) {
-    (selectRef.value as any).optionRenderer = props.optionRenderer;
+  if (isElementReady.value && resolvedOptionRenderer.value) {
+    (selectRef.value as any).optionRenderer = resolvedOptionRenderer.value;
   }
 };
 
@@ -207,13 +235,30 @@ watch(
 
 // Sync custom option renderer
 watch(
-  () => props.optionRenderer,
+  () => resolvedOptionRenderer.value,
   (renderer) => {
     safeCall((el) => {
       (el as any).optionRenderer = renderer;
     });
   },
   { immediate: true }
+);
+
+watch(
+  () => [props.items, props.groupedItems],
+  () => {
+    const totalItems = props.groupedItems
+      ? props.groupedItems.reduce((count, group) => count + group.options.length, 0)
+      : props.items.length;
+
+    customRendererCache.forEach((container, index) => {
+      if (index >= totalItems) {
+        render(null, container);
+        customRendererCache.delete(index);
+      }
+    });
+  },
+  { deep: true }
 );
 
 // Sync value to web component
@@ -368,6 +413,9 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  customRendererCache.forEach((container) => render(null, container));
+  customRendererCache.clear();
+
   if (!selectRef.value) return;
 
   const element = selectRef.value;
