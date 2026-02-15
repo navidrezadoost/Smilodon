@@ -1222,6 +1222,24 @@ The component uses web components from `@smilodon/core` and comes with built-in 
 - ✅ High contrast mode support
 - ✅ WCAG 2.1 AAA compliant
 
+### Important: Passing inline functions as renderers
+
+If you define `optionRenderer` or `customRenderer` inline (like arrow function inside template), it may cause unnecessary re-creation in some frameworks.
+
+**Highly recommended:** For best performance and to avoid potential issues, always use memoization or define functions outside the template:
+
+```vue
+<script setup>
+// Define outside template
+const myRenderer = (item, index, helpers) => {
+  return document.createElement('div');
+};
+// Or computed if reactivity is required
+</script>
+```
+
+Adapters are designed to not loop even without memoization, but stability still improves performance.
+
 ## Performance
 
 - Virtual scrolling handles 100,000+ items smoothly

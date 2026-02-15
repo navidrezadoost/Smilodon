@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/monorepo",
-  "version": "0.0.1",
+  "version": "1.4.0",
   "description": "Smilodon monorepo: high-performance select components for React, Vue, Svelte, and Web Components.",
   "private": true,
   "type": "module",
@@ -60,6 +60,7 @@
     "@testing-library/vue": "^8.1.0",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/ui": "^1.6.0",

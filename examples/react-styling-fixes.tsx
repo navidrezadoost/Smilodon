@@ -110,6 +110,59 @@ export function StylingFixesDemo() {
         </div>
       </section>
 
+      {/* Test 2: Tailwind / classMap Demo */}
+      <section style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+         <h2>2. Tailwind / classMap Integration (New 🚀)</h2>
+         <p style={{ color: '#0369a1', fontSize: '14px', marginBottom: '20px' }}>
+            Override state classes with your own utilities (e.g. Tailwind) without breaking internal logic.
+         </p>
+         
+         {/* Define simulated classes for this demo (as if they were Tailwind) */}
+         <style>{`
+            .bg-blue-600 { background-color: #2563eb !important; }
+            .text-white { color: white !important; }
+            .font-bold { font-weight: 700 !important; }
+            .bg-blue-50 { background-color: #eff6ff !important; }
+            .text-blue-900 { color: #1e3a8a !important; }
+            .border-l-4 { border-left-width: 4px !important; }
+            .border-blue-500 { border-color: #3b82f6 !important; }
+         `}</style>
+
+         <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px' }}>
+              Custom State Classes (Simulated Tailwind)
+            </label>
+            <Select 
+               items={items}
+               searchable
+               placeholder="Check my custom active state..."
+               classMap={{
+                  selected: 'bg-blue-600 text-white font-bold',
+                  active: 'bg-blue-50 text-blue-900 border-l-4 border-blue-500', 
+               }}
+            />
+             <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+               Try navigating with arrow keys or selecting an item to see the custom styles applied via <code>classMap</code>.
+            </div>
+            <pre style={{
+            background: '#ffffff',
+            padding: '15px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            marginTop: '10px',
+            border: '1px solid #e5e7eb'
+          }}>
+{`<Select 
+  classMap={{
+    selected: 'bg-blue-600 text-white font-bold',
+    active: 'bg-blue-50 text-blue-900 border-l-4 border-blue-500',
+  }}
+  ...
+/>`}
+          </pre>
+         </div>
+      </section>
+
       {/* Test 3: Dropdown Background */}
       <section style={{ marginBottom: '40px' }}>
         <h2>3. Dropdown & Options Background</h2>

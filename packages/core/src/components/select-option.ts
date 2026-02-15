@@ -3,6 +3,8 @@
  * High cohesion, low coupling - handles its own selection state and events
  */
 
+import { ClassMap } from '../types';
+
 export interface OptionConfig {
   /** The data item this option represents */
   item: unknown;
@@ -26,6 +28,8 @@ export interface OptionConfig {
   style?: Partial<CSSStyleDeclaration>;
   /** Custom class names */
   className?: string;
+  /** Class map for state classes */
+  classMap?: ClassMap;
   /** Show remove button (for multi-select) */
   showRemoveButton?: boolean;
 }
@@ -130,19 +134,61 @@ export class SelectOption extends HTMLElement {
   }
 
   private _render(): void {
-    const { item, index, selected, disabled, active, render, showRemoveButton } = this._config;
+    const { item, index, selected, disabled, active, render, showRemoveButton, classMap } = this._config;
     
     // Clear container
     this._container.innerHTML = '';
     
-    // Apply state classes
-    this._container.classList.toggle('selected', selected);
-    this._container.classList.toggle('disabled', disabled || false);
-    this._container.classList.toggle('active', active || false);
+    // Add part attribute
+    this._container.setAttribute('part', 'option');
+
+    // Standard styling hook
+    this._container.classList.add('smilodon-option');
+
+    // Apply state classes using classMap or defaults
+    const selectedClasses = (classMap?.selected ?? 'selected sm-selected').split(' ').filter(Boolean);
+    const activeClasses = (classMap?.active ?? 'active sm-active').split(' ').filter(Boolean);
+    const disabledClasses = (classMap?.disabled ?? 'disabled sm-disabled').split(' ').filter(Boolean);
+
+    // Apply classes to both the container (internal styling) and the host (external styling/::part)
+    // This ensures that utility classes are visible via ::part selectors
+    const toggleClasses = (element: Element, classes: string[], add: boolean) => {
+      if (add) {
+        element.classList.add(...classes);
+      } else {
+        element.classList.remove(...classes);
+      }
+    };
+
+    if (selected) {
+      toggleClasses(this._container, [...selectedClasses, 'smilodon-option--selected'], true);
+      toggleClasses(this, [...selectedClasses, 'smilodon-option--selected'], true);
+    } else {
+      toggleClasses(this._container, [...selectedClasses, 'smilodon-option--selected'], false);
+      toggleClasses(this, [...selectedClasses, 'smilodon-option--selected'], false);
+    }
+
+    if (active) {
+       toggleClasses(this._container, [...activeClasses, 'smilodon-option--active'], true);
+       toggleClasses(this, [...activeClasses, 'smilodon-option--active'], true); // Make focus ring visible on host
+    } else {
+      toggleClasses(this._container, [...activeClasses, 'smilodon-option--active'], false);
+      toggleClasses(this, [...activeClasses, 'smilodon-option--active'], false);
+    }
+
+    if (disabled) {
+       toggleClasses(this._container, [...disabledClasses, 'smilodon-option--disabled'], true);
+       toggleClasses(this, [...disabledClasses, 'smilodon-option--disabled'], true);
+    } else {
+       toggleClasses(this._container, [...disabledClasses, 'smilodon-option--disabled'], false);
+       toggleClasses(this, [...disabledClasses, 'smilodon-option--disabled'], false);
+    }
     
     // Custom class name
     if (this._config.className) {
-      this._container.className += ' ' + this._config.className;
+
+      const classes = this._config.className.split(' ').filter(Boolean);
+      this._container.classList.add(...classes);
     }
     
     // Apply custom styles
@@ -153,12 +199,13 @@ export class SelectOption extends HTMLElement {
     // Render content
     const contentDiv = document.createElement('div');
     contentDiv.className = 'option-content';
+    // contentDiv.setAttribute('part', 'option-content'); // Optional
     
     if (render) {
       const rendered = render(item, index);
       if (typeof rendered === 'string') {
         contentDiv.innerHTML = rendered;
-      } else {
+      } else if (rendered instanceof HTMLElement) {
         contentDiv.appendChild(rendered);
       }
     } else {
@@ -173,16 +220,55 @@ export class SelectOption extends HTMLElement {
       this._removeButton = document.createElement('button');
       this._removeButton.className = 'remove-button';
       this._removeButton.innerHTML = '×';
+      this._removeButton.setAttribute('part', 'chip-remove');
       this._removeButton.setAttribute('aria-label', 'Remove option');
       this._removeButton.setAttribute('type', 'button');
       this._container.appendChild(this._removeButton);
     }
     
-    // Set ARIA attributes
+    // Set ARIA attributes and State attributes on Host
     this.setAttribute('role', 'option');
     this.setAttribute('aria-selected', String(selected));
     if (disabled) this.setAttribute('aria-disabled', 'true');
     this.id = this._config.id || `select-option-${index}`;
+
+    // Add checkmark (part="checkmark") - standard for object mode
+    // Only show if NOT showing remove button (avoid clutter)
+    if (!showRemoveButton) {
+        const checkmark = document.createElement('div');
+        checkmark.setAttribute('part', 'checkmark');
+        checkmark.className = 'checkmark-icon';
+        checkmark.innerHTML = `
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;">
+            <path d="M4 8.5L6.5 11L12 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        // Visibility control via CSS or inline style
+        // We set it to display: none unless selected.
+        // User can override this behavior via part styling if they want transitions
+        if (!selected) {
+            checkmark.style.display = 'none';
+        } else {
+             checkmark.style.marginLeft = '8px';
+             checkmark.style.color = 'currentColor';
+        }
+        this._container.appendChild(checkmark);
+    }
+
+    // Data Attributes Contract on Host
+    const state = [];
+    if (selected) state.push('selected');
+    if (active) state.push('active');
+    if (state.length) {
+      this.dataset.smState = state.join(' ');
+    } else {
+      delete this.dataset.smState;
+    }
+    
+    this.dataset.smIndex = String(index);
+    if (!this.hasAttribute('data-sm-selectable')) {
+        this.toggleAttribute('data-sm-selectable', true);
+    }
   }
 
   private _attachEventListeners(): void {

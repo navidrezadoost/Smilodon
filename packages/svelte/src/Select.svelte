@@ -74,6 +74,11 @@
   let selectRef: HTMLElement;
   let internalValue: string | number | (string | number)[] | undefined = defaultValue;
 
+  // Stable wrapper to handle optionRenderer updates without triggering infinite loops
+  const resolvedOptionRenderer = (item: SelectItem, index: number, helpers: any) => {
+    return optionRenderer ? optionRenderer(item, index, helpers) : document.createElement('div');
+  };
+
   // Check if component is controlled
   $: isControlled = value !== undefined;
   $: currentValue = isControlled ? value : internalValue;
@@ -144,7 +149,7 @@
     if (placement) element.setAttribute('placement', placement);
 
     if (optionRenderer) {
-      (element as any).optionRenderer = optionRenderer;
+      (element as any).optionRenderer = resolvedOptionRenderer;
     }
 
     // Set initial items
@@ -224,7 +229,11 @@
     }
 
     if (optionRenderer) {
-      (selectRef as any).optionRenderer = optionRenderer;
+      if ((selectRef as any).optionRenderer !== resolvedOptionRenderer) {
+        (selectRef as any).optionRenderer = resolvedOptionRenderer;
+      }
+    } else if ((selectRef as any).optionRenderer === resolvedOptionRenderer) {
+      (selectRef as any).optionRenderer = undefined;
     }
   }
 

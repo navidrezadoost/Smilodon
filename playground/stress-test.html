@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smilodon Stress Test (10k Items)</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.5; }
+        .controls { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .metric { font-weight: bold; font-family: monospace; }
+        label { display: block; margin-bottom: 5px; }
+        enhanced-select { width: 100%; max-width: 400px; display: block; margin-bottom: 20px; }
+        
+        /* Simple styling for the component parts */
+        enhanced-select::part(listbox) {
+            max-height: 300px; /* Force scrolling */
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Stress Test: 10,000 Items</h1>
+    
+    <div class="controls">
+        <div>
+            <label>Load Items:</label>
+            <button id="load-simple">10k Simple Objects</button>
+            <button id="load-complex">10k Complex render</button>
+        </div>
+        <div>
+            <label>Virtualization:</label>
+            <input type="checkbox" id="toggle-virtual" checked> Enable Virtual Scrolling
+        </div>
+        <div>
+            <label>Metrics:</label>
+            <div>FPS: <span id="fps" class="metric">--</span></div>
+            <div>Time to Render: <span id="render-time" class="metric">--</span> ms</div>
+        </div>
+        <div>
+            <label>Actions:</label>
+            <button id="clear-btn">Clear</button>
+        </div>
+    </div>
+
+    <enhanced-select 
+        id="stress-select" 
+        placeholder="Select item..."
+        virtualized="true"
+    ></enhanced-select>
+
+    <script type="module">
+        // Import directly from source for dev
+        import { EnhancedSelect } from '../packages/core/src/components/enhanced-select.ts';
+        
+        if (!customElements.get('enhanced-select')) {
+            customElements.define('enhanced-select', EnhancedSelect);
+        }
+
+        const select = document.getElementById('stress-select');
+        const fpsDisplay = document.getElementById('fps');
+        const renderTimeDisplay = document.getElementById('render-time');
+        const virtualToggle = document.getElementById('toggle-virtual');
+
+        // FPS Counter
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        function updateFPS() {
+            const now = performance.now();
+            frameCount++;
+            if (now - lastTime >= 1000) {
+                fpsDisplay.textContent = Math.round((frameCount * 1000) / (now - lastTime));
+                frameCount = 0;
+                lastTime = now;
+            }
+            requestAnimationFrame(updateFPS);
+        }
+        requestAnimationFrame(updateFPS);
+
+        // Data Generation
+        function generateItems(count) {
+            return Array.from({ length: count }, (_, i) => ({
+                value: `item-${i}`,
+                label: `Item Number ${i} (Category ${(i % 10) + 1})`,
+                id: i,
+                description: `Description for item ${i}`
+            }));
+        }
+
+        // 1. Simple Load
+        document.getElementById('load-simple').addEventListener('click', async () => {
+            select.items = []; // Clear first
+            
+            const start = performance.now();
+            const items = generateItems(10000);
+            
+            // Set items
+            select.items = items;
+            
+            // Force a render check (optional, usually automatic)
+            setTimeout(() => {
+                const end = performance.now();
+                renderTimeDisplay.textContent = (end - start).toFixed(2);
+            }, 0);
+        });
+
+        // 2. Complex Renderer
+        document.getElementById('load-complex').addEventListener('click', () => {
+            // Define custom renderer
+            select.optionRenderer = (item) => {
+                const div = document.createElement('div');
+                div.style.padding = '8px';
+                div.style.borderBottom = '1px solid #eee';
+                
+                const title = document.createElement('div');
+                title.textContent = item.label;
+                title.style.fontWeight = 'bold';
+                
+                const sub = document.createElement('div');
+                sub.textContent = item.description;
+                sub.style.fontSize = '0.8em';
+                sub.style.color = '#666';
+                
+                div.appendChild(title);
+                div.appendChild(sub);
+                return div;
+            };
+            
+            // Reload same items
+            const start = performance.now();
+            const items = generateItems(10000);
+            select.items = items;
+            
+             setTimeout(() => {
+                const end = performance.now();
+                renderTimeDisplay.textContent = (end - start).toFixed(2);
+            }, 0);
+        });
+
+        // Toggle Virtualization
+        virtualToggle.addEventListener('change', (e) => {
+            select.virtualized = e.target.checked;
+        });
+        
+        // Clear
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            select.items = [];
+            renderTimeDisplay.textContent = '--';
+        });
+
+    </script>
+</body>
+</html>

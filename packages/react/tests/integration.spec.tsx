@@ -54,6 +54,22 @@ describe('Select React Integration', () => {
     });
   });
 
+  it('should pass classMap to element', async () => {
+    const classMap = {
+      selected: 'custom-selected',
+      active: 'custom-active',
+    };
+    
+    const { container } = render(
+      <Select items={testItems} classMap={classMap} />
+    );
+    const element = container.querySelector('enhanced-select') as any;
+    
+    await waitFor(() => {
+      expect(element?.classMap).toEqual(classMap);
+    });
+  });
+
   it('should handle onChange callback', async () => {
     let selectedValue: string | number | (string | number)[] | undefined;
     const handleChange = (value: string | number | (string | number)[]) => {

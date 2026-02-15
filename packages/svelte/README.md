@@ -934,6 +934,23 @@ enhanced-select {
 }
 ```
 
+### Important: Passing inline functions as renderers
+
+If you define `optionRenderer` or `customRenderer` inline (like function inside template), it may cause unnecessary re-creation.
+
+**Highly recommended:** For best performance and to avoid potential issues, always use stable function references:
+
+```svelte
+<script>
+  let myRenderer = (item, index, helpers) => {
+    return document.createElement('div');
+  };
+  // or define outside reactive blocks
+</script>
+```
+
+Adapters are designed to not loop even without memoization, but stability still improves performance.
+
 ## Accessibility
 
 This component is fully accessible and compliant with WCAG 2.1 AAA standards:

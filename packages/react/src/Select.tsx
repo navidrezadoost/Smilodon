@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
+import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState, useMemo } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -84,12 +85,26 @@ export interface SelectProps {
   /** Custom item renderer */
   renderItem?: (item: SelectItem, index: number) => React.ReactNode;
 
+  /** Custom React renderer for option content */
+  customRenderer?: (item: SelectItem, index: number) => React.ReactNode;
+
   /** Custom option renderer (DOM). Returns an HTMLElement for full control. */
   optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
   
   /** Custom selected value renderer */
   renderValue?: (selectedItems: SelectItem[]) => React.ReactNode;
   
+  /**
+   * Class map for overriding internal state classes.
+   * Useful for Tailwind or other utility-first CSS frameworks.
+   */
+  classMap?: {
+    selected?: string;
+    active?: string;
+    disabled?: string;
+    [key: string]: string | undefined;
+  };
+
   // Event Handlers
   /** Called when selection changes */
   onChange?: (value: string | number | Array<string | number>, items: SelectItem[]) => void;
@@ -213,6 +228,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     className,
     style,
     renderItem,
+    customRenderer,
     renderValue,
   optionRenderer,
     onChange,
@@ -224,11 +240,82 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     loading = false,
     creatable = false,
     onCreate,
+    classMap,
   } = props;
 
   const elementRef = useRef<any>(null);
   const [isControlled] = useState(value !== undefined);
   const [internalValue, setInternalValue] = useState(defaultValue);
+  const reactRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
+
+  // Use refs for renderers to avoid reconstructing the wrapper function on every render
+  const customRendererRef = useRef(customRenderer ?? renderItem);
+  const optionRendererRef = useRef(optionRenderer);
+  
+  // Update ref when props change
+  useEffect(() => {
+    customRendererRef.current = customRenderer ?? renderItem;
+    optionRendererRef.current = optionRenderer;
+  }, [customRenderer, renderItem, optionRenderer]);
+
+  const resolvedOptionRenderer = useMemo(() => {
+    // If a direct DOM renderer is provided, use it (assumed stable or controlled by user)
+    // Wait, if optionRenderer is provided as inline function, it changes every render.
+    // We should wrap it too IF it is provided.
+    
+    if (!!optionRenderer) {
+      return (item: SelectItem, index: number, helpers: RendererHelpers) => {
+         return optionRendererRef.current?.(item, index, helpers) || document.createElement('div');
+      };
+    }
+    
+    // We only want to reconstruct the wrapper if the existence of a renderer changes,
+    // NOT if the identity of the function changes (to avoid infinite loops with inline functions).
+    const hasReactRenderer = !!(customRenderer ?? renderItem);
+    
+    if (!hasReactRenderer) return undefined;
+
+    return (item: SelectItem, index: number, _helpers: RendererHelpers) => {
+      const renderer = customRendererRef.current;
+      if (!renderer) return document.createElement('div'); 
+
+      let entry = reactRendererCache.current.get(index);
+      if (!entry) {
+        const container = document.createElement('div');
+        // Note: createRoot should be reused.
+        const root = createRoot(container);
+        entry = { container, root };
+        reactRendererCache.current.set(index, entry);
+      }
+
+      entry.root.render(<>{renderer(item, index)}</>);
+      return entry.container;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!optionRenderer, !!(customRenderer ?? renderItem)]); // Only reconstruct if presence changes
+
+
+
+
+  useEffect(() => {
+    return () => {
+      reactRendererCache.current.forEach(({ root }) => root.unmount());
+      reactRendererCache.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const totalItems = groupedItems
+      ? groupedItems.reduce((count, group) => count + group.options.length, 0)
+      : items.length;
+
+    reactRendererCache.current.forEach((entry, index) => {
+      if (index >= totalItems) {
+        entry.root.unmount();
+        reactRendererCache.current.delete(index);
+      }
+    });
+  }, [items, groupedItems]);
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
@@ -266,8 +353,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.setItems(items);
     }
 
-    if (optionRenderer) {
-      element.optionRenderer = optionRenderer;
+    if (resolvedOptionRenderer) {
+      element.optionRenderer = resolvedOptionRenderer;
     }
 
     // Configure component
@@ -291,6 +378,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     element.updateConfig(config);
 
+    // Set classMap if provided
+    if (classMap) {
+      element.classMap = classMap;
+    } else {
+      element.classMap = undefined;
+    }
+
     // Set initial value
     const currentValue = isControlled ? value : internalValue;
     if (currentValue !== undefined) {
@@ -309,7 +403,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled, optionRenderer]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled, resolvedOptionRenderer]);
 
   // Update items when they change
   useEffect(() => {

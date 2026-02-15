@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.2.2",
+  "version": "1.4.0",
   "description": "React adapter for @smilodon/core - Production-ready accessible select component (React, Vue, Svelte, Vanilla JS)",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -18,18 +18,21 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc --declaration --emitDeclarationOnly --outDir dist/types && vite build && node scripts/cleanup-types.js",
+    "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js",
     "size": "gzip -c dist/index.js | wc -c",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@smilodon/core": "^1.0.0",
-    "react": ">=16.8.0"
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.7.0",
     "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^5.6.2",
     "vite": "^5.4.21"
   },

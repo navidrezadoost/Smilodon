@@ -1072,6 +1072,20 @@ This component is built with accessibility in mind:
 - ✅ 44px minimum touch targets (WCAG 2.5.5)
 - ✅ WCAG 2.1 AAA compliant
 
+### Important: Passing inline functions as renderers
+
+If you define `optionRenderer` or `customRenderer` inline (like arrow function inside template/JSX), it may cause unnecessary re-creation in some frameworks.
+
+**Highly recommended:** For best performance and to avoid potential issues, always use memoization:
+
+```tsx
+const myRenderer = useCallback((item, index, helpers) => {
+  return document.createElement('div');
+}, []);
+```
+
+Adapters are designed to not loop even without memoization, but memoization still improves performance.
+
 ## Performance
 
 - Virtual scrolling for large datasets (1000+ items)

@@ -19,6 +19,13 @@ export interface RemoteConfig {
   cacheTTL?: number;
 }
 
+export interface ClassMap {
+  selected?: string;
+  active?: string;
+  disabled?: string;
+  [key: string]: string | undefined;
+}
+
 // Event payloads: frozen contract for Phase 0
 export interface SelectEventDetail<T = unknown> {
   item: T;

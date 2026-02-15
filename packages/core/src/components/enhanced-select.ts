@@ -6,7 +6,7 @@
 
 import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
-import type { SelectEventName, SelectEventsDetailMap, GroupedItem, RendererHelpers } from '../types';
+import type { SelectEventName, SelectEventsDetailMap, GroupedItem, RendererHelpers, ClassMap } from '../types';
 import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
 import { SelectOption } from './select-option';
 
@@ -62,6 +62,8 @@ export class EnhancedSelect extends HTMLElement {
   private _rangeAnchorIndex: number | null = null;
   private _optionRenderer?: OptionRendererFn;
   private _rendererHelpers: RendererHelpers;
+
+  public classMap?: ClassMap;
 
   constructor() {
     super();
@@ -160,11 +162,13 @@ export class EnhancedSelect extends HTMLElement {
   private _createInputContainer(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'input-container';
+    container.setAttribute('part', 'button');
     return container;
   }
 
   private _createInput(): HTMLInputElement {
     const input = document.createElement('input');
+    input.setAttribute('part', 'input');
     input.type = 'text';
     input.className = 'select-input';
     input.id = `${this._uniqueId}-input`;
@@ -198,6 +202,7 @@ export class EnhancedSelect extends HTMLElement {
   private _createDropdown(): HTMLElement {
     const dropdown = document.createElement('div');
     dropdown.className = 'select-dropdown';
+    dropdown.setAttribute('part', 'listbox');
     dropdown.style.display = 'none';
     
     if (this._config.styles.classNames?.dropdown) {
@@ -236,7 +241,7 @@ export class EnhancedSelect extends HTMLElement {
     const container = document.createElement('div');
     container.className = 'dropdown-arrow-container';
     container.innerHTML = `
-      <svg class="dropdown-arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="dropdown-arrow" part="arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
@@ -774,6 +779,23 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._config.searchable) return;
       const query = (e.target as HTMLInputElement).value;
       this._handleSearch(query);
+    });
+
+    // Delegated click listener for improved event handling (smart fallback)
+    this._optionsContainer.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      // Handle option clicks
+      const option = target.closest('[data-sm-selectable], [data-selectable], [data-sm-state]');
+      if (option && !option.hasAttribute('aria-disabled')) {
+        const indexStr = option.getAttribute('data-sm-index') ?? option.getAttribute('data-index');
+        const index = Number(indexStr);
+        if (!Number.isNaN(index)) {
+             this._selectOption(index, {
+                shiftKey: (e as MouseEvent).shiftKey,
+                toggleKey: (e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey,
+             });
+        }
+      }
     });
     
     // Keyboard navigation
@@ -1420,11 +1442,13 @@ export class EnhancedSelect extends HTMLElement {
       selectedEntries.forEach(([index, item]) => {
         const badge = document.createElement('span');
         badge.className = 'selection-badge';
+        badge.setAttribute('part', 'chip');
         badge.textContent = getLabel(item);
         
         // Add remove button to badge
         const removeBtn = document.createElement('button');
         removeBtn.className = 'badge-remove';
+        removeBtn.setAttribute('part', 'chip-remove');
         removeBtn.innerHTML = '×';
         removeBtn.setAttribute('aria-label', `Remove ${getLabel(item)}`);
         removeBtn.addEventListener('click', (e) => {
@@ -1855,6 +1879,7 @@ export class EnhancedSelect extends HTMLElement {
     if (this._state.isSearching) {
       const searching = document.createElement('div');
       searching.className = 'searching-state';
+      searching.setAttribute('part', 'loading');
       searching.textContent = 'Searching...';
       this._optionsContainer.appendChild(searching);
       return;
@@ -1917,6 +1942,7 @@ export class EnhancedSelect extends HTMLElement {
       
       if (!hasRenderedItems && !this._state.isBusy) {
         const empty = document.createElement('div');
+        empty.setAttribute('part', 'no-results');
         empty.className = 'empty-state';
         if (query) {
           empty.textContent = `No results found for "${this._state.searchQuery}"`;
@@ -1930,6 +1956,7 @@ export class EnhancedSelect extends HTMLElement {
     // Append Busy Indicator if busy
     if (this._state.isBusy && this._config.busyBucket.enabled) {
       const busyBucket = document.createElement('div');
+      busyBucket.setAttribute('part', 'loading');
       busyBucket.className = 'busy-bucket';
       
       if (this._config.busyBucket.showSpinner) {
@@ -1986,13 +2013,28 @@ export class EnhancedSelect extends HTMLElement {
       getValue,
       getLabel,
       showRemoveButton: this._config.selection.mode === 'multi' && this._config.selection.showRemoveButton,
+      classMap: this.classMap,
     });
+
+    // Valid part attribute on the web component host itself
+    option.setAttribute('part', 'option');
 
     option.dataset.index = String(index);
     option.dataset.value = String(getValue(item));
+    // New standard attributes on Host
+    option.dataset.smIndex = String(index);
+    if (!option.hasAttribute('data-sm-selectable')) {
+        option.toggleAttribute('data-sm-selectable', true);
+    }
+    const val = getValue(item);
+    if (val != null) {
+        option.dataset.smValue = String(val);
+    }
+
     option.id = option.id || optionId;
 
     option.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent duplicate handling by delegation
       const mouseEvent = e as MouseEvent;
       this._selectOption(index, {
         shiftKey: mouseEvent.shiftKey,
@@ -2020,37 +2062,75 @@ export class EnhancedSelect extends HTMLElement {
   }): HTMLElement {
     const optionEl = element instanceof HTMLElement ? element : document.createElement('div');
 
+    // Add part attribute for styling
+    if (!optionEl.hasAttribute('part')) {
+      optionEl.setAttribute('part', 'option');
+    }
+
     // Add both semantic namespaced classes and the legacy internal classes that CSS uses
     optionEl.classList.add('smilodon-option', 'option');
     
-    // Toggle state classes
+    // Toggle state classes using classMap if available
     const isSelected = meta.selected;
     const isActive = meta.active;
     const isDisabled = meta.disabled;
 
+    // Resolve classes from classMap or defaults
+    const selectedClasses = (this.classMap?.selected ?? 'selected sm-selected').split(' ').filter(Boolean);
+    const activeClasses = (this.classMap?.active ?? 'active sm-active').split(' ').filter(Boolean);
+    const disabledClasses = (this.classMap?.disabled ?? 'disabled sm-disabled').split(' ').filter(Boolean);
+
     if (isSelected) {
-      optionEl.classList.add('smilodon-option--selected', 'selected');
+      optionEl.classList.add(...selectedClasses);
+      optionEl.classList.add('smilodon-option--selected');
     } else {
-      optionEl.classList.remove('smilodon-option--selected', 'selected');
+      optionEl.classList.remove(...selectedClasses);
+      optionEl.classList.remove('smilodon-option--selected');
     }
 
     if (isActive) {
-      optionEl.classList.add('smilodon-option--active', 'active');
+      optionEl.classList.add(...activeClasses);
+      optionEl.classList.add('smilodon-option--active');
     } else {
-      optionEl.classList.remove('smilodon-option--active', 'active');
+      optionEl.classList.remove(...activeClasses);
+      optionEl.classList.remove('smilodon-option--active');
     }
 
     if (isDisabled) {
-      optionEl.classList.add('smilodon-option--disabled', 'disabled');
+      optionEl.classList.add(...disabledClasses);
+      optionEl.classList.add('smilodon-option--disabled');
     } else {
-      optionEl.classList.remove('smilodon-option--disabled', 'disabled');
+      optionEl.classList.remove(...disabledClasses);
+      optionEl.classList.remove('smilodon-option--disabled');
     }
 
+    // Data Attributes Contract
+    const state = [];
+    if (isSelected) state.push('selected');
+    if (isActive) state.push('active');
+    if (state.length) {
+      optionEl.dataset.smState = state.join(' ');
+    } else {
+      delete optionEl.dataset.smState;
+    }
+
+    // Legacy data attribute support
     if (!optionEl.hasAttribute('data-selectable')) {
       optionEl.setAttribute('data-selectable', '');
     }
+    // New delegation attribute
+    if (!optionEl.hasAttribute('data-sm-selectable')) {
+        optionEl.setAttribute('data-sm-selectable', '');
+    }
+
     optionEl.dataset.index = String(meta.index);
     optionEl.dataset.value = String(meta.value);
+    // New standard attributes
+    optionEl.dataset.smIndex = String(meta.index);
+    if (meta.value != null) {
+        optionEl.dataset.smValue = String(meta.value);
+    }
+    
     optionEl.id = optionEl.id || meta.id;
 
     if (!optionEl.getAttribute('role')) {
@@ -2072,6 +2152,7 @@ export class EnhancedSelect extends HTMLElement {
 
     if (!meta.disabled) {
       optionEl.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent duplicate handling by delegation
         const mouseEvent = e as MouseEvent;
         this._selectOption(meta.index, {
           shiftKey: mouseEvent.shiftKey,

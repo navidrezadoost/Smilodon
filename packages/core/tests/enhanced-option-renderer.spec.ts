@@ -37,16 +37,35 @@ describe('EnhancedSelect optionRenderer', () => {
     const first = options?.[0] as HTMLElement | undefined;
     expect(first?.textContent).toContain('custom-Alpha');
 
+    // Styling hooks: core guarantees both namespaced *and* legacy classes
+    expect(first?.classList.contains('smilodon-option')).toBe(true);
+    expect(first?.classList.contains('option')).toBe(true);
+
     first?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(el.getSelectedValues()).toEqual(['a']);
     const refreshedFirst = el.shadowRoot?.querySelector('[data-index="0"]') as HTMLElement | null;
     expect(refreshedFirst?.classList.contains('smilodon-option--selected')).toBe(true);
+    expect(refreshedFirst?.classList.contains('selected')).toBe(true);
+
+  // Active styling hook should be reflected when activeIndex changes.
+  // Avoid calling private _setActive in tests (it triggers scrollIntoView, which jsdom may not implement).
+  (el as any)._state.activeIndex = 0;
+  (el as any)._renderOptions();
+  const activeFirst = el.shadowRoot?.querySelector('[data-index="0"]') as HTMLElement | null;
+  expect(activeFirst?.classList.contains('smilodon-option--active')).toBe(true);
+  expect(activeFirst?.classList.contains('active')).toBe(true);
 
     const second = options?.[1] as HTMLElement | undefined;
+
+    // Disabled styling hooks should be set based on item.disabled
+    expect(second?.classList.contains('smilodon-option--disabled')).toBe(true);
+    expect(second?.classList.contains('disabled')).toBe(true);
+
     second?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     // Disabled option should not change selection
     expect(el.getSelectedValues()).toEqual(['a']);
     const refreshedSecond = el.shadowRoot?.querySelector('[data-index="1"]') as HTMLElement | null;
     expect(refreshedSecond?.classList.contains('smilodon-option--selected')).toBe(false);
+    expect(refreshedSecond?.classList.contains('selected')).toBe(false);
   });
 });

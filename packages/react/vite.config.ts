@@ -15,7 +15,7 @@ export default defineConfig({
       fileName: (format) => format === 'es' ? 'index.js' : 'index.cjs',
     },
     rollupOptions: {
-      external: ['react', 'react/jsx-runtime', '@smilodon/core'],
+      external: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@smilodon/core'],
       output: {
         globals: {
           react: 'React',

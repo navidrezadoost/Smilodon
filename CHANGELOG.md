@@ -15,9 +15,29 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
-## [Unreleased]
+## [1.4.0] - 2026-02-15
+
+### Fixed
+- **Infinite update loop prevention** across all adapters when passing inline (non-memoized) renderer functions
+  - React: useRef + stable memoization mechanism
+  - Vue: manual ref + presence-based sync
+  - Svelte: stable wrapper + conditional property assignment
+  - Vanilla: inherently safe (non-reactive)
+
+## [1.3.10]
+
+### 🐛 Fixed
+- **@smilodon/core**: Fix input container click not focusing/opening dropdown correctly on mobile/touch devices and some desktop scenarios.
+- **@smilodon/react**: Fix missing TypeScript declaration files (`index.d.ts`) by correcting the build script to handle nested output directories properly.
+- **@smilodon/react**: Fix React component custom renderer implementation to use `createRoot` for proper React lifecycle management instead of static HTML strings.
+- **@smilodon/vue**: Fix Vue component custom renderer implementation to use `h` and `render` functions for proper Vue component lifecycle management.
+- **@smilodon/react**: Resolve peer dependency conflict between `@types/react` and `@types/react-dom` to support version 18 correctly.
 
 ### ✨ Added
+- **@smilodon/react**: Added `customRenderer` prop to `Select` component, allowing usage of full React components for option rendering.
+- **@smilodon/vue**: Added `customRenderer` prop to `Select` component, allowing usage of full Vue components for option rendering.
+
+## [1.3.10] - 2026-02-13
 - Performance runbook for repeatable manual profiling (`docs/PERFORMANCE-RUNBOOK.md`).
 - Playground performance scenarios for 100K and 1M datasets, plus FPS overlay and auto-logging utilities.
 - Option B custom `optionRenderer` support in `enhanced-select`, exposed through React/Vue/Svelte wrappers and documented usage examples.

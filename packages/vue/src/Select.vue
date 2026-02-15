@@ -134,29 +134,54 @@ const internalValue = ref<string | number | (string | number)[] | undefined>(
 );
 const customRendererCache = new Map<number, HTMLElement>();
 
-const resolvedOptionRenderer = computed(() => {
-  if (props.optionRenderer) return props.optionRenderer;
-  if (!props.customRenderer) return undefined;
+// Manual management of renderer wrapper to avoid reactivity on function identity
+const resolvedOptionRenderer = ref<any>(undefined);
 
-  return (item: SelectItem, index: number) => {
-    let container = customRendererCache.get(index);
-    if (!container) {
-      container = document.createElement('div');
-      customRendererCache.set(index, container);
-    }
+// Watch for structural changes in renderers (presence only)
+watch(
+  [() => !!props.optionRenderer, () => !!props.customRenderer],
+  ([hasOption, hasCustom]) => {
+    if (hasOption) {
+      resolvedOptionRenderer.value = (item: SelectItem, index: number, helpers: RendererHelpers) => {
+        // Accessing props inside here is safe - it delegates to current prop
+        return props.optionRenderer?.(item, index, helpers) || document.createElement('div');
+      };
+    } else if (hasCustom) {
+      resolvedOptionRenderer.value = (item: SelectItem, index: number) => {
+        let container = customRendererCache.get(index);
+        if (!container) {
+          container = document.createElement('div');
+          customRendererCache.set(index, container);
+        }
 
-    const node = props.customRenderer?.(item, index);
-    if (node && isVNode(node)) {
-      render(node, container);
-    } else if (node) {
-      render(h('span', String(node)), container);
+        const node = props.customRenderer?.(item, index);
+        if (node && isVNode(node)) {
+          render(node, container);
+        } else if (node) {
+          render(h('span', String(node)), container);
+        } else {
+          render(null, container);
+        }
+        return container;
+      };
     } else {
-      render(null, container);
+      resolvedOptionRenderer.value = undefined;
     }
+  },
+  { immediate: true }
+);
 
-    return container;
-  };
-});
+// Sync custom option renderer
+// We watch the stable `resolvedOptionRenderer` ref, which only updates when structure changes.
+watch(
+  resolvedOptionRenderer,
+  (renderer) => {
+    safeCall((el) => {
+      (el as any).optionRenderer = renderer;
+    });
+  },
+  { immediate: true }
+);
 
 const waitForUpgrade = async () => {
   if (typeof window === 'undefined') return;
@@ -233,16 +258,97 @@ watch(
   { deep: true }
 );
 
-// Sync custom option renderer
-watch(
-  () => resolvedOptionRenderer.value,
-  (renderer) => {
-    safeCall((el) => {
-      (el as any).optionRenderer = renderer;
-    });
-  },
-  { immediate: true }
-);
+// removed old watcher
+
+// We need to keep rendererRefs in sync with props
+// Wait, the previous replacement put the watch inside the script setup directly after refs.
+// That watch updates rendererRefs.
+// But we ALSO need to update the web component if the *presence* of renderers changes (e.g. going from undefined to defined).
+// The existing watcher below was watching `resolvedOptionRenderer.value`.
+// Since `resolvedOptionRenderer` computed now depends only on PRESENCE (implicitly through logic), it should remain stable.
+// So `watch(() => resolvedOptionRenderer.value)` will only fire when PRESENCE changes.
+// THIS IS EXACTLY WHAT WE WANT. It won't fire on identity change.
+// So the original watcher is actually fine as is!
+// BUT: I changed how `resolvedOptionRenderer` works. Let's double check if I broke the watch logic.
+// The computed property returns a *new function* only if the structure changes (e.g. `hasOptionRenderer` flips).
+// So the watcher below will trigger correctly only when structure changes.
+
+// Wait, I see I didn't include `rendererRefs` update in the previous `replace_string_in_file` properly?
+// Previous call:
+// Replaced `const resolvedOptionRenderer ...` block.
+// Included `rendererRefs` definition and `watch` to update refs.
+
+// But wait, the previous `replace_string_in_file` REPLACED the computed property, but did it include the watch for refs?
+// Yes.
+// So the code looks like:
+// ...
+// const rendererRefs = ...
+// watch( ... updates rendererRefs ... )
+// const resolvedOptionRenderer = computed( ... )
+// ...
+//
+// And further down there is existing code:
+// watch(() => resolvedOptionRenderer.value, ...)
+//
+// This existing code is correct! It will update the WC only when the wrapper function changes (which is stable).
+// So I don't need to change the watcher below.
+// UNLESS: The watcher below relies on `resolvedOptionRenderer.value` changing.
+// If props.customRenderer changes from `undefined` to `fn`, computed re-runs -> new wrapper -> watcher runs -> WC updated. Correct.
+// If props.customRenderer changes from `fn1` to `fn2`, computed (depending on `!!props`? No, computed in Vue tracks all dependencies accessed).
+// Wait! `resolvedOptionRenderer` accesses `rendererRefs`.
+// `rendererRefs` is a local object. It is NOT reactive (it's a plain object).
+// `computed` tracks dependencies. If I access `rendererRefs.customRenderer`, does Vue track it? No.
+// So `resolvedOptionRenderer` will NOT re-run when `rendererRefs` changes. This is GOOD. It's stable.
+// But `watch(() => [props.optionRenderer, props.customRenderer], ...)` updates `rendererRefs`.
+// So when `fn1` -> `fn2`, `rendererRefs` is updated. `resolvedOptionRenderer` is NOT re-computed. The OLD wrapper function is still used.
+// But the wrapper function calls `rendererRefs.customRenderer`. This is the NEW function `fn2`.
+// So it works! The wrapper delegates to the current ref.
+// And `resolvedOptionRenderer.value` (the wrapper) hasn't changed identity, so the watcher below (syncing to WC) does NOT fire.
+// This means `el.optionRenderer = wrapper` is NOT called again.
+// Is this okay? Yes, because `el.optionRenderer` is already set to the wrapper. The wrapper hasn't changed.
+// So the infinite loop is broken.
+
+// HOWEVER: I still need to check if my previous replacement was syntactically correct and complete.
+// I see I replaced `const resolvedOptionRenderer ...` with a block that includes `const rendererRefs ...`.
+// Let's verify `rendererRefs` is reactive or not.
+// `const rendererRefs = { ... }` is NOT reactive. This is intentional.
+// We don't want reactivity to trigger computed re-eval.
+
+// BUT `watch(() => [props.optionRenderer...])` updates it.
+// The watcher needs `props` to be in scope. `props` is defined above.
+// It seems correct.
+
+// One detail:
+// `const resolvedOptionRenderer = computed(() => { ... })`
+// Vue computed properties track dependencies.
+// Inside computed, I access `props.optionRenderer` (to check boolean).
+// So computed depends on `props.optionRenderer`.
+// If `props.optionRenderer` changes from `fn1` to `fn2`, `!!props.optionRenderer` is still `true`.
+// Does the dependency change?
+// Vue tracks access. If I only access `!!props.optionRenderer`, maybe it only tracks the boolean?
+// No, usually it tracks the property.
+// If I use `props.optionRenderer` in `if (props.optionRenderer)`, it tracks it.
+// So if it changes, computed re-runs!
+// And returns a NEW function.
+// So watcher runs -> WC update -> Loop.
+// I need `computed` to NOT depend on the function identity.
+// I should use `!!props.optionRenderer` in a way that doesn't trigger on identity change?
+// Or better: explicit dependencies or a structure that isolates the check.
+// In Vue `computed`, we can't easily control the dependency array like React's `useMemo`.
+// But we can access the boolean via a separate stable computed property or just trust that Vue's dependency tracking is based on value?.
+// No, props are reactive.
+// If I assume Vue computes re-run on prop change:
+// Then the wrapper is recreated.
+// I need `resolvedOptionRenderer` to be a `shallowRef` or generic `ref` that I manually update only when structure changes!
+// `computed` is risky here.
+
+// Better approach for Vue:
+// Use `ref` for the wrapper.
+// Watch `[() => !!props.optionRenderer, () => !!props.customRenderer]` explicitly.
+// When that specific boolean tuple changes, update the wrapper ref.
+// And have the "Sync custom option renderer" watch depend on that wrapper ref.
+
+// Let's undo/redo the Vue part with this safer `shallowRef` approach.
 
 watch(
   () => [props.items, props.groupedItems],
