@@ -62,6 +62,7 @@ export class EnhancedSelect extends HTMLElement {
   private _rangeAnchorIndex: number | null = null;
   private _optionRenderer?: OptionRendererFn;
   private _rendererHelpers: RendererHelpers;
+  private _customOptionBoundElements = new WeakSet<HTMLElement>();
 
   public classMap?: ClassMap;
 
@@ -2150,25 +2151,34 @@ export class EnhancedSelect extends HTMLElement {
       optionEl.tabIndex = -1;
     }
 
-    if (!meta.disabled) {
+    if (!this._customOptionBoundElements.has(optionEl)) {
       optionEl.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent duplicate handling by delegation
+        e.stopPropagation();
+        const current = e.currentTarget as HTMLElement;
+        if (current.getAttribute('aria-disabled') === 'true') return;
+        const parsedIndex = Number(current.dataset.index);
+        if (!Number.isFinite(parsedIndex)) return;
         const mouseEvent = e as MouseEvent;
-        this._selectOption(meta.index, {
+        this._selectOption(parsedIndex, {
           shiftKey: mouseEvent.shiftKey,
           toggleKey: mouseEvent.ctrlKey || mouseEvent.metaKey,
         });
       });
 
       optionEl.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this._selectOption(meta.index, {
-            shiftKey: e.shiftKey,
-            toggleKey: e.ctrlKey || e.metaKey,
-          });
-        }
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const current = e.currentTarget as HTMLElement;
+        if (current.getAttribute('aria-disabled') === 'true') return;
+        const parsedIndex = Number(current.dataset.index);
+        if (!Number.isFinite(parsedIndex)) return;
+        e.preventDefault();
+        this._selectOption(parsedIndex, {
+          shiftKey: e.shiftKey,
+          toggleKey: e.ctrlKey || e.metaKey,
+        });
       });
+
+      this._customOptionBoundElements.add(optionEl);
     }
 
     return optionEl;

@@ -68,4 +68,35 @@ describe('EnhancedSelect optionRenderer', () => {
     expect(refreshedSecond?.classList.contains('smilodon-option--selected')).toBe(false);
     expect(refreshedSecond?.classList.contains('selected')).toBe(false);
   });
+
+  it('does not duplicate click handlers when renderer reuses elements across re-renders', async () => {
+    const cache = new Map<number, HTMLElement>();
+    const renderer = vi.fn((item: any, index: number) => {
+      let option = cache.get(index);
+      if (!option) {
+        option = document.createElement('div');
+        cache.set(index, option);
+      }
+      option.textContent = `cached-${item.label ?? item}`;
+      return option;
+    });
+
+    const changeSpy = vi.fn();
+    el.addEventListener('change', changeSpy);
+
+    el.optionRenderer = renderer;
+    el.setItems([{ label: 'Alpha', value: 'a' }]);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    (el as any)._renderOptions();
+    (el as any)._renderOptions();
+    (el as any)._renderOptions();
+
+    const option = el.shadowRoot?.querySelector('[data-index="0"]') as HTMLElement | null;
+    option?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(changeSpy).toHaveBeenCalledTimes(1);
+    expect(el.getSelectedValues()).toEqual(['a']);
+  });
 });
