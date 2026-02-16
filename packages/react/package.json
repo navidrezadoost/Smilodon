@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "React adapter for @smilodon/core - Production-ready accessible select component (React, Vue, Svelte, Vanilla JS)",
   "type": "module",
   "main": "./dist/index.cjs",

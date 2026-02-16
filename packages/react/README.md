@@ -34,6 +34,45 @@ The complete guide includes:
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
 - ✅ **Tiny Bundle** - Optimized for production
 
+## Infinite Render Loop: Root-Cause Review (No External Dependencies)
+
+If you see `Maximum update depth exceeded`, follow this checklist before shipping:
+
+1. **Controlled sync effects**
+  - Review every `useEffect` that syncs `value` into the custom element.
+  - Only call `setSelectedValues` when incoming values are actually different from current selected values.
+
+2. **Uncontrolled default sync**
+  - Apply `defaultValue` once on initialization.
+  - Do not re-apply default selection on every re-render.
+
+3. **Renderer stability**
+  - `customRenderer` / `optionRenderer` may be inline.
+  - Adapter logic must avoid re-initializing selection state just because function references changed.
+
+4. **Parent computed arrays**
+  - For multi-select, memoize computed arrays in parent code when possible:
+
+```tsx
+const selectedIds = useMemo(() => items.map(i => i.id), [items]);
+<Select multiple value={selectedIds} onChange={...} />
+```
+
+### Minimum Regression Test Matrix
+
+Run and keep these scenarios green in `packages/react/tests/infinite-render.spec.tsx`:
+
+- Controlled single-select + inline `customRenderer` + `onChange` state update.
+- Controlled multi-select with a new array reference every render.
+- Uncontrolled mode with `defaultValue` and repeated parent re-renders.
+- Inline DOM `optionRenderer` under repeated parent renders.
+
+Run focused tests:
+
+```bash
+npx vitest run packages/react/tests/infinite-render.spec.tsx --config packages/react/vitest.config.ts
+```
+
 ## Installation
 
 ```bash

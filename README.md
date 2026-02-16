@@ -300,6 +300,13 @@ npm install @smilodon/core
 
 ## Chapter 6 — Testing & Quality Gates
 
+### Recent Stability Update (React)
+
+- **Issue #317 fixed:** React adapter no longer enters update-depth loops when controlled values are re-created by reference across renders.
+- **Root fix:** value sync now updates only when effective selected values differ; uncontrolled `defaultValue` is initialized once.
+- **Regression safety:** focused loop-prevention scenarios live in `packages/react/tests/infinite-render.spec.tsx` and are kept green in CI/local checks.
+- **Test clarity:** known React nested-root `act(...)` warning noise is filtered in React test config only, with no production/runtime impact.
+
 | Suite | Status | Notes |
 | --- | --- | --- |
 | Unit (Vitest) | 76 / 76 ✅ | Snapshot + behavior tests |

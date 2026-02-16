@@ -15,6 +15,22 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **#317 (React):** Resolved `Maximum update depth exceeded` loop in controlled and uncontrolled sync paths.
+  - Guarded value synchronization to call `setSelectedValues` only when effective values differ.
+  - Applied uncontrolled `defaultValue` initialization once via ref-based gate.
+  - Hardened custom renderer cleanup timing to avoid synchronous unmount collisions.
+
+### Testing
+- Added focused React regression coverage for infinite-loop prevention:
+  - Controlled single-select with inline `customRenderer`.
+  - Controlled multi-select with new value array reference every render.
+  - Uncontrolled mode with `defaultValue` under repeated parent re-renders.
+  - Inline `optionRenderer` under repeated re-renders.
+- Added React Vitest console filtering for known nested-root `act(...)` warning noise in test environment only.
+
 ## [1.4.0] - 2026-02-15
 
 ### Fixed
