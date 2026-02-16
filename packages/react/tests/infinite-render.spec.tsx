@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Select } from '../src/index';
+import type { SelectItem } from '../src/index';
 
 describe('Infinite Loop Protection', () => {
   it('should not cause infinite re-renders with inline optionRenderer', async () => {
@@ -69,7 +70,7 @@ describe('Infinite Loop Protection', () => {
       );
     };
 
-    let container: HTMLElement;
+    let container!: HTMLElement;
     await act(async () => {
       ({ container } = render(<TestComponent />));
       await Promise.resolve();
@@ -87,11 +88,12 @@ describe('Infinite Loop Protection', () => {
   it('should not loop in controlled single-select with inline customRenderer', async () => {
     const renderSpy = vi.fn();
 
-    interface LanguageItem {
+    interface LanguageItem extends SelectItem {
       value: string;
       label: string;
       icon: string;
       description: string;
+      [key: string]: unknown;
     }
 
     const languages: LanguageItem[] = [
@@ -109,13 +111,16 @@ describe('Infinite Loop Protection', () => {
           items={languages}
           value={lang}
           onChange={(val) => setLang(val as string)}
-          customRenderer={(item: LanguageItem) => (
-            <div>
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-              <span>{item.description}</span>
-            </div>
-          )}
+          customRenderer={(item) => {
+            const language = item as LanguageItem;
+            return (
+              <div>
+                <span>{language.icon}</span>
+                <span>{language.label}</span>
+                <span>{language.description}</span>
+              </div>
+            );
+          }}
           placeholder="Select a language..."
         />
       );
