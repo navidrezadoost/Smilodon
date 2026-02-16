@@ -246,7 +246,22 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   const elementRef = useRef<any>(null);
   const [isControlled] = useState(value !== undefined);
   const [internalValue, setInternalValue] = useState(defaultValue);
+  const hasAppliedInitialValueRef = useRef(false);
   const reactRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
+
+  const areValuesEqual = useCallback((nextValues: Array<string | number>, currentValues: Array<string | number>) => {
+    if (nextValues.length !== currentValues.length) return false;
+    return nextValues.every((value, index) => value === currentValues[index]);
+  }, []);
+
+  const scheduleRootUnmount = useCallback((root: Root) => {
+    if (typeof queueMicrotask === 'function') {
+      queueMicrotask(() => root.unmount());
+      return;
+    }
+
+    Promise.resolve().then(() => root.unmount());
+  }, []);
 
   // Use refs for renderers to avoid reconstructing the wrapper function on every render
   const customRendererRef = useRef(customRenderer ?? renderItem);
@@ -299,10 +314,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   useEffect(() => {
     return () => {
-      reactRendererCache.current.forEach(({ root }) => root.unmount());
+      reactRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
       reactRendererCache.current.clear();
     };
-  }, []);
+  }, [scheduleRootUnmount]);
 
   useEffect(() => {
     const totalItems = groupedItems
@@ -311,11 +326,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     reactRendererCache.current.forEach((entry, index) => {
       if (index >= totalItems) {
-        entry.root.unmount();
+        scheduleRootUnmount(entry.root);
         reactRendererCache.current.delete(index);
       }
     });
-  }, [items, groupedItems]);
+  }, [items, groupedItems, scheduleRootUnmount]);
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
@@ -385,11 +400,14 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.classMap = undefined;
     }
 
-    // Set initial value
-    const currentValue = isControlled ? value : internalValue;
-    if (currentValue !== undefined) {
-      const values = Array.isArray(currentValue) ? currentValue : [currentValue];
-      element.setSelectedValues(values);
+    // Set initial uncontrolled value only once
+    if (!isControlled && !hasAppliedInitialValueRef.current && internalValue !== undefined) {
+      const values = Array.isArray(internalValue) ? internalValue : [internalValue];
+      const currentValues = element.getSelectedValues?.() || [];
+      if (!areValuesEqual(values, currentValues)) {
+        element.setSelectedValues(values);
+      }
+      hasAppliedInitialValueRef.current = true;
     }
 
     // Set error state
@@ -403,7 +421,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, value, internalValue, isControlled, resolvedOptionRenderer]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -424,9 +442,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     
     if (value !== undefined) {
       const values = Array.isArray(value) ? value : [value];
-      element.setSelectedValues(values);
+      const currentValues = element.getSelectedValues?.() || [];
+      if (!areValuesEqual(values, currentValues)) {
+        element.setSelectedValues(values);
+      }
     }
-  }, [value, isControlled, isElementReady]);
+  }, [value, isControlled, isElementReady, areValuesEqual]);
 
   // Update config when props change
   useEffect(() => {
