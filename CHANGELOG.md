@@ -17,6 +17,20 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-02-17
+
+### Fixed
+- **#7 (Styling):** Custom option renderer fully supports class-based styling (Tailwind and regular CSS) without inline-style-only limitations.
+  - Core mirrors document stylesheets into the component shadow root when custom option rendering is enabled.
+  - Applies across adapters because rendering is resolved in `@smilodon/core`.
+- **#8 (Styling):** Restored support for legacy theme attributes used in docs/examples.
+  - Added compatibility aliases for `--select-border-color`, `--select-border-focus-color`, `--select-bg`, `--select-text-color`, and `--select-placeholder-color`.
+  - Updated dropdown border handling so color tokens like `--select-dropdown-border: #e2e8f0;` apply correctly.
+
+### Testing
+- Added core regression tests for stylesheet mirroring and legacy `--select-*` CSS variable compatibility.
+- Restored contract test environment mock for `scrollIntoView` in JSDOM.
+
 ## [1.4.2] - 2026-02-17
 
 ### Fixed
