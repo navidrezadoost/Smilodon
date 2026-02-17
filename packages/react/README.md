@@ -841,6 +841,8 @@ function TaskSelect() {
 }
 
 // Example 5: Using Tailwind CSS (if available)
+// Note: Tailwind/CSS classes in customRenderer are supported inside Select options.
+// Core mirrors document stylesheets into shadow DOM for custom option rendering.
 interface Tag extends SelectItem {
   color: string;
   count: number;

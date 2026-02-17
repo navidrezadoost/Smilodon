@@ -443,6 +443,8 @@ select.addEventListener('option:custom-event', (e: CustomEvent) => {
 
 ## Styling Custom Options
 
+When using `optionRenderer`/custom option components, Smilodon mirrors document stylesheets into the component shadow root so class-based styling (Tailwind and regular CSS) applies to custom option content.
+
 ```css
 /* Style lightweight options */
 .option {

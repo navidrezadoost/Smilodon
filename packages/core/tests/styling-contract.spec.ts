@@ -163,4 +163,43 @@ describe('EnhancedSelect Styling Contract', () => {
                          
         expect(hasClass).toBe(true);
     });
+
+    it('mirrors global document styles for custom option renderer', async () => {
+        const globalStyle = document.createElement('style');
+        globalStyle.textContent = '.tw-custom-option { color: rgb(255, 0, 0); }';
+        document.head.appendChild(globalStyle);
+
+        const item = { value: 'val1', label: 'Item 1' };
+        (el as any)._state.loadedItems = [item];
+
+        el.optionRenderer = (renderItem: any) => {
+            const div = document.createElement('div');
+            div.className = 'tw-custom-option';
+            div.textContent = renderItem.label;
+            return div;
+        };
+
+        (el as any)._renderOptions();
+
+        const mirroredStyle = el.shadowRoot!.querySelector('style[data-smilodon-global-style]') as HTMLStyleElement | null;
+        expect(mirroredStyle).toBeTruthy();
+        expect(mirroredStyle?.textContent).toContain('.tw-custom-option');
+
+        const customOption = el.shadowRoot!.querySelector('.tw-custom-option') as HTMLElement | null;
+        expect(customOption).toBeTruthy();
+
+        globalStyle.remove();
+    });
+
+    it('supports legacy --select-* CSS variable aliases', async () => {
+        const styleTag = el.shadowRoot!.querySelector('style');
+        expect(styleTag).toBeTruthy();
+
+        const cssText = styleTag?.textContent || '';
+        expect(cssText).toContain('var(--select-input-bg, var(--select-bg, white))');
+        expect(cssText).toContain('var(--select-input-focus-border, var(--select-border-focus-color, #667eea))');
+        expect(cssText).toContain('var(--select-input-color, var(--select-text-color, #1f2937))');
+        expect(cssText).toContain('var(--select-input-placeholder-color, var(--select-placeholder-color, #9ca3af))');
+        expect(cssText).toContain('border: 1px solid var(--select-dropdown-border, #ccc)');
+    });
 });

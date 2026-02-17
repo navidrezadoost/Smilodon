@@ -15,6 +15,8 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
+> **Latest (v1.4.2):** Full Tailwind/CSS support for custom option renderers and restored legacy `--select-*` style attribute compatibility.
+
 ---
 
 ## Table of Contents

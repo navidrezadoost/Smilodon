@@ -63,6 +63,9 @@ export class EnhancedSelect extends HTMLElement {
   private _optionRenderer?: OptionRendererFn;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
+  private _mirrorGlobalStylesForCustomOptions = false;
+  private _globalStylesObserver: MutationObserver | null = null;
+  private _globalStylesContainer: HTMLElement | null = null;
 
   public classMap?: ClassMap;
 
@@ -119,6 +122,10 @@ export class EnhancedSelect extends HTMLElement {
     // Must be done in connectedCallback when element is attached to DOM
     this.style.display = 'block';
     this.style.width = '100%';
+
+    if (this._optionRenderer) {
+      this._setGlobalStylesMirroring(true);
+    }
     
     // Load initial data if server-side is enabled
     if (this._config.serverSide.enabled && this._config.serverSide.initialSelectedValues) {
@@ -143,6 +150,97 @@ export class EnhancedSelect extends HTMLElement {
     if (this._boundArrowClick && this._arrowContainer) {
       this._arrowContainer.removeEventListener('click', this._boundArrowClick);
     }
+
+    this._teardownGlobalStylesMirroring();
+  }
+
+  private _setGlobalStylesMirroring(enabled: boolean): void {
+    if (this._mirrorGlobalStylesForCustomOptions === enabled) {
+      if (enabled) {
+        this._mirrorDocumentStylesIntoShadow();
+      }
+      return;
+    }
+
+    this._mirrorGlobalStylesForCustomOptions = enabled;
+
+    if (enabled) {
+      this._setupGlobalStylesMirroring();
+    } else {
+      this._teardownGlobalStylesMirroring();
+    }
+  }
+
+  private _setupGlobalStylesMirroring(): void {
+    if (typeof document === 'undefined') return;
+    if (!this._mirrorGlobalStylesForCustomOptions) return;
+
+    this._mirrorDocumentStylesIntoShadow();
+
+    if (this._globalStylesObserver) return;
+
+    this._globalStylesObserver = new MutationObserver(() => {
+      this._mirrorDocumentStylesIntoShadow();
+    });
+
+    this._globalStylesObserver.observe(document.head, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+    });
+  }
+
+  private _teardownGlobalStylesMirroring(): void {
+    if (this._globalStylesObserver) {
+      this._globalStylesObserver.disconnect();
+      this._globalStylesObserver = null;
+    }
+
+    if (this._globalStylesContainer) {
+      this._globalStylesContainer.remove();
+      this._globalStylesContainer = null;
+    }
+  }
+
+  private _mirrorDocumentStylesIntoShadow(): void {
+    if (typeof document === 'undefined') return;
+    if (!this._mirrorGlobalStylesForCustomOptions) return;
+
+    if (!this._globalStylesContainer) {
+      this._globalStylesContainer = document.createElement('div');
+      this._globalStylesContainer.setAttribute('data-smilodon-global-styles', '');
+      this._shadow.appendChild(this._globalStylesContainer);
+    }
+
+    const container = this._globalStylesContainer;
+    container.innerHTML = '';
+
+    const styleNodes = Array.from(document.querySelectorAll('style,link[rel="stylesheet"]'));
+
+    styleNodes.forEach((node, index) => {
+      if (node instanceof HTMLStyleElement) {
+        const clonedStyle = document.createElement('style');
+        clonedStyle.setAttribute('data-smilodon-global-style', String(index));
+        clonedStyle.textContent = node.textContent || '';
+        container.appendChild(clonedStyle);
+        return;
+      }
+
+      if (node instanceof HTMLLinkElement && node.href) {
+        const clonedLink = document.createElement('link');
+        clonedLink.rel = 'stylesheet';
+        clonedLink.href = node.href;
+        if (node.media) clonedLink.media = node.media;
+        if (node.crossOrigin) clonedLink.crossOrigin = node.crossOrigin;
+        if (node.referrerPolicy) clonedLink.referrerPolicy = node.referrerPolicy;
+        if (node.integrity) clonedLink.integrity = node.integrity;
+        if (node.type) clonedLink.type = node.type;
+        if (node.nonce) clonedLink.nonce = node.nonce;
+        clonedLink.setAttribute('data-smilodon-global-link', String(index));
+        container.appendChild(clonedLink);
+      }
+    });
   }
 
   private _createContainer(): HTMLElement {
@@ -303,15 +401,15 @@ export class EnhancedSelect extends HTMLElement {
         max-height: var(--select-input-max-height, 160px);
         overflow-y: var(--select-input-overflow-y, auto);
         align-content: flex-start;
-        background: var(--select-input-bg, white);
-        border: var(--select-input-border, 1px solid #d1d5db);
+        background: var(--select-input-bg, var(--select-bg, white));
+        border: var(--select-input-border, 1px solid var(--select-border-color, #d1d5db));
         border-radius: var(--select-input-border-radius, 6px);
         box-sizing: border-box;
         transition: all 0.2s ease;
       }
       
       .input-container:focus-within {
-        border-color: var(--select-input-focus-border, #667eea);
+        border-color: var(--select-input-focus-border, var(--select-border-focus-color, #667eea));
         box-shadow: var(--select-input-focus-shadow, 0 0 0 3px rgba(102, 126, 234, 0.1));
       }
       
@@ -381,7 +479,7 @@ export class EnhancedSelect extends HTMLElement {
         border: none;
         font-size: var(--select-input-font-size, 14px);
         line-height: var(--select-input-line-height, 1.5);
-        color: var(--select-input-color, #1f2937);
+        color: var(--select-input-color, var(--select-text-color, #1f2937));
         background: transparent;
         box-sizing: border-box;
         outline: none;
@@ -389,7 +487,7 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .select-input::placeholder {
-        color: var(--select-input-placeholder-color, #9ca3af);
+        color: var(--select-input-placeholder-color, var(--select-placeholder-color, #9ca3af));
       }
       
       .selection-badge {
@@ -450,8 +548,8 @@ export class EnhancedSelect extends HTMLElement {
         margin-top: var(--select-dropdown-margin-top, 4px);
         max-height: var(--select-dropdown-max-height, 300px);
         overflow: hidden;
-        background: var(--select-dropdown-bg, white);
-        border: var(--select-dropdown-border, 1px solid #ccc);
+        background: var(--select-dropdown-bg, var(--select-bg, white));
+        border: 1px solid var(--select-dropdown-border, #ccc);
         border-radius: var(--select-dropdown-border-radius, 4px);
         box-shadow: var(--select-dropdown-shadow, 0 4px 6px rgba(0,0,0,0.1));
         z-index: var(--select-dropdown-z-index, 1000);
@@ -462,14 +560,14 @@ export class EnhancedSelect extends HTMLElement {
         max-height: var(--select-options-max-height, 300px);
         overflow: auto;
         transition: opacity 0.2s ease-in-out;
-        background: var(--select-options-bg, white);
+        background: var(--select-options-bg, var(--select-dropdown-bg, var(--select-bg, white)));
       }
 
       .option {
         padding: var(--select-option-padding, 8px 12px);
         cursor: pointer;
-        color: var(--select-option-color, #1f2937);
-        background: var(--select-option-bg, white);
+        color: var(--select-option-color, var(--select-text-color, #1f2937));
+        background: var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white)));
         transition: var(--select-option-transition, background-color 0.15s ease);
         user-select: none;
         font-size: var(--select-option-font-size, 14px);
@@ -1605,6 +1703,7 @@ export class EnhancedSelect extends HTMLElement {
 
   set optionRenderer(renderer: OptionRendererFn | undefined) {
     this._optionRenderer = renderer;
+    this._setGlobalStylesMirroring(Boolean(renderer));
     this._renderOptions();
   }
   
