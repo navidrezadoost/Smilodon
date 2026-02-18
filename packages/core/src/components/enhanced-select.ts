@@ -61,13 +61,24 @@ export class EnhancedSelect extends HTMLElement {
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
   private _optionRenderer?: OptionRendererFn;
+  private _classMap?: ClassMap;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
   private _mirrorGlobalStylesForCustomOptions = false;
   private _globalStylesObserver: MutationObserver | null = null;
   private _globalStylesContainer: HTMLElement | null = null;
 
-  public classMap?: ClassMap;
+  get classMap(): ClassMap | undefined {
+    return this._classMap;
+  }
+
+  set classMap(map: ClassMap | undefined) {
+    this._classMap = map;
+    this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map));
+
+    if (!this.isConnected) return;
+    this._renderOptions();
+  }
 
   constructor() {
     super();
@@ -574,6 +585,9 @@ export class EnhancedSelect extends HTMLElement {
         line-height: var(--select-option-line-height, 1.5);
         border: var(--select-option-border, none);
         border-bottom: var(--select-option-border-bottom, none);
+        border-radius: var(--select-option-border-radius, 0);
+        box-shadow: var(--select-option-shadow, none);
+        transform: var(--select-option-transform, none);
       }
 
       .option:hover {
@@ -585,6 +599,20 @@ export class EnhancedSelect extends HTMLElement {
         background-color: var(--select-option-selected-bg, #e0e7ff);
         color: var(--select-option-selected-color, #4338ca);
         font-weight: var(--select-option-selected-weight, 500);
+        border: var(--select-option-selected-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
+        border-radius: var(--select-option-selected-border-radius, var(--select-option-border-radius, 0));
+        box-shadow: var(--select-option-selected-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-selected-transform, var(--select-option-transform, none));
+      }
+
+      .option.selected:hover {
+        background-color: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e0e7ff));
+        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #4338ca));
+        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
+        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+        box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
+        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
       }
 
       .option.active {
@@ -742,6 +770,19 @@ export class EnhancedSelect extends HTMLElement {
         .option.selected {
           background-color: var(--select-dark-option-selected-bg, #3730a3);
           color: var(--select-dark-option-selected-text, #e0e7ff);
+          border: var(--select-dark-option-selected-border, var(--select-option-selected-border, var(--select-option-border, none)));
+          border-bottom: var(--select-dark-option-selected-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+          box-shadow: var(--select-dark-option-selected-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
+          transform: var(--select-dark-option-selected-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+        }
+
+        .option.selected:hover {
+          background-color: var(--select-dark-option-selected-hover-bg, var(--select-dark-option-selected-bg, #3730a3));
+          color: var(--select-dark-option-selected-hover-color, var(--select-dark-option-selected-text, #e0e7ff));
+          border: var(--select-dark-option-selected-hover-border, var(--select-dark-option-selected-border, var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)))));
+          border-bottom: var(--select-dark-option-selected-hover-border-bottom, var(--select-dark-option-selected-border-bottom, var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)))));
+          box-shadow: var(--select-dark-option-selected-hover-shadow, var(--select-dark-option-selected-shadow, var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)))));
+          transform: var(--select-dark-option-selected-hover-transform, var(--select-dark-option-selected-transform, var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)))));
         }
         
         .option.active {
@@ -1421,6 +1462,11 @@ export class EnhancedSelect extends HTMLElement {
     
     const item = this._state.loadedItems[index];
     if (!item) return;
+
+    // Keep active/focus styling aligned with the most recently interacted option.
+    // Without this, a previously selected item may retain active classes/styles
+    // after selecting a different option.
+    this._state.activeIndex = index;
     
     const isCurrentlySelected = this._state.selectedIndices.has(index);
     
@@ -1703,7 +1749,7 @@ export class EnhancedSelect extends HTMLElement {
 
   set optionRenderer(renderer: OptionRendererFn | undefined) {
     this._optionRenderer = renderer;
-    this._setGlobalStylesMirroring(Boolean(renderer));
+    this._setGlobalStylesMirroring(Boolean(renderer || this._classMap));
     this._renderOptions();
   }
   

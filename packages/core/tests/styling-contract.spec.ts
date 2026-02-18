@@ -164,6 +164,34 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(hasClass).toBe(true);
     });
 
+    it('ClassMap updates after initial render rerender selected classes and mirrors global styles', async () => {
+        const globalStyle = document.createElement('style');
+        globalStyle.textContent = '.late-map-selected { border: 2px solid rgb(0, 128, 0); }';
+        document.head.appendChild(globalStyle);
+
+        const item = { value: 'val1', label: 'Item 1' };
+        (el as any)._state.loadedItems = [item];
+        (el as any)._state.selectedIndices.add(0);
+        (el as any)._renderOptions();
+
+        el.classMap = {
+            selected: 'late-map-selected'
+        };
+
+        const option = el.shadowRoot!.querySelector('[part="option"]') as HTMLElement;
+        const innerContainer = option.shadowRoot!.querySelector('.option-container') as HTMLElement;
+
+        expect(innerContainer.classList.contains('late-map-selected')).toBe(true);
+        expect(innerContainer.classList.contains('selected')).toBe(false);
+        expect(innerContainer.classList.contains('sm-selected')).toBe(false);
+
+        const mirroredStyle = el.shadowRoot!.querySelector('style[data-smilodon-global-style]') as HTMLStyleElement | null;
+        expect(mirroredStyle).toBeTruthy();
+        expect(mirroredStyle?.textContent).toContain('.late-map-selected');
+
+        globalStyle.remove();
+    });
+
     it('mirrors global document styles for custom option renderer', async () => {
         const globalStyle = document.createElement('style');
         globalStyle.textContent = '.tw-custom-option { color: rgb(255, 0, 0); }';
@@ -201,5 +229,7 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(cssText).toContain('var(--select-input-color, var(--select-text-color, #1f2937))');
         expect(cssText).toContain('var(--select-input-placeholder-color, var(--select-placeholder-color, #9ca3af))');
         expect(cssText).toContain('border: 1px solid var(--select-dropdown-border, #ccc)');
+        expect(cssText).toContain('var(--select-option-selected-border, var(--select-option-border, none))');
+        expect(cssText).toContain('var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)))');
     });
 });

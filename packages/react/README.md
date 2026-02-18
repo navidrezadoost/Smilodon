@@ -1098,6 +1098,9 @@ enhanced-select {
   --select-option-hover-bg: #f3f4f6;
   --select-option-selected-bg: #eff6ff;
   --select-option-selected-color: #3b82f6;
+  --select-option-selected-border: 1px solid #3b82f6;
+  --select-option-selected-hover-bg: #dbeafe;
+  --select-option-selected-hover-border: 1px solid #2563eb;
 }
 ```
 

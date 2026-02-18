@@ -74,10 +74,15 @@ export class SelectOption extends HTMLElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 8px 12px;
+        padding: var(--select-option-padding, 8px 12px);
         cursor: pointer;
         user-select: none;
-        transition: background-color 0.2s ease;
+        transition: var(--select-option-transition, background-color 0.2s ease);
+        border: var(--select-option-border, none);
+        border-bottom: var(--select-option-border-bottom, none);
+        border-radius: var(--select-option-border-radius, 0);
+        box-shadow: var(--select-option-shadow, none);
+        transform: var(--select-option-transform, none);
       }
       
       .option-container:hover {
@@ -87,6 +92,20 @@ export class SelectOption extends HTMLElement {
       .option-container.selected {
         background-color: var(--select-option-selected-bg, #e3f2fd);
         color: var(--select-option-selected-color, #1976d2);
+        border: var(--select-option-selected-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
+        border-radius: var(--select-option-selected-border-radius, var(--select-option-border-radius, 0));
+        box-shadow: var(--select-option-selected-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-selected-transform, var(--select-option-transform, none));
+      }
+
+      .option-container.selected:hover {
+        background-color: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
+        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
+        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
+        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+        box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
+        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
       }
       
       .option-container.active {
