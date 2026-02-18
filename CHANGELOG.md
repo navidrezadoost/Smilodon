@@ -17,6 +17,24 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-02-18
+
+### Fixed
+- **#9 (Styling):** Selected option styling is now fully controllable, including border and selected-hover states.
+  - Added selected-state customization hooks for border, border-bottom, border-radius, shadow, and transform.
+  - Added selected+hover hooks (light and dark mode) so selected visuals can be overridden without fallback lock-in.
+- **Selection state transition:** Selecting a new option no longer leaves active styling on the previously selected option.
+  - Active state now follows the latest interacted option in single-select flows.
+- **Class map behavior:** `classMap` updates are now reactive after initial render.
+  - Updating `classMap` re-renders options and enables stylesheet mirroring for utility-class workflows (e.g., Tailwind in shadow DOM).
+
+### Testing
+- Added regression coverage to ensure active style moves to the newly selected option.
+- Added regression coverage for late `classMap` updates and selected border customization hooks.
+
+### Documentation
+- Updated root and package docs with the new selected-state CSS variables (`--select-option-selected-border`, `--select-option-selected-hover-*`).
+
 ## [1.4.3] - 2026-02-17
 
 ### Fixed

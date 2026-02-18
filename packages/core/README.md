@@ -560,6 +560,9 @@ enhanced-select {
   /* Selected state */
   --select-option-selected-bg: #e0e7ff;
   --select-option-selected-color: #4338ca;
+  --select-option-selected-border: 1px solid #4338ca;
+  --select-option-selected-hover-bg: #c7d2fe;
+  --select-option-selected-hover-border: 1px solid #3730a3;
   
   /* Active/focused state */
   --select-option-active-bg: #f3f4f6;
@@ -610,6 +613,9 @@ enhanced-select.dark-mode {
 --select-option-hover-color    /* Hover text color (#1f2937) */
 --select-option-selected-bg    /* Selected background (#e0e7ff) */
 --select-option-selected-color /* Selected text color (#4338ca) */
+--select-option-selected-border /* Selected border (inherits option border by default) */
+--select-option-selected-hover-bg /* Selected+hover background (inherits selected bg by default) */
+--select-option-selected-hover-border /* Selected+hover border (inherits selected border by default) */
 --select-option-active-bg      /* Active background (#f3f4f6) */
 --select-option-active-color   /* Active text color (#1f2937) */
 --select-dropdown-bg           /* Dropdown background (white) */

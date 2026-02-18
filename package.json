@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/monorepo",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Smilodon monorepo: high-performance select components for React, Vue, Svelte, and Web Components.",
   "private": true,
   "type": "module",

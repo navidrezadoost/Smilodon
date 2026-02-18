@@ -99,4 +99,39 @@ describe('EnhancedSelect optionRenderer', () => {
     expect(changeSpy).toHaveBeenCalledTimes(1);
     expect(el.getSelectedValues()).toEqual(['a']);
   });
+
+  it('moves active styling to the newly selected option in single-select mode', async () => {
+    el.optionRenderer = (item: any) => {
+      const div = document.createElement('div');
+      div.textContent = String(item.label);
+      return div;
+    };
+
+    const items = [
+      { label: 'Alpha', value: 'a' },
+      { label: 'Beta', value: 'b' },
+    ];
+
+    el.setItems(items);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Simulate initial state where first option is selected/active (e.g. after open)
+    (el as any)._state.selectedIndices = new Set([0]);
+    (el as any)._state.selectedItems = new Map([[0, items[0]]]);
+    (el as any)._state.activeIndex = 0;
+    (el as any)._renderOptions();
+
+    const second = el.shadowRoot?.querySelector('[data-index="1"]') as HTMLElement | null;
+    second?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    const firstAfter = el.shadowRoot?.querySelector('[data-index="0"]') as HTMLElement | null;
+    const secondAfter = el.shadowRoot?.querySelector('[data-index="1"]') as HTMLElement | null;
+
+    expect(el.getSelectedValues()).toEqual(['b']);
+    expect((el as any)._state.activeIndex).toBe(1);
+    expect(firstAfter?.classList.contains('active')).toBe(false);
+    expect(firstAfter?.classList.contains('smilodon-option--active')).toBe(false);
+    expect(secondAfter?.classList.contains('active')).toBe(true);
+    expect(secondAfter?.classList.contains('smilodon-option--active')).toBe(true);
+  });
 });

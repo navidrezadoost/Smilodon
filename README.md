@@ -15,7 +15,7 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
-> **Latest (v1.4.2):** Full Tailwind/CSS support for custom option renderers and restored legacy `--select-*` style attribute compatibility.
+> **Latest (v1.4.4):** Full selected-state styling control (including selected border/hover states), reactive classMap styling updates, and corrected active-style transition when selecting a new option.
 
 ---
 
