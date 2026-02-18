@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/vanilla",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Vanilla JavaScript helpers for Smilodon Select - part of the Smilodon UI toolkit",
   "type": "module",
   "main": "./dist/index.cjs",

@@ -7,6 +7,7 @@ export type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   RemoveEventDetail,
+  ClearEventDetail,
   ErrorEventDetail,
   PageLoadedEventDetail,
   GroupedItem,

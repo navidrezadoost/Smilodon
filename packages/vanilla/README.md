@@ -251,6 +251,35 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 });
 ```
 
+### Clear Control (Reset Selection/Search)
+
+```typescript
+import { createSelect } from '@smilodon/vanilla';
+
+const select = createSelect({
+  items: [
+    { value: 'js', label: 'JavaScript' },
+    { value: 'py', label: 'Python' },
+  ],
+  searchable: true,
+  clearable: true,
+  clearSelectionOnClear: true,
+  clearSearchOnClear: true,
+  clearAriaLabel: 'Clear selected and searched values',
+  clearIcon: '✕',
+  onClear: (detail) => console.log('cleared', detail),
+  style: {
+    '--select-clear-button-bg': 'rgba(0, 0, 0, 0.06)',
+    '--select-clear-button-hover-bg': 'rgba(0, 0, 0, 0.12)',
+    '--select-clear-button-color': '#374151',
+  } as any,
+});
+
+document.body.appendChild(select);
+```
+
+Styling hooks: `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` CSS variables.
+
 ### With Event Listeners
 
 ```typescript

@@ -80,6 +80,8 @@ The component exposes the following parts for styling:
 | `checkmark` | Icon | Selected check icon (if visible). |
 | `chip` | Chip | Selected item chip in multi-select (future). |
 | `chip-remove` | Button | Close button on a chip. |
+| `clear-button` | Button | Clear control button in input area (optional). |
+| `clear-icon` | Span | Icon/text content inside clear button. |
 | `no-results` | Div | Message when there are no results. |
 | `loading` | Div | The busy state/loader container. |
 | `popover` | Wrapper | The main dropdown wrapper. |
@@ -149,6 +151,25 @@ Since Tailwind is global and Shadow DOM encapsulates styles, use one of these pa
     }
     ```
 
+### Selected vs Active Priority (important)
+
+When a selected option is also active/focused (common with keyboard navigation), use the dedicated selected+active tokens to keep selected styling consistent:
+
+```css
+enhanced-select {
+  --select-option-selected-bg: #0016d8;
+  --select-option-selected-color: #ffffff;
+  --select-option-selected-border: 1px solid #00ffbf;
+
+  /* selected + active/focus state */
+  --select-option-selected-active-bg: #0016d8;
+  --select-option-selected-active-color: #ffffff;
+  --select-option-selected-active-border: 1px solid #00ffbf;
+}
+```
+
+> Border variables use CSS `border` shorthand, so color-only values like `#00ffbf` are not valid by themselves. Use `1px solid #00ffbf`.
+
 ---
 
 ## 4. Data Attributes API
@@ -187,4 +208,58 @@ const div = document.createElement('div');
 div.textContent = item.label;
 // Core adds: class="smilodon-option sm-selected ...", data-sm-state="selected", role="option", etc.
 return div;
+```
+
+---
+
+## 6. Clear Control (Selection/Search Reset)
+
+Enable the clear control from config:
+
+```js
+select.updateConfig({
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+    hideWhenEmpty: true,
+    ariaLabel: 'Clear selected and searched values',
+    icon: '✕'
+  }
+});
+```
+
+### Style tokens
+
+```css
+enhanced-select {
+  --select-input-padding-with-clear: 6px 84px 6px 8px;
+  --select-separator-position-with-clear: 72px;
+  --select-arrow-right-with-clear: 32px;
+
+  --select-clear-button-size: 24px;
+  --select-clear-button-right: 6px;
+  --select-clear-button-bg: transparent;
+  --select-clear-button-color: #6b7280;
+  --select-clear-button-hover-bg: rgba(0, 0, 0, 0.08);
+  --select-clear-button-hover-color: #111827;
+  --select-clear-button-border: none;
+  --select-clear-button-radius: 999px;
+  --select-clear-button-focus-outline: 2px solid rgba(102, 126, 234, 0.55);
+
+  --select-clear-icon-size: 16px;
+  --select-clear-icon-weight: 600;
+}
+```
+
+### Part selectors
+
+```css
+enhanced-select::part(clear-button) {
+  backdrop-filter: blur(4px);
+}
+
+enhanced-select::part(clear-icon) {
+  font-family: inherit;
+}
 ```

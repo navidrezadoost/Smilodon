@@ -103,6 +103,38 @@ const items: SelectItem[] = [
 </template>
 ```
 
+## Clear Control (Reset Selected/Search Value)
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref('');
+const items = [
+  { value: 'js', label: 'JavaScript' },
+  { value: 'py', label: 'Python' },
+  { value: 'rs', label: 'Rust' },
+];
+</script>
+
+<template>
+  <Select
+    :items="items"
+    v-model="value"
+    searchable
+    clearable
+    :clear-selection-on-clear="true"
+    :clear-search-on-clear="true"
+    clear-aria-label="Clear selected and searched values"
+    clear-icon="✕"
+    @clear="(detail) => console.log('cleared', detail)"
+  />
+</template>
+```
+
+Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
+
 ## Examples
 
 ### Basic Single Select

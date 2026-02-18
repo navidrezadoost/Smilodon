@@ -7,6 +7,7 @@ import type {
   SearchEventDetail,
   ChangeEventDetail,
   LoadMoreEventDetail,
+  ClearEventDetail,
   GroupedItem,
   RendererHelpers,
 } from '@smilodon/core';
@@ -75,6 +76,21 @@ export interface SelectProps {
   
   /** Dropdown placement */
   placement?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+
+  /** Enable clear control button inside input */
+  clearable?: boolean;
+
+  /** Clear selection when clear control is clicked */
+  clearSelectionOnClear?: boolean;
+
+  /** Clear search query when clear control is clicked */
+  clearSearchOnClear?: boolean;
+
+  /** ARIA label for clear control */
+  clearAriaLabel?: string;
+
+  /** Icon text for clear control */
+  clearIcon?: string;
   
   /** Custom CSS class name */
   className?: string;
@@ -123,6 +139,9 @@ export interface SelectProps {
   
   /** Called when more items are needed (infinite scroll) */
   onLoadMore?: (page: number) => void | Promise<void>;
+
+  /** Called when clear control is used */
+  onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
   
   /** Loading state for async operations */
   loading?: boolean;
@@ -225,6 +244,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     estimatedItemHeight = 48,
     maxSelections,
     placement = 'bottom-start',
+    clearable = false,
+    clearSelectionOnClear = true,
+    clearSearchOnClear = true,
+    clearAriaLabel,
+    clearIcon,
     className,
     style,
     renderItem,
@@ -237,6 +261,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onClose,
     onSearch,
     onLoadMore,
+    onClear,
     loading = false,
     creatable = false,
     onCreate,
@@ -389,6 +414,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         enabled: true,
       },
       creatable: creatable,
+      clearControl: {
+        enabled: clearable,
+        clearSelection: clearSelectionOnClear,
+        clearSearch: clearSearchOnClear,
+        ariaLabel: clearAriaLabel,
+        icon: clearIcon,
+      },
     };
 
     element.updateConfig(config);
@@ -421,7 +453,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -466,10 +498,17 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         enabled: infiniteScroll,
         pageSize: pageSize,
       },
+      clearControl: {
+        enabled: clearable,
+        clearSelection: clearSelectionOnClear,
+        clearSearch: clearSearchOnClear,
+        ariaLabel: clearAriaLabel,
+        icon: clearIcon,
+      },
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, isElementReady]);
+  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, isElementReady]);
 
   // Update error state
   useEffect(() => {
@@ -536,12 +575,20 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       onLoadMore?.(page);
     };
 
+    const handleClear = (e: CustomEvent<ClearEventDetail>) => {
+      onClear?.({
+        clearedSelection: e.detail.clearedSelection,
+        clearedSearch: e.detail.clearedSearch,
+      });
+    };
+
     element.addEventListener('select', handleSelect);
     element.addEventListener('change', handleChange);
     element.addEventListener('open', handleOpen);
     element.addEventListener('close', handleClose);
     element.addEventListener('search', handleSearch);
     element.addEventListener('loadMore', handleLoadMore);
+    element.addEventListener('clear', handleClear);
 
     return () => {
       element.removeEventListener('select', handleSelect);
@@ -550,8 +597,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.removeEventListener('close', handleClose);
       element.removeEventListener('search', handleSearch);
       element.removeEventListener('loadMore', handleLoadMore);
+      element.removeEventListener('clear', handleClear);
     };
-  }, [onSelect, onChange, onOpen, onClose, onSearch, onLoadMore, isControlled, multiple]);
+  }, [onSelect, onChange, onOpen, onClose, onSearch, onLoadMore, onClear, isControlled, multiple]);
 
   // Expose imperative handle
   useImperativeHandle(ref, () => ({

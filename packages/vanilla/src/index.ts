@@ -42,6 +42,11 @@ export function createSelect(options: {
   virtualized?: boolean;
   maxSelections?: number;
   placement?: 'bottom' | 'top' | 'auto';
+  clearable?: boolean;
+  clearSelectionOnClear?: boolean;
+  clearSearchOnClear?: boolean;
+  clearAriaLabel?: string;
+  clearIcon?: string;
   className?: string;
   style?: Partial<CSSStyleDeclaration>;
   onChange?: (value: any, items: any[]) => void;
@@ -51,6 +56,7 @@ export function createSelect(options: {
   onSearch?: (query: string) => void;
   onLoadMore?: (page: number) => void;
   onCreate?: (value: string) => void;
+  onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
 }): HTMLElement {
   const select = document.createElement('enhanced-select') as any;
 
@@ -136,6 +142,26 @@ export function createSelect(options: {
       options.onCreate!(event.detail.value);
     });
   }
+
+  if (options.onClear) {
+    select.addEventListener('clear', (e: Event) => {
+      const event = e as CustomEvent;
+      options.onClear!({
+        clearedSelection: !!event.detail?.clearedSelection,
+        clearedSearch: !!event.detail?.clearedSearch,
+      });
+    });
+  }
+
+  select.updateConfig?.({
+    clearControl: {
+      enabled: options.clearable === true,
+      clearSelection: options.clearSelectionOnClear ?? true,
+      clearSearch: options.clearSearchOnClear ?? true,
+      ariaLabel: options.clearAriaLabel,
+      icon: options.clearIcon,
+    },
+  });
 
   return select;
 }

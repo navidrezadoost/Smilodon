@@ -17,6 +17,16 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Added
+- **Input clear control (Core + adapters):** Added a configurable clear button inside the select input area that can clear selected values and/or search query.
+  - Core config: `clearControl.enabled`, `clearSelection`, `clearSearch`, `hideWhenEmpty`, `ariaLabel`, `icon`.
+  - New event: `clear` with detail `{ clearedSelection, clearedSearch }`.
+  - Styling hooks: `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` tokens.
+  - Adapter support added for React/Vue/Svelte plus Vanilla helper options.
+
+### Testing
+- Added core regression coverage for clear-control rendering, clear action, and emitted event payload.
+
 ## [1.4.4] - 2026-02-18
 
 ### Fixed
@@ -70,6 +80,10 @@ Historical Angular-related changelog entries below are preserved for reference o
   - Guarded value synchronization to call `setSelectedValues` only when effective values differ.
   - Applied uncontrolled `defaultValue` initialization once via ref-based gate.
   - Hardened custom renderer cleanup timing to avoid synchronous unmount collisions.
+- **#10 (Core Styling):** Selected option styles are now fully themeable even when the option is also active/focused.
+  - Prevented active-state styles from overriding selected-state variables.
+  - Added selected+active styling tokens for precise control (`--select-option-selected-active-*`).
+  - Applied the same precedence fix for CSP mode (`.ns-item[aria-selected="true"][data-active="true"]`).
 - **#318 (Core):** Prevented duplicate `click`/`keydown` bindings for reused custom `optionRenderer` elements.
   - Added per-element listener deduplication in option normalization.
   - Resolved repeated selection dispatch that could cascade into React update-depth errors.

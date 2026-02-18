@@ -36,6 +36,7 @@ import type {
   SearchEventDetail,
   ChangeEventDetail,
   LoadMoreEventDetail,
+  ClearEventDetail,
   GroupedItem,
   RendererHelpers,
 } from '@smilodon/core';
@@ -86,6 +87,21 @@ export interface SelectProps {
   /** Enable expandable dropdown */
   expandable?: boolean;
 
+  /** Enable clear control button */
+  clearable?: boolean;
+
+  /** Clear selected values when clear control is clicked */
+  clearSelectionOnClear?: boolean;
+
+  /** Clear search query when clear control is clicked */
+  clearSearchOnClear?: boolean;
+
+  /** ARIA label for clear control */
+  clearAriaLabel?: string;
+
+  /** Icon text for clear control */
+  clearIcon?: string;
+
   /** Custom option renderer returning an HTMLElement */
   optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
 
@@ -110,6 +126,8 @@ export interface SelectEmits {
   (e: 'loadMore', page: number): void;
   /** Emitted when user creates a new item (if enabled) */
   (e: 'create', value: string): void;
+  /** Emitted when clear control is used */
+  (e: 'clear', detail: { clearedSelection: boolean; clearedSearch: boolean }): void;
 }
 
 const props = withDefaults(defineProps<SelectProps>(), {
@@ -123,6 +141,9 @@ const props = withDefaults(defineProps<SelectProps>(), {
   pageSize: 50,
   virtualized: true,
   placement: 'auto',
+  clearable: false,
+  clearSelectionOnClear: true,
+  clearSearchOnClear: true,
 });
 
 const emit = defineEmits<SelectEmits>();
@@ -410,6 +431,13 @@ const updateConfig = () => {
       expandable: {
         enabled: props.expandable,
       },
+      clearControl: {
+        enabled: props.clearable,
+        clearSelection: props.clearSelectionOnClear,
+        clearSearch: props.clearSearchOnClear,
+        ariaLabel: props.clearAriaLabel,
+        icon: props.clearIcon,
+      },
     };
 
     el.updateConfig(config);
@@ -427,6 +455,11 @@ watch(
     () => props.pageSize,
     () => props.virtualized,
     () => props.expandable,
+    () => props.clearable,
+    () => props.clearSelectionOnClear,
+    () => props.clearSearchOnClear,
+    () => props.clearAriaLabel,
+    () => props.clearIcon,
   ],
   updateConfig
 );
@@ -478,6 +511,14 @@ const handleCreate = (e: Event) => {
   emit('create', customEvent.detail.value);
 };
 
+const handleClear = (e: Event) => {
+  const customEvent = e as CustomEvent<ClearEventDetail>;
+  emit('clear', {
+    clearedSelection: customEvent.detail.clearedSelection,
+    clearedSearch: customEvent.detail.clearedSearch,
+  });
+};
+
 // Setup event listeners
 onMounted(async () => {
   await waitForUpgrade();
@@ -516,6 +557,7 @@ onMounted(async () => {
   element.addEventListener('search', handleSearch as EventListener);
   element.addEventListener('loadMore', handleLoadMore as EventListener);
   element.addEventListener('create', handleCreate as EventListener);
+  element.addEventListener('clear', handleClear as EventListener);
 });
 
 onBeforeUnmount(() => {
@@ -534,6 +576,7 @@ onBeforeUnmount(() => {
   element.removeEventListener('search', handleSearch as EventListener);
   element.removeEventListener('loadMore', handleLoadMore as EventListener);
   element.removeEventListener('create', handleCreate as EventListener);
+  element.removeEventListener('clear', handleClear as EventListener);
 });
 
 // Expose imperative API

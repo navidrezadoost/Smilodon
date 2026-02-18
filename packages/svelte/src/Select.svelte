@@ -38,6 +38,7 @@
     SearchEventDetail,
     ChangeEventDetail,
     LoadMoreEventDetail,
+    ClearEventDetail,
     GroupedItem,
   } from '@smilodon/core';
 
@@ -59,6 +60,11 @@
   export let placement: 'bottom' | 'top' | 'auto' = 'auto';
   export let className: string = '';
   export let style: string = '';
+  export let clearable: boolean = false;
+  export let clearSelectionOnClear: boolean = true;
+  export let clearSearchOnClear: boolean = true;
+  export let clearAriaLabel: string = 'Clear selection and search';
+  export let clearIcon: string = '×';
   export let optionRenderer: ((item: SelectItem, index: number, helpers: any) => HTMLElement) | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
@@ -69,6 +75,7 @@
     search: { query: string };
     loadMore: { page: number };
     create: { value: string };
+    clear: { clearedSelection: boolean; clearedSearch: boolean };
   }>();
 
   let selectRef: HTMLElement;
@@ -130,6 +137,38 @@
     dispatch('create', { value: customEvent.detail.value });
   }
 
+  function handleClear(e: Event) {
+    const customEvent = e as CustomEvent<ClearEventDetail>;
+    dispatch('clear', {
+      clearedSelection: customEvent.detail.clearedSelection,
+      clearedSearch: customEvent.detail.clearedSearch,
+    });
+  }
+
+  function updateConfig() {
+    if (!selectRef) return;
+    (selectRef as any).updateConfig?.({
+      searchable,
+      placeholder,
+      enabled: !disabled,
+      selection: {
+        mode: multiple ? 'multi' : 'single',
+        maxSelections,
+      },
+      infiniteScroll: {
+        enabled: infiniteScroll,
+        pageSize,
+      },
+      clearControl: {
+        enabled: clearable,
+        clearSelection: clearSelectionOnClear,
+        clearSearch: clearSearchOnClear,
+        ariaLabel: clearAriaLabel,
+        icon: clearIcon,
+      },
+    });
+  }
+
   onMount(() => {
     if (!selectRef) return;
 
@@ -174,6 +213,9 @@
     element.addEventListener('search', handleSearch as EventListener);
     element.addEventListener('loadMore', handleLoadMore as EventListener);
     element.addEventListener('create', handleCreate as EventListener);
+    element.addEventListener('clear', handleClear as EventListener);
+
+    updateConfig();
   });
 
   onDestroy(() => {
@@ -189,6 +231,7 @@
     element.removeEventListener('search', handleSearch as EventListener);
     element.removeEventListener('loadMore', handleLoadMore as EventListener);
     element.removeEventListener('create', handleCreate as EventListener);
+    element.removeEventListener('clear', handleClear as EventListener);
   });
 
   // Reactive updates
@@ -235,6 +278,10 @@
     } else if ((selectRef as any).optionRenderer === resolvedOptionRenderer) {
       (selectRef as any).optionRenderer = undefined;
     }
+  }
+
+  $: if (selectRef) {
+    updateConfig();
   }
 
   // Public methods

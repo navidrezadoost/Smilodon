@@ -231,5 +231,51 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(cssText).toContain('border: 1px solid var(--select-dropdown-border, #ccc)');
         expect(cssText).toContain('var(--select-option-selected-border, var(--select-option-border, none))');
         expect(cssText).toContain('var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)))');
+        expect(cssText).toContain('.option.active:not(.selected)');
+        expect(cssText).toContain('.option.selected.active');
+        expect(cssText).toContain('var(--select-option-selected-active-bg, var(--select-option-selected-bg, #e0e7ff))');
+    });
+
+    it('supports clear control rendering and emits clear event', async () => {
+        (el as any).updateConfig({
+            searchable: true,
+            clearControl: {
+                enabled: true,
+                clearSelection: true,
+                clearSearch: true,
+                hideWhenEmpty: true,
+                ariaLabel: 'Clear values',
+                icon: '✕',
+            }
+        });
+
+        (el as any).setItems([
+            { value: '1', label: 'One' },
+            { value: '2', label: 'Two' },
+        ]);
+        await (el as any).setSelectedValues(['1']);
+
+        const clearButton = el.shadowRoot!.querySelector('[part="clear-button"]') as HTMLButtonElement;
+        const clearIcon = el.shadowRoot!.querySelector('[part="clear-icon"]') as HTMLElement;
+
+        expect(clearButton).toBeTruthy();
+        expect(clearIcon).toBeTruthy();
+        expect(clearButton.hidden).toBe(false);
+        expect(clearButton.getAttribute('aria-label')).toBe('Clear values');
+        expect(clearIcon.textContent).toBe('✕');
+
+        const clearSpy = vi.fn();
+        el.addEventListener('clear', clearSpy);
+
+        clearButton.click();
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect((el as any).getSelectedValues()).toEqual([]);
+        expect(clearSpy).toHaveBeenCalled();
+        expect(clearSpy.mock.calls[0][0].detail).toEqual({
+            clearedSelection: true,
+            clearedSearch: false,
+        });
     });
 });

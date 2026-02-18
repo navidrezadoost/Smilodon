@@ -115,6 +115,33 @@ function MyApp() {
 }
 ```
 
+## Clear Control (Reset Selected/Search Value)
+
+Use the built-in clear control in the input area and style it freely:
+
+```tsx
+<Select
+  items={items}
+  value={value}
+  onChange={(next) => setValue(next as string)}
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  clearAriaLabel="Clear selected and searched values"
+  clearIcon="✕"
+  onClear={(detail) => console.log('cleared', detail)}
+  style={{
+    '--select-clear-button-bg': 'rgba(0,0,0,0.06)',
+    '--select-clear-button-hover-bg': 'rgba(0,0,0,0.12)',
+    '--select-clear-button-color': '#374151',
+    '--select-clear-icon-size': '14px',
+  } as React.CSSProperties}
+/>
+```
+
+Available parts for advanced styling: `::part(clear-button)`, `::part(clear-icon)`.
+
 ## Examples
 
 ### Basic Single Select

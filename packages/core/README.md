@@ -136,6 +136,31 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 
 ## API Reference
 
+### Clear Control (Selection/Search Reset)
+
+```javascript
+const select = document.querySelector('enhanced-select');
+
+select.updateConfig({
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+    hideWhenEmpty: true,
+    ariaLabel: 'Clear selected and searched values',
+    icon: '✕',
+  }
+});
+
+select.addEventListener('clear', (e) => {
+  console.log(e.detail); // { clearedSelection: boolean, clearedSearch: boolean }
+});
+```
+
+Style hooks:
+- Parts: `::part(clear-button)`, `::part(clear-icon)`
+- Tokens: `--select-clear-button-*`, `--select-clear-icon-*`, `--select-input-padding-with-clear`
+
 ### Properties
 
 ```typescript

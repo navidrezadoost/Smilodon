@@ -49,6 +49,21 @@ export interface ExpandableConfig {
   collapseLabel?: string;
 }
 
+export interface ClearControlConfig {
+  /** Enable clear control button inside input container */
+  enabled: boolean;
+  /** Clear selected values when button is clicked */
+  clearSelection?: boolean;
+  /** Clear search query when button is clicked */
+  clearSearch?: boolean;
+  /** Hide clear control when there is nothing to clear */
+  hideWhenEmpty?: boolean;
+  /** Accessible label for clear control */
+  ariaLabel?: string;
+  /** Text/icon content shown inside the clear control */
+  icon?: string;
+}
+
 export interface SelectionConfig {
   /** Single or multi-select mode */
   mode: 'single' | 'multi';
@@ -137,6 +152,8 @@ export interface CallbackConfig {
   onLoadMore?: (page: number) => void;
   /** Called when selection changes */
   onChange?: (selectedItems: unknown[], selectedValues: unknown[]) => void;
+  /** Called when clear control is used */
+  onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
   /** Called on error */
   onError?: (error: Error) => void;
 }
@@ -158,6 +175,8 @@ export interface GlobalSelectConfig {
   infiniteScroll: InfiniteScrollConfig;
   /** Expandable dropdown configuration */
   expandable: ExpandableConfig;
+  /** Clear control button configuration */
+  clearControl: ClearControlConfig;
   /** Callbacks */
   callbacks: CallbackConfig;
   /** Enable/disable entire component */
@@ -224,6 +243,14 @@ const defaultConfig: GlobalSelectConfig = {
     expandedHeight: '500px',
     expandLabel: 'Show more',
     collapseLabel: 'Show less',
+  },
+  clearControl: {
+    enabled: false,
+    clearSelection: true,
+    clearSearch: true,
+    hideWhenEmpty: true,
+    ariaLabel: 'Clear selection and search',
+    icon: '×',
   },
   callbacks: {},
   enabled: true,

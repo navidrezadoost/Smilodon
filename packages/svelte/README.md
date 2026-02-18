@@ -82,6 +82,35 @@ npm install @smilodon/svelte @smilodon/core
 <Select {items} bind:value={selectedValue} placeholder="Select a fruit..." />
 ```
 
+## Clear Control (Reset Selected/Search Value)
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  let value = '';
+  const items = [
+    { value: 'js', label: 'JavaScript' },
+    { value: 'py', label: 'Python' },
+    { value: 'rs', label: 'Rust' },
+  ];
+</script>
+
+<Select
+  {items}
+  bind:value
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  clearAriaLabel="Clear selected and searched values"
+  clearIcon="✕"
+  on:clear={(e) => console.log('cleared', e.detail)}
+/>
+```
+
+Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
+
 ## Examples
 
 ### Searchable Select

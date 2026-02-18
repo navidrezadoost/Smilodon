@@ -57,6 +57,8 @@ export class EnhancedSelect extends HTMLElement {
   private _errorMessage = '';
   private _boundArrowClick: ((e: Event) => void) | null = null;
   private _arrowContainer?: HTMLElement;
+  private _clearControl?: HTMLButtonElement;
+  private _clearControlIcon?: HTMLElement;
   private _pendingFirstRenderMark = false;
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
@@ -115,6 +117,7 @@ export class EnhancedSelect extends HTMLElement {
     this._inputContainer = this._createInputContainer();
     this._input = this._createInput();
     this._arrowContainer = this._createArrowContainer();
+    this._clearControl = this._createClearControl();
     this._dropdown = this._createDropdown();
     this._optionsContainer = this._createOptionsContainer();
     this._liveRegion = this._createLiveRegion();
@@ -358,9 +361,31 @@ export class EnhancedSelect extends HTMLElement {
     return container;
   }
 
+  private _createClearControl(): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'clear-control-button';
+    button.setAttribute('part', 'clear-button');
+
+    const icon = document.createElement('span');
+    icon.className = 'clear-control-icon';
+    icon.setAttribute('part', 'clear-icon');
+    icon.textContent = this._config.clearControl.icon || '×';
+
+    button.setAttribute('aria-label', this._config.clearControl.ariaLabel || 'Clear selection and search');
+    button.appendChild(icon);
+
+    this._clearControlIcon = icon;
+    return button;
+  }
+
   private _assembleDOM(): void {
     
     this._inputContainer.appendChild(this._input);
+
+    if (this._clearControl) {
+      this._inputContainer.appendChild(this._clearControl);
+    }
     
     if (this._arrowContainer) {
       this._inputContainer.appendChild(this._arrowContainer);
@@ -384,6 +409,8 @@ export class EnhancedSelect extends HTMLElement {
     this._dropdown.id = listboxId;
     this._input.setAttribute('aria-controls', listboxId);
     this._input.setAttribute('aria-owns', listboxId);
+
+    this._syncClearControlState();
   }
 
   private _initializeStyles(): void {
@@ -457,6 +484,58 @@ export class EnhancedSelect extends HTMLElement {
         transition: background-color 0.2s ease;
         border-radius: var(--select-arrow-border-radius, 0 4px 4px 0);
         z-index: 2;
+      }
+
+      .input-container.has-clear-control {
+        padding: var(--select-input-padding-with-clear, 6px 84px 6px 8px);
+      }
+
+      .input-container.has-clear-control::after {
+        right: var(--select-separator-position-with-clear, 72px);
+      }
+
+      .dropdown-arrow-container.with-clear-control {
+        right: var(--select-arrow-right-with-clear, 32px);
+      }
+
+      .clear-control-button {
+        position: absolute;
+        top: 50%;
+        right: var(--select-clear-button-right, 6px);
+        transform: translateY(-50%);
+        width: var(--select-clear-button-size, 24px);
+        height: var(--select-clear-button-size, 24px);
+        border: var(--select-clear-button-border, none);
+        border-radius: var(--select-clear-button-radius, 999px);
+        background: var(--select-clear-button-bg, transparent);
+        color: var(--select-clear-button-color, #6b7280);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 3;
+        transition: var(--select-clear-button-transition, all 0.2s ease);
+      }
+
+      .clear-control-button:hover {
+        background: var(--select-clear-button-hover-bg, rgba(0, 0, 0, 0.06));
+        color: var(--select-clear-button-hover-color, #111827);
+      }
+
+      .clear-control-button:focus-visible {
+        outline: var(--select-clear-button-focus-outline, 2px solid rgba(102, 126, 234, 0.55));
+        outline-offset: 1px;
+      }
+
+      .clear-control-button[hidden] {
+        display: none;
+      }
+
+      .clear-control-icon {
+        font-size: var(--select-clear-icon-size, 16px);
+        line-height: 1;
+        font-weight: var(--select-clear-icon-weight, 500);
+        pointer-events: none;
       }
       
       .dropdown-arrow-container:hover {
@@ -615,15 +694,30 @@ export class EnhancedSelect extends HTMLElement {
         transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
       }
 
-      .option.active {
+      .option.active:not(.selected) {
         background-color: var(--select-option-active-bg, #f3f4f6);
         color: var(--select-option-active-color, #1f2937);
         outline: var(--select-option-active-outline, 2px solid rgba(99, 102, 241, 0.45));
         outline-offset: -2px;
       }
 
-      .option:active {
+      .option.selected.active {
+        background-color: var(--select-option-selected-active-bg, var(--select-option-selected-bg, #e0e7ff));
+        color: var(--select-option-selected-active-color, var(--select-option-selected-color, #4338ca));
+        border: var(--select-option-selected-active-border, var(--select-option-selected-border, var(--select-option-border, none)));
+        border-bottom: var(--select-option-selected-active-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+        box-shadow: var(--select-option-selected-active-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
+        transform: var(--select-option-selected-active-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+        outline: var(--select-option-selected-active-outline, var(--select-option-active-outline, 2px solid rgba(99, 102, 241, 0.45)));
+        outline-offset: -2px;
+      }
+
+      .option:active:not(.selected) {
         background-color: var(--select-option-pressed-bg, #e5e7eb);
+      }
+
+      .option.selected:active {
+        background-color: var(--select-option-selected-pressed-bg, var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e0e7ff)));
       }
       
       .load-more-container {
@@ -785,10 +879,21 @@ export class EnhancedSelect extends HTMLElement {
           transform: var(--select-dark-option-selected-hover-transform, var(--select-dark-option-selected-transform, var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)))));
         }
         
-        .option.active {
+        .option.active:not(.selected) {
           background-color: var(--select-dark-option-active-bg, #374151);
           color: var(--select-dark-option-active-color, #f9fafb);
           outline: var(--select-dark-option-active-outline, 2px solid rgba(129, 140, 248, 0.55));
+        }
+
+        .option.selected.active {
+          background-color: var(--select-dark-option-selected-active-bg, var(--select-dark-option-selected-bg, #3730a3));
+          color: var(--select-dark-option-selected-active-color, var(--select-dark-option-selected-text, #e0e7ff));
+          border: var(--select-dark-option-selected-active-border, var(--select-dark-option-selected-border, var(--select-option-selected-active-border, var(--select-option-selected-border, var(--select-option-border, none)))));
+          border-bottom: var(--select-dark-option-selected-active-border-bottom, var(--select-dark-option-selected-border-bottom, var(--select-option-selected-active-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)))));
+          box-shadow: var(--select-dark-option-selected-active-shadow, var(--select-dark-option-selected-shadow, var(--select-option-selected-active-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)))));
+          transform: var(--select-dark-option-selected-active-transform, var(--select-dark-option-selected-transform, var(--select-option-selected-active-transform, var(--select-option-selected-transform, var(--select-option-transform, none)))));
+          outline: var(--select-dark-option-selected-active-outline, var(--select-dark-option-active-outline, var(--select-option-selected-active-outline, var(--select-option-active-outline, 2px solid rgba(129, 140, 248, 0.55)))));
+          outline-offset: -2px;
         }
 
         .selection-badge {
@@ -880,11 +985,25 @@ export class EnhancedSelect extends HTMLElement {
       this._arrowContainer.addEventListener('click', this._boundArrowClick);
     }
 
+    if (this._clearControl) {
+      this._clearControl.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+
+      this._clearControl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this._handleClearControlClick();
+      });
+    }
+
     // Input container click - focus input and open dropdown
     this._inputContainer.addEventListener('pointerdown', (e) => {
       const target = e.target as HTMLElement | null;
       if (!this._config.enabled) return;
       if (target && target.closest('.dropdown-arrow-container')) return;
+      if (target && target.closest('.clear-control-button')) return;
       if (!this._state.isOpen) {
         this._handleOpen();
       }
@@ -1133,6 +1252,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _handleSearch(query: string): void {
     this._state.searchQuery = query;
+    this._syncClearControlState();
 
     if (query.length > 0) {
       this._perfMark('smilodon-search-input-last');
@@ -1322,7 +1442,9 @@ export class EnhancedSelect extends HTMLElement {
         (option as HTMLElement).setAttribute('aria-selected', 'true');
       }
       
-      (option as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (typeof (option as HTMLElement).scrollIntoView === 'function') {
+        (option as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
       
       // Announce position for screen readers
       const total = options.length;
@@ -1609,6 +1731,8 @@ export class EnhancedSelect extends HTMLElement {
         this._inputContainer.insertBefore(badge, this._input);
       });
     }
+
+    this._syncClearControlState();
   }
 
   private _renderOptionsWithAnimation(): void {
@@ -1904,6 +2028,22 @@ export class EnhancedSelect extends HTMLElement {
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
+    this._syncClearControlState();
+  }
+
+  /**
+   * Clear search query and restore full option list
+   */
+  clearSearch(): void {
+    this._state.searchQuery = '';
+    if (this._config.searchable) {
+      this._input.value = '';
+      if (this._state.selectedIndices.size > 0) {
+        this._updateInputDisplay();
+      }
+    }
+    this._renderOptions();
+    this._syncClearControlState();
   }
 
   /**
@@ -1935,6 +2075,14 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
 
+    if (this._clearControl) {
+      this._clearControl.setAttribute('aria-label', this._config.clearControl.ariaLabel || 'Clear selection and search');
+    }
+
+    if (this._clearControlIcon) {
+      this._clearControlIcon.textContent = this._config.clearControl.icon || '×';
+    }
+
     if (this._dropdown) {
       if (this._config.selection.mode === 'multi') {
         this._dropdown.setAttribute('aria-multiselectable', 'true');
@@ -1945,8 +2093,57 @@ export class EnhancedSelect extends HTMLElement {
     
     // Re-initialize observers in case infinite scroll was enabled/disabled
     this._initializeObservers();
+
+    this._syncClearControlState();
     
     this._renderOptions();
+  }
+
+  private _handleClearControlClick(): void {
+    const shouldClearSelection = this._config.clearControl.clearSelection !== false;
+    const shouldClearSearch = this._config.clearControl.clearSearch !== false;
+
+    const hadSelection = this._state.selectedIndices.size > 0;
+    const hadSearch = this._state.searchQuery.length > 0;
+
+    if (shouldClearSelection && hadSelection) {
+      this.clear();
+    }
+
+    if (shouldClearSearch && hadSearch) {
+      this.clearSearch();
+    }
+
+    this._emit('clear', {
+      clearedSelection: shouldClearSelection && hadSelection,
+      clearedSearch: shouldClearSearch && hadSearch,
+    });
+
+    this._config.callbacks.onClear?.({
+      clearedSelection: shouldClearSelection && hadSelection,
+      clearedSearch: shouldClearSearch && hadSearch,
+    });
+
+    this._input.focus();
+  }
+
+  private _syncClearControlState(): void {
+    if (!this._clearControl || !this._inputContainer || !this._arrowContainer) return;
+
+    const enabled = this._config.clearControl.enabled === true;
+    const hasSelection = this._state.selectedIndices.size > 0;
+    const hasSearch = this._state.searchQuery.length > 0;
+    const clearSelection = this._config.clearControl.clearSelection !== false;
+    const clearSearch = this._config.clearControl.clearSearch !== false;
+    const hasSomethingToClear = (clearSelection && hasSelection) || (clearSearch && hasSearch);
+    const hideWhenEmpty = this._config.clearControl.hideWhenEmpty !== false;
+    const visible = enabled && (!hideWhenEmpty || hasSomethingToClear);
+
+    this._inputContainer.classList.toggle('has-clear-control', enabled);
+    this._arrowContainer.classList.toggle('with-clear-control', enabled);
+    this._clearControl.hidden = !visible;
+    this._clearControl.disabled = !hasSomethingToClear;
+    this._clearControl.setAttribute('aria-hidden', String(!visible));
   }
 
   /**

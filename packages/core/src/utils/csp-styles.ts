@@ -139,8 +139,15 @@ export const shadowDOMStyles = `
   color: var(--ns-item-selected-color, #0066cc);
 }
 
-.ns-item[data-active="true"] {
+.ns-item[data-active="true"]:not([aria-selected="true"]) {
   background: var(--ns-item-active-bg, rgba(0, 102, 204, 0.2));
+}
+
+.ns-item[aria-selected="true"][data-active="true"] {
+  background: var(--ns-item-selected-active-bg, var(--ns-item-selected-bg, rgba(0, 102, 204, 0.1)));
+  color: var(--ns-item-selected-active-color, var(--ns-item-selected-color, #0066cc));
+  outline: var(--ns-item-selected-active-outline, 2px solid #0066cc);
+  outline-offset: -2px;
 }
 
 .ns-item[aria-disabled="true"] {

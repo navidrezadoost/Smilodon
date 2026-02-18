@@ -52,6 +52,10 @@ export interface ChangeEventDetail {
 }
 export interface LoadMoreEventDetail { page: number; items: unknown[] }
 export interface RemoveEventDetail { item: unknown; index: number }
+export interface ClearEventDetail {
+  clearedSelection: boolean;
+  clearedSearch: boolean;
+}
 
 export interface SelectEventsDetailMap {
   select: SelectEventDetail;
@@ -63,6 +67,7 @@ export interface SelectEventsDetailMap {
   change: ChangeEventDetail;
   loadMore: LoadMoreEventDetail;
   remove: RemoveEventDetail;
+  clear: ClearEventDetail;
 }
 
 export type SelectEventName = keyof SelectEventsDetailMap;
