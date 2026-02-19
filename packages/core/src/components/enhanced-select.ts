@@ -857,12 +857,12 @@ export class EnhancedSelect extends HTMLElement {
         }
         
         .option:hover {
-          background-color: var(--select-dark-option-hover-bg, #374151);
+          background: var(--select-dark-option-hover-bg, #374151);
           color: var(--select-dark-option-hover-color, #f9fafb);
         }
         
         .option.selected {
-          background-color: var(--select-dark-option-selected-bg, #3730a3);
+          background: var(--select-dark-option-selected-bg, #3730a3);
           color: var(--select-dark-option-selected-text, #e0e7ff);
           border: var(--select-dark-option-selected-border, var(--select-option-selected-border, var(--select-option-border, none)));
           border-bottom: var(--select-dark-option-selected-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
@@ -871,7 +871,7 @@ export class EnhancedSelect extends HTMLElement {
         }
 
         .option.selected:hover {
-          background-color: var(--select-dark-option-selected-hover-bg, var(--select-dark-option-selected-bg, #3730a3));
+          background: var(--select-dark-option-selected-hover-bg, var(--select-dark-option-selected-bg, #3730a3));
           color: var(--select-dark-option-selected-hover-color, var(--select-dark-option-selected-text, #e0e7ff));
           border: var(--select-dark-option-selected-hover-border, var(--select-dark-option-selected-border, var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)))));
           border-bottom: var(--select-dark-option-selected-hover-border-bottom, var(--select-dark-option-selected-border-bottom, var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)))));
