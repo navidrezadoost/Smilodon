@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smilodon Styling Examples — React</title>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    // NOTE: This example expects packages to be built locally.
+    // 1) npm run ws:build:core
+    // 2) npm run build:react
+    // 3) Serve this file from the repo root (so relative imports resolve)
+
+    import React from 'https://cdn.skypack.dev/react';
+    import ReactDOM from 'https://cdn.skypack.dev/react-dom';
+
+    // Import the built React adapter (built to packages/react/dist)
+    // Ensure you run `npm run build:react` before opening this page.
+    import '../../packages/react/dist/index.js';
+    import '../../packages/core/dist/index.js';
+
+    function App() {
+      const [items] = React.useState([
+        { value: 1, label: 'Alex', className: 'user-card' },
+        { value: 2, label: 'Sam', style: { background: '#ffe', color: '#000' } }
+      ]);
+
+      return (
+        React.createElement('div', { style: { padding: 20 } },
+          React.createElement('h2', null, 'React adapter styling demo'),
+          React.createElement('div', null,
+            React.createElement('smilodon-react-select', { items })
+          )
+        )
+      );
+    }
+
+    ReactDOM.render(React.createElement(App), document.getElementById('root'));
+  </script>
+</body>
+</html>

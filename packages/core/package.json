@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/core",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "High-performance native select component with extreme-scale virtualization - React, Vue, Svelte, Vanilla JS",
   "type": "module",
   "main": "./dist/index.cjs",

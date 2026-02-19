@@ -86,11 +86,11 @@ export class SelectOption extends HTMLElement {
       }
       
       .option-container:hover {
-        background-color: var(--select-option-hover-bg, #f0f0f0);
+        background: var(--select-option-hover-bg, #f0f0f0);
       }
       
       .option-container.selected {
-        background-color: var(--select-option-selected-bg, #e3f2fd);
+        background: var(--select-option-selected-bg, #e3f2fd);
         color: var(--select-option-selected-color, #1976d2);
         border: var(--select-option-selected-border, var(--select-option-border, none));
         border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
@@ -100,7 +100,7 @@ export class SelectOption extends HTMLElement {
       }
 
       .option-container.selected:hover {
-        background-color: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
+        background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
         border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
         border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
