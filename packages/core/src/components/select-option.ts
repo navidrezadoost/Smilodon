@@ -70,6 +70,31 @@ export class SelectOption extends HTMLElement {
         position: relative;
       }
       
+      /* Allow authors to style selected state from outside the shadow root
+         by setting attributes/classes on the host element. This mirrors the
+         internal .option-container.selected rules but reads the same CSS
+         custom properties so themes can fully control selected appearance. */
+      :host([aria-selected="true"]) .option-container,
+      :host(.smilodon-option--selected) .option-container {
+        background: var(--select-option-selected-bg, #e3f2fd);
+        color: var(--select-option-selected-color, #1976d2);
+        border: var(--select-option-selected-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
+        border-radius: var(--select-option-selected-border-radius, var(--select-option-border-radius, 0));
+        box-shadow: var(--select-option-selected-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-selected-transform, var(--select-option-transform, none));
+      }
+
+      :host([aria-selected="true"]) .option-container:hover,
+      :host(.smilodon-option--selected) .option-container:hover {
+        background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
+        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
+        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
+        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+        box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
+        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+      }
+      
       .option-container {
         display: flex;
         align-items: center;

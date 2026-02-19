@@ -27,6 +27,18 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Testing
 - Added core regression coverage for clear-control rendering, clear action, and emitted event payload.
 
+## [1.4.7] - 2026-02-19
+
+### Added
+- **Host-level selected styling hooks (Core):** Exposed host-level selected and selected-hover CSS rules in `select-option` so authors and themes can override selected appearance from outside the shadow DOM. These rules read the same `--select-option-selected-*` variables (bg, color, border, border-bottom, border-radius, shadow, transform) so theming works reliably when the option is also active/focused.
+- **Demo:** Added a focused dark-mode experiment to `test-demo.html` (“Dark Mode Selected Styling Experiment”) to validate host-level overrides and demonstrate runtime variable application.
+
+### Changed
+- Bumped `@smilodon/core` package to `1.4.7` to ship the selected-state theming improvements and example.
+
+### Notes
+- No API behavior changes — changes are styling hooks and demo-only additions intended to improve theming and documentation.
+
 ## [1.4.6] - 2026-02-19
 
 ### Fixed

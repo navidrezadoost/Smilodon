@@ -444,6 +444,23 @@
       </div>
     </div>
 
+    <!-- Dark-mode selected styling experiment -->
+    <div class="demo-card" style="margin-bottom:16px;">
+      <div class="demo-title">Dark Mode Selected Styling Experiment <span class="demo-badge">EXPERIMENT</span></div>
+      <div class="demo-description">Toggle dark mode and apply variable overrides targeting selected option visuals (non-hover and hover). Use the buttons to toggle theme and to set CSS vars at runtime.</div>
+      <div class="demo-select-wrapper">
+        <div id="dark-experiment-wrapper" style="padding:8px; border-radius:8px; background:var(--select-dropdown-bg, #fff);">
+          <div id="dark-experiment"></div>
+        </div>
+      </div>
+      <div class="demo-controls">
+        <button class="btn btn-primary" id="toggle-dark">Toggle Dark</button>
+        <button class="btn btn-secondary" id="apply-vars">Apply Selected Vars</button>
+        <button class="btn btn-success" id="clear-vars">Clear Vars</button>
+      </div>
+      <div class="output-panel"><div class="output-title">Notes:</div><div id="dark-output">No actions yet.</div></div>
+    </div>
+
     <!-- Demo Grid -->
     <div class="demo-grid">
       <!-- Demo 1: Basic Single Select -->
@@ -2060,6 +2077,48 @@
       });
       demo18.setItems(generateItems(20, 'Passive Option'));
       document.getElementById('demo18').appendChild(demo18);
+
+      // Dark-mode selected styling experiment setup
+      const darkWrapper = document.getElementById('dark-experiment-wrapper');
+      const darkOutput = document.getElementById('dark-output');
+
+      // Create an instance of the demo select (uses mock-enhanced-select used throughout demos)
+      const darkDemo = document.createElement('mock-enhanced-select');
+      darkDemo.updateConfig({
+        multi: false,
+        searchable: false,
+        callbacks: {
+          onSelect: (d) => {
+            darkOutput.textContent = `Selected: ${d.label} (value: ${d.value})`;
+          }
+        }
+      });
+      darkDemo.setItems(generateItems(8, 'DarkOpt'));
+      document.getElementById('dark-experiment').appendChild(darkDemo);
+
+      // Buttons
+      document.getElementById('toggle-dark').addEventListener('click', () => {
+        darkWrapper.classList.toggle('dark-theme');
+        const isDark = darkWrapper.classList.contains('dark-theme');
+        document.getElementById('dark-output').textContent = isDark ? 'Dark theme ON' : 'Dark theme OFF';
+      });
+
+      document.getElementById('apply-vars').addEventListener('click', () => {
+        // Apply selected-specific variables at the host/container level
+        darkDemo.style.setProperty('--select-option-selected-bg', '#0016d8');
+        darkDemo.style.setProperty('--select-option-selected-color', '#ffffff');
+        darkDemo.style.setProperty('--select-option-selected-border', '1px solid #00ffbf');
+        darkDemo.style.setProperty('--select-option-selected-hover-bg', '#1de227');
+        document.getElementById('dark-output').textContent = 'Applied selected-state variables on component host';
+      });
+
+      document.getElementById('clear-vars').addEventListener('click', () => {
+        darkDemo.style.removeProperty('--select-option-selected-bg');
+        darkDemo.style.removeProperty('--select-option-selected-color');
+        darkDemo.style.removeProperty('--select-option-selected-border');
+        darkDemo.style.removeProperty('--select-option-selected-hover-bg');
+        document.getElementById('dark-output').textContent = 'Cleared selected-state variables';
+      });
     });
   </script>
 </body>
