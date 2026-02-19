@@ -27,6 +27,20 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Testing
 - Added core regression coverage for clear-control rendering, clear action, and emitted event payload.
 
+## [1.4.6] - 2026-02-19
+
+### Fixed
+- **Styling/hover precedence:** Ensure option hover/selected states reliably override dropdown gradients and background-images.
+  - Replaced `background-color` rules with the `background` shorthand in core option styles to clear `background-image` layers when hovered/selected.
+  - Mirrored and extended guidance in documentation with examples for using per-option `style`, `className` + `::part()`, and `optionRenderer` nested-element patterns to safely apply `background-image` and gradients.
+
+### Documentation
+- Added `docs/STYLING-EXAMPLES.md` and a `Styling Examples` section in the project `README.md` demonstrating per-item JSON `style`, `className` + `::part()`, and `optionRenderer` usage.
+
+### Tests
+- Updated/verified unit and contract tests to remain green after styling changes.
+
+
 ## [1.4.4] - 2026-02-18
 
 ### Fixed

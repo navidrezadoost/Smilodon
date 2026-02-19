@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smilodon Styling Examples — Vanilla</title>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, "Helvetica Neue", Arial; padding: 24px; }
+    enhanced-select { width: 420px; display: block; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <h1>Smilodon — Styling Examples (Vanilla)</h1>
+
+  <p>This demo assumes you've built the local packages (`@smilodon/core`) as explained in <code>README.md</code> or <code>examples/styling/README.md</code>.</p>
+
+  <enhanced-select id="demo" placeholder="Pick an option"></enhanced-select>
+
+  <script type="module">
+    // Import the built ESM bundle for the core package so the web component is registered.
+    // Make sure to run: npm run ws:build:core
+    import '../../packages/core/dist/index.js';
+
+    const select = document.getElementById('demo');
+
+    const items = [
+      {
+        value: 'gradient',
+        label: 'Gradient option',
+        style: {
+          backgroundImage: 'linear-gradient(180deg,#f4f4f4 0%, #d7d7d7 100%)',
+          color: '#111',
+          backgroundSize: 'cover'
+        }
+      },
+      { value: 'plain', label: 'Plain option' },
+      { value: 'photo', label: 'Photo option', image: '/img/1.jpg', render: (item) => `<div style="padding:12px; background:#333;color:#fff">${item.label}</div>` }
+    ];
+
+    // setItems accepts lightweight items and items with a `render` function or `optionComponent`.
+    select.setItems(items);
+
+    // Example: override hover background to preserve images
+    select.style.setProperty('--select-option-hover-bg', 'transparent');
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smilodon Styling Examples — Vue</title>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    // NOTE: This example expects packages to be built locally.
+    // 1) npm run ws:build:core
+    // 2) npm run build:vue
+    // 3) Serve this file from the repo root (so relative imports resolve)
+
+    import { createApp, h } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
+    import '../../packages/core/dist/index.js';
+    import '../../packages/vue/dist/index.js';
+
+    const Demo = {
+      setup() {
+        const items = [
+          { value: 'a', label: 'A', className: 'user-card' },
+          { value: 'b', label: 'B', style: { background: '#f0f8ff' } }
+        ];
+        return () => h('div', { style: { padding: 20 } }, [
+          h('h2', 'Vue adapter styling demo'),
+          h('smilodon-vue-select', { items })
+        ]);
+      }
+    };
+
+    createApp(Demo).mount('#app');
+  </script>
+</body>
+</html>
