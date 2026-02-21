@@ -15,7 +15,7 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
-> **Latest (v1.4.8):** Grouped-items auto-conversion in adapters; improved dark-mode support via ancestor-aware selectors; styling improvements to group headers.
+> **Latest (v1.4.9):** Fixed input‑opened selection bug, added pointer capture, removed debug logs, grouped-items auto-conversion in adapters; improved dark-mode support via ancestor-aware selectors; styling improvements to group headers.
 
 **Notable changes in v1.4.8**
 
