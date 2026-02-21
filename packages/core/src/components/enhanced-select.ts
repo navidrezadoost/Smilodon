@@ -1065,6 +1065,13 @@ export class EnhancedSelect extends HTMLElement {
 
     // Delegated click listener for improved event handling (robust across shadow DOM)
     this._optionsContainer.addEventListener('click', (e) => {
+      // Debug: log composed path and target for troubleshooting selection issues
+      try {
+        // eslint-disable-next-line no-console
+        console.debug('[smilodon] option click - composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
+      } catch (err) {
+        // ignore
+      }
       // Prefer composedPath to reliably find the option host when clicks originate
       // from inside option shadow roots or custom renderers.
       const path = (e.composedPath && e.composedPath()) || [e.target];
@@ -1084,6 +1091,13 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       if (option && !option.hasAttribute('aria-disabled')) {
+        // Debug: report found option and some attributes
+        try {
+          // eslint-disable-next-line no-console
+          console.debug('[smilodon] option click - found option:', option.tagName, 'id=', option.getAttribute('id'), 'data-sm-index=', option.getAttribute('data-sm-index'));
+        } catch (err) {
+          // ignore
+        }
         const indexStr = option.getAttribute('data-sm-index') ?? option.getAttribute('data-index');
         const index = Number(indexStr);
         if (!Number.isNaN(index)) {
@@ -1621,6 +1635,13 @@ export class EnhancedSelect extends HTMLElement {
     // Instead, use the index to update state directly
     
     const item = this._state.loadedItems[index];
+    // Debug: log selection attempt
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('[smilodon] _selectOption called', { index, loadedItems: this._state.loadedItems.length, isCurrentlySelected });
+    } catch (err) {
+      // ignore
+    }
     if (!item) return;
 
     // Keep active/focus styling aligned with the most recently interacted option.
@@ -1898,7 +1919,14 @@ export class EnhancedSelect extends HTMLElement {
     const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
     const selectedValues = selectedItems.map(getValue);
     const selectedIndices = Array.from(this._state.selectedIndices);
-    
+    // Debug: log change payload
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('[smilodon] _emitChange', { selectedValues, selectedIndices });
+    } catch (err) {
+      // ignore
+    }
+
     this._emit('change', { selectedItems, selectedValues, selectedIndices });
     this._config.callbacks.onChange?.(selectedItems, selectedValues);
   }
