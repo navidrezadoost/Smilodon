@@ -1041,6 +1041,12 @@ export class EnhancedSelect extends HTMLElement {
     
     // Input focus/blur
     this._input.addEventListener('focus', () => this._handleOpen());
+    // When the input loses focus we normally close the dropdown, but
+    // clicking an option will blur the input before the option's click
+    // handler executes. To avoid the blur timer closing the dropdown
+    // prematurely we use a short-lived flag that is set whenever we start
+    // interacting with the options container. The close callback checks this
+    // flag and skips closing if the user is about to click an option.
     this._input.addEventListener('blur', (e) => {
       const related = (e as FocusEvent).relatedTarget as Node | null;
       if (related && (this._shadow.contains(related) || this._container.contains(related))) {
@@ -1049,6 +1055,11 @@ export class EnhancedSelect extends HTMLElement {
 
       // Delay to allow option click/focus transitions
       setTimeout(() => {
+        if ((this as any)._suppressBlurClose) {
+          // another pointerdown inside options is in progress; keep open
+          return;
+        }
+
         const active = document.activeElement as Node | null;
         if (active && (this._shadow.contains(active) || this._container.contains(active))) {
           return;
@@ -1062,6 +1073,17 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._config.searchable) return;
       const query = (e.target as HTMLInputElement).value;
       this._handleSearch(query);
+    });
+
+    // If the user presses down inside the options container we should
+    // temporarily suppress blur-based closing until after the click has
+    // been handled. Setting a flag that gets cleared in the next tick is
+    // sufficient.
+    this._optionsContainer.addEventListener('pointerdown', () => {
+      (this as any)._suppressBlurClose = true;
+      setTimeout(() => {
+        (this as any)._suppressBlurClose = false;
+      }, 0);
     });
 
     // Delegated click listener for improved event handling (robust across shadow DOM)
@@ -1113,10 +1135,40 @@ export class EnhancedSelect extends HTMLElement {
     // Keyboard navigation
     this._input.addEventListener('keydown', (e) => this._handleKeydown(e));
     
-    // Click outside to close
+    // Click outside to close — robust detection across shadow DOM and custom renderers
     document.addEventListener('pointerdown', (e) => {
       const path = (e.composedPath && e.composedPath()) || [];
-      const clickedInside = path.includes(this) || path.includes(this._container) || this._shadow.contains(e.target as Node);
+      let clickedInside = false;
+
+      for (const node of path as any[]) {
+        if (node === this || node === this._container) {
+          clickedInside = true;
+          break;
+        }
+
+        if (node instanceof Node) {
+          try {
+            if (this._shadow && this._shadow.contains(node as Node)) {
+              clickedInside = true;
+              break;
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+
+        if (node instanceof Element) {
+          try {
+            if (node.matches('[data-sm-selectable], [data-selectable], [data-sm-state], .input-container, .select-container, .dropdown-arrow-container, .clear-control-button')) {
+              clickedInside = true;
+              break;
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+      }
+
       if (!clickedInside) {
         this._handleClose();
       }
