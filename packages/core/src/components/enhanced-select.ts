@@ -1100,13 +1100,6 @@ export class EnhancedSelect extends HTMLElement {
 
     // Delegated click listener for improved event handling (robust across shadow DOM)
     const handleOptionEvent = (e: MouseEvent | PointerEvent) => {
-      // log to help trace both click and pointerup paths
-      try {
-        // eslint-disable-next-line no-console
-        console.log('[smilodon] option event', e.type, 'composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
-      } catch (err) {
-        // ignore
-      }
 
       const path = (e.composedPath && e.composedPath()) || [e.target];
       let option: Element | null = null;
@@ -1124,12 +1117,6 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       if (option && !option.hasAttribute('aria-disabled')) {
-        try {
-          // eslint-disable-next-line no-console
-          console.log('[smilodon] option click - found option:', option.tagName, 'id=', option.getAttribute('id'), 'data-sm-index=', option.getAttribute('data-sm-index'));
-        } catch (err) {
-          // ignore
-        }
         const indexStr = option.getAttribute('data-sm-index') ?? option.getAttribute('data-index');
         const index = Number(indexStr);
         if (!Number.isNaN(index)) {
@@ -1705,12 +1692,6 @@ export class EnhancedSelect extends HTMLElement {
     // Debug: log selection attempt
     if (!item) return;
     const isCurrentlySelected = this._state.selectedIndices.has(index);
-    try {
-      // eslint-disable-next-line no-console
-      console.log('[smilodon] _selectOption called', { index, loadedItems: this._state.loadedItems.length, isCurrentlySelected });
-    } catch (err) {
-      // ignore
-    }
 
     // Keep active/focus styling aligned with the most recently interacted option.
     // Without this, a previously selected item may retain active classes/styles
@@ -1988,12 +1969,6 @@ export class EnhancedSelect extends HTMLElement {
     const selectedValues = selectedItems.map(getValue);
     const selectedIndices = Array.from(this._state.selectedIndices);
     // Debug: log change payload
-    try {
-      // eslint-disable-next-line no-console
-      console.log('[smilodon] _emitChange', { selectedValues, selectedIndices });
-    } catch (err) {
-      // ignore
-    }
 
     this._emit('change', { selectedItems, selectedValues, selectedIndices });
     this._config.callbacks.onChange?.(selectedItems, selectedValues);
