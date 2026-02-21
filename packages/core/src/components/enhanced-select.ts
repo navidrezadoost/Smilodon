@@ -1057,19 +1057,34 @@ export class EnhancedSelect extends HTMLElement {
       this._handleSearch(query);
     });
 
-    // Delegated click listener for improved event handling (smart fallback)
+    // Delegated click listener for improved event handling (robust across shadow DOM)
     this._optionsContainer.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      // Handle option clicks
-      const option = target.closest('[data-sm-selectable], [data-selectable], [data-sm-state]');
+      // Prefer composedPath to reliably find the option host when clicks originate
+      // from inside option shadow roots or custom renderers.
+      const path = (e.composedPath && e.composedPath()) || [e.target];
+      let option: Element | null = null;
+
+      for (const node of path as any[]) {
+        if (!(node instanceof Element)) continue;
+        try {
+          if (node.matches('[data-sm-selectable], [data-selectable], [data-sm-state]')) {
+            option = node;
+            break;
+          }
+        } catch (err) {
+          // matches can throw for some nodes; ignore and continue
+          continue;
+        }
+      }
+
       if (option && !option.hasAttribute('aria-disabled')) {
         const indexStr = option.getAttribute('data-sm-index') ?? option.getAttribute('data-index');
         const index = Number(indexStr);
         if (!Number.isNaN(index)) {
-             this._selectOption(index, {
-                shiftKey: (e as MouseEvent).shiftKey,
-                toggleKey: (e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey,
-             });
+          this._selectOption(index, {
+            shiftKey: (e as MouseEvent).shiftKey,
+            toggleKey: (e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey,
+          });
         }
       }
     });
