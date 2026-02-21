@@ -1068,7 +1068,7 @@ export class EnhancedSelect extends HTMLElement {
       // Debug: log composed path and target for troubleshooting selection issues
       try {
         // eslint-disable-next-line no-console
-        console.debug('[smilodon] option click - composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
+        console.log('[smilodon] option click - composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
       } catch (err) {
         // ignore
       }
@@ -1094,7 +1094,7 @@ export class EnhancedSelect extends HTMLElement {
         // Debug: report found option and some attributes
         try {
           // eslint-disable-next-line no-console
-          console.debug('[smilodon] option click - found option:', option.tagName, 'id=', option.getAttribute('id'), 'data-sm-index=', option.getAttribute('data-sm-index'));
+          console.log('[smilodon] option click - found option:', option.tagName, 'id=', option.getAttribute('id'), 'data-sm-index=', option.getAttribute('data-sm-index'));
         } catch (err) {
           // ignore
         }
@@ -1636,20 +1636,21 @@ export class EnhancedSelect extends HTMLElement {
     
     const item = this._state.loadedItems[index];
     // Debug: log selection attempt
+    if (!item) return;
+    const isCurrentlySelected = this._state.selectedIndices.has(index);
     try {
       // eslint-disable-next-line no-console
-      console.debug('[smilodon] _selectOption called', { index, loadedItems: this._state.loadedItems.length, isCurrentlySelected });
+      console.log('[smilodon] _selectOption called', { index, loadedItems: this._state.loadedItems.length, isCurrentlySelected });
     } catch (err) {
       // ignore
     }
-    if (!item) return;
 
     // Keep active/focus styling aligned with the most recently interacted option.
     // Without this, a previously selected item may retain active classes/styles
     // after selecting a different option.
     this._state.activeIndex = index;
     
-    const isCurrentlySelected = this._state.selectedIndices.has(index);
+    
     
     if (this._config.selection.mode === 'single') {
       // Single select: clear previous and select new
@@ -1922,7 +1923,7 @@ export class EnhancedSelect extends HTMLElement {
     // Debug: log change payload
     try {
       // eslint-disable-next-line no-console
-      console.debug('[smilodon] _emitChange', { selectedValues, selectedIndices });
+      console.log('[smilodon] _emitChange', { selectedValues, selectedIndices });
     } catch (err) {
       // ignore
     }
