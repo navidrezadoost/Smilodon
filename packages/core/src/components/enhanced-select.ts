@@ -1016,7 +1016,12 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     // Input container click - focus input and open dropdown
+    // Prevent the original pointer event from bubbling/causing default focus behavior
+    // which can interfere with option click handling when opening the dropdown
     this._inputContainer.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
       const target = e.target as HTMLElement | null;
       if (!this._config.enabled) return;
       if (target && target.closest('.dropdown-arrow-container')) return;
@@ -1024,6 +1029,7 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._state.isOpen) {
         this._handleOpen();
       }
+      // Explicitly focus the input after preventing default
       this._input.focus();
     });
     
