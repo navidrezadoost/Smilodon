@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/svelte",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "Production-ready, accessible select component for Svelte - part of the Smilodon UI toolkit",
   "type": "module",
   "svelte": "./dist/index.mjs",
@@ -26,7 +26,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.4.4",
+    "@smilodon/core": "^1.4.9",
     "svelte": ">=3.0.0 || >=4.0.0 || >=5.0.0"
   },
   "devDependencies": {
