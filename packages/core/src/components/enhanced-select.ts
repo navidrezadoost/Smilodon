@@ -1019,8 +1019,9 @@ export class EnhancedSelect extends HTMLElement {
     // Prevent the original pointer event from bubbling/causing default focus behavior
     // which can interfere with option click handling when opening the dropdown
     this._inputContainer.addEventListener('pointerdown', (e) => {
+      // Prevent propagation to document click listener but do NOT preventDefault.
+      // Allow default so browser events (click) on newly opened options still fire.
       e.stopPropagation();
-      e.preventDefault();
 
       const target = e.target as HTMLElement | null;
       if (!this._config.enabled) return;
@@ -1029,7 +1030,7 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._state.isOpen) {
         this._handleOpen();
       }
-      // Explicitly focus the input after preventing default
+      // Focus the input (do not prevent default behavior)
       this._input.focus();
     });
     
