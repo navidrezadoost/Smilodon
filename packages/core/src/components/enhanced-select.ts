@@ -1027,11 +1027,23 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._config.enabled) return;
       if (target && target.closest('.dropdown-arrow-container')) return;
       if (target && target.closest('.clear-control-button')) return;
-      if (!this._state.isOpen) {
+      const wasClosed = !this._state.isOpen;
+      if (wasClosed) {
         this._handleOpen();
       }
       // Focus the input (do not prevent default behavior)
       this._input.focus();
+
+      // If we just opened the dropdown, transfer pointer capture to the
+      // options container so the subsequent pointerup lands there instead of
+      // staying with the input container (which would swallow the event).
+      if (wasClosed && this._optionsContainer && typeof e.pointerId === 'number') {
+        try {
+          this._optionsContainer.setPointerCapture(e.pointerId);
+        } catch (_err) {
+          // Some browsers may throw if element is not yet "connected"; ignore
+        }
+      }
     });
     
     // Input container click - prevent event from reaching document listener
@@ -1087,16 +1099,15 @@ export class EnhancedSelect extends HTMLElement {
     });
 
     // Delegated click listener for improved event handling (robust across shadow DOM)
-    this._optionsContainer.addEventListener('click', (e) => {
-      // Debug: log composed path and target for troubleshooting selection issues
+    const handleOptionEvent = (e: MouseEvent | PointerEvent) => {
+      // log to help trace both click and pointerup paths
       try {
         // eslint-disable-next-line no-console
-        console.log('[smilodon] option click - composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
+        console.log('[smilodon] option event', e.type, 'composedPath length:', (e.composedPath ? e.composedPath().length : 'n/a'));
       } catch (err) {
         // ignore
       }
-      // Prefer composedPath to reliably find the option host when clicks originate
-      // from inside option shadow roots or custom renderers.
+
       const path = (e.composedPath && e.composedPath()) || [e.target];
       let option: Element | null = null;
 
@@ -1108,13 +1119,11 @@ export class EnhancedSelect extends HTMLElement {
             break;
           }
         } catch (err) {
-          // matches can throw for some nodes; ignore and continue
           continue;
         }
       }
 
       if (option && !option.hasAttribute('aria-disabled')) {
-        // Debug: report found option and some attributes
         try {
           // eslint-disable-next-line no-console
           console.log('[smilodon] option click - found option:', option.tagName, 'id=', option.getAttribute('id'), 'data-sm-index=', option.getAttribute('data-sm-index'));
@@ -1130,7 +1139,12 @@ export class EnhancedSelect extends HTMLElement {
           });
         }
       }
-    });
+    };
+
+    this._optionsContainer.addEventListener('click', handleOptionEvent);
+    // also watch pointerup to catch cases where the pointerdown started outside
+    // (e.g. on the input) and the click never fires
+    this._optionsContainer.addEventListener('pointerup', handleOptionEvent);
     
     // Keyboard navigation
     this._input.addEventListener('keydown', (e) => this._handleKeydown(e));
