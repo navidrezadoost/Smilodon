@@ -193,7 +193,20 @@
 
     // Set initial items
     if (items?.length) {
-      (element as any).setItems(items);
+      // Auto-convert flat items with `group` property into groupedItems
+      const first = items[0];
+      if (first && (first as any).group !== undefined) {
+        const map = new Map<string, any[]>();
+        items.forEach((it: any) => {
+          const g = it.group ?? 'Ungrouped';
+          if (!map.has(g)) map.set(g, []);
+          map.get(g)!.push(it);
+        });
+        const groups = Array.from(map.entries()).map(([label, options]) => ({ label, options }));
+        (element as any).setGroupedItems(groups);
+      } else {
+        (element as any).setItems(items);
+      }
     }
     if (groupedItems?.length) {
       (element as any).setGroupedItems(groupedItems);

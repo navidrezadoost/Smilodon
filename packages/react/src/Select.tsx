@@ -19,6 +19,7 @@ export interface SelectItem {
   value: string | number;
   label: string;
   disabled?: boolean;
+  group?: string;
   [key: string]: unknown;
 }
 
@@ -459,9 +460,18 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   useEffect(() => {
     const element = elementRef.current;
     if (!element || !isElementReady || !element.setItems) return;
-    
     if (groupedItems) {
       element.setGroupedItems(groupedItems);
+    } else if (items && items.length && (items as any)[0] && (items as any)[0].group !== undefined) {
+      // Auto-convert flat items with `group` property into groupedItems
+      const map = new Map<string, SelectItem[]>();
+      (items as SelectItem[]).forEach((it) => {
+        const g = (it as any).group ?? 'Ungrouped';
+        if (!map.has(g)) map.set(g, []);
+        map.get(g)!.push(it);
+      });
+      const groups = Array.from(map.entries()).map(([label, options]) => ({ label, options }));
+      element.setGroupedItems(groups as GroupedItem[]);
     } else {
       element.setItems(items);
     }

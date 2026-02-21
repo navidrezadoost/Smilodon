@@ -653,6 +653,20 @@ export class EnhancedSelect extends HTMLElement {
         background: var(--select-options-bg, var(--select-dropdown-bg, var(--select-bg, white)));
       }
 
+      .group-header {
+        padding: var(--select-group-header-padding, 8px 12px);
+        font-weight: var(--select-group-header-weight, 600);
+        color: var(--select-group-header-color, #6b7280);
+        background-color: var(--select-group-header-bg, #f3f4f6);
+        font-size: var(--select-group-header-font-size, 12px);
+        text-transform: var(--select-group-header-text-transform, uppercase);
+        letter-spacing: var(--select-group-header-letter-spacing, 0.05em);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: var(--select-group-header-border-bottom, 1px solid #e5e7eb);
+      }
+
       .option {
         padding: var(--select-option-padding, 8px 12px);
         cursor: pointer;
@@ -826,9 +840,12 @@ export class EnhancedSelect extends HTMLElement {
         }
       }
       
-      /* Dark mode - Opt-in via class or data attribute */
+      /* Dark mode - Opt-in via class, data attribute, or ancestor context */
       :host(.dark-mode),
-      :host([data-theme="dark"]) {
+      :host([data-theme="dark"]),
+      :host-context(.dark-mode),
+      :host-context(.dark),
+      :host-context([data-theme="dark"]) {
         .input-container {
           background: var(--select-dark-bg, #1f2937);
           border-color: var(--select-dark-border, #4b5563);
@@ -2240,19 +2257,6 @@ export class EnhancedSelect extends HTMLElement {
         const header = document.createElement('div');
         header.className = 'group-header';
         header.textContent = group.label;
-        Object.assign(header.style, {
-          padding: '8px 12px',
-          fontWeight: '600',
-          color: '#6b7280',
-          backgroundColor: '#f3f4f6',
-          fontSize: '12px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          position: 'sticky',
-          top: '0',
-          zIndex: '1',
-          borderBottom: '1px solid #e5e7eb'
-        });
         this._optionsContainer.appendChild(header);
         
         group.options.forEach(item => {

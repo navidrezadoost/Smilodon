@@ -535,7 +535,20 @@ onMounted(async () => {
 
   // Set initial items
   if (props.items?.length) {
-    element.setItems(props.items);
+    // Auto-convert flat items that include a `group` property into groupedItems
+    const first = props.items[0];
+    if (first && (first as any).group !== undefined) {
+      const map = new Map<string, any[]>();
+      props.items.forEach((it: any) => {
+        const g = it.group ?? 'Ungrouped';
+        if (!map.has(g)) map.set(g, []);
+        map.get(g)!.push(it);
+      });
+      const groups = Array.from(map.entries()).map(([label, options]) => ({ label, options }));
+      element.setGroupedItems(groups);
+    } else {
+      element.setItems(props.items);
+    }
   }
   if (props.groupedItems?.length) {
     element.setGroupedItems(props.groupedItems);

@@ -15,7 +15,13 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
-> **Latest (v1.4.4):** Full selected-state styling control (including selected border/hover states), reactive classMap styling updates, and corrected active-style transition when selecting a new option.
+> **Latest (v1.4.8):** Grouped-items auto-conversion in adapters; improved dark-mode support via ancestor-aware selectors; styling improvements to group headers.
+
+**Notable changes in v1.4.8**
+
+- Grouped items: pass either `groupedItems` or a flat `items` array where each item has a `group` property — adapters auto-convert when possible (React, Vue, Svelte).
+- Dark mode: the core web component supports ancestor-level dark themes via parent classes (`.dark`, `.dark-mode`) or `data-theme="dark"`. These are applied inside Shadow DOM using `:host-context`, and are configurable with CSS variables described in `packages/core/src/components/enhanced-select.ts`.
+
 
 ---
 

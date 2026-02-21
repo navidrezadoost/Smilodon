@@ -209,6 +209,19 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ---
 
+## [1.4.8] - 2026-02-21
+
+### Added
+- **Grouped items auto-conversion (Adapters):** React, Vue, and Svelte adapters now accept a flat `items` array where each item has an optional `group` property (e.g. `{ value, label, group }`). Adapters will auto-convert these into `groupedItems` to render native group headers.
+- **Dark mode host-context support (Core):** Core styles now include `:host-context(.dark|.dark-mode|[data-theme="dark"])` selectors so ancestor-level theme classes apply inside the component's Shadow DOM.
+
+### Fixed
+- **Group header styling:** Group header styles were moved from inline JS styles into core CSS so themes and dark-mode variables properly apply.
+
+### Notes
+- Bumped `@smilodon/core` to `1.4.8`. See package release for details and migration notes.
+
+
 ## [1.3.8] - 2026-02-09
 
 ### 🐛 Critical Bug Fixes - CSS Customization Issues (#2)
