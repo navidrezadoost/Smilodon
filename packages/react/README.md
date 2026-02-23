@@ -30,6 +30,7 @@ The complete guide includes:
 - ✅ **Infinite Scroll** - Handle massive datasets efficiently
 - ✅ **Virtual Scrolling** - Render only visible items for performance
 - ✅ **Grouped Options** - Organize items into categories
+- 🎨 **Dark Mode** - add `className="dark-mode"` or `data-theme="dark"` to the `<Select>` or any ancestor; styles are applied inside the shadow DOM via `:host-context`.
 - ✅ **Accessible** - WCAG 2.1 AAA compliant, full keyboard navigation
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
 - ✅ **Tiny Bundle** - Optimized for production
@@ -261,36 +262,57 @@ function SearchableExample() {
 
 ### Grouped Options
 
+Smilodon supports both native `groupedItems` and a flat `items` array where each object includes a `group` property.  The React wrapper will automatically convert the latter for you (added in v1.4.9) so the following two configurations behave identically:
+
 ```tsx
-import { Select } from '@smilodon/react';
+// flat list with `group` property (auto-converted)
+<Select
+  items={[
+    { value: 'apple', label: 'Apple', group: 'Fruits' },
+    { value: 'banana', label: 'Banana', group: 'Fruits' },
+    { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+  ]}
+  value={value}
+  onChange={(val) => setValue(val as string)}
+  placeholder="Select food..."
+/>
+```
 
-function GroupedExample() {
-  const [value, setValue] = useState('');
+```tsx
+// explicit groupedItems structure
+<Select
+  groupedItems={[
+    {
+      label: 'Fruits',
+      options: [
+        { value: 'apple', label: 'Apple' },
+        { value: 'banana', label: 'Banana' },
+      ],
+    },
+    {
+      label: 'Vegetables',
+      options: [
+        { value: 'carrot', label: 'Carrot' },
+        { value: 'tomato', label: 'Tomato' },
+      ],
+    },
+  ]}
+  value={value}
+  onChange={(val) => setValue(val as string)}
+  placeholder="Select food..."
+/>
+```
 
-  return (
-    <Select
-      groupedItems={[
-        {
-          label: 'Fruits',
-          options: [
-            { value: 'apple', label: 'Apple' },
-            { value: 'banana', label: 'Banana' },
-          ],
-        },
-        {
-          label: 'Vegetables',
-          options: [
-            { value: 'carrot', label: 'Carrot' },
-            { value: 'tomato', label: 'Tomato' },
-          ],
-        },
-      ]}
-      value={value}
-      onChange={(val) => setValue(val as string)}
-      placeholder="Select food..."
-    />
-  );
-}
+**Customizing the group header**
+You can supply a `groupHeaderRenderer` to render arbitrary React content for the header element.  The returned element receives `.group-header` and `part="group-header"` automatically.
+
+```tsx
+<Select
+  groupedItems={groups}
+  groupHeaderRenderer={(grp) => <div className="text-sm uppercase">{grp.label}</div>}
+  value={value}
+  onChange={(v) => setValue(v as string)}
+/>
 ```
 
 ### Infinite Scroll

@@ -33,6 +33,9 @@ export interface SelectProps {
   /** Grouped items (alternative to flat items array) */
   groupedItems?: GroupedItem[];
   
+  /** Customize group header rendering when groupedItems are used */
+  groupHeaderRenderer?: (group: GroupedItem, index: number) => React.ReactNode;
+  
   /** Currently selected value(s) */
   value?: string | number | Array<string | number>;
   
@@ -398,6 +401,22 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.optionRenderer = resolvedOptionRenderer;
     }
 
+    if (props.groupHeaderRenderer) {
+      // the web component expects an HTMLElement-returning renderer; we wrap
+      // the React nodes similarly to other renderers
+      element.groupHeaderRenderer = (group: any, idx: number) => {
+        const container = document.createElement('div');
+        const node = props.groupHeaderRenderer?.(group as SelectItem & { label: string; options: any[] }, idx);
+        if (node) {
+          const root = createRoot(container);
+          root.render(<>{node}</>);
+          // we don't keep roots around because headers are recreated on each
+          // open; the scoping is lightweight enough.
+        }
+        return container;
+      };
+    }
+
     // Configure component
     const config = {
       searchable,
@@ -454,7 +473,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, props.groupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -475,7 +494,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     } else {
       element.setItems(items);
     }
-  }, [items, groupedItems, isElementReady]);
+  }, [items, groupedItems, props.groupHeaderRenderer, isElementReady]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {

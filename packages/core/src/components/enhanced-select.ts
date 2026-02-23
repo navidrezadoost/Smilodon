@@ -34,6 +34,9 @@ interface SelectState {
 }
 
 export class EnhancedSelect extends HTMLElement {
+  /** live set of all connected instances; used to auto-close siblings */
+  private static _instances: Set<EnhancedSelect> = new Set();
+
   private _config: GlobalSelectConfig;
   private _shadow: ShadowRoot;
   private _container: HTMLElement;
@@ -63,6 +66,7 @@ export class EnhancedSelect extends HTMLElement {
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
   private _optionRenderer?: OptionRendererFn;
+  private _groupHeaderRenderer?: import('../types').GroupHeaderRenderer;
   private _classMap?: ClassMap;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
@@ -76,7 +80,24 @@ export class EnhancedSelect extends HTMLElement {
 
   set classMap(map: ClassMap | undefined) {
     this._classMap = map;
-    this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map));
+    this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map || this._groupHeaderRenderer));
+
+    if (!this.isConnected) return;
+    this._renderOptions();
+  }
+
+  /**
+   * DOM-based renderer for group headers.  When provided, the component will
+   * call this function for each group during rendering.  The returned element
+   * will receive `.group-header` and `part="group-header"` automatically.
+   */
+  get groupHeaderRenderer(): import('../types').GroupHeaderRenderer | undefined {
+    return this._groupHeaderRenderer;
+  }
+
+  set groupHeaderRenderer(renderer: import('../types').GroupHeaderRenderer | undefined) {
+    this._groupHeaderRenderer = renderer;
+    this._setGlobalStylesMirroring(Boolean(this._optionRenderer || this._classMap || renderer));
 
     if (!this.isConnected) return;
     this._renderOptions();
@@ -130,7 +151,9 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   connectedCallback(): void {
-    
+    // register instance
+    EnhancedSelect._instances.add(this);
+
     // WORKAROUND: Force display style on host element for Angular compatibility
     // Angular's rendering seems to not apply :host styles correctly in some cases
     // Must be done in connectedCallback when element is attached to DOM
@@ -153,6 +176,9 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    // unregister instance
+    EnhancedSelect._instances.delete(this);
+
     // Cleanup observers
     this._resizeObserver?.disconnect();
     this._intersectionObserver?.disconnect();
@@ -477,6 +503,8 @@ export class EnhancedSelect extends HTMLElement {
         right: 0;
         bottom: 0;
         width: var(--select-arrow-width, 40px);
+        /* allow explicit height override even though container normally stretches */
+        height: var(--select-arrow-height, auto);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -542,9 +570,14 @@ export class EnhancedSelect extends HTMLElement {
         background-color: var(--select-arrow-hover-bg, rgba(102, 126, 234, 0.08));
       }
       
+      .dropdown-arrow:hover {
+        /* legacy alias --select-arrow-hover for icon color */
+        color: var(--select-arrow-hover, var(--select-arrow-hover-color, #667eea));
+      }
+      
       .dropdown-arrow {
-        width: var(--select-arrow-size, 16px);
-        height: var(--select-arrow-size, 16px);
+        width: var(--select-arrow-width, var(--select-arrow-size, 16px));
+        height: var(--select-arrow-height, var(--select-arrow-size, 16px));
         color: var(--select-arrow-color, #667eea);
         transition: transform 0.2s ease, color 0.2s ease;
         transform: translateY(0);
@@ -898,6 +931,13 @@ export class EnhancedSelect extends HTMLElement {
         
         .option.active:not(.selected) {
           background-color: var(--select-dark-option-active-bg, #374151);
+        }
+
+        /* Group header in dark mode */
+        .group-header {
+          color: var(--select-dark-group-header-color, var(--select-group-header-color, #6b7280));
+          background-color: var(--select-dark-group-header-bg, var(--select-group-header-bg, #374151));
+        }
           color: var(--select-dark-option-active-color, #f9fafb);
           outline: var(--select-dark-option-active-outline, 2px solid rgba(129, 140, 248, 0.55));
         }
@@ -982,21 +1022,14 @@ export class EnhancedSelect extends HTMLElement {
       this._boundArrowClick = (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
-        
-        const wasOpen = this._state.isOpen;
-        this._state.isOpen = !this._state.isOpen;
-        this._updateDropdownVisibility();
-        this._updateArrowRotation();
-        
-        if (this._state.isOpen && this._config.callbacks.onOpen) {
-          this._config.callbacks.onOpen();
-        } else if (!this._state.isOpen && this._config.callbacks.onClose) {
-          this._config.callbacks.onClose();
-        }
-        
-        // Scroll to selected when opening
-        if (!wasOpen && this._state.isOpen && this._state.selectedIndices.size > 0) {
-          setTimeout(() => this._scrollToSelected(), 50);
+
+        // delegate to the existing open/close helpers so we don't accidentally
+        // drift out of sync with the logic in those methods (focus, events,
+        // scroll-to-selected, etc.)
+        if (this._state.isOpen) {
+          this._handleClose();
+        } else {
+          this._handleOpen();
         }
       };
       this._arrowContainer.addEventListener('click', this._boundArrowClick);
@@ -1030,6 +1063,9 @@ export class EnhancedSelect extends HTMLElement {
       const wasClosed = !this._state.isOpen;
       if (wasClosed) {
         this._handleOpen();
+      } else {
+        // clicking the input while open should close the dropdown too
+        this._handleClose();
       }
       // Focus the input (do not prevent default behavior)
       this._input.focus();
@@ -1228,13 +1264,24 @@ export class EnhancedSelect extends HTMLElement {
 
   private _handleOpen(): void {
     if (!this._config.enabled || this._state.isOpen) return;
-    
+
+    // close any other open selects before proceeding
+    EnhancedSelect._instances.forEach(inst => {
+      if (inst !== this) inst._handleClose();
+    });
+
+    // Always focus the input when opening so callers (arrow click,
+    // programmatic `open()`, etc.) get the keyboard cursor.  This was a
+    // frequent source of confusion in #14 where people opened the dropdown
+    // but the text field never received focus.
+    this._input.focus();
+
     this._markOpenStart();
     this._state.isOpen = true;
     this._dropdown.style.display = 'block';
     this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
-    
+
     // Clear search query when opening to show all options
     // This ensures we can scroll to selected item
     if (this._config.searchable) {
@@ -1249,12 +1296,12 @@ export class EnhancedSelect extends HTMLElement {
 
     // Render options when opening
     this._renderOptions();
-  this._setInitialActiveOption();
-    
+    this._setInitialActiveOption();
+
     this._emit('open', {});
     this._config.callbacks.onOpen?.();
-  this._announce('Options expanded');
-    
+    this._announce('Options expanded');
+
     // Scroll to selected if configured
     if (this._config.scrollToSelected.enabled) {
       // Use requestAnimationFrame for better timing after render
@@ -2345,12 +2392,27 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      this._state.groupedItems.forEach(group => {
-        const header = document.createElement('div');
-        header.className = 'group-header';
-        header.textContent = group.label;
+      this._state.groupedItems.forEach((group, groupIndex) => {
+        let header: HTMLElement;
+        if (this.groupHeaderRenderer) {
+          header = this.groupHeaderRenderer(group, groupIndex);
+          // make sure the returned element has the correct semantics so
+          // people can style it. we add the class/part even if the renderer
+          // returned something else to ensure backward compatibility.
+          if (!(header instanceof HTMLElement)) {
+            // fall back to default if API is misused
+            header = document.createElement('div');
+            header.textContent = String(group.label);
+          }
+        } else {
+          header = document.createElement('div');
+          header.textContent = group.label;
+        }
+
+        header.classList.add('group-header');
+        header.setAttribute('part', 'group-header');
         this._optionsContainer.appendChild(header);
-        
+
         group.options.forEach(item => {
           // Find original index for correct ID generation and selection
           const index = this._state.loadedItems.indexOf(item);

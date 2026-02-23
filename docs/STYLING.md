@@ -77,6 +77,7 @@ The component exposes the following parts for styling:
 | `arrow` | SVG Icon | The dropdown arrow icon. |
 | `listbox` | Dropdown | The wrapper for the list of options. |
 | `option` | Option | The wrapper for each option. |
+| `group-header` | Div | Header element that appears above each group of options. |
 | `checkmark` | Icon | Selected check icon (if visible). |
 | `chip` | Chip | Selected item chip in multi-select (future). |
 | `chip-remove` | Button | Close button on a chip. |
@@ -86,6 +87,13 @@ The component exposes the following parts for styling:
 | `loading` | Div | The busy state/loader container. |
 | `popover` | Wrapper | The main dropdown wrapper. |
 
+> **Tip:** you can target the `group-header` and `no-results` slots just like any other part:
+>
+> ```css
+> enhanced-select::part(group-header) { font-weight: 700; }
+> enhanced-select::part(no-results) { color: #a00; }
+> ```
+>
 ### Example
 
 ```css

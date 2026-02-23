@@ -140,4 +140,49 @@ describe('Interaction & Accessibility', () => {
       expect(option.getAttribute('aria-selected')).toBe('true');
     }
   });
+
+  it('arrow click toggles dropdown and focuses input', () => {
+    if (!el.shadowRoot) return;
+
+    const arrow = el.shadowRoot.querySelector('.dropdown-arrow') as HTMLElement | null;
+    const input = el.shadowRoot.querySelector('input') as HTMLInputElement | null;
+    const inputContainer = el.shadowRoot.querySelector('.input-container') as HTMLElement | null;
+    expect(arrow).toBeTruthy();
+    expect(input).toBeTruthy();
+    expect(inputContainer).toBeTruthy();
+
+    // open via arrow
+    arrow!.click();
+    expect(el._state.isOpen).toBe(true);
+    expect(document.activeElement).toBe(input);
+
+    // click container again should close
+    inputContainer!.click();
+    expect(el._state.isOpen).toBe(false);
+
+    // open again and close via arrow
+    arrow!.click();
+    expect(el._state.isOpen).toBe(true);
+    arrow!.click();
+    expect(el._state.isOpen).toBe(false);
+  });
+
+  it('opening one dropdown closes others', () => {
+    const el2 = document.createElement('enhanced-select') as any;
+    document.body.appendChild(el2);
+    // small delay to let connectedCallback run
+    return new Promise<void>((res) => setTimeout(res, 0)).then(() => {
+      // open first
+      el._handleOpen();
+      expect(el._state.isOpen).toBe(true);
+      expect(el2._state.isOpen).toBe(false);
+
+      // open second via method
+      el2._handleOpen();
+      expect(el2._state.isOpen).toBe(true);
+      expect(el._state.isOpen).toBe(false);
+
+      el2.remove();
+    });
+  });
 });

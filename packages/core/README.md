@@ -646,6 +646,28 @@ enhanced-select.dark-mode {
 --select-dropdown-bg           /* Dropdown background (white) */
 --select-dropdown-border       /* Dropdown border color (#ccc) */
 --select-dropdown-shadow       /* Dropdown shadow */
+--select-empty-padding          /* Empty/no-results container padding */
+--select-empty-color            /* Text color for empty/no-results models */
+--select-empty-font-size        /* Font size */
+--select-empty-bg               /* Background for empty/no-results state */
+--select-empty-min-height       /* Minimum height of empty state box */
+
+/* Arrow/button */
+--select-arrow-size            /* Width & height of SVG icon (16px default) */
+--select-arrow-color           /* Icon color (#667eea) */
+--select-arrow-hover-color     /* Icon color when hovered (#667eea) */
+--select-arrow-hover-bg        /* Background when hover (rgba(102,126,234,0.08)) */
+--select-arrow-width           /* Container width (40px) */
+--select-arrow-border-radius   /* Container border radius */
+
+/* Group headers (when using groupedItems or flat items with `group` property) */
+--select-group-header-padding  /* Padding inside header (8px 12px) */
+--select-group-header-color    /* Text color (#6b7280) */
+--select-group-header-bg       /* Background (#f3f4f6) */
+--select-group-header-font-size
+--select-group-header-text-transform
+--select-group-header-letter-spacing
+--select-group-header-border-bottom
 ```
 
 **Dark Mode (Opt-in)**
@@ -659,6 +681,8 @@ enhanced-select.dark-mode {
 --select-dark-option-bg        /* Dark option background (#1f2937) */
 --select-dark-option-hover-bg  /* Dark hover background (#374151) */
 --select-dark-option-selected-bg /* Dark selected bg (#3730a3) */
+--select-dark-group-header-color /* Dark header text */
+--select-dark-group-header-bg    /* Dark header background */
 ```
 
 **Complete CSS Variables List (60+ variables)**
@@ -697,6 +721,10 @@ enhanced-select {
 
 **Badge Remove/Delete Button (Multi-Select)**
 The × button that removes selected items in multi-select mode is fully customizable:
+
+**Group Header & No‑Results Parts**
+Both the group header and the no-results message are exposed as shadow parts (`group-header` and `no-results`) so you can target them with `::part()` selectors or CSS variables. This makes it straightforward to match the look of your host framework or UI kit.
+
 
 ```css
 enhanced-select {
