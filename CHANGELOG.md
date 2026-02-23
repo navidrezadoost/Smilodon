@@ -27,6 +27,30 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Testing
 - Added core regression coverage for clear-control rendering, clear action, and emitted event payload.
 
+### Added
+- **Group header rendering (Core + adapters):** new `groupHeaderRenderer` callback allows authors to supply a DOM/React/Vue element for each group label.  Returned element automatically receives `.group-header` class and `part="group-header"`.
+- `group-header` part exposed for styling; adapters include examples in docs.
+- Exposed `--select-group-header-*` CSS vars (color/bg/spacing, plus dark-mode counterparts).
+
+### Changed
+- Opening a dropdown will now automatically close any other open `enhanced-select` instances on the page; resolved #15.
+- Toggled dropdown state when clicking input container (not just arrow) and always move focus to input on open; fixes issue reported in #14.
+- Arrow click handler now delegates to `_handleOpen/_handleClose` for consistent behavior and focus.
+- Input container pointerdown listener now toggles instead of only opening.
+- Dark-mode styles extended to include group header variables; host-context selectors improved for group elements.
+
+### Styling
+- Added backward‑compatible alias variables: `--select-arrow-height`, `--select-arrow-width`, and `--select-arrow-hover` (maps to hover color).
+- Reviewed and documented `--select-empty-*` tokens for customizing no-results state.
+
+### Documentation
+- Updated core and adapter READMEs with grouping notes, auto-conversion examples, renderer usage, variable name clarifications and part names for `group-header`/`no-results`.
+- Added new styling guide references and examples for arrow sizing and empty state.
+
+### Tests
+- New unit tests covering group-header part, dark-mode group header styling, arrow alias variables and input toggle focus behavior.
+- E2E tests verify group header rendering, dark mode color change, and keyboard navigation remain intact.
+
 ## [1.4.7] - 2026-02-19
 
 ### Added

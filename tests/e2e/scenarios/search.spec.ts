@@ -148,4 +148,30 @@ test.describe('Search/Filter', () => {
     });
     expect(hasSelection).toBe(true);
   });
+
+  test('@all should render group headers and respond to dark mode', async ({ page }) => {
+    const select = page.locator('enhanced-select').first();
+    await select.evaluate((el: any) => {
+      el.setItems([
+        { value: 'apple', label: 'Apple', group: 'Fruits' },
+        { value: 'carrot', label: 'Carrot', group: 'Vegetables' }
+      ]);
+      if (typeof el.open === 'function') el.open();
+    });
+    await page.waitForTimeout(120);
+
+    const lightBg = await select.evaluate((el: any) => {
+      const h = el.shadowRoot?.querySelector('.group-header');
+      return h ? window.getComputedStyle(h).backgroundColor : null;
+    });
+    expect(lightBg).toBe('rgb(243, 244, 246)');
+
+    await select.evaluate((el: any) => el.classList.add('dark-mode'));
+    await page.waitForTimeout(120);
+    const darkBg = await select.evaluate((el: any) => {
+      const h = el.shadowRoot?.querySelector('.group-header');
+      return h ? window.getComputedStyle(h).backgroundColor : null;
+    });
+    expect(darkBg).not.toBe(lightBg);
+  });
 });

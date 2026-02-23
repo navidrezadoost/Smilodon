@@ -11,6 +11,12 @@ export interface GroupedItem {
   options: unknown[];
 }
 
+/**
+ * Renderer callback used by the core element to create custom group headers.
+ * Similar to `OptionRenderer` but receives the entire group object.
+ */
+export type GroupHeaderRenderer = (group: GroupedItem, index: number) => HTMLElement;
+
 export interface RemoteConfig {
   endpoint: string;
   pageSize?: number;

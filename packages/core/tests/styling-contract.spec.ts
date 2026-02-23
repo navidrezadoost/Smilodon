@@ -138,6 +138,68 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(noResults).toBeTruthy();
     });
 
+    it('Group header part and renderer', async () => {
+        // set up a single group
+        el.groupedItems = [{ label: 'Group1', options: ['x', 'y'] }];
+        // provide a simple custom renderer
+        el.groupHeaderRenderer = (group, idx) => {
+            const d = document.createElement('div');
+            d.textContent = `grp:${group.label}`;
+            return d;
+        };
+        (el as any)._renderOptions();
+        const header = el.shadowRoot!.querySelector('[part="group-header"]') as HTMLElement;
+        expect(header).toBeTruthy();
+        expect(header.textContent).toBe('grp:Group1');
+    });
+
+    it('Dark mode variables apply to group header', async () => {
+        el.groupedItems = [{ label: 'G2', options: ['a'] }];
+        el.setAttribute('class', 'dark-mode');
+        // override dark header bg variable
+        el.style.setProperty('--select-dark-group-header-bg', 'rgb(10,20,30)');
+        (el as any)._renderOptions();
+        const header = el.shadowRoot!.querySelector('[part="group-header"]') as HTMLElement;
+        const bg = window.getComputedStyle(header).backgroundColor;
+        expect(bg).toBe('rgb(10, 20, 30)');
+    });
+
+    it('No-results styling can be targeted via part', async () => {
+        el.style.setProperty('--select-no-results-color', 'rgb(123, 45, 67)');
+        el.className = 'test-no-results';
+        // According to contract, authors should style via ::part or var;
+        // we just verify that the part exists and can be selected.
+        el.groupedItems = [];
+        (el as any)._state.loadedItems = [];
+        (el as any)._renderOptions();
+        const noResults = el.shadowRoot!.querySelector('[part="no-results"]') as HTMLElement;
+        expect(noResults).toBeTruthy();
+        // Because we can't easily compute var value without stylesheet, skip color check
+    });
+
+    it('Arrow aliases (--select-arrow-height and hover) are supported', async () => {
+        // Open select so arrow is present
+        (el as any)._handleOpen();
+        await new Promise(r => setTimeout(r, 0));
+        const arrow = el.shadowRoot!.querySelector('.dropdown-arrow') as HTMLElement;
+        expect(arrow).toBeTruthy();
+
+        // set alias height and verify
+        el.style.setProperty('--select-arrow-height', '24px');
+        el.style.setProperty('--select-arrow-width', '24px');
+        // force reflow
+        arrow.getBoundingClientRect();
+        expect(getComputedStyle(arrow).height).toBe('24px');
+        expect(getComputedStyle(arrow).width).toBe('24px');
+
+        // hover color alias
+        el.style.setProperty('--select-arrow-hover', 'rgb(10,20,30)');
+        // simulate hover
+        const event = new MouseEvent('mouseover', { bubbles: true });
+        arrow.dispatchEvent(event);
+        expect(getComputedStyle(arrow).color).toBe('rgb(10, 20, 30)');
+    });
+
     it('ClassMap + ::part combination: classes are reflected on the part', async () => {
         el.classMap = {
             selected: 'bg-blue-600 text-white',

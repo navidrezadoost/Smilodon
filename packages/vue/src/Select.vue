@@ -54,6 +54,8 @@ export interface SelectProps {
   items?: SelectItem[];
   /** Grouped items (alternative to items) */
   groupedItems?: GroupedItem[];
+  /** Custom renderer for group headers when groupedItems are used */
+  groupHeaderRenderer?: (group: GroupedItem, index: number) => ReturnType<typeof h>;
   /** Selected value(s) - for v-model binding */
   modelValue?: string | number | (string | number)[];
   /** Default value for uncontrolled mode */
@@ -277,6 +279,48 @@ watch(
     });
   },
   { deep: true }
+);
+
+// Sync custom group header renderer
+watch(
+  () => props.groupHeaderRenderer,
+  (renderer) => {
+    safeCall((el) => {
+      if (renderer) {
+        el.groupHeaderRenderer = (group: any, idx: number) => {
+          const container = document.createElement('div');
+          const node = renderer(group, idx);
+          if (node && isVNode(node)) {
+            render(node, container);
+          } else if (node) {
+            render(h('span', String(node)), container);
+          }
+          return container;
+        };
+      }
+    });
+  }
+);
+
+// Sync custom group header renderer
+watch(
+  () => props.groupHeaderRenderer,
+  (renderer) => {
+    safeCall((el) => {
+      if (renderer) {
+        el.groupHeaderRenderer = (group: any, idx: number) => {
+          const container = document.createElement('div');
+          const node = renderer(group, idx);
+          if (node && isVNode(node)) {
+            render(node, container);
+          } else if (node) {
+            render(h('span', String(node)), container);
+          }
+          return container;
+        };
+      }
+    });
+  }
 );
 
 // removed old watcher

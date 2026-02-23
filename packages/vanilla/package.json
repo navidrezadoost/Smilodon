@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/vanilla",
-  "version": "1.4.5",
+  "version": "1.4.10",
   "description": "Vanilla JavaScript helpers for Smilodon Select - part of the Smilodon UI toolkit",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,7 +23,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.4.4"
+    "@smilodon/core": "^1.4.10"
   },
   "devDependencies": {
     "typescript": "^5.6.2",

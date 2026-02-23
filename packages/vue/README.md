@@ -53,6 +53,7 @@ The complete guide includes:
 - ✅ **Infinite Scroll** - Handle massive datasets efficiently
 - ✅ **Virtual Scrolling** - Render only visible items for performance
 - ✅ **Grouped Options** - Organize items into categories
+- 🎨 **Dark Mode** - apply `class="dark-mode"` or `data-theme="dark"` to the component or an ancestor; styles are scoped inside the shadow DOM.
 - ✅ **Accessible** - WCAG 2.1 AAA compliant, full keyboard navigation
 - ✅ **Flexible Input** - Accepts SelectItem objects, string arrays, or number arrays
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
@@ -398,6 +399,33 @@ async function handleSearch(query) {
 
 ### Grouped Options
 
+The Vue wrapper also accepts a flat `items` array where each object may include a `group` string.  The adapter auto‑converts these to `groupedItems` when it detects the property, so you can use whichever format feels more natural.
+
+```vue
+<script setup>
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref('');
+// flat list with `group` property (auto-converted)
+const items = [
+  { value: 'apple', label: 'Apple', group: 'Fruits' },
+  { value: 'banana', label: 'Banana', group: 'Fruits' },
+  { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+];
+</script>
+
+<template>
+  <Select
+    :items="items"
+    v-model="value"
+    searchable
+  />
+</template>
+```
+
+You can also pass explicit `groupedItems` if you prefer:
+
 ```vue
 <script setup>
 import { ref } from 'vue';
@@ -406,19 +434,19 @@ import { Select } from '@smilodon/vue';
 const value = ref('');
 const groupedItems = [
   {
-    groupLabel: 'Fruits',
-    items: [
+    label: 'Fruits',
+    options: [
       { value: 'apple', label: 'Apple' },
       { value: 'banana', label: 'Banana' },
-    ]
+    ],
   },
   {
-    groupLabel: 'Vegetables',
-    items: [
+    label: 'Vegetables',
+    options: [
       { value: 'carrot', label: 'Carrot' },
       { value: 'potato', label: 'Potato' },
-    ]
-  }
+    ],
+  },
 ];
 </script>
 
@@ -427,6 +455,27 @@ const groupedItems = [
     :groupedItems="groupedItems"
     v-model="value"
     searchable
+  />
+</template>
+```
+
+**Custom group header renderer**
+You can provide a Vue render function to customize how headers are displayed.  The returned VNode will receive `.group-header` and a `part` attribute automatically.
+
+```vue
+<script setup>
+import { ref, h } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref('');
+const groups = [/* ... */];
+</script>
+
+<template>
+  <Select
+    :groupedItems="groups"
+    :groupHeaderRenderer="(grp) => h('div', { class: 'text-xs uppercase' }, grp.label)"
+    v-model="value"
   />
 </template>
 ```
