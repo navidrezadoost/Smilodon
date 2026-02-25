@@ -610,6 +610,11 @@ Dark mode is **opt-in only** and can be enabled by adding a class or data attrib
 
 <!-- Using data attribute -->
 <enhanced-select data-theme="dark"></enhanced-select>
+
+<!-- Also supported (attribute aliases) -->
+<enhanced-select dark-mode></enhanced-select>
+<enhanced-select darkmode></enhanced-select>
+<enhanced-select theme="dark"></enhanced-select>
 ```
 
 ```css
@@ -631,6 +636,8 @@ enhanced-select.dark-mode {
 **Light Mode (Default)**
 ```css
 --select-options-bg           /* Options container background (white) */
+--select-width                /* Host width (100% default) */
+--select-height               /* Host height (auto default) */
 --select-option-color          /* Option text color (#1f2937) */
 --select-option-bg             /* Option background (white) */
 --select-option-padding        /* Option padding (8px 12px) */
@@ -643,6 +650,8 @@ enhanced-select.dark-mode {
 --select-option-selected-hover-border /* Selected+hover border (inherits selected border by default) */
 --select-option-active-bg      /* Active background (#f3f4f6) */
 --select-option-active-color   /* Active text color (#1f2937) */
+--select-input-width           /* Input field width */
+--select-input-height          /* Input container height */
 --select-dropdown-bg           /* Dropdown background (white) */
 --select-dropdown-border       /* Dropdown border color (#ccc) */
 --select-dropdown-shadow       /* Dropdown shadow */
@@ -665,9 +674,17 @@ enhanced-select.dark-mode {
 --select-group-header-color    /* Text color (#6b7280) */
 --select-group-header-bg       /* Background (#f3f4f6) */
 --select-group-header-font-size
+--select-group-header-text-align /* Header text alignment (left default) */
 --select-group-header-text-transform
 --select-group-header-letter-spacing
 --select-group-header-border-bottom
+
+/* Option content and checkmark hooks */
+--select-option-content-overflow
+--select-option-content-text-overflow
+--select-option-content-white-space
+--select-checkmark-margin-left
+--select-checkmark-color
 ```
 
 **Dark Mode (Opt-in)**
@@ -717,7 +734,18 @@ enhanced-select {
     transparent 100%
   );
 }
+
+/* Typo-compatible aliases are also accepted */
+enhanced-select {
+  --select-seperator-width: 2px;
+  --select-seperator-height: 80%;
+  --select-seperator-position: 40px;
+  --select-seperator-gradient: linear-gradient(to bottom, transparent 0%, #3b82f6 20%, #3b82f6 80%, transparent 100%);
+}
 ```
+
+**Gradient Dropdown + Hover/Selected States**
+If your dropdown uses a gradient background (for example via `--select-dropdown-bg`), option hover/selected colors still work as expected. The component intentionally uses the `background` shorthand for hover/selected option states so any inherited `background-image` layers are cleared correctly.
 
 **Badge Remove/Delete Button (Multi-Select)**
 The × button that removes selected items in multi-select mode is fully customizable:

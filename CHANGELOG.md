@@ -38,10 +38,19 @@ Historical Angular-related changelog entries below are preserved for reference o
 - Arrow click handler now delegates to `_handleOpen/_handleClose` for consistent behavior and focus.
 - Input container pointerdown listener now toggles instead of only opening.
 - Dark-mode styles extended to include group header variables; host-context selectors improved for group elements.
+- Improved dark-mode activation compatibility: supports `dark-mode`, `darkmode`, `theme="dark"`, and ancestor attribute aliases in addition to existing class/data-theme forms (#16).
+- Mapped dark option tokens to base option variables in core so nested `select-option` rows consistently honor dark mode background/text tokens (#16).
+- Fixed malformed dark active-option CSS block that could drop `color/outline` declarations in dark mode (#16).
+- Removed hardcoded host inline width in `connectedCallback`, allowing full CSS-token-based sizing (`--select-width`, `--select-height`, `--select-input-width`, `--select-input-height`).
+- Refined input-container toggle behavior: clicking directly inside the text input keeps dropdown open for typing; clicking other container areas still toggles close.
 
 ### Styling
 - Added backward‑compatible alias variables: `--select-arrow-height`, `--select-arrow-width`, and `--select-arrow-hover` (maps to hover color).
 - Reviewed and documented `--select-empty-*` tokens for customizing no-results state.
+- Added typo-compatible separator aliases (`--select-seperator-*`) and wired them as fallbacks to `--select-separator-*` tokens (#16).
+- Added `--select-group-header-text-align` token for group label alignment control (#16).
+- `select-option` internal container now applies base option `background`/`color` tokens so option background and border/border-bottom customization consistently take effect (#16).
+- Added option content/checkmark hooks (`--select-option-content-*`, `--select-checkmark-*`) and removed inline checkmark styles to maximize from-scratch theming control.
 
 ### Documentation
 - Updated core and adapter READMEs with grouping notes, auto-conversion examples, renderer usage, variable name clarifications and part names for `group-header`/`no-results`.
@@ -50,6 +59,11 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Tests
 - New unit tests covering group-header part, dark-mode group header styling, arrow alias variables and input toggle focus behavior.
 - E2E tests verify group header rendering, dark mode color change, and keyboard navigation remain intact.
+
+## [1.4.11] - 2026-02-25
+
+### Changed
+- Released `@smilodon/core@1.4.11` with the styling/interaction fixes currently tracked in the Unreleased section (dark-mode compatibility expansion, grouped header styling hooks, option/separator theming compatibility aliases, and open/close interaction refinements).
 
 ## [1.4.7] - 2026-02-19
 

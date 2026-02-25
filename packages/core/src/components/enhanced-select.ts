@@ -158,7 +158,6 @@ export class EnhancedSelect extends HTMLElement {
     // Angular's rendering seems to not apply :host styles correctly in some cases
     // Must be done in connectedCallback when element is attached to DOM
     this.style.display = 'block';
-    this.style.width = '100%';
 
     if (this._optionRenderer) {
       this._setGlobalStylesMirroring(true);
@@ -445,7 +444,8 @@ export class EnhancedSelect extends HTMLElement {
       :host {
         display: block;
         position: relative;
-        width: 100%;
+        width: var(--select-width, 100%);
+        height: var(--select-height, auto);
       }
       
       .select-container {
@@ -461,6 +461,7 @@ export class EnhancedSelect extends HTMLElement {
         flex-wrap: wrap;
         gap: var(--select-input-gap, 6px);
         padding: var(--select-input-padding, 6px 52px 6px 8px);
+        height: var(--select-input-height, auto);
         min-height: var(--select-input-min-height, 44px);
         max-height: var(--select-input-max-height, 160px);
         overflow-y: var(--select-input-overflow-y, auto);
@@ -482,17 +483,17 @@ export class EnhancedSelect extends HTMLElement {
         content: '';
         position: absolute;
         top: 50%;
-        right: var(--select-separator-position, 40px);
+        right: var(--select-separator-position, var(--select-seperator-position, 40px));
         transform: translateY(-50%);
-        width: var(--select-separator-width, 1px);
-        height: var(--select-separator-height, 60%);
-        background: var(--select-separator-bg, var(--select-separator-gradient, linear-gradient(
+        width: var(--select-separator-width, var(--select-seperator-width, 1px));
+        height: var(--select-separator-height, var(--select-seperator-height, 60%));
+        background: var(--select-separator-bg, var(--select-seperator-bg, var(--select-separator-gradient, var(--select-seperator-gradient, linear-gradient(
           to bottom,
           transparent 0%,
           rgba(0, 0, 0, 0.1) 20%,
           rgba(0, 0, 0, 0.1) 80%,
           transparent 100%
-        )));
+        ))));
         pointer-events: none;
         z-index: 1;
       }
@@ -519,7 +520,7 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .input-container.has-clear-control::after {
-        right: var(--select-separator-position-with-clear, 72px);
+        right: var(--select-separator-position-with-clear, var(--select-seperator-position-with-clear, 72px));
       }
 
       .dropdown-arrow-container.with-clear-control {
@@ -597,6 +598,7 @@ export class EnhancedSelect extends HTMLElement {
       
       .select-input {
         flex: 1;
+        width: var(--select-input-width, auto);
         min-width: var(--select-input-min-width, 120px);
         padding: var(--select-input-field-padding, 4px);
         border: none;
@@ -691,6 +693,7 @@ export class EnhancedSelect extends HTMLElement {
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, #6b7280);
         background-color: var(--select-group-header-bg, #f3f4f6);
+        text-align: var(--select-group-header-text-align, left);
         font-size: var(--select-group-header-font-size, 12px);
         text-transform: var(--select-group-header-text-transform, uppercase);
         letter-spacing: var(--select-group-header-letter-spacing, 0.05em);
@@ -875,10 +878,25 @@ export class EnhancedSelect extends HTMLElement {
       
       /* Dark mode - Opt-in via class, data attribute, or ancestor context */
       :host(.dark-mode),
+      :host([dark-mode]),
+      :host([darkmode]),
       :host([data-theme="dark"]),
+      :host([theme="dark"]),
       :host-context(.dark-mode),
       :host-context(.dark),
-      :host-context([data-theme="dark"]) {
+      :host-context([dark-mode]),
+      :host-context([darkmode]),
+      :host-context([data-theme="dark"]),
+      :host-context([theme="dark"]) {
+        /* map dark tokens to base option tokens so nested <select-option>
+           components also pick up dark mode via inherited CSS variables */
+        --select-option-bg: var(--select-dark-option-bg, #1f2937);
+        --select-option-color: var(--select-dark-option-color, #f9fafb);
+        --select-option-hover-bg: var(--select-dark-option-hover-bg, #374151);
+        --select-option-hover-color: var(--select-dark-option-hover-color, #f9fafb);
+        --select-option-selected-bg: var(--select-dark-option-selected-bg, #3730a3);
+        --select-option-selected-color: var(--select-dark-option-selected-text, #e0e7ff);
+
         .input-container {
           background: var(--select-dark-bg, #1f2937);
           border-color: var(--select-dark-border, #4b5563);
@@ -931,15 +949,14 @@ export class EnhancedSelect extends HTMLElement {
         
         .option.active:not(.selected) {
           background-color: var(--select-dark-option-active-bg, #374151);
+          color: var(--select-dark-option-active-color, #f9fafb);
+          outline: var(--select-dark-option-active-outline, 2px solid rgba(129, 140, 248, 0.55));
         }
 
         /* Group header in dark mode */
         .group-header {
           color: var(--select-dark-group-header-color, var(--select-group-header-color, #6b7280));
           background-color: var(--select-dark-group-header-bg, var(--select-group-header-bg, #374151));
-        }
-          color: var(--select-dark-option-active-color, #f9fafb);
-          outline: var(--select-dark-option-active-outline, 2px solid rgba(129, 140, 248, 0.55));
         }
 
         .option.selected.active {
@@ -1064,7 +1081,14 @@ export class EnhancedSelect extends HTMLElement {
       if (wasClosed) {
         this._handleOpen();
       } else {
-        // clicking the input while open should close the dropdown too
+        // Keep open while interacting directly with the input so users can
+        // place cursor/type without accidental collapse.
+        if (target === this._input) {
+          this._input.focus();
+          return;
+        }
+
+        // clicking other parts of the input container while open toggles close
         this._handleClose();
       }
       // Focus the input (do not prevent default behavior)

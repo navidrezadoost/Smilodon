@@ -102,6 +102,8 @@ export class SelectOption extends HTMLElement {
         padding: var(--select-option-padding, 8px 12px);
         cursor: pointer;
         user-select: none;
+        color: var(--select-option-color, var(--select-text-color, #1f2937));
+        background: var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white)));
         transition: var(--select-option-transition, background-color 0.2s ease);
         border: var(--select-option-border, none);
         border-bottom: var(--select-option-border-bottom, none);
@@ -146,9 +148,20 @@ export class SelectOption extends HTMLElement {
       
       .option-content {
         flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow: var(--select-option-content-overflow, hidden);
+        text-overflow: var(--select-option-content-text-overflow, ellipsis);
+        white-space: var(--select-option-content-white-space, nowrap);
+      }
+
+      .checkmark-icon {
+        display: none;
+        margin-left: var(--select-checkmark-margin-left, 8px);
+        color: var(--select-checkmark-color, currentColor);
+      }
+
+      :host([aria-selected="true"]) .checkmark-icon,
+      .option-container.selected .checkmark-icon {
+        display: inline-flex;
       }
       
       .remove-button {
@@ -287,15 +300,6 @@ export class SelectOption extends HTMLElement {
             <path d="M4 8.5L6.5 11L12 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         `;
-        // Visibility control via CSS or inline style
-        // We set it to display: none unless selected.
-        // User can override this behavior via part styling if they want transitions
-        if (!selected) {
-            checkmark.style.display = 'none';
-        } else {
-             checkmark.style.marginLeft = '8px';
-             checkmark.style.color = 'currentColor';
-        }
         this._container.appendChild(checkmark);
     }
 
