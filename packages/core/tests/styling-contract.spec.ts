@@ -140,7 +140,7 @@ describe('EnhancedSelect Styling Contract', () => {
 
     it('Group header part and renderer', async () => {
         // set up a single group
-        el.groupedItems = [{ label: 'Group1', options: ['x', 'y'] }];
+        el.setGroupedItems([{ label: 'Group1', options: ['x', 'y'] }]);
         // provide a simple custom renderer
         el.groupHeaderRenderer = (group, idx) => {
             const d = document.createElement('div');
@@ -154,14 +154,18 @@ describe('EnhancedSelect Styling Contract', () => {
     });
 
     it('Dark mode variables apply to group header', async () => {
-        el.groupedItems = [{ label: 'G2', options: ['a'] }];
+        el.setGroupedItems([{ label: 'G2', options: ['a'] }]);
         el.setAttribute('class', 'dark-mode');
-        // override dark header bg variable
-        el.style.setProperty('--select-dark-group-header-bg', 'rgb(10,20,30)');
         (el as any)._renderOptions();
         const header = el.shadowRoot!.querySelector('[part="group-header"]') as HTMLElement;
-        const bg = window.getComputedStyle(header).backgroundColor;
-        expect(bg).toBe('rgb(10, 20, 30)');
+        expect(header).toBeTruthy();
+
+        // JSDOM does not always resolve nested custom properties for shadow CSS,
+        // so verify the style contract directly.
+        const styleTag = el.shadowRoot!.querySelector('style');
+        const cssText = styleTag?.textContent || '';
+        expect(cssText).toContain('var(--select-dark-group-header-color');
+        expect(cssText).toContain('var(--select-dark-group-header-bg');
     });
 
     it('No-results styling can be targeted via part', async () => {
@@ -169,7 +173,7 @@ describe('EnhancedSelect Styling Contract', () => {
         el.className = 'test-no-results';
         // According to contract, authors should style via ::part or var;
         // we just verify that the part exists and can be selected.
-        el.groupedItems = [];
+        el.setGroupedItems([]);
         (el as any)._state.loadedItems = [];
         (el as any)._renderOptions();
         const noResults = el.shadowRoot!.querySelector('[part="no-results"]') as HTMLElement;
@@ -178,26 +182,11 @@ describe('EnhancedSelect Styling Contract', () => {
     });
 
     it('Arrow aliases (--select-arrow-height and hover) are supported', async () => {
-        // Open select so arrow is present
-        (el as any)._handleOpen();
-        await new Promise(r => setTimeout(r, 0));
-        const arrow = el.shadowRoot!.querySelector('.dropdown-arrow') as HTMLElement;
-        expect(arrow).toBeTruthy();
-
-        // set alias height and verify
-        el.style.setProperty('--select-arrow-height', '24px');
-        el.style.setProperty('--select-arrow-width', '24px');
-        // force reflow
-        arrow.getBoundingClientRect();
-        expect(getComputedStyle(arrow).height).toBe('24px');
-        expect(getComputedStyle(arrow).width).toBe('24px');
-
-        // hover color alias
-        el.style.setProperty('--select-arrow-hover', 'rgb(10,20,30)');
-        // simulate hover
-        const event = new MouseEvent('mouseover', { bubbles: true });
-        arrow.dispatchEvent(event);
-        expect(getComputedStyle(arrow).color).toBe('rgb(10, 20, 30)');
+        const styleTag = el.shadowRoot!.querySelector('style');
+        const cssText = styleTag?.textContent || '';
+        expect(cssText).toContain('width: var(--select-arrow-width, var(--select-arrow-size, 16px));');
+        expect(cssText).toContain('height: var(--select-arrow-height, var(--select-arrow-size, 16px));');
+        expect(cssText).toContain('color: var(--select-arrow-hover, var(--select-arrow-hover-color, #667eea));');
     });
 
     it('ClassMap + ::part combination: classes are reflected on the part', async () => {
@@ -296,6 +285,44 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(cssText).toContain('.option.active:not(.selected)');
         expect(cssText).toContain('.option.selected.active');
         expect(cssText).toContain('var(--select-option-selected-active-bg, var(--select-option-selected-bg, #e0e7ff))');
+        expect(cssText).toContain('var(--select-seperator-width, 1px)');
+        expect(cssText).toContain('var(--select-seperator-height, 60%)');
+        expect(cssText).toContain('var(--select-group-header-text-align, left)');
+        expect(cssText).toContain(':host([darkmode])');
+        expect(cssText).toContain(':host([dark-mode])');
+        expect(cssText).toContain(':host-context([theme="dark"])');
+        expect(cssText).toContain('--select-option-bg: var(--select-dark-option-bg, #1f2937);');
+        expect(cssText).toContain('width: var(--select-width, 100%);');
+        expect(cssText).toContain('height: var(--select-height, auto);');
+        expect(cssText).toContain('height: var(--select-input-height, auto);');
+        expect(cssText).toContain('width: var(--select-input-width, auto);');
+
+        // Regression for #12:
+        // Option states must use `background` (not background-color) so they
+        // override background-image/gradient inherited from dropdown styles.
+        expect(cssText).toContain('.option:hover');
+        expect(cssText).toContain('background: var(--select-option-hover-bg, #f3f4f6);');
+        expect(cssText).toContain('.option.selected');
+        expect(cssText).toContain('background: var(--select-option-selected-bg, #e0e7ff);');
+        expect(cssText).toContain('.option.selected:hover');
+        expect(cssText).toContain('background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e0e7ff));');
+    });
+
+    it('supports option content/checkmark customization hooks', async () => {
+        const option = new (customElements.get('select-option') as any)({
+            item: { value: 'v', label: 'L' },
+            index: 0,
+            selected: true,
+        });
+
+        const styleTag = option.shadowRoot?.querySelector('style');
+        const cssText = styleTag?.textContent || '';
+
+        expect(cssText).toContain('--select-option-content-overflow');
+        expect(cssText).toContain('--select-option-content-text-overflow');
+        expect(cssText).toContain('--select-option-content-white-space');
+        expect(cssText).toContain('--select-checkmark-margin-left');
+        expect(cssText).toContain('--select-checkmark-color');
     });
 
     it('supports clear control rendering and emits clear event', async () => {
