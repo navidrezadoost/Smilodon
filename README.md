@@ -15,7 +15,7 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
-> **Latest (v1.4.11):** Fixed input‑opened selection bug, added pointer capture, removed debug logs, grouped-items auto-conversion in adapters; improved dark-mode support via ancestor-aware selectors; styling improvements to group headers.
+> **Latest (v1.4.12):** Added runtime capability reporting, known limitation policies, tracking snapshots, and diagnostic eventing in core; exposed these controls across React/Vue/Svelte/Vanilla adapters with new contract + unit coverage and Playwright preflight checks.
 
 **Notable changes in v1.4.8**
 
@@ -77,6 +77,7 @@ Deep dives: [ARCHITECTURE.md](./ARCHITECTURE.md), [docs/SELECT-IMPLEMENTATION.md
 | Accessibility | Full ARIA pattern, screen reader announcements, focus trapping, 44px touch targets |
 | Custom UI | Slot templates, theme tokens, light/dark theming, design-token aware |
 | **Custom Components** | **Pass framework components (React/Vue/Svelte) for rendering options with lifecycle management** |
+| Runtime control | `getCapabilities()`, limitation policy controls, and tracking snapshots across all adapters |
 | Observability | Perf heat-map overlay (playground), console instrumentation, metrics exporter |
 
 ### Representative Workloads
@@ -453,6 +454,7 @@ Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md), [tests/README.md](.
 ### Current Status & Known Issues
 
 - Known limitations: [docs/KNOWN-LIMITATIONS.md](./docs/KNOWN-LIMITATIONS.md)
+- Adapter capabilities matrix: [docs/ADAPTER-CAPABILITY-MATRIX.md](./docs/ADAPTER-CAPABILITY-MATRIX.md)
 - Playwright browser install may require manual OS-specific steps on non-Ubuntu Linux distributions (see [SETUP.md](./SETUP.md)).
 
 ---

@@ -7,6 +7,11 @@ import type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
+  LimitationState,
+  TrackingSnapshot,
+  SelectCapabilitiesReport,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -35,6 +40,14 @@ export interface SelectProps {
   placement?: 'bottom' | 'top' | 'auto';
   className?: string;
   style?: string;
+  trackingEnabled?: boolean;
+  trackEvents?: boolean;
+  trackStyling?: boolean;
+  trackLimitations?: boolean;
+  emitDiagnostics?: boolean;
+  trackingMaxEntries?: number;
+  limitationPolicies?: LimitationPolicyMap;
+  autoMitigateRuntimeModeSwitch?: boolean;
 }
 
 export interface SelectEvents {
@@ -45,6 +58,8 @@ export interface SelectEvents {
   search: CustomEvent<{ query: string }>;
   loadMore: CustomEvent<{ page: number }>;
   create: CustomEvent<{ value: string }>;
+  clear: CustomEvent<{ clearedSelection: boolean; clearedSearch: boolean }>;
+  diagnostic: CustomEvent<DiagnosticEventDetail>;
 }
 
 export interface SelectSlots {}
@@ -56,4 +71,9 @@ export default class Select extends SvelteComponentTyped<SelectProps, SelectEven
   setItems(items: SelectItem[]): void;
   setGroupedItems(groups: GroupedItem[]): void;
   clear(): void;
+  getCapabilities(): SelectCapabilitiesReport | undefined;
+  getKnownLimitations(): LimitationState[];
+  getTrackingSnapshot(): TrackingSnapshot;
+  clearTracking(source?: 'event' | 'style' | 'limitation' | 'all'): void;
+  setLimitationPolicies(policies: LimitationPolicyMap): void;
 }

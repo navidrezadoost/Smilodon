@@ -3,6 +3,8 @@
  * Allows users to define default behaviors that can be overridden at component level
  */
 
+import type { KnownLimitationId, LimitationPolicy } from '../types';
+
 export interface ScrollToSelectedConfig {
   /** Whether to scroll to selected item when dropdown opens/closes */
   enabled: boolean;
@@ -158,6 +160,28 @@ export interface CallbackConfig {
   onError?: (error: Error) => void;
 }
 
+export interface TrackingConfig {
+  /** Master switch for runtime tracking */
+  enabled: boolean;
+  /** Track emitted events */
+  events: boolean;
+  /** Track styling-related changes */
+  styling: boolean;
+  /** Track limitations and policy changes */
+  limitations: boolean;
+  /** Emit `diagnostic` events for tracking entries */
+  emitDiagnostics: boolean;
+  /** Maximum retained entries per tracking channel */
+  maxEntries: number;
+}
+
+export interface LimitationsConfig {
+  /** Policy map for known limitations */
+  policies: Partial<Record<KnownLimitationId, LimitationPolicy>>;
+  /** Auto-reset selection state when mode changes single <-> multi */
+  autoMitigateRuntimeModeSwitch: boolean;
+}
+
 export interface GlobalSelectConfig {
   /** Selection behavior */
   selection: SelectionConfig;
@@ -179,6 +203,10 @@ export interface GlobalSelectConfig {
   clearControl: ClearControlConfig;
   /** Callbacks */
   callbacks: CallbackConfig;
+  /** Runtime tracking controls */
+  tracking: TrackingConfig;
+  /** Known limitations controls */
+  limitations: LimitationsConfig;
   /** Enable/disable entire component */
   enabled: boolean;
   /** Enable search/filter */
@@ -253,6 +281,18 @@ const defaultConfig: GlobalSelectConfig = {
     icon: '×',
   },
   callbacks: {},
+  tracking: {
+    enabled: false,
+    events: true,
+    styling: true,
+    limitations: true,
+    emitDiagnostics: false,
+    maxEntries: 200,
+  },
+  limitations: {
+    policies: {},
+    autoMitigateRuntimeModeSwitch: true,
+  },
   enabled: true,
   searchable: false,
   placeholder: 'Select an option...',

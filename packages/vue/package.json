@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/vue",
-  "version": "1.4.10",
+  "version": "1.4.11",
   "description": "Vue 3 adapter for @smilodon/core - Production-ready accessible select component",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,7 +23,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.4.10",
+    "@smilodon/core": "^1.4.12",
     "vue": "^3.0.0"
   },
   "devDependencies": {

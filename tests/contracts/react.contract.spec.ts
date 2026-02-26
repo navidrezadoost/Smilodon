@@ -613,4 +613,87 @@ describe('React Adapter Contract Tests', () => {
   pendingTests.forEach((testName) => {
     it.skip(`${testName} (not implemented yet)`, () => {});
   });
+
+  it('emits diagnostic events when tracking diagnostics are enabled', async () => {
+    const onDiagnostic = vi.fn();
+    const { container, unmount } = render(
+      createElement(Select, {
+        items: basicItems,
+        trackingEnabled: true,
+        emitDiagnostics: true,
+        onDiagnostic,
+      })
+    );
+
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(typeof element?.open).toBe('function');
+    });
+
+    element.open();
+
+    await waitFor(() => {
+      expect(onDiagnostic).toHaveBeenCalled();
+    });
+
+    const diagnostics = onDiagnostic.mock.calls.map((call) => call[0]);
+    const hasOpenEventDiagnostic = diagnostics.some(
+      (detail) => detail?.source === 'event' && detail?.name === 'open'
+    );
+    expect(hasOpenEventDiagnostic).toBe(true);
+
+    unmount();
+  });
+
+  it('exposes capability, limitation and tracking controls via ref handle', async () => {
+    let handle: SelectHandle | null = null;
+
+    const Harness = () => {
+      const ref = (instance: SelectHandle | null) => {
+        handle = instance;
+      };
+
+      return createElement(Select, {
+        ref,
+        items: basicItems,
+        trackingEnabled: true,
+        emitDiagnostics: false,
+      });
+    };
+
+    const { unmount } = render(createElement(Harness));
+
+    await waitFor(() => {
+      expect(handle).not.toBeNull();
+      expect(typeof handle?.getCapabilities).toBe('function');
+    });
+
+    const capabilities = handle!.getCapabilities();
+    expect(capabilities?.events.diagnosticEvent).toBe(true);
+
+    const limitations = handle!.getKnownLimitations();
+    expect(limitations.some((item) => item.id === 'runtimeModeSwitching')).toBe(true);
+
+    handle!.open();
+
+    await waitFor(() => {
+      const snapshot = handle!.getTrackingSnapshot();
+      expect(snapshot.events.length).toBeGreaterThan(0);
+    });
+
+    handle!.clearTracking('event');
+    const afterClear = handle!.getTrackingSnapshot();
+    expect(afterClear.events).toHaveLength(0);
+
+    handle!.setLimitationPolicies({
+      runtimeModeSwitching: { mode: 'strict', note: 'Contract test policy' },
+    });
+
+    const afterPolicy = handle!.getKnownLimitations();
+    const runtimeMode = afterPolicy.find((item) => item.id === 'runtimeModeSwitching');
+    expect(runtimeMode?.mode).toBe('strict');
+
+    unmount();
+  });
 });

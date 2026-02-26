@@ -10,6 +10,11 @@ import type {
   ClearEventDetail,
   GroupedItem,
   RendererHelpers,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
+  TrackingSnapshot,
+  SelectCapabilitiesReport,
+  LimitationState,
 } from '@smilodon/core';
 
 /**
@@ -146,6 +151,33 @@ export interface SelectProps {
 
   /** Called when clear control is used */
   onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
+
+  /** Called when diagnostic tracking is emitted */
+  onDiagnostic?: (detail: DiagnosticEventDetail) => void;
+
+  /** Enable runtime tracking */
+  trackingEnabled?: boolean;
+
+  /** Track emitted events */
+  trackEvents?: boolean;
+
+  /** Track styling changes */
+  trackStyling?: boolean;
+
+  /** Track limitations and policy changes */
+  trackLimitations?: boolean;
+
+  /** Emit diagnostic events */
+  emitDiagnostics?: boolean;
+
+  /** Max entries kept per tracking channel */
+  trackingMaxEntries?: number;
+
+  /** Limitation control policies */
+  limitationPolicies?: LimitationPolicyMap;
+
+  /** Automatically mitigate single/multi runtime switching */
+  autoMitigateRuntimeModeSwitch?: boolean;
   
   /** Loading state for async operations */
   loading?: boolean;
@@ -184,6 +216,21 @@ export interface SelectHandle {
   
   /** Clear the selection */
   clear: () => void;
+
+  /** Runtime capability report */
+  getCapabilities: () => SelectCapabilitiesReport | undefined;
+
+  /** Known limitations report */
+  getKnownLimitations: () => LimitationState[];
+
+  /** Tracking snapshot */
+  getTrackingSnapshot: () => TrackingSnapshot;
+
+  /** Clear tracking logs */
+  clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => void;
+
+  /** Update limitation policies */
+  setLimitationPolicies: (policies: LimitationPolicyMap) => void;
 }
 
 /**
@@ -266,6 +313,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onSearch,
     onLoadMore,
     onClear,
+    onDiagnostic,
+    trackingEnabled = false,
+    trackEvents = true,
+    trackStyling = true,
+    trackLimitations = true,
+    emitDiagnostics = false,
+    trackingMaxEntries = 200,
+    limitationPolicies,
+    autoMitigateRuntimeModeSwitch = true,
     loading = false,
     creatable = false,
     onCreate,
@@ -441,6 +497,18 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         ariaLabel: clearAriaLabel,
         icon: clearIcon,
       },
+      tracking: {
+        enabled: trackingEnabled,
+        events: trackEvents,
+        styling: trackStyling,
+        limitations: trackLimitations,
+        emitDiagnostics,
+        maxEntries: trackingMaxEntries,
+      },
+      limitations: {
+        policies: limitationPolicies,
+        autoMitigateRuntimeModeSwitch,
+      },
     };
 
     element.updateConfig(config);
@@ -473,7 +541,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, props.groupHeaderRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, props.groupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -534,10 +602,22 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         ariaLabel: clearAriaLabel,
         icon: clearIcon,
       },
+      tracking: {
+        enabled: trackingEnabled,
+        events: trackEvents,
+        styling: trackStyling,
+        limitations: trackLimitations,
+        emitDiagnostics,
+        maxEntries: trackingMaxEntries,
+      },
+      limitations: {
+        policies: limitationPolicies,
+        autoMitigateRuntimeModeSwitch,
+      },
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, isElementReady]);
+  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
 
   // Update error state
   useEffect(() => {
@@ -611,6 +691,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       });
     };
 
+    const handleDiagnostic = (e: CustomEvent<DiagnosticEventDetail>) => {
+      onDiagnostic?.(e.detail);
+    };
+
     element.addEventListener('select', handleSelect);
     element.addEventListener('change', handleChange);
     element.addEventListener('open', handleOpen);
@@ -618,6 +702,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     element.addEventListener('search', handleSearch);
     element.addEventListener('loadMore', handleLoadMore);
     element.addEventListener('clear', handleClear);
+    element.addEventListener('diagnostic', handleDiagnostic);
 
     return () => {
       element.removeEventListener('select', handleSelect);
@@ -627,8 +712,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.removeEventListener('search', handleSearch);
       element.removeEventListener('loadMore', handleLoadMore);
       element.removeEventListener('clear', handleClear);
+      element.removeEventListener('diagnostic', handleDiagnostic);
     };
-  }, [onSelect, onChange, onOpen, onClose, onSearch, onLoadMore, onClear, isControlled, multiple]);
+  }, [onSelect, onChange, onOpen, onClose, onSearch, onLoadMore, onClear, onDiagnostic, isControlled, multiple]);
 
   // Expose imperative handle
   useImperativeHandle(ref, () => ({
@@ -659,6 +745,21 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         setInternalValue(multiple ? [] : undefined);
       }
       onChange?.(multiple ? [] : '', []);
+    },
+    getCapabilities: () => {
+      return elementRef.current?.getCapabilities?.();
+    },
+    getKnownLimitations: () => {
+      return elementRef.current?.getKnownLimitations?.() || [];
+    },
+    getTrackingSnapshot: () => {
+      return elementRef.current?.getTrackingSnapshot?.() || { events: [], styles: [], limitations: [] };
+    },
+    clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => {
+      elementRef.current?.clearTracking?.(source);
+    },
+    setLimitationPolicies: (policies: LimitationPolicyMap) => {
+      elementRef.current?.setLimitationPolicies?.(policies);
     },
   }));
 

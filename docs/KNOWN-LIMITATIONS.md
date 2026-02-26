@@ -2,6 +2,15 @@
 
 This document tracks current limitations and trade-offs in Smilodon.
 
+## Runtime Visibility and Control
+
+Known limitations are also exposed at runtime through the core component API:
+
+- `getKnownLimitations()`
+- `setLimitationPolicies(policies)`
+
+Tracking can be enabled through `updateConfig({ tracking: ... })` and inspected with `getTrackingSnapshot()`.
+
 ## Variable Item Height
 Smilodon assumes fixed or estimated item heights for virtualization. Fully dynamic row heights are not yet supported. If your options have variable heights, you may see inaccurate scroll positions.
 

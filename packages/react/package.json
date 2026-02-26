@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.4.10",
+  "version": "1.4.11",
   "description": "React adapter for @smilodon/core - Production-ready accessible select component (React, Vue, Svelte, Vanilla JS)",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,7 +23,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.4.10",
+    "@smilodon/core": "^1.4.12",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },

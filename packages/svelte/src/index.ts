@@ -18,6 +18,11 @@ export type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
+  TrackingSnapshot,
+  SelectCapabilitiesReport,
+  LimitationState,
 } from '@smilodon/core';
 
 // Export component-specific types

@@ -42,6 +42,11 @@ export type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
+  TrackingSnapshot,
+  SelectCapabilitiesReport,
+  LimitationState,
 } from '@smilodon/core';
 
 export { Select };

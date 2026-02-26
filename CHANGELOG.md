@@ -60,6 +60,25 @@ Historical Angular-related changelog entries below are preserved for reference o
 - New unit tests covering group-header part, dark-mode group header styling, arrow alias variables and input toggle focus behavior.
 - E2E tests verify group header rendering, dark mode color change, and keyboard navigation remain intact.
 
+## [1.4.12] - 2026-02-26
+
+### Added
+- **Core runtime controls:** Added `getCapabilities()`, `getKnownLimitations()`, `setLimitationPolicies()`, `getTrackingSnapshot()`, and `clearTracking()` to `enhanced-select`.
+- **Diagnostic stream:** Added `diagnostic` event payloads for tracked runtime activity when `tracking.emitDiagnostics` is enabled.
+- **Config surface:** Added `tracking` and `limitations` sections to global/component config, including policy and mitigation controls.
+- **Documentation:** Added [docs/ADAPTER-CAPABILITY-MATRIX.md](./docs/ADAPTER-CAPABILITY-MATRIX.md) and updated known limitations/runtime control guidance.
+
+### Changed
+- **Core config merge behavior:** `updateConfig` now deep-merges against the current instance config to preserve previously applied runtime settings.
+- **Runtime mode-switch mitigation:** Optional automatic clearing on single/multi mode switches is tracked and policy-controlled.
+- **Adapter API exposure:** React/Vue/Svelte/Vanilla adapters now expose runtime capabilities, limitations, tracking snapshots, policy updates, and diagnostic hooks.
+- **Version alignment:** Released `@smilodon/core@1.4.12`; bumped adapters to `1.4.11` with peer dependency requirement `@smilodon/core@^1.4.12`.
+
+### Testing
+- Added core unit tests for capabilities, limitations, tracking, diagnostics, and runtime mode-switch mitigation.
+- Added contract tests for React, Vue, Svelte, and Vanilla to validate runtime control APIs and diagnostic behavior.
+- Added Playwright preflight check script and wired e2e scripts to fail fast with actionable browser-install diagnostics.
+
 ## [1.4.11] - 2026-02-25
 
 ### Changed

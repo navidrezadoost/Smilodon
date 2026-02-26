@@ -63,6 +63,78 @@ export interface ClearEventDetail {
   clearedSearch: boolean;
 }
 
+export type KnownLimitationId =
+  | 'variableItemHeight'
+  | 'builtInFetchPaginationApi'
+  | 'virtualizationOverheadSmallLists'
+  | 'runtimeModeSwitching'
+  | 'legacyBrowserSupport'
+  | 'webkitArchLinux';
+
+export type LimitationControlMode = 'default' | 'suppress' | 'strict';
+
+export interface LimitationPolicy {
+  mode: LimitationControlMode;
+  note?: string;
+}
+
+export type LimitationPolicyMap = Partial<Record<KnownLimitationId, LimitationPolicy>>;
+
+export interface LimitationState {
+  id: KnownLimitationId;
+  title: string;
+  description: string;
+  mode: LimitationControlMode;
+  status: 'active' | 'mitigated' | 'suppressed';
+  workaround?: string;
+}
+
+export interface TrackingEntry {
+  timestamp: number;
+  source: 'event' | 'style' | 'limitation';
+  name: string;
+  detail?: unknown;
+}
+
+export interface TrackingSnapshot {
+  events: TrackingEntry[];
+  styles: TrackingEntry[];
+  limitations: TrackingEntry[];
+}
+
+export interface SelectCapabilitiesReport {
+  styling: {
+    classMap: boolean;
+    optionRenderer: boolean;
+    groupHeaderRenderer: boolean;
+    cssCustomProperties: boolean;
+    shadowParts: boolean;
+    globalStyleMirroring: boolean;
+  };
+  events: {
+    emitted: SelectEventName[];
+    diagnosticEvent: boolean;
+  };
+  functionality: {
+    multiSelect: boolean;
+    searchable: boolean;
+    infiniteScroll: boolean;
+    loadMore: boolean;
+    clearControl: boolean;
+    groupedItems: boolean;
+    serverSideSelection: boolean;
+    runtimeModeSwitchMitigation: boolean;
+  };
+  limitations: LimitationState[];
+}
+
+export interface DiagnosticEventDetail {
+  timestamp: number;
+  source: 'event' | 'style' | 'limitation';
+  name: string;
+  detail?: unknown;
+}
+
 export interface SelectEventsDetailMap {
   select: SelectEventDetail;
   open: OpenEventDetail;
@@ -74,6 +146,7 @@ export interface SelectEventsDetailMap {
   loadMore: LoadMoreEventDetail;
   remove: RemoveEventDetail;
   clear: ClearEventDetail;
+  diagnostic: DiagnosticEventDetail;
 }
 
 export type SelectEventName = keyof SelectEventsDetailMap;

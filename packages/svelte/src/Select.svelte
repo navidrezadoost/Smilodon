@@ -40,6 +40,8 @@
     LoadMoreEventDetail,
     ClearEventDetail,
     GroupedItem,
+    DiagnosticEventDetail,
+    LimitationPolicyMap,
   } from '@smilodon/core';
 
   // Props
@@ -66,6 +68,14 @@
   export let clearAriaLabel: string = 'Clear selection and search';
   export let clearIcon: string = '×';
   export let optionRenderer: ((item: SelectItem, index: number, helpers: any) => HTMLElement) | undefined = undefined;
+  export let trackingEnabled: boolean = false;
+  export let trackEvents: boolean = true;
+  export let trackStyling: boolean = true;
+  export let trackLimitations: boolean = true;
+  export let emitDiagnostics: boolean = false;
+  export let trackingMaxEntries: number = 200;
+  export let limitationPolicies: LimitationPolicyMap | undefined = undefined;
+  export let autoMitigateRuntimeModeSwitch: boolean = true;
 
   const dispatch = createEventDispatcher<{
     change: { value: string | number | (string | number)[]; selectedItems: SelectItem[] };
@@ -76,6 +86,7 @@
     loadMore: { page: number };
     create: { value: string };
     clear: { clearedSelection: boolean; clearedSearch: boolean };
+    diagnostic: DiagnosticEventDetail;
   }>();
 
   let selectRef: HTMLElement;
@@ -145,6 +156,11 @@
     });
   }
 
+  function handleDiagnostic(e: Event) {
+    const customEvent = e as CustomEvent<DiagnosticEventDetail>;
+    dispatch('diagnostic', customEvent.detail);
+  }
+
   function updateConfig() {
     if (!selectRef) return;
     (selectRef as any).updateConfig?.({
@@ -165,6 +181,18 @@
         clearSearch: clearSearchOnClear,
         ariaLabel: clearAriaLabel,
         icon: clearIcon,
+      },
+      tracking: {
+        enabled: trackingEnabled,
+        events: trackEvents,
+        styling: trackStyling,
+        limitations: trackLimitations,
+        emitDiagnostics,
+        maxEntries: trackingMaxEntries,
+      },
+      limitations: {
+        policies: limitationPolicies,
+        autoMitigateRuntimeModeSwitch,
       },
     });
   }
@@ -227,6 +255,7 @@
     element.addEventListener('loadMore', handleLoadMore as EventListener);
     element.addEventListener('create', handleCreate as EventListener);
     element.addEventListener('clear', handleClear as EventListener);
+    element.addEventListener('diagnostic', handleDiagnostic as EventListener);
 
     updateConfig();
   });
@@ -245,20 +274,27 @@
     element.removeEventListener('loadMore', handleLoadMore as EventListener);
     element.removeEventListener('create', handleCreate as EventListener);
     element.removeEventListener('clear', handleClear as EventListener);
+    element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
   });
 
   // Reactive updates
   $: if (selectRef && items) {
-    (selectRef as any).setItems(items);
+    if (typeof (selectRef as any).setItems === 'function') {
+      (selectRef as any).setItems(items);
+    }
   }
 
   $: if (selectRef && groupedItems) {
-    (selectRef as any).setGroupedItems(groupedItems);
+    if (typeof (selectRef as any).setGroupedItems === 'function') {
+      (selectRef as any).setGroupedItems(groupedItems);
+    }
   }
 
   $: if (selectRef && currentValue !== undefined) {
-    const values = Array.isArray(currentValue) ? currentValue : [currentValue];
-    (selectRef as any).setSelectedValues(values);
+    if (typeof (selectRef as any).setSelectedValues === 'function') {
+      const values = Array.isArray(currentValue) ? currentValue : [currentValue];
+      (selectRef as any).setSelectedValues(values);
+    }
   }
 
   $: if (selectRef) {
@@ -299,15 +335,21 @@
 
   // Public methods
   export function open() {
-    (selectRef as any)?.open();
+    if (typeof (selectRef as any)?.open === 'function') {
+      (selectRef as any).open();
+    }
   }
 
   export function close() {
-    (selectRef as any)?.close();
+    if (typeof (selectRef as any)?.close === 'function') {
+      (selectRef as any).close();
+    }
   }
 
   export function focus() {
-    selectRef?.focus();
+    if (typeof (selectRef as any)?.focus === 'function') {
+      (selectRef as any).focus();
+    }
   }
 
   export function setItems(newItems: SelectItem[]) {
@@ -326,6 +368,26 @@
     const newValue = multiple ? [] : '';
     value = newValue as any;
     dispatch('change', { value: newValue as any, selectedItems: [] });
+  }
+
+  export function getCapabilities() {
+    return (selectRef as any)?.getCapabilities?.();
+  }
+
+  export function getKnownLimitations() {
+    return (selectRef as any)?.getKnownLimitations?.() || [];
+  }
+
+  export function getTrackingSnapshot() {
+    return (selectRef as any)?.getTrackingSnapshot?.() || { events: [], styles: [], limitations: [] };
+  }
+
+  export function clearTracking(source?: 'event' | 'style' | 'limitation' | 'all') {
+    (selectRef as any)?.clearTracking?.(source);
+  }
+
+  export function setLimitationPolicies(policies: LimitationPolicyMap) {
+    (selectRef as any)?.setLimitationPolicies?.(policies);
   }
 </script>
 
