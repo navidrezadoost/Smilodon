@@ -39,6 +39,8 @@ import type {
   ClearEventDetail,
   GroupedItem,
   RendererHelpers,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -109,6 +111,30 @@ export interface SelectProps {
 
   /** Custom Vue renderer returning a VNode */
   customRenderer?: (item: SelectItem, index: number) => ReturnType<typeof h>;
+
+  /** Enable runtime tracking */
+  trackingEnabled?: boolean;
+
+  /** Track emitted events */
+  trackEvents?: boolean;
+
+  /** Track styling changes */
+  trackStyling?: boolean;
+
+  /** Track limitations and policy updates */
+  trackLimitations?: boolean;
+
+  /** Emit diagnostic events */
+  emitDiagnostics?: boolean;
+
+  /** Max entries retained per tracking channel */
+  trackingMaxEntries?: number;
+
+  /** Limitation control policies */
+  limitationPolicies?: LimitationPolicyMap;
+
+  /** Automatically mitigate mode switching limitation */
+  autoMitigateRuntimeModeSwitch?: boolean;
 }
 
 export interface SelectEmits {
@@ -130,6 +156,8 @@ export interface SelectEmits {
   (e: 'create', value: string): void;
   /** Emitted when clear control is used */
   (e: 'clear', detail: { clearedSelection: boolean; clearedSearch: boolean }): void;
+  /** Emitted when runtime diagnostics are enabled */
+  (e: 'diagnostic', detail: DiagnosticEventDetail): void;
 }
 
 const props = withDefaults(defineProps<SelectProps>(), {
@@ -146,6 +174,13 @@ const props = withDefaults(defineProps<SelectProps>(), {
   clearable: false,
   clearSelectionOnClear: true,
   clearSearchOnClear: true,
+  trackingEnabled: false,
+  trackEvents: true,
+  trackStyling: true,
+  trackLimitations: true,
+  emitDiagnostics: false,
+  trackingMaxEntries: 200,
+  autoMitigateRuntimeModeSwitch: true,
 });
 
 const emit = defineEmits<SelectEmits>();
@@ -245,11 +280,11 @@ const waitForUpgrade = async () => {
   }
 };
 
-const safeCall = (fn: (el: any) => void) => {
+function safeCall(fn: (el: any) => void) {
   const el = selectRef.value as any;
   if (!el || !isElementReady.value) return;
   fn(el);
-};
+}
 
 // Check if component is controlled
 const isControlled = computed(() => props.modelValue !== undefined);
@@ -482,6 +517,18 @@ const updateConfig = () => {
         ariaLabel: props.clearAriaLabel,
         icon: props.clearIcon,
       },
+      tracking: {
+        enabled: props.trackingEnabled,
+        events: props.trackEvents,
+        styling: props.trackStyling,
+        limitations: props.trackLimitations,
+        emitDiagnostics: props.emitDiagnostics,
+        maxEntries: props.trackingMaxEntries,
+      },
+      limitations: {
+        policies: props.limitationPolicies,
+        autoMitigateRuntimeModeSwitch: props.autoMitigateRuntimeModeSwitch,
+      },
     };
 
     el.updateConfig(config);
@@ -504,6 +551,14 @@ watch(
     () => props.clearSearchOnClear,
     () => props.clearAriaLabel,
     () => props.clearIcon,
+    () => props.trackingEnabled,
+    () => props.trackEvents,
+    () => props.trackStyling,
+    () => props.trackLimitations,
+    () => props.emitDiagnostics,
+    () => props.trackingMaxEntries,
+    () => props.limitationPolicies,
+    () => props.autoMitigateRuntimeModeSwitch,
   ],
   updateConfig
 );
@@ -563,6 +618,11 @@ const handleClear = (e: Event) => {
   });
 };
 
+const handleDiagnostic = (e: Event) => {
+  const customEvent = e as CustomEvent<DiagnosticEventDetail>;
+  emit('diagnostic', customEvent.detail);
+};
+
 // Setup event listeners
 onMounted(async () => {
   await waitForUpgrade();
@@ -615,6 +675,7 @@ onMounted(async () => {
   element.addEventListener('loadMore', handleLoadMore as EventListener);
   element.addEventListener('create', handleCreate as EventListener);
   element.addEventListener('clear', handleClear as EventListener);
+  element.addEventListener('diagnostic', handleDiagnostic as EventListener);
 });
 
 onBeforeUnmount(() => {
@@ -634,6 +695,7 @@ onBeforeUnmount(() => {
   element.removeEventListener('loadMore', handleLoadMore as EventListener);
   element.removeEventListener('create', handleCreate as EventListener);
   element.removeEventListener('clear', handleClear as EventListener);
+  element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
 });
 
 // Expose imperative API
@@ -667,6 +729,26 @@ defineExpose({
     const value = props.multiple ? [] : '';
     emit('update:modelValue', value);
     emit('change', value, []);
+  },
+  /** Runtime capability report */
+  getCapabilities: () => {
+    return (selectRef.value as any)?.getCapabilities?.();
+  },
+  /** Known limitations report */
+  getKnownLimitations: () => {
+    return (selectRef.value as any)?.getKnownLimitations?.() || [];
+  },
+  /** Tracking snapshot */
+  getTrackingSnapshot: () => {
+    return (selectRef.value as any)?.getTrackingSnapshot?.() || { events: [], styles: [], limitations: [] };
+  },
+  /** Clear tracking entries */
+  clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => {
+    (selectRef.value as any)?.clearTracking?.(source);
+  },
+  /** Update limitation policies */
+  setLimitationPolicies: (policies: LimitationPolicyMap) => {
+    (selectRef.value as any)?.setLimitationPolicies?.(policies);
   },
 });
 </script>

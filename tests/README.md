@@ -101,6 +101,24 @@ npm run test:e2e:critical       # Critical path only
 npm run test:e2e:ui             # Interactive UI mode
 ```
 
+### Playwright Preflight
+
+E2E scripts now run a Playwright preflight step before executing tests:
+
+```bash
+npm run test:e2e:preflight
+```
+
+If you see very fast (`~1ms`) failures for many tests, it usually means browsers could not launch (not installed or download blocked).
+
+Common fixes:
+
+```bash
+npm run playwright:install
+```
+
+If downloads are geo-restricted in your region, set `PLAYWRIGHT_DOWNLOAD_HOST` to an accessible mirror or run E2E inside Playwright Docker image (`mcr.microsoft.com/playwright`).
+
 ## Test Scenarios
 
 ### Contract Tests (tests/contracts/)

@@ -6,7 +6,19 @@
 
 import type { GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
-import type { SelectEventName, SelectEventsDetailMap, GroupedItem, RendererHelpers, ClassMap } from '../types';
+import type {
+  SelectEventName,
+  SelectEventsDetailMap,
+  GroupedItem,
+  RendererHelpers,
+  ClassMap,
+  SelectCapabilitiesReport,
+  LimitationState,
+  LimitationPolicyMap,
+  KnownLimitationId,
+  TrackingSnapshot,
+  TrackingEntry,
+} from '../types';
 import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
 import { SelectOption } from './select-option';
 
@@ -73,6 +85,7 @@ export class EnhancedSelect extends HTMLElement {
   private _mirrorGlobalStylesForCustomOptions = false;
   private _globalStylesObserver: MutationObserver | null = null;
   private _globalStylesContainer: HTMLElement | null = null;
+  private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
 
   get classMap(): ClassMap | undefined {
     return this._classMap;
@@ -81,6 +94,10 @@ export class EnhancedSelect extends HTMLElement {
   set classMap(map: ClassMap | undefined) {
     this._classMap = map;
     this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map || this._groupHeaderRenderer));
+    this._track('style', 'classMapChanged', {
+      hasClassMap: Boolean(map),
+      keys: map ? Object.keys(map) : [],
+    });
 
     if (!this.isConnected) return;
     this._renderOptions();
@@ -98,6 +115,7 @@ export class EnhancedSelect extends HTMLElement {
   set groupHeaderRenderer(renderer: import('../types').GroupHeaderRenderer | undefined) {
     this._groupHeaderRenderer = renderer;
     this._setGlobalStylesMirroring(Boolean(this._optionRenderer || this._classMap || renderer));
+    this._track('style', 'groupHeaderRendererChanged', { enabled: Boolean(renderer) });
 
     if (!this.isConnected) return;
     this._renderOptions();
@@ -202,6 +220,7 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     this._mirrorGlobalStylesForCustomOptions = enabled;
+    this._track('style', 'globalStylesMirroringChanged', { enabled });
 
     if (enabled) {
       this._setupGlobalStylesMirroring();
@@ -2032,6 +2051,173 @@ export class EnhancedSelect extends HTMLElement {
 
   private _emit<K extends SelectEventName>(name: K, detail: SelectEventsDetailMap[K]): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
+    if (name !== 'diagnostic') {
+      this._track('event', String(name), detail);
+    }
+  }
+
+  private _track(source: 'event' | 'style' | 'limitation', name: string, detail?: unknown): void {
+    const cfg = this._config.tracking;
+    if (!cfg?.enabled) return;
+
+    if (source === 'event' && !cfg.events) return;
+    if (source === 'style' && !cfg.styling) return;
+    if (source === 'limitation' && !cfg.limitations) return;
+
+    const entry: TrackingEntry = {
+      timestamp: Date.now(),
+      source,
+      name,
+      detail,
+    };
+
+    const bucket = source === 'event'
+      ? this._tracking.events
+      : source === 'style'
+        ? this._tracking.styles
+        : this._tracking.limitations;
+
+    bucket.push(entry);
+
+    const maxEntries = Math.max(10, cfg.maxEntries || 200);
+    if (bucket.length > maxEntries) {
+      bucket.splice(0, bucket.length - maxEntries);
+    }
+
+    if (cfg.emitDiagnostics) {
+      this.dispatchEvent(new CustomEvent('diagnostic', {
+        detail: entry,
+        bubbles: true,
+        composed: true,
+      }));
+    }
+  }
+
+  private _getKnownLimitationDefinitions(): Omit<LimitationState, 'mode' | 'status'>[] {
+    return [
+      {
+        id: 'variableItemHeight',
+        title: 'Variable item height',
+        description: 'Virtualization assumes fixed or estimated item heights; fully dynamic heights are not yet supported.',
+        workaround: 'Use consistent item heights or set estimatedItemHeight to your dominant row size.',
+      },
+      {
+        id: 'builtInFetchPaginationApi',
+        title: 'Built-in fetch/pagination API',
+        description: 'Core does not include a built-in fetchUrl/searchUrl pagination transport.',
+        workaround: 'Use onSearch/onLoadMore callbacks and update data via setItems().',
+      },
+      {
+        id: 'virtualizationOverheadSmallLists',
+        title: 'Virtualization overhead for small lists',
+        description: 'Virtualization can add slight overhead on very small lists.',
+        workaround: 'Disable virtualization for tiny datasets when micro-latency is critical.',
+      },
+      {
+        id: 'runtimeModeSwitching',
+        title: 'Runtime single/multi mode switching',
+        description: 'Switching between single and multi mode can require state reset for consistency.',
+        workaround: 'Enable autoMitigateRuntimeModeSwitch or recreate/reset component state when toggling modes.',
+      },
+      {
+        id: 'legacyBrowserSupport',
+        title: 'Legacy browser support',
+        description: 'Official support targets modern evergreen browsers.',
+      },
+      {
+        id: 'webkitArchLinux',
+        title: 'Playwright WebKit on Arch-based Linux',
+        description: 'Native WebKit Playwright bundle depends on unavailable legacy system libraries on Arch-based distros.',
+        workaround: 'Run WebKit E2E tests via Playwright Docker image.',
+      },
+    ];
+  }
+
+  private _evaluateLimitationStatus(id: KnownLimitationId): 'active' | 'mitigated' | 'suppressed' {
+    const policyMode = this._config.limitations?.policies?.[id]?.mode ?? 'default';
+    if (policyMode === 'suppress') return 'suppressed';
+
+    if (id === 'runtimeModeSwitching' && this._config.limitations?.autoMitigateRuntimeModeSwitch) {
+      return 'mitigated';
+    }
+
+    return 'active';
+  }
+
+  getKnownLimitations(): LimitationState[] {
+    return this._getKnownLimitationDefinitions().map((limitation) => {
+      const mode = this._config.limitations?.policies?.[limitation.id]?.mode ?? 'default';
+      return {
+        ...limitation,
+        mode,
+        status: this._evaluateLimitationStatus(limitation.id),
+      };
+    });
+  }
+
+  setLimitationPolicies(policies: LimitationPolicyMap): void {
+    const next = {
+      ...(this._config.limitations?.policies || {}),
+      ...policies,
+    };
+
+    this.updateConfig({
+      limitations: {
+        ...(this._config.limitations || { autoMitigateRuntimeModeSwitch: true, policies: {} }),
+        policies: next,
+      },
+    });
+
+    this._track('limitation', 'policiesUpdated', { policies: next });
+  }
+
+  getTrackingSnapshot(): TrackingSnapshot {
+    return {
+      events: [...this._tracking.events],
+      styles: [...this._tracking.styles],
+      limitations: [...this._tracking.limitations],
+    };
+  }
+
+  clearTracking(source?: 'event' | 'style' | 'limitation' | 'all'): void {
+    if (!source || source === 'all') {
+      this._tracking.events = [];
+      this._tracking.styles = [];
+      this._tracking.limitations = [];
+      return;
+    }
+
+    if (source === 'event') this._tracking.events = [];
+    if (source === 'style') this._tracking.styles = [];
+    if (source === 'limitation') this._tracking.limitations = [];
+  }
+
+  getCapabilities(): SelectCapabilitiesReport {
+    return {
+      styling: {
+        classMap: true,
+        optionRenderer: true,
+        groupHeaderRenderer: true,
+        cssCustomProperties: true,
+        shadowParts: true,
+        globalStyleMirroring: true,
+      },
+      events: {
+        emitted: ['select', 'open', 'close', 'search', 'change', 'loadMore', 'remove', 'clear', 'error', 'diagnostic'],
+        diagnosticEvent: true,
+      },
+      functionality: {
+        multiSelect: true,
+        searchable: true,
+        infiniteScroll: true,
+        loadMore: true,
+        clearControl: true,
+        groupedItems: true,
+        serverSideSelection: true,
+        runtimeModeSwitchMitigation: Boolean(this._config.limitations?.autoMitigateRuntimeModeSwitch),
+      },
+      limitations: this.getKnownLimitations(),
+    };
   }
 
   private _emitChange(): void {
@@ -2054,6 +2240,7 @@ export class EnhancedSelect extends HTMLElement {
   set optionRenderer(renderer: OptionRendererFn | undefined) {
     this._optionRenderer = renderer;
     this._setGlobalStylesMirroring(Boolean(renderer || this._classMap));
+    this._track('style', 'optionRendererChanged', { enabled: Boolean(renderer) });
     this._renderOptions();
   }
   
@@ -2244,7 +2431,24 @@ export class EnhancedSelect extends HTMLElement {
    * Update component configuration
    */
   updateConfig(config: Partial<GlobalSelectConfig>): void {
-    this._config = selectConfig.mergeWithComponentConfig(config);
+    const previousMode = this._config.selection.mode;
+    this._config = this._mergeConfig(this._config, config);
+
+    if (
+      previousMode !== this._config.selection.mode &&
+      this._config.limitations?.autoMitigateRuntimeModeSwitch
+    ) {
+      this.clear();
+      this._track('limitation', 'runtimeModeSwitchMitigated', {
+        from: previousMode,
+        to: this._config.selection.mode,
+      });
+    } else if (previousMode !== this._config.selection.mode) {
+      this._track('limitation', 'runtimeModeSwitchDetected', {
+        from: previousMode,
+        to: this._config.selection.mode,
+      });
+    }
     
     // Update input state based on new config
     if (this._input) {
@@ -2277,6 +2481,28 @@ export class EnhancedSelect extends HTMLElement {
     this._syncClearControlState();
     
     this._renderOptions();
+  }
+
+  private _mergeConfig<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+    const result = { ...target };
+
+    for (const key in source) {
+      if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+
+      const sourceValue = source[key];
+      const targetValue = result[key];
+
+      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        result[key] = this._mergeConfig(
+          targetValue && typeof targetValue === 'object' ? targetValue : {},
+          sourceValue as any
+        ) as any;
+      } else {
+        result[key] = sourceValue as any;
+      }
+    }
+
+    return result;
   }
 
   private _handleClearControlClick(): void {

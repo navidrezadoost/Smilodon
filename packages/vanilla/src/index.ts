@@ -57,6 +57,15 @@ export function createSelect(options: {
   onLoadMore?: (page: number) => void;
   onCreate?: (value: string) => void;
   onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
+  onDiagnostic?: (detail: any) => void;
+  trackingEnabled?: boolean;
+  trackEvents?: boolean;
+  trackStyling?: boolean;
+  trackLimitations?: boolean;
+  emitDiagnostics?: boolean;
+  trackingMaxEntries?: number;
+  limitationPolicies?: Record<string, { mode: 'default' | 'suppress' | 'strict'; note?: string }>;
+  autoMitigateRuntimeModeSwitch?: boolean;
 }): HTMLElement {
   const select = document.createElement('enhanced-select') as any;
 
@@ -153,6 +162,13 @@ export function createSelect(options: {
     });
   }
 
+  if (options.onDiagnostic) {
+    select.addEventListener('diagnostic', (e: Event) => {
+      const event = e as CustomEvent;
+      options.onDiagnostic!(event.detail);
+    });
+  }
+
   select.updateConfig?.({
     clearControl: {
       enabled: options.clearable === true,
@@ -160,6 +176,18 @@ export function createSelect(options: {
       clearSearch: options.clearSearchOnClear ?? true,
       ariaLabel: options.clearAriaLabel,
       icon: options.clearIcon,
+    },
+    tracking: {
+      enabled: options.trackingEnabled ?? false,
+      events: options.trackEvents ?? true,
+      styling: options.trackStyling ?? true,
+      limitations: options.trackLimitations ?? true,
+      emitDiagnostics: options.emitDiagnostics ?? false,
+      maxEntries: options.trackingMaxEntries ?? 200,
+    },
+    limitations: {
+      policies: options.limitationPolicies,
+      autoMitigateRuntimeModeSwitch: options.autoMitigateRuntimeModeSwitch ?? true,
     },
   });
 
@@ -255,10 +283,43 @@ export function setGroupedItems(element: HTMLElement, groups: GroupedItem[]): vo
   select.setGroupedItems?.(groups);
 }
 
+export function getCapabilities(element: HTMLElement): any {
+  const select = element as any;
+  return select.getCapabilities?.();
+}
+
+export function getKnownLimitations(element: HTMLElement): any[] {
+  const select = element as any;
+  return select.getKnownLimitations?.() || [];
+}
+
+export function getTrackingSnapshot(element: HTMLElement): any {
+  const select = element as any;
+  return select.getTrackingSnapshot?.() || { events: [], styles: [], limitations: [] };
+}
+
+export function clearTracking(element: HTMLElement, source?: 'event' | 'style' | 'limitation' | 'all'): void {
+  const select = element as any;
+  select.clearTracking?.(source);
+}
+
+export function setLimitationPolicies(
+  element: HTMLElement,
+  policies: Record<string, { mode: 'default' | 'suppress' | 'strict'; note?: string }>
+): void {
+  const select = element as any;
+  select.setLimitationPolicies?.(policies);
+}
+
 // Re-export types from core for convenience
 export type {
   SelectEventDetail,
   ChangeEventDetail,
   SearchEventDetail,
   LoadMoreEventDetail,
+  DiagnosticEventDetail,
+  LimitationPolicyMap,
+  TrackingSnapshot,
+  SelectCapabilitiesReport,
+  LimitationState,
 } from '@smilodon/core';
