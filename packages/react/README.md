@@ -342,6 +342,23 @@ function InfiniteScrollExample() {
 }
 ```
 
+### Large Lists (Performance Baseline)
+
+For high-volume datasets, start with the built-in lightweight option rendering and then add custom renderers only if needed for UX.
+
+```tsx
+<Select
+  items={bigItems}
+  virtualized
+  estimatedItemHeight={40}
+  searchable
+/>
+```
+
+Notes:
+- Keep `estimatedItemHeight` close to real row height.
+- Complex `optionRenderer` DOM can add interaction cost on large lists; profile before shipping.
+
 ### With Validation
 
 ```tsx

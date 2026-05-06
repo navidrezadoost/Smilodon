@@ -333,6 +333,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const hasAppliedInitialValueRef = useRef(false);
   const reactRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
+  const groupHeaderRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
 
   const areValuesEqual = useCallback((nextValues: Array<string | number>, currentValues: Array<string | number>) => {
     if (nextValues.length !== currentValues.length) return false;
@@ -351,12 +352,14 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   // Use refs for renderers to avoid reconstructing the wrapper function on every render
   const customRendererRef = useRef(customRenderer ?? renderItem);
   const optionRendererRef = useRef(optionRenderer);
+  const groupHeaderRendererRef = useRef(props.groupHeaderRenderer);
   
   // Update ref when props change
   useEffect(() => {
     customRendererRef.current = customRenderer ?? renderItem;
     optionRendererRef.current = optionRenderer;
-  }, [customRenderer, renderItem, optionRenderer]);
+    groupHeaderRendererRef.current = props.groupHeaderRenderer;
+  }, [customRenderer, renderItem, optionRenderer, props.groupHeaderRenderer]);
 
   const resolvedOptionRenderer = useMemo(() => {
     // If a direct DOM renderer is provided, use it (assumed stable or controlled by user)
@@ -394,6 +397,26 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!optionRenderer, !!(customRenderer ?? renderItem)]); // Only reconstruct if presence changes
 
+  const resolvedGroupHeaderRenderer = useMemo(() => {
+    if (!props.groupHeaderRenderer) return undefined;
+
+    return (group: GroupedItem, index: number) => {
+      const renderer = groupHeaderRendererRef.current;
+      if (!renderer) return document.createElement('div');
+
+      let entry = groupHeaderRendererCache.current.get(index);
+      if (!entry) {
+        const container = document.createElement('div');
+        const root = createRoot(container);
+        entry = { container, root };
+        groupHeaderRendererCache.current.set(index, entry);
+      }
+
+      entry.root.render(<>{renderer(group, index)}</>);
+      return entry.container;
+    };
+  }, [!!props.groupHeaderRenderer]);
+
 
 
 
@@ -401,6 +424,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     return () => {
       reactRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
       reactRendererCache.current.clear();
+      groupHeaderRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+      groupHeaderRendererCache.current.clear();
     };
   }, [scheduleRootUnmount]);
 
@@ -416,6 +441,24 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       }
     });
   }, [items, groupedItems, scheduleRootUnmount]);
+
+  useEffect(() => {
+    const totalGroups = groupedItems?.length ?? 0;
+
+    groupHeaderRendererCache.current.forEach((entry, index) => {
+      if (index >= totalGroups) {
+        scheduleRootUnmount(entry.root);
+        groupHeaderRendererCache.current.delete(index);
+      }
+    });
+  }, [groupedItems, scheduleRootUnmount]);
+
+  useEffect(() => {
+    if (props.groupHeaderRenderer) return;
+
+    groupHeaderRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+    groupHeaderRendererCache.current.clear();
+  }, [props.groupHeaderRenderer, scheduleRootUnmount]);
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
@@ -453,30 +496,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.setItems(items);
     }
 
-    if (resolvedOptionRenderer) {
-      element.optionRenderer = resolvedOptionRenderer;
-    }
-
-    if (props.groupHeaderRenderer) {
-      // the web component expects an HTMLElement-returning renderer; we wrap
-      // the React nodes similarly to other renderers
-      element.groupHeaderRenderer = (group: any, idx: number) => {
-        const container = document.createElement('div');
-        const node = props.groupHeaderRenderer?.(group as SelectItem & { label: string; options: any[] }, idx);
-        if (node) {
-          const root = createRoot(container);
-          root.render(<>{node}</>);
-          // we don't keep roots around because headers are recreated on each
-          // open; the scoping is lightweight enough.
-        }
-        return container;
-      };
-    }
+    element.optionRenderer = resolvedOptionRenderer;
+    element.groupHeaderRenderer = resolvedGroupHeaderRenderer;
 
     // Configure component
     const config = {
       searchable,
       placeholder,
+      virtualize: virtualized,
+      estimatedItemHeight,
       enabled: !disabled,
       selection: {
         mode: multiple ? 'multi' : 'single',
@@ -541,7 +569,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, props.groupHeaderRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -586,6 +614,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     const config = {
       searchable,
       placeholder,
+      virtualize: virtualized,
+      estimatedItemHeight,
       enabled: !disabled,
       selection: {
         mode: multiple ? 'multi' : 'single',
@@ -617,7 +647,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
+  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
 
   // Update error state
   useEffect(() => {
@@ -653,15 +683,16 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       
       // Cast selectedValues to proper type
       const values = selectedValues as (string | number)[];
+      const nextSingleValue: string | number = values.length > 0 ? values[0] : '';
       
       // Update internal value in uncontrolled mode
       if (!isControlled) {
-        setInternalValue(multiple ? values : values[0]);
+        setInternalValue(multiple ? values : nextSingleValue);
       }
 
       // Call onChange callback
       if (onChange) {
-        const value = multiple ? values : values[0];
+        const value = multiple ? values : nextSingleValue;
         onChange(value, selectedItems as SelectItem[]);
       }
     };

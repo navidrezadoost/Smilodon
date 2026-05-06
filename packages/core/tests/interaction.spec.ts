@@ -159,15 +159,16 @@ describe('Interaction & Accessibility', () => {
     expect(el._state.isOpen).toBe(true);
     expect(document.activeElement).toBe(input);
 
-    // click container again should close
+    // clicking the input container should keep dropdown open (no flicker/toggle)
     inputContainer!.click();
-    expect(el._state.isOpen).toBe(false);
+    expect(el._state.isOpen).toBe(true);
 
     // open again and close via arrow
     arrow!.click();
-    expect(el._state.isOpen).toBe(true);
-    arrow!.click();
     expect(el._state.isOpen).toBe(false);
+
+    arrow!.click();
+    expect(el._state.isOpen).toBe(true);
   });
 
   it('opening one dropdown closes others', () => {

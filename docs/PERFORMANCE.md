@@ -731,6 +731,33 @@ console.log('Scroll FPS:', metrics.scrollFPS);
 }
 ```
 
+### Issue: DevTools `[Violation]` warnings (`pointerdown` / `click` / forced reflow)
+
+**Symptoms**:
+- Console messages like `"[Violation] 'pointerdown' handler took ...ms"`
+- `"[Violation] Forced reflow while executing JavaScript took ...ms"`
+- Most visible in 1,000+ item interaction scenarios
+
+**Why this happens**:
+- A single interaction triggers too much synchronous work (full option rebuilds, complex renderer DOM, layout reads during active updates).
+
+**Solutions**:
+1. Enable virtualization for large lists (`virtualized` / `virtualize`).
+2. Provide an accurate `estimatedItemHeight` so windowing math stays stable.
+3. Keep option renderers lightweight (avoid nested buttons, deep trees, and expensive per-row styles).
+4. Prefer default/lightweight option rendering when profiling raw list throughput.
+5. Keep expensive layout-affecting CSS (`box-shadow`, gradients, complex transitions) to a minimum in stress scenarios.
+
+```tsx
+// React large-list baseline
+<Select
+  items={items}
+  virtualized
+  estimatedItemHeight={40}
+  searchable
+/>
+```
+
 ### Issue: High Memory Usage
 
 **Symptoms**: Memory > 20 MB

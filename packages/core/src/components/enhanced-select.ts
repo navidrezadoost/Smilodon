@@ -86,6 +86,8 @@ export class EnhancedSelect extends HTMLElement {
   private _globalStylesObserver: MutationObserver | null = null;
   private _globalStylesContainer: HTMLElement | null = null;
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
+  private _suppressBlurClose = false;
+  private _renderCycleId = 0;
 
   get classMap(): ClassMap | undefined {
     return this._classMap;
@@ -208,6 +210,8 @@ export class EnhancedSelect extends HTMLElement {
       this._arrowContainer.removeEventListener('click', this._boundArrowClick);
     }
 
+    this._renderCycleId += 1;
+
     this._teardownGlobalStylesMirroring();
   }
 
@@ -320,6 +324,32 @@ export class EnhancedSelect extends HTMLElement {
     const container = document.createElement('div');
     container.className = 'input-container';
     container.setAttribute('part', 'button');
+
+    const inputStyles = this._config.styles.input;
+    if (inputStyles && !this._config.styles.container) {
+      const shellStyleKeys = [
+        'background',
+        'backgroundColor',
+        'border',
+        'borderColor',
+        'borderStyle',
+        'borderWidth',
+        'borderRadius',
+        'boxShadow',
+        'padding',
+        'height',
+        'minHeight',
+        'maxHeight',
+      ] as const;
+
+      for (const key of shellStyleKeys) {
+        const value = (inputStyles as any)[key];
+        if (value != null && value !== '') {
+          (container.style as any)[key] = value;
+        }
+      }
+    }
+
     return container;
   }
 
@@ -345,7 +375,24 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     if (this._config.styles.input) {
-      Object.assign(input.style, this._config.styles.input);
+      const inputStyles = { ...this._config.styles.input } as Partial<CSSStyleDeclaration> & Record<string, unknown>;
+
+      // Route shell-like styling to .input-container so the control appears as
+      // a single styled input instead of two visually separate layers.
+      delete inputStyles.background;
+      delete inputStyles.backgroundColor;
+      delete inputStyles.border;
+      delete inputStyles.borderColor;
+      delete inputStyles.borderStyle;
+      delete inputStyles.borderWidth;
+      delete inputStyles.borderRadius;
+      delete inputStyles.boxShadow;
+      delete inputStyles.padding;
+      delete inputStyles.height;
+      delete inputStyles.minHeight;
+      delete inputStyles.maxHeight;
+
+      Object.assign(input.style, inputStyles);
     }
     
     input.setAttribute('role', 'combobox');
@@ -617,17 +664,22 @@ export class EnhancedSelect extends HTMLElement {
       
       .select-input {
         flex: 1;
-        width: var(--select-input-width, auto);
-        min-width: var(--select-input-min-width, 120px);
-        padding: var(--select-input-field-padding, 4px);
-        border: none;
-        font-size: var(--select-input-font-size, 14px);
-        line-height: var(--select-input-line-height, 1.5);
-        color: var(--select-input-color, var(--select-text-color, #1f2937));
-        background: transparent;
+        width: 100%;
+        min-width: var(--select-input-min-width, 60px);
+        padding: var(--select-input-field-padding, 0) !important;
+        margin: 0 !important;
+        border: none !important;
+        font-size: var(--select-input-font-size, 16px);
+        line-height: var(--select-input-line-height, inherit);
+        color: var(--select-input-color, var(--select-text-color, inherit));
+        background: transparent !important;
         box-sizing: border-box;
-        outline: none;
+        outline: none !important;
         font-family: var(--select-font-family, inherit);
+        height: 100%;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        box-shadow: none !important;
       }
       
       .select-input::placeholder {
@@ -1087,30 +1139,28 @@ export class EnhancedSelect extends HTMLElement {
     // Input container click - focus input and open dropdown
     // Prevent the original pointer event from bubbling/causing default focus behavior
     // which can interfere with option click handling when opening the dropdown
-    this._inputContainer.addEventListener('pointerdown', (e) => {
+      this._inputContainer.addEventListener('pointerdown', (e) => {
       // Prevent propagation to document click listener but do NOT preventDefault.
       // Allow default so browser events (click) on newly opened options still fire.
-      e.stopPropagation();
+      // e.stopPropagation(); // BUG: By stopping propagation here, the document click listener doesn't see it, which is fine for not closing it. But be very careful.
 
       const target = e.target as HTMLElement | null;
       if (!this._config.enabled) return;
       if (target && target.closest('.dropdown-arrow-container')) return;
       if (target && target.closest('.clear-control-button')) return;
+      
+      // If we clicked the container, but not the input itself, we must prevent default
+      // otherwise the browser moves focus from our input to the body, immediately triggering blur.
+      if (target && !target.matches('.select-input')) {
+        e.preventDefault();
+      }
+
       const wasClosed = !this._state.isOpen;
       if (wasClosed) {
         this._handleOpen();
-      } else {
-        // Keep open while interacting directly with the input so users can
-        // place cursor/type without accidental collapse.
-        if (target === this._input) {
-          this._input.focus();
-          return;
-        }
-
-        // clicking other parts of the input container while open toggles close
-        this._handleClose();
       }
-      // Focus the input (do not prevent default behavior)
+
+      // Focus the input (do not prevent default behavior for input itself)
       this._input.focus();
 
       // If we just opened the dropdown, transfer pointer capture to the
@@ -1146,7 +1196,7 @@ export class EnhancedSelect extends HTMLElement {
 
       // Delay to allow option click/focus transitions
       setTimeout(() => {
-        if ((this as any)._suppressBlurClose) {
+        if (this._suppressBlurClose) {
           // another pointerdown inside options is in progress; keep open
           return;
         }
@@ -1155,8 +1205,9 @@ export class EnhancedSelect extends HTMLElement {
         if (active && (this._shadow.contains(active) || this._container.contains(active))) {
           return;
         }
+
         this._handleClose();
-      }, 0);
+      }, 150);
     });
     
     // Input search
@@ -1170,11 +1221,15 @@ export class EnhancedSelect extends HTMLElement {
     // temporarily suppress blur-based closing until after the click has
     // been handled. Setting a flag that gets cleared in the next tick is
     // sufficient.
-    this._optionsContainer.addEventListener('pointerdown', () => {
-      (this as any)._suppressBlurClose = true;
+    this._optionsContainer.addEventListener('pointerdown', (e) => {
+      // Prevent focus from moving away from the input to document body
+      // This stops the input from blurring when clicking on an option natively.
+      e.preventDefault();
+
+      this._suppressBlurClose = true;
       setTimeout(() => {
-        (this as any)._suppressBlurClose = false;
-      }, 0);
+        this._suppressBlurClose = false;
+      }, 150); // Increased timeout to ensure click finishes before blur checks
     });
 
     // Delegated click listener for improved event handling (robust across shadow DOM)
@@ -1208,9 +1263,6 @@ export class EnhancedSelect extends HTMLElement {
     };
 
     this._optionsContainer.addEventListener('click', handleOptionEvent);
-    // also watch pointerup to catch cases where the pointerdown started outside
-    // (e.g. on the input) and the click never fires
-    this._optionsContainer.addEventListener('pointerup', handleOptionEvent);
     
     // Keyboard navigation
     this._input.addEventListener('keydown', (e) => this._handleKeydown(e));
@@ -1359,7 +1411,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _handleClose(): void {
     if (!this._state.isOpen) return;
-    
+
     this._state.isOpen = false;
     this._dropdown.style.display = 'none';
     this._input.setAttribute('aria-expanded', 'false');
@@ -1619,7 +1671,6 @@ export class EnhancedSelect extends HTMLElement {
       } else {
         // Lightweight option - remove active class
         (prevOption as HTMLElement).classList.remove('smilodon-option--active');
-        (prevOption as HTMLElement).setAttribute('aria-selected', 'false');
       }
     }
     
@@ -1635,7 +1686,6 @@ export class EnhancedSelect extends HTMLElement {
       } else {
         // Lightweight option - add active class
         (option as HTMLElement).classList.add('smilodon-option--active');
-        (option as HTMLElement).setAttribute('aria-selected', 'true');
       }
       
       if (typeof (option as HTMLElement).scrollIntoView === 'function') {
@@ -1777,10 +1827,11 @@ export class EnhancedSelect extends HTMLElement {
   private _selectOption(index: number, opts?: { shiftKey?: boolean; toggleKey?: boolean }): void {
     // FIX: Do not rely on this._optionsContainer.children[index] because filtering changes the children
     // Instead, use the index to update state directly
-    
+
     const item = this._state.loadedItems[index];
-    // Debug: log selection attempt
-    if (!item) return;
+    if (!item) {
+      return;
+    }
     const isCurrentlySelected = this._state.selectedIndices.has(index);
 
     // Keep active/focus styling aligned with the most recently interacted option.
@@ -1796,7 +1847,7 @@ export class EnhancedSelect extends HTMLElement {
       this._state.selectedIndices.clear();
       this._state.selectedItems.clear();
       
-      if (!wasSelected) {
+      if (!wasSelected || !this._config.selection.allowDeselect) {
         // Select this option
         this._state.selectedIndices.add(index);
         this._state.selectedItems.set(index, item);
@@ -2225,7 +2276,6 @@ export class EnhancedSelect extends HTMLElement {
     const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
     const selectedValues = selectedItems.map(getValue);
     const selectedIndices = Array.from(this._state.selectedIndices);
-    // Debug: log change payload
 
     this._emit('change', { selectedItems, selectedValues, selectedIndices });
     this._config.callbacks.onChange?.(selectedItems, selectedValues);
@@ -2601,6 +2651,8 @@ export class EnhancedSelect extends HTMLElement {
    * Render options based on current state
    */
   private _renderOptions(): void {
+    this._renderCycleId += 1;
+    const renderCycleId = this._renderCycleId;
     
     // Cleanup observer
     if (this._loadMoreTrigger && this._intersectionObserver) {
@@ -2673,25 +2725,21 @@ export class EnhancedSelect extends HTMLElement {
       });
     } else {
       // Normal rendering (flat list or filtered)
-      let hasRenderedItems = false;
-      
+      const filteredIndices: number[] = [];
       this._state.loadedItems.forEach((item, index) => {
-        // Apply filter if query exists
         if (query) {
           try {
             const label = String(getLabel(item)).toLowerCase();
             if (!label.includes(query)) return;
-          } catch (e) {
+          } catch (_e) {
             return;
           }
         }
-        
-        hasRenderedItems = true;
-        this._renderSingleOption(item, index, getValue, getLabel);
+
+        filteredIndices.push(index);
       });
-      
-      
-      if (!hasRenderedItems && !this._state.isBusy) {
+
+      if (filteredIndices.length === 0 && !this._state.isBusy) {
         const empty = document.createElement('div');
         empty.setAttribute('part', 'no-results');
         empty.className = 'empty-state';
@@ -2701,6 +2749,51 @@ export class EnhancedSelect extends HTMLElement {
           empty.textContent = 'No options available';
         }
         this._optionsContainer.appendChild(empty);
+      } else {
+        const shouldIncrementalRender =
+          this._config.virtualize !== false
+          && this._state.groupedItems.length === 0
+          && filteredIndices.length > 300;
+
+        if (shouldIncrementalRender) {
+          const chunkSize = 80;
+          let cursor = 0;
+
+          const renderChunk = () => {
+            if (renderCycleId !== this._renderCycleId) return;
+
+            const fragment = document.createDocumentFragment();
+            const chunkEnd = Math.min(cursor + chunkSize, filteredIndices.length);
+
+            for (; cursor < chunkEnd; cursor += 1) {
+              const itemIndex = filteredIndices[cursor];
+              const item = this._state.loadedItems[itemIndex];
+              this._renderSingleOption(item, itemIndex, getValue, getLabel, fragment);
+            }
+
+            this._optionsContainer.appendChild(fragment);
+
+            if (cursor < filteredIndices.length) {
+              requestAnimationFrame(renderChunk);
+            } else {
+              if (renderCycleId !== this._renderCycleId) return;
+
+              if (!this._state.isBusy && (this._config.loadMore.enabled || this._config.infiniteScroll.enabled) && this._state.loadedItems.length > 0) {
+                this._addLoadMoreTrigger();
+              }
+
+              this._finalizePerfMarks();
+            }
+          };
+
+          renderChunk();
+          return;
+        }
+
+        filteredIndices.forEach((itemIndex) => {
+          const item = this._state.loadedItems[itemIndex];
+          this._renderSingleOption(item, itemIndex, getValue, getLabel);
+        });
       }
     }
     
@@ -2733,7 +2826,13 @@ export class EnhancedSelect extends HTMLElement {
     
   }
 
-  private _renderSingleOption(item: any, index: number, getValue: (item: any) => any, getLabel: (item: any) => string) {
+  private _renderSingleOption(
+    item: any,
+    index: number,
+    getValue: (item: any) => any,
+    getLabel: (item: any) => string,
+    targetContainer: Node = this._optionsContainer,
+  ) {
     const isSelected = this._state.selectedIndices.has(index);
     const isDisabled = Boolean((item as any)?.disabled);
     const optionId = `${this._uniqueId}-option-${index}`;
@@ -2750,7 +2849,7 @@ export class EnhancedSelect extends HTMLElement {
         disabled: isDisabled,
         id: optionId,
       });
-      this._optionsContainer.appendChild(optionElement);
+      targetContainer.appendChild(optionElement);
       return;
     }
 
@@ -2784,22 +2883,18 @@ export class EnhancedSelect extends HTMLElement {
 
     option.id = option.id || optionId;
 
-    option.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent duplicate handling by delegation
-      const mouseEvent = e as MouseEvent;
-      this._selectOption(index, {
-        shiftKey: mouseEvent.shiftKey,
-        toggleKey: mouseEvent.ctrlKey || mouseEvent.metaKey,
-      });
-    });
-
+    // Do NOT bind a native click listener here for SelectOption elements.
+    // Like custom rendered options, they are fully handled by the `handleOptionEvent` delegator 
+    // on `this._optionsContainer` (line 1221).
+    // Adding this listener causes the double-click toggle bug since both fire on selection!
+    
     option.addEventListener('optionRemove', (event: Event) => {
       const detail = (event as CustomEvent).detail as { index?: number } | undefined;
       const targetIndex = detail?.index ?? index;
       this._handleOptionRemove(targetIndex);
     });
 
-    this._optionsContainer.appendChild(option);
+    targetContainer.appendChild(option);
   }
 
   private _normalizeCustomOptionElement(element: HTMLElement | null | undefined, meta: {
@@ -2902,32 +2997,10 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     if (!this._customOptionBoundElements.has(optionEl)) {
-      optionEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const current = e.currentTarget as HTMLElement;
-        if (current.getAttribute('aria-disabled') === 'true') return;
-        const parsedIndex = Number(current.dataset.index);
-        if (!Number.isFinite(parsedIndex)) return;
-        const mouseEvent = e as MouseEvent;
-        this._selectOption(parsedIndex, {
-          shiftKey: mouseEvent.shiftKey,
-          toggleKey: mouseEvent.ctrlKey || mouseEvent.metaKey,
-        });
-      });
-
-      optionEl.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        const current = e.currentTarget as HTMLElement;
-        if (current.getAttribute('aria-disabled') === 'true') return;
-        const parsedIndex = Number(current.dataset.index);
-        if (!Number.isFinite(parsedIndex)) return;
-        e.preventDefault();
-        this._selectOption(parsedIndex, {
-          shiftKey: e.shiftKey,
-          toggleKey: e.ctrlKey || e.metaKey,
-        });
-      });
-
+      // Intentionally NOT binding native option click listeners for custom options! 
+      // All option interactions are globally handled by _optionsContainer.addEventListener('click', handleOptionEvent);
+      // Re-attaching here causes the double-click toggle bug if a child component fails to stopPropagation.
+      
       this._customOptionBoundElements.add(optionEl);
     }
 

@@ -17,6 +17,18 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+- **Core interaction stability:** Resolved dropdown blur/click race conditions that could cause open-close flicker and missed selection when clicking options.
+- **Core selection handling:** Removed duplicate option click handling paths so option selection no longer toggles on/off from a single user click.
+- **Core large-list responsiveness:** Reduced long task spikes in large flat-list rendering by incrementally rendering option batches when virtualization is enabled.
+- **Core cleanup:** Removed temporary debug console output used during interaction diagnostics.
+- **React adapter virtualization config:** `virtualized` and `estimatedItemHeight` are now forwarded into core config updates consistently.
+- **React adapter renderer lifecycle:** Fixed `groupHeaderRenderer` React root lifecycle management to prevent stale roots and unnecessary mount churn.
+
+### Documentation
+- Added troubleshooting guidance for DevTools `[Violation]` warnings (`pointerdown`/`click` long tasks and forced reflow) and practical mitigation steps for large datasets.
+- Clarified React large-list recommendations around `virtualized`, `estimatedItemHeight`, and custom `optionRenderer` usage.
+
 ### Added
 - **Input clear control (Core + adapters):** Added a configurable clear button inside the select input area that can clear selected values and/or search query.
   - Core config: `clearControl.enabled`, `clearSelection`, `clearSearch`, `hideWhenEmpty`, `ariaLabel`, `icon`.
