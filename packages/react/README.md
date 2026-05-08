@@ -1107,6 +1107,7 @@ function OptimizedExample() {
 | `virtualized` | `boolean` | `false` | Enable virtual scrolling |
 | `estimatedItemHeight` | `number` | `48` | Item height for virtualization |
 | `maxSelections` | `number` | - | Max selections (multi-select) |
+| `toggleOnTriggerClick` | `boolean` | `true` | Allow repeated trigger clicks to toggle the dropdown |
 | `placement` | `string` | `"bottom-start"` | Dropdown placement |
 | `className` | `string` | - | Custom CSS class |
 | `style` | `CSSProperties` | - | Inline styles |
@@ -1118,6 +1119,10 @@ function OptimizedExample() {
 | `onLoadMore` | `(page) => void \| Promise<void>` | - | Load more callback |
 | `creatable` | `boolean` | `false` | Allow creating new options |
 | `onCreate` | `(label) => void` | - | Create option callback |
+
+### Multi-select chip styling
+
+Selected chips in multi-select mode use softer default pill styles and remain fully customizable. Target them with `::part(chip)` and `::part(chip-remove)`, or override CSS variables such as `--select-badge-bg`, `--select-badge-border`, `--select-badge-color`, `--select-badge-remove-bg`, and `--select-badge-remove-color`.
 
 ### Types
 

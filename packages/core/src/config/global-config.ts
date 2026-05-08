@@ -77,6 +77,8 @@ export interface SelectionConfig {
   showRemoveButton?: boolean;
   /** Close dropdown after selection in single-select */
   closeOnSelect?: boolean;
+  /** Allow repeated trigger clicks to toggle the dropdown open/closed */
+  toggleOnTriggerClick?: boolean;
 }
 
 export interface StyleConfig {
@@ -229,6 +231,7 @@ const defaultConfig: GlobalSelectConfig = {
     maxSelections: 0,
     showRemoveButton: true,
     closeOnSelect: true,
+    toggleOnTriggerClick: true,
   },
   scrollToSelected: {
     enabled: true,

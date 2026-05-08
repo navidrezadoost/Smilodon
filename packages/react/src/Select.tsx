@@ -82,6 +82,9 @@ export interface SelectProps {
   
   /** Maximum number of selections (for multiple mode) */
   maxSelections?: number;
+
+  /** Allow repeated clicks on the trigger to toggle the dropdown open and closed */
+  toggleOnTriggerClick?: boolean;
   
   /** Dropdown placement */
   placement?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
@@ -294,6 +297,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     virtualized = false,
     estimatedItemHeight = 48,
     maxSelections,
+    toggleOnTriggerClick = true,
     placement = 'bottom-start',
     clearable = false,
     clearSelectionOnClear = true,
@@ -509,6 +513,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
+        toggleOnTriggerClick,
       },
       infiniteScroll: {
         enabled: infiniteScroll,
@@ -569,7 +574,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -620,6 +625,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
+        toggleOnTriggerClick,
       },
       infiniteScroll: {
         enabled: infiniteScroll,
@@ -647,7 +653,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
+  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
 
   // Update error state
   useEffect(() => {

@@ -79,7 +79,7 @@ The component exposes the following parts for styling:
 | `option` | Option | The wrapper for each option. |
 | `group-header` | Div | Header element that appears above each group of options. |
 | `checkmark` | Icon | Selected check icon (if visible). |
-| `chip` | Chip | Selected item chip in multi-select (future). |
+| `chip` | Chip | Selected item chip in multi-select. |
 | `chip-remove` | Button | Close button on a chip. |
 | `clear-button` | Button | Clear control button in input area (optional). |
 | `clear-icon` | Span | Icon/text content inside clear button. |
@@ -117,7 +117,36 @@ enhanced-select::part(option) {
 enhanced-select::part(option):hover {
   background-color: #f5f5f5;
 }
+
+enhanced-select::part(chip) {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+}
+
+enhanced-select::part(chip-remove) {
+  background: rgba(55, 48, 163, 0.12);
+  color: #3730a3;
+}
 ```
+
+### Multi-select chip defaults
+
+Multi-select chips now ship with a quieter default pill style so custom option renderers do not look noisy out of the box. You can still override them with either CSS variables or `::part()` selectors.
+
+Useful variables:
+
+- `--select-badge-bg`
+- `--select-badge-color`
+- `--select-badge-border`
+- `--select-badge-border-radius`
+- `--select-badge-padding`
+- `--select-badge-font-size`
+- `--select-badge-remove-bg`
+- `--select-badge-remove-color`
+- `--select-badge-remove-hover-bg`
+- `--select-badge-remove-focus-outline`
 
 ---
 
