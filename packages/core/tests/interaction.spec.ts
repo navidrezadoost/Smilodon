@@ -199,4 +199,56 @@ describe('Interaction & Accessibility', () => {
       el2.remove();
     });
   });
+
+  it('selects an option after pointer interaction in the dropdown', async () => {
+    const select = document.createElement('enhanced-select') as any;
+    select.setItems?.(['Apple', 'Banana', 'Cherry']);
+    document.body.appendChild(select);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    select.open?.();
+
+    const option = select.shadowRoot?.querySelector('[data-index="1"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+
+    option?.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    option?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(select.getSelectedValues?.()).toEqual(['Banana']);
+
+    select.remove();
+  });
+
+  it('preserves searchable input text while the dropdown remains open', async () => {
+    const select = document.createElement('enhanced-select') as any;
+    document.body.appendChild(select);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    select.setItems?.(['React Native', 'React', 'SolidJS']);
+    select.updateConfig?.({ searchable: true });
+    select.open?.();
+
+    const input = select.shadowRoot?.querySelector('input') as HTMLInputElement | null;
+    expect(input).toBeTruthy();
+
+    if (!input) {
+      select.remove();
+      return;
+    }
+
+    input.value = 'React Native';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(select._state.searchQuery).toBe('React Native');
+
+    input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+    expect(select._state.isOpen).toBe(true);
+    expect(select._state.searchQuery).toBe('React Native');
+    expect(input.value).toBe('React Native');
+
+    select.remove();
+  });
 });

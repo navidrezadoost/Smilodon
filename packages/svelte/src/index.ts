@@ -6,6 +6,8 @@
  * @packageDocumentation
  */
 
+import '@smilodon/core'; // Ensure the custom element is defined
+
 // @ts-ignore - Svelte component import
 export { default as Select } from './Select.svelte';
 

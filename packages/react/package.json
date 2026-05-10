@@ -1,7 +1,7 @@
 {
   "name": "@smilodon/react",
-  "version": "1.4.11",
-  "description": "React adapter for @smilodon/core - Production-ready accessible select component (React, Vue, Svelte, Vanilla JS)",
+  "version": "1.5.0",
+  "description": "React adapter for @smilodon/core",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -10,7 +10,8 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
-      "types": "./dist/types/index.d.ts"
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -18,58 +19,11 @@
     "README.md"
   ],
   "scripts": {
-    "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js",
-    "size": "gzip -c dist/index.js | wc -c",
-    "prepublishOnly": "npm run build"
+    "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.4.12",
+    "@smilodon/core": "^1.5.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.7.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.6.2",
-    "vite": "^5.4.21"
-  },
-  "keywords": [
-    "react",
-    "select",
-    "dropdown",
-    "combobox",
-    "autocomplete",
-    "searchable",
-    "multi-select",
-    "virtualization",
-    "infinite-scroll",
-    "accessible",
-    "wcag",
-    "aria",
-    "typescript",
-    "web-components"
-  ],
-  "license": "MIT",
-  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
-  "sideEffects": false,
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/navidrezadoost/smilodon.git",
-    "directory": "packages/react"
-  },
-  "bugs": {
-    "url": "https://github.com/navidrezadoost/smilodon/issues"
-  },
-  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
-  "engines": {
-    "node": ">=18",
-    "npm": ">=9"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   }
 }

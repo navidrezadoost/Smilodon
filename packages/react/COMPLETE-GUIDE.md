@@ -752,7 +752,7 @@ All available CSS variables for styling:
     
     // Badge Remove Button
     '--select-badge-remove-size': '16px',
-    '--select-badge-remove-bg': 'rgba(255, 255, 255, 0.3)',
+    // '--select-badge-remove-bg': '#ffffff4d',
     '--select-badge-remove-color': 'white',
     '--select-badge-remove-font-size': '16px',
     '--select-badge-remove-hover-bg': 'rgba(255, 255, 255, 0.5)',

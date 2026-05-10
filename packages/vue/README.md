@@ -9,7 +9,7 @@ Production-ready, accessible select component for Vue 3 applications.
 👉 **[Complete Vue Guide](./COMPLETE-GUIDE.md)** 👈
 
 The complete guide includes:
-- ✅ All 60+ CSS variables for complete customization
+- ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
 - ✅ Vue 3-specific patterns (Composition API, v-model, computed)
 - ✅ Complete API reference with TypeScript types
 - ✅ Pinia store integration examples
@@ -76,6 +76,54 @@ or
 ```bash
 pnpm add @smilodon/vue @smilodon/core
 ```
+
+## Nuxt Integration
+
+Nuxt works well with `@smilodon/vue`, but the underlying `enhanced-select` custom element must be treated as a custom element by the Vue compiler.
+
+### `nuxt.config.ts`
+
+```ts
+export default defineNuxtConfig({
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'enhanced-select',
+    },
+  },
+})
+```
+
+### Client usage in Nuxt
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Select } from '@smilodon/vue'
+
+const value = ref<string | number>('')
+const items = [
+  { value: 'nuxt', label: 'Nuxt' },
+  { value: 'vite', label: 'Vite' },
+  { value: 'astro', label: 'Astro' },
+]
+</script>
+
+<template>
+  <Select
+    v-model="value"
+    :items="items"
+    searchable
+    clearable
+    placeholder="Choose a stack"
+  />
+</template>
+```
+
+### Nuxt notes
+
+- Keep browser-only imperative access inside `onMounted()`.
+- Pass plain objects/arrays through props when data originates from server routes.
+- If you style globally, target `::part()` hooks or CSS variables rather than internal markup.
 
 ## Quick Start
 

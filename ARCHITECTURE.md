@@ -44,12 +44,15 @@ Smilodon is an enterprise-grade select component library built with Web Componen
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Application Layer                        │
-│  ┌──────────┬──────────┬──────────┬──────────┐              │
-│  │  React   │   Vue    │  Svelte  │  Vanilla │              │
-│  │  Wrapper │  Wrapper │  Wrapper │   JS     │              │
-│  └────┬─────┴────┬─────┴────┬─────┴────┬─────┘              │
-│       │          │          │          │                    │
-│       └──────────┴──────────┴──────────┘                    │
+│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐   │
+│  │  React   │   Vue    │  Svelte  │ SolidJS  │  Vanilla │   │
+│  │  Wrapper │  Wrapper │  Wrapper │  Adapter │    JS    │   │
+│  └────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬─────┘   │
+│       │          │          │          │          │         │
+│       └──────────┴──────────┴──────────┴──────────┘         │
+│                           │                                  │
+│                 React Native Adapter                          │
+│               (WebView bridge + web fallback)                │
 │                           │                                  │
 └───────────────────────────┼──────────────────────────────────┘
                             │
@@ -121,6 +124,36 @@ EnhancedSelect (Web Component)
         │   └── Custom Template (if provided)
         └── Remove Button (if enabled)
 ```
+
+      ### Styling System Architecture
+
+      Smilodon's visual layer is implemented as a token-driven Shadow DOM stylesheet owned by `EnhancedSelect`.
+
+      - **Single source of truth**: the stylesheet in `packages/core/src/components/enhanced-select.ts` defines the default visual system for the shell, chips, dropdown, option states, feedback states, and accessibility affordances.
+      - **Token-first customization**: defaults are exposed through `--select-*` CSS variables so consumers can override colors, spacing, typography, elevation, motion, and state visuals without replacing internal markup.
+      - **Micro-interaction coverage**: hover, active, pressed, badge-entry, dropdown-entry, spinner, selected-indicator, and reduced-motion behaviors are all wired through tokens.
+      - **Shadow-part interoperability**: tokens handle broad theming while `::part()` selectors expose stable hooks for `button`, `input`, `arrow`, `listbox`, `option`, `group-header`, `chip`, `chip-remove`, `clear-button`, `clear-icon`, `loading`, and `no-results`.
+      - **Dark mode remapping**: dark mode does not introduce a second styling API. Instead, dark selectors re-seed the same token surface, keeping overrides portable across light and dark themes.
+      - **Adapter consistency**: framework adapters forward props/config into the same core element, so styling behavior remains identical across React, Vue, Svelte, SolidJS, React Native Web, and Vanilla usage.
+
+    ### Adapter Topology
+
+    | Adapter | Package | Runtime bridge | Primary integration notes |
+    | --- | --- | --- | --- |
+    | React | `@smilodon/react` | Direct custom-element wrapper | Controlled/uncontrolled props, imperative ref handle, Next.js client compatibility |
+    | Vue 3 / Nuxt | `@smilodon/vue` | Direct custom-element wrapper | `v-model`, emitted events, Vue compiler custom-element handling |
+    | Svelte / SvelteKit | `@smilodon/svelte` | Direct custom-element wrapper | `bind:value`, SSR-safe `onMount()` registration |
+    | SolidJS | `@smilodon/solid` | Direct custom-element wrapper | Callback-ref imperative API, JSX renderers, grouped-item normalization |
+    | Vanilla | `@smilodon/vanilla` | Helper API over `enhanced-select` | Lowest-level DOM setup and config synchronization |
+    | React Native | `@smilodon/react-native` | Native `WebView` bridge + web fallback | Embedded core bundle on native, direct DOM element on web |
+
+    ### Documentation Topology
+
+    - **Global product map**: [README.md](./README.md) is the release-facing entry point that routes readers into framework, styling, performance, testing, and governance guidance.
+    - **Functional onboarding**: [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md) provides initial setup and adoption flow.
+    - **API + implementation**: [docs/API-REFERENCE.md](./docs/API-REFERENCE.md), [docs/SELECT-COMPONENT.md](./docs/SELECT-COMPONENT.md), and [docs/SELECT-IMPLEMENTATION.md](./docs/SELECT-IMPLEMENTATION.md) cover the component contract and internals.
+    - **Styling system**: [docs/STYLING.md](./docs/STYLING.md), [docs/STYLING-TOKENS.md](./docs/STYLING-TOKENS.md), and [docs/STYLING-EXAMPLES.md](./docs/STYLING-EXAMPLES.md) define the token surface and examples.
+    - **Runtime operations**: [docs/PERFORMANCE.md](./docs/PERFORMANCE.md), [docs/PERFORMANCE-RUNBOOK.md](./docs/PERFORMANCE-RUNBOOK.md), [docs/KNOWN-LIMITATIONS.md](./docs/KNOWN-LIMITATIONS.md), and [docs/ADAPTER-CAPABILITY-MATRIX.md](./docs/ADAPTER-CAPABILITY-MATRIX.md) document runtime expectations and support boundaries.
 
 ---
 
@@ -792,21 +825,23 @@ See [TESTING-ARCHITECTURE.md](./docs/TESTING-ARCHITECTURE.md) for complete testi
 
 ```
 npm registry
-├── @smilodon/core@0.2.0 (6.6 KB)
-├── @smilodon/react@0.2.0 (+787 B)
-├── @smilodon/vue@0.2.0 (+668 B)
-├── @smilodon/svelte@0.2.0 (+1.2 KB)
-└── @smilodon/vanilla@0.2.0 (6.6 KB)
+├── @smilodon/core@1.5.0 (6.6 KB gzipped core runtime)
+├── @smilodon/react@1.5.0 (framework adapter)
+├── @smilodon/vue@1.5.0 (framework adapter)
+├── @smilodon/svelte@1.5.0 (framework adapter)
+├── @smilodon/solid@1.5.0 (framework adapter)
+├── @smilodon/react-native@1.5.0 (native bridge + web fallback)
+└── @smilodon/vanilla@1.5.0 (DOM helper layer)
 ```
 
 ### CDN Strategy
 
 ```html
 <!-- Core component -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core@0.2.0/dist/index.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.5.0/dist/index.js"></script>
 
 <!-- Framework wrappers -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/react@0.2.0/dist/index.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.5.0/dist/index.js"></script>
 ```
 
 ### Build Pipeline
@@ -876,10 +911,10 @@ jobs:
 2. **Offline Support** - Service worker integration
 3. **Accessibility Improvements** - Enhanced screen reader support
 4. **Performance** - WebAssembly for critical paths
-5. **Framework Support** - Solid.js, Qwik adapters
+5. **Framework Support** - Qwik and additional server-driven adapter patterns
 
 ---
 
-**Last Updated**: December 10, 2025
-**Version**: 0.2.0
+**Last Updated**: May 10, 2026
+**Version**: 1.5.0
 **Maintainer**: Navid Rezadoost

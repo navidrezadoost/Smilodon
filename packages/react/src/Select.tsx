@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type {

@@ -22,6 +22,8 @@
     "paths": {
       "@smilodon/core": ["packages/core/src/index.ts"],
       "@smilodon/react": ["packages/react/src/index.tsx"],
+      "@smilodon/react-native": ["packages/react-native/src/index.ts"],
+      "@smilodon/solid": ["packages/solid/src/index.tsx"],
       "@smilodon/vue": ["packages/vue/src/index.ts"],
       "@smilodon/svelte": ["packages/svelte/src/index.ts"],
       "@smilodon/vanilla": ["packages/vanilla/src/index.ts"]

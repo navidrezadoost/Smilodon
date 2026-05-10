@@ -2,6 +2,8 @@
  * Enhanced Select Component
  * Implements all advanced features: infinite scroll, load more, busy state, 
  * server-side selection, and full customization
+ * 
+ * ✨ Redesigned with formal elegance, refined microinteractions, and polished UX
  */
 
 import type { GlobalSelectConfig } from '../config/global-config';
@@ -354,11 +356,21 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _syncInputContainerMode(): void {
-    if (!this._inputContainer) return;
+    if (!this._inputContainer || !this._input) return;
 
     const isMulti = this._config.selection.mode === 'multi';
     this._inputContainer.classList.toggle('input-container--multi', isMulti);
     this._inputContainer.classList.toggle('input-container--single', !isMulti);
+
+    if (isMulti) {
+      this._input.style.flex = '1 0 var(--select-multi-input-min-width, 96px)';
+      this._input.style.width = 'auto';
+      this._input.style.minWidth = 'var(--select-multi-input-min-width, 96px)';
+    } else {
+      this._input.style.flex = '1 1 auto';
+      this._input.style.width = '100%';
+      this._input.style.minWidth = '0';
+    }
   }
 
   private _createInput(): HTMLInputElement {
@@ -484,7 +496,7 @@ export class EnhancedSelect extends HTMLElement {
     container.className = 'dropdown-arrow-container';
     container.innerHTML = `
       <svg class="dropdown-arrow" part="arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
     return container;
@@ -499,7 +511,7 @@ export class EnhancedSelect extends HTMLElement {
     const icon = document.createElement('span');
     icon.className = 'clear-control-icon';
     icon.setAttribute('part', 'clear-icon');
-    icon.textContent = this._config.clearControl.icon || '×';
+    icon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
     button.setAttribute('aria-label', this._config.clearControl.ariaLabel || 'Clear selection and search');
     button.appendChild(icon);
@@ -546,12 +558,222 @@ export class EnhancedSelect extends HTMLElement {
   private _initializeStyles(): void {
     const style = document.createElement('style');
     style.textContent = `
+      /* ═══════════════════════════════════════════════════════════════════════════
+         ELEGANT SELECT COMPONENT — Refined Design System
+         Formal aesthetics with sophisticated microinteractions
+       ═══════════════════════════════════════════════════════════════════════════ */
+      
       :host {
+        --select-primary: #1a1a2e;
+        --select-primary-light: #16213e;
+        --select-accent: #0f3460;
+        --select-accent-hover: #e94560;
+        --select-surface: #ffffff;
+        --select-surface-elevated: #fafbfc;
+        --select-border: #e1e5eb;
+        --select-border-focus: #0f3460;
+        --select-text: #1a1a2e;
+        --select-text-muted: #6b7280;
+        --select-text-placeholder: #9ca3af;
+        --select-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --select-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --select-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+        --select-shadow-focus: 0 0 0 3px rgba(15, 52, 96, 0.12);
+        --select-radius-sm: 6px;
+        --select-radius-md: 10px;
+        --select-radius-lg: 14px;
+        --select-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --select-transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        --select-transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        --select-badge-animation: badgeEnter 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        --select-badge-enter-from-opacity: 0;
+        --select-badge-enter-from-transform: scale(0.8) translateY(-4px);
+        --select-badge-enter-to-opacity: 1;
+        --select-badge-enter-to-transform: scale(1) translateY(0);
+        --select-badge-hover-transform: scale(1.02);
+        --select-badge-letter-spacing: 0.01em;
+        --select-badge-hover-shadow: var(--select-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        --select-badge-remove-focus-outline: 2px solid rgba(255, 255, 255, 0.5);
+        --select-badge-remove-focus-offset: 1px;
+        --select-badge-remove-hover-transform: scale(1.15) rotate(90deg);
+        --select-badge-remove-active-transform: scale(0.95) rotate(90deg);
+        --select-input-hover-border: var(--select-border-focus);
+        --select-input-hover-shadow: var(--select-shadow-sm), 0 0 0 1px rgba(15, 52, 96, 0.05);
+        --select-input-font-weight: 450;
+        --select-input-letter-spacing: 0.01em;
+        --select-input-disabled-opacity: 0.6;
+        --select-separator-opacity: 0.6;
+        --select-separator-active-opacity: 1;
+        --select-separator-dark-bg: linear-gradient(
+          to bottom,
+          transparent 0%,
+          var(--select-border) 20%,
+          var(--select-border) 80%,
+          transparent 100%
+        );
+        --select-arrow-open-transform: rotate(180deg);
+        --select-clear-button-hover-transform: translateY(-50%) scale(1.1);
+        --select-clear-button-active-transform: translateY(-50%) scale(0.95);
+        --select-clear-button-focus-offset: 2px;
+        --select-clear-icon-size: 14px;
+        --select-dropdown-top: calc(100% + 6px);
+        --select-dropdown-animation: dropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        --select-dropdown-enter-from-opacity: 0;
+        --select-dropdown-enter-from-transform: translateY(-8px) scale(0.98);
+        --select-dropdown-enter-to-opacity: 1;
+        --select-dropdown-enter-to-transform: translateY(0) scale(1);
+        --select-dropdown-scroll-behavior: smooth;
+        --select-dropdown-transform-origin: top center;
+        --select-scrollbar-width: 6px;
+        --select-scrollbar-thumb-radius: 3px;
+        --select-option-hover-transform: translateX(2px);
+        --select-option-font-weight: 450;
+        --select-option-margin: 2px 0;
+        --select-option-active-outline-offset: -2px;
+        --select-option-selected-active-outline-offset: -2px;
+        --select-option-selected-indicator-width: 3px;
+        --select-option-selected-indicator-height: 60%;
+        --select-option-selected-indicator-bg: var(--select-accent);
+        --select-option-selected-indicator-radius: 0 2px 2px 0;
+        --select-option-selected-indicator-left: 0;
+        --select-option-selected-indicator-top: 50%;
+        --select-option-selected-indicator-transform: translateY(-50%);
+        --select-option-selected-indicator-animation: selectedIndicator 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        --select-option-selected-indicator-from-height: 0;
+        --select-option-selected-indicator-to-height: 60%;
+        --select-option-selected-indicator-from-opacity: 0;
+        --select-option-selected-indicator-to-opacity: 1;
+        --select-option-pressed-transform: translateX(2px) scale(0.99);
+        --select-option-selected-pressed-transform: scale(0.99);
+        --select-button-hover-transform: translateY(-1px);
+        --select-button-active-transform: translateY(0) scale(0.98);
+        --select-button-font-weight: 550;
+        --select-button-letter-spacing: 0.02em;
+        --select-spinner-animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        --select-searching-spinner-active-color: var(--select-accent);
+        --select-badge-remove-margin-left: 2px;
+        --select-badge-remove-radius: 50%;
+        --select-badge-remove-font-weight: 600;
+        --select-empty-gap: 8px;
+        --select-searching-gap: 8px;
+        --select-searching-spinner-size: 24px;
+        --select-searching-spinner-border: 2px solid var(--select-border);
+        --select-searching-spinner-animation: var(--select-spinner-animation);
+        --select-group-header-separator-margin-top: 8px;
+        --select-group-header-separator-padding-top: 14px;
+        --select-group-header-separator-border-top: 1px solid var(--select-border);
+        --select-reduced-motion-duration: 0.01ms;
+        --select-reduced-motion-iteration-count: 1;
+        --select-high-contrast-border-width: 2px;
+        --select-high-contrast-indicator-width: 4px;
+        --select-high-contrast-focus-outline-width: 3px;
+        --select-high-contrast-focus-outline-color: Highlight;
+        --select-touch-target-min-height: 44px;
+        --select-badge-dark-bg: linear-gradient(135deg, var(--select-accent) 0%, #4f46e5 100%);
+        
         display: block;
         position: relative;
         width: var(--select-width, 100%);
         height: var(--select-height, auto);
+        font-family: var(--select-font-family, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
       }
+
+      /* ─────────────────────────────────────────────────────────────────────────
+         Selection Badges — Refined pill design with elegant interactions
+       ───────────────────────────────────────────────────────────────────────── */
+      
+      .selection-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--select-badge-gap, 6px);
+        flex: 0 1 auto;
+        min-height: var(--select-badge-min-height, 26px);
+        padding: var(--select-badge-padding, 4px 10px 4px 12px);
+        margin: var(--select-badge-margin, 3px);
+        background: var(--select-badge-bg, linear-gradient(135deg, var(--select-accent) 0%, var(--select-primary-light) 100%));
+        color: var(--select-badge-color, #ffffff);
+        border: var(--select-badge-border, none);
+        border-radius: var(--select-badge-border-radius, 999px);
+        box-shadow: var(--select-badge-shadow, var(--select-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.1));
+        box-sizing: border-box;
+        font-size: var(--select-badge-font-size, 13px);
+        font-weight: var(--select-badge-font-weight, 500);
+        line-height: var(--select-badge-line-height, 1.2);
+        letter-spacing: var(--select-badge-letter-spacing);
+        max-width: var(--select-badge-max-width, 100%);
+        overflow: hidden;
+        transform: scale(1);
+        transition: 
+          transform var(--select-transition-bounce),
+          box-shadow var(--select-transition-fast),
+          background var(--select-transition-fast);
+        animation: var(--select-badge-animation);
+      }
+      
+      @keyframes badgeEnter {
+        0% {
+          opacity: var(--select-badge-enter-from-opacity);
+          transform: var(--select-badge-enter-from-transform);
+        }
+        100% {
+          opacity: var(--select-badge-enter-to-opacity);
+          transform: var(--select-badge-enter-to-transform);
+        }
+      }
+      
+      .selection-badge:hover {
+        box-shadow: var(--select-badge-hover-shadow);
+        transform: var(--select-badge-hover-transform);
+      }
+
+      .selection-badge-label {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: var(--select-badge-line-height, 1.2);
+      }
+
+      .badge-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--select-badge-remove-size, 18px);
+        height: var(--select-badge-remove-size, 18px);
+        padding: 0;
+        margin-left: var(--select-badge-remove-margin-left);
+        background: var(--select-badge-remove-bg, rgba(255, 255, 255, 0.2));
+        border: var(--select-badge-remove-border, none);
+        border-radius: var(--select-badge-remove-radius);
+        color: var(--select-badge-remove-color, #ffffff);
+        font-size: var(--select-badge-remove-font-size, 11px);
+        font-weight: var(--select-badge-remove-font-weight);
+        line-height: 1;
+        cursor: pointer;
+        flex: 0 0 auto;
+        transition: 
+          background var(--select-transition-fast),
+          transform var(--select-transition-bounce);
+      }
+      
+      .badge-remove:hover {
+        background: var(--select-badge-remove-hover-bg, rgba(233, 69, 96, 0.9));
+        transform: var(--select-badge-remove-hover-transform);
+      }
+
+      .badge-remove:focus-visible {
+        outline: var(--select-badge-remove-focus-outline);
+        outline-offset: var(--select-badge-remove-focus-offset);
+      }
+      
+      .badge-remove:active {
+        transform: var(--select-badge-remove-active-transform);
+      }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Input Container — Sophisticated control shell
+       ───────────��───────────────────────────────────────────────────────────── */
       
       .select-container {
         position: relative;
@@ -565,17 +787,26 @@ export class EnhancedSelect extends HTMLElement {
         align-items: center;
         flex-wrap: nowrap;
         gap: var(--select-input-gap, 6px);
-        padding: var(--select-input-padding, 6px 52px 6px 8px);
+        padding: var(--select-input-padding, 10px 52px 10px 14px);
         height: var(--select-input-height, auto);
-        min-height: var(--select-input-min-height, 44px);
+        min-height: var(--select-input-min-height, 48px);
         max-height: var(--select-input-max-height, 160px);
         overflow-y: var(--select-input-overflow-y, auto);
         align-content: center;
-        background: var(--select-input-bg, var(--select-bg, white));
-        border: var(--select-input-border, 1px solid var(--select-border-color, #d1d5db));
-        border-radius: var(--select-input-border-radius, 6px);
+        background: var(--select-input-bg, var(--select-surface));
+        border: var(--select-input-border, 1.5px solid var(--select-border));
+        border-radius: var(--select-input-border-radius, var(--select-radius-md));
+        box-shadow: var(--select-shadow-sm);
         box-sizing: border-box;
-        transition: all 0.2s ease;
+        transition: 
+          border-color var(--select-transition-fast),
+          box-shadow var(--select-transition-smooth),
+          transform var(--select-transition-fast);
+      }
+      
+      .input-container:hover {
+        border-color: var(--select-input-hover-border);
+        box-shadow: var(--select-input-hover-shadow);
       }
 
       .input-container.input-container--single {
@@ -589,86 +820,108 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .input-container:focus-within {
-        border-color: var(--select-input-focus-border, var(--select-border-focus-color, #667eea));
-        box-shadow: var(--select-input-focus-shadow, 0 0 0 3px rgba(102, 126, 234, 0.1));
+        border-color: var(--select-input-focus-border, var(--select-border-focus));
+        box-shadow: var(--select-shadow-focus), var(--select-shadow-sm);
       }
       
-      /* Gradient separator before arrow */
+      /* Elegant separator line before arrow */
       .input-container::after {
         content: '';
         position: absolute;
         top: 50%;
-        right: var(--select-separator-position, var(--select-seperator-position, 40px));
+        right: var(--select-separator-position, 42px);
         transform: translateY(-50%);
-        width: var(--select-separator-width, var(--select-seperator-width, 1px));
-        height: var(--select-separator-height, var(--select-seperator-height, 60%));
-        background: var(--select-separator-bg, var(--select-seperator-bg, var(--select-separator-gradient, var(--select-seperator-gradient, linear-gradient(
+        width: var(--select-separator-width, 1px);
+        height: var(--select-separator-height, 50%);
+        background: var(--select-separator-bg, linear-gradient(
           to bottom,
           transparent 0%,
-          rgba(0, 0, 0, 0.1) 20%,
-          rgba(0, 0, 0, 0.1) 80%,
+          var(--select-border) 20%,
+          var(--select-border) 80%,
           transparent 100%
-        ))));
+        ));
         pointer-events: none;
         z-index: 1;
+        opacity: var(--select-separator-opacity);
+        transition: opacity var(--select-transition-fast);
       }
+      
+      .input-container:hover::after,
+      .input-container:focus-within::after {
+        opacity: var(--select-separator-active-opacity);
+      }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Dropdown Arrow — Smooth rotation with refined styling
+       ───────────────────────────────────────────────────────────────────────── */
       
       .dropdown-arrow-container {
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
-        width: var(--select-arrow-width, 40px);
-        /* allow explicit height override even though container normally stretches */
+        width: var(--select-arrow-width, 42px);
         height: var(--select-arrow-height, auto);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: background-color 0.2s ease;
-        border-radius: var(--select-arrow-border-radius, 0 4px 4px 0);
+        border-radius: var(--select-arrow-border-radius, 0 var(--select-radius-md) var(--select-radius-md) 0);
         z-index: 2;
+        transition: background-color var(--select-transition-fast);
       }
 
       .input-container.has-clear-control {
-        padding: var(--select-input-padding-with-clear, 6px 84px 6px 8px);
+        padding: var(--select-input-padding-with-clear, 10px 84px 10px 14px);
       }
 
       .input-container.has-clear-control::after {
-        right: var(--select-separator-position-with-clear, var(--select-seperator-position-with-clear, 72px));
+        right: var(--select-separator-position-with-clear, 74px);
       }
 
       .dropdown-arrow-container.with-clear-control {
-        right: var(--select-arrow-right-with-clear, 32px);
+        right: var(--select-arrow-right-with-clear, 34px);
       }
+
+      /* ─────────────────────────────────────────────────────────────────────────
+         Clear Control — Minimal and elegant dismiss button
+       ───────────────────────────────────────────────────────────────────────── */
 
       .clear-control-button {
         position: absolute;
         top: 50%;
-        right: var(--select-clear-button-right, 6px);
+        right: var(--select-clear-button-right, 8px);
         transform: translateY(-50%);
-        width: var(--select-clear-button-size, 24px);
-        height: var(--select-clear-button-size, 24px);
+        width: var(--select-clear-button-size, 26px);
+        height: var(--select-clear-button-size, 26px);
         border: var(--select-clear-button-border, none);
-        border-radius: var(--select-clear-button-radius, 999px);
+        border-radius: var(--select-clear-button-radius, 50%);
         background: var(--select-clear-button-bg, transparent);
-        color: var(--select-clear-button-color, #6b7280);
+        color: var(--select-clear-button-color, var(--select-text-muted));
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 3;
-        transition: var(--select-clear-button-transition, all 0.2s ease);
+        transition: 
+          background var(--select-transition-fast),
+          color var(--select-transition-fast),
+          transform var(--select-transition-bounce);
       }
 
       .clear-control-button:hover {
-        background: var(--select-clear-button-hover-bg, rgba(0, 0, 0, 0.06));
-        color: var(--select-clear-button-hover-color, #111827);
+        background: var(--select-clear-button-hover-bg, rgba(233, 69, 96, 0.1));
+        color: var(--select-clear-button-hover-color, var(--select-accent-hover));
+        transform: var(--select-clear-button-hover-transform);
+      }
+      
+      .clear-control-button:active {
+        transform: var(--select-clear-button-active-transform);
       }
 
       .clear-control-button:focus-visible {
-        outline: var(--select-clear-button-focus-outline, 2px solid rgba(102, 126, 234, 0.55));
-        outline-offset: 1px;
+        outline: var(--select-clear-button-focus-outline, 2px solid var(--select-border-focus));
+        outline-offset: var(--select-clear-button-focus-offset);
       }
 
       .clear-control-button[hidden] {
@@ -676,40 +929,45 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .clear-control-icon {
-        font-size: var(--select-clear-icon-size, 16px);
-        line-height: 1;
-        font-weight: var(--select-clear-icon-weight, 500);
+        width: var(--select-clear-icon-size);
+        height: var(--select-clear-icon-size);
         pointer-events: none;
       }
       
-      .dropdown-arrow-container:hover {
-        background-color: var(--select-arrow-hover-bg, rgba(102, 126, 234, 0.08));
+      .clear-control-icon svg {
+        width: 100%;
+        height: 100%;
       }
       
-      .dropdown-arrow:hover {
-        /* legacy alias --select-arrow-hover for icon color */
-        color: var(--select-arrow-hover, var(--select-arrow-hover-color, #667eea));
+      .dropdown-arrow-container:hover {
+        background-color: var(--select-arrow-hover-bg, rgba(15, 52, 96, 0.05));
       }
       
       .dropdown-arrow {
-        width: var(--select-arrow-width, var(--select-arrow-size, 16px));
-        height: var(--select-arrow-height, var(--select-arrow-size, 16px));
-        color: var(--select-arrow-color, #667eea);
-        transition: transform 0.2s ease, color 0.2s ease;
-        transform: translateY(0);
+        width: var(--select-arrow-size, 18px);
+        height: var(--select-arrow-size, 18px);
+        color: var(--select-arrow-color, var(--select-text-muted));
+        transition: 
+          transform var(--select-transition-smooth),
+          color var(--select-transition-fast);
+        transform-origin: center;
       }
       
       .dropdown-arrow path {
-        stroke-width: var(--select-arrow-stroke-width, 2);
+        stroke-width: var(--select-arrow-stroke-width, 1.5);
       }
       
       .dropdown-arrow-container:hover .dropdown-arrow {
-        color: var(--select-arrow-hover-color, #667eea);
+        color: var(--select-arrow-hover-color, var(--select-accent));
       }
       
       .dropdown-arrow.open {
-        transform: rotate(180deg);
+        transform: var(--select-arrow-open-transform);
       }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Input Field — Clean text entry
+       ───────────────────────────────────────────────────────────────────────── */
       
       .input-container > .select-input,
       input.select-input,
@@ -724,236 +982,279 @@ export class EnhancedSelect extends HTMLElement {
         padding: var(--select-input-field-padding, 0) !important;
         margin: 0 !important;
         border: 0 !important;
-        font-size: var(--select-input-font-size, inherit);
-        line-height: var(--select-input-line-height, inherit);
-        color: var(--select-input-color, inherit);
+        font-size: var(--select-input-font-size, 15px);
+        line-height: var(--select-input-line-height, 1.5);
+        color: var(--select-input-color, var(--select-text));
         background: transparent !important;
         box-sizing: border-box;
         outline: none !important;
-        font: inherit;
-        font-family: var(--select-font-family, inherit);
+        font-weight: var(--select-input-font-weight);
+        letter-spacing: var(--select-input-letter-spacing);
         align-self: center;
         appearance: none !important;
         -webkit-appearance: none !important;
         box-shadow: none !important;
         border-radius: 0 !important;
-        color-scheme: light;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
       
       .select-input::placeholder {
-        color: var(--select-input-placeholder-color, var(--select-placeholder-color, #9ca3af));
-      }
-      
-      .selection-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--select-badge-gap, 6px);
-        min-height: var(--select-badge-min-height, 24px);
-        padding: var(--select-badge-padding, 3px 8px 3px 10px);
-        margin: var(--select-badge-margin, 2px);
-        background: var(--select-badge-bg, #eef2ff);
-        color: var(--select-badge-color, #3730a3);
-        border: var(--select-badge-border, 1px solid #c7d2fe);
-        border-radius: var(--select-badge-border-radius, 999px);
-        box-sizing: border-box;
-        font-size: var(--select-badge-font-size, 12px);
-        font-weight: var(--select-badge-font-weight, 500);
-        line-height: var(--select-badge-line-height, 1.2);
-        vertical-align: middle;
-        max-width: var(--select-badge-max-width, 100%);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      
-      .badge-remove {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: var(--select-badge-remove-size, 16px);
-        height: var(--select-badge-remove-size, 16px);
-        padding: 0;
-        margin-left: 0;
-        background: var(--select-badge-remove-bg, rgba(55, 48, 163, 0.12));
-        border: var(--select-badge-remove-border, none);
-        border-radius: 50%;
-        color: var(--select-badge-remove-color, #3730a3);
-        font-size: var(--select-badge-remove-font-size, 14px);
-        font-weight: 700;
-        line-height: 1;
-        cursor: pointer;
-        flex: 0 0 auto;
-        transition: background 0.2s, color 0.2s;
-      }
-      
-      .badge-remove:hover {
-        background: var(--select-badge-remove-hover-bg, rgba(55, 48, 163, 0.2));
+        color: var(--select-input-placeholder-color, var(--select-text-placeholder));
+        font-weight: 400;
       }
 
-      .badge-remove:focus-visible {
-        outline: 2px solid var(--select-badge-remove-focus-outline, rgba(55, 48, 163, 0.35));
-        outline-offset: 2px;
+      .input-container.input-container--multi > .select-input,
+      .input-container.input-container--multi > input.select-input,
+      .input-container.input-container--multi > .select-input[type="text"] {
+        width: auto;
+        min-width: var(--select-multi-input-min-width, 96px);
+        flex: 1 0 var(--select-multi-input-min-width, 96px);
+      }
+
+      .input-container.input-container--single > .select-input,
+      .input-container.input-container--single > input.select-input,
+      .input-container.input-container--single > .select-input[type="text"] {
+        width: var(--select-input-width, 100%);
+        min-width: 0;
+        flex: 1 1 auto;
       }
       
       .select-input:disabled {
         background-color: var(--select-disabled-bg, #f5f5f5);
         cursor: not-allowed;
+        opacity: var(--select-input-disabled-opacity);
       }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Dropdown Panel — Elegant floating container
+       ───────────────────────────────────────────────────────────────────────── */
       
       .select-dropdown {
         position: absolute;
-        scroll-behavior: smooth;
-        top: 100%;
+        scroll-behavior: var(--select-dropdown-scroll-behavior);
+        top: var(--select-dropdown-top);
         left: 0;
         right: 0;
-        margin-top: var(--select-dropdown-margin-top, 4px);
-        max-height: var(--select-dropdown-max-height, 300px);
+        max-height: var(--select-dropdown-max-height, 320px);
         overflow: hidden;
-        background: var(--select-dropdown-bg, var(--select-bg, white));
-        border: 1px solid var(--select-dropdown-border, #ccc);
-        border-radius: var(--select-dropdown-border-radius, 4px);
-        box-shadow: var(--select-dropdown-shadow, 0 4px 6px rgba(0,0,0,0.1));
+        background: var(--select-dropdown-bg, var(--select-surface));
+        border: 1px solid var(--select-dropdown-border, var(--select-border));
+        border-radius: var(--select-dropdown-border-radius, var(--select-radius-lg));
+        box-shadow: var(--select-dropdown-shadow, var(--select-shadow-lg));
         z-index: var(--select-dropdown-z-index, 1000);
+        transform-origin: var(--select-dropdown-transform-origin);
+        animation: var(--select-dropdown-animation);
+      }
+      
+      @keyframes dropdownEnter {
+        0% {
+          opacity: var(--select-dropdown-enter-from-opacity);
+          transform: var(--select-dropdown-enter-from-transform);
+        }
+        100% {
+          opacity: var(--select-dropdown-enter-to-opacity);
+          transform: var(--select-dropdown-enter-to-transform);
+        }
       }
       
       .options-container {
         position: relative;
-        max-height: var(--select-options-max-height, 300px);
+        max-height: var(--select-options-max-height, 320px);
         overflow: auto;
-        transition: opacity 0.2s ease-in-out;
-        background: var(--select-options-bg, var(--select-dropdown-bg, var(--select-bg, white)));
+        padding: var(--select-options-padding, 6px);
+        background: var(--select-options-bg, var(--select-surface));
+        
+        /* Custom scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: var(--select-border) transparent;
+      }
+      
+      .options-container::-webkit-scrollbar {
+        width: var(--select-scrollbar-width);
+      }
+      
+      .options-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      
+      .options-container::-webkit-scrollbar-thumb {
+        background: var(--select-border);
+        border-radius: var(--select-scrollbar-thumb-radius);
+      }
+      
+      .options-container::-webkit-scrollbar-thumb:hover {
+        background: var(--select-text-muted);
       }
 
+      /* ─────────────────────────────────────────────────────────────────────────
+         Group Headers — Refined section dividers
+       ───────────────────────────────────────────────────────────────────────── */
+
       .group-header {
-        padding: var(--select-group-header-padding, 8px 12px);
+        padding: var(--select-group-header-padding, 10px 12px 6px);
         font-weight: var(--select-group-header-weight, 600);
-        color: var(--select-group-header-color, #6b7280);
-        background-color: var(--select-group-header-bg, #f3f4f6);
+        color: var(--select-group-header-color, var(--select-text-muted));
+        background-color: var(--select-group-header-bg, var(--select-surface));
         text-align: var(--select-group-header-text-align, left);
-        font-size: var(--select-group-header-font-size, 12px);
+        font-size: var(--select-group-header-font-size, 11px);
         text-transform: var(--select-group-header-text-transform, uppercase);
-        letter-spacing: var(--select-group-header-letter-spacing, 0.05em);
+        letter-spacing: var(--select-group-header-letter-spacing, 0.08em);
         position: sticky;
         top: 0;
         z-index: 1;
-        border-bottom: var(--select-group-header-border-bottom, 1px solid #e5e7eb);
+        border-bottom: var(--select-group-header-border-bottom, none);
+      }
+      
+      .group-header:not(:first-child) {
+        margin-top: var(--select-group-header-separator-margin-top);
+        padding-top: var(--select-group-header-separator-padding-top);
+        border-top: var(--select-group-header-separator-border-top);
       }
 
+      /* ─────────────────────────────────────────────────────────────────────────
+         Options — Elegant hover and selection states
+       ───────────────────────────────────────────────────────────────────────── */
+
       .option {
-        padding: var(--select-option-padding, 8px 12px);
+        position: relative;
+        padding: var(--select-option-padding, 10px 14px);
         cursor: pointer;
-        color: var(--select-option-color, var(--select-text-color, #1f2937));
-        background: var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white)));
-        transition: var(--select-option-transition, background-color 0.15s ease);
+        color: var(--select-option-color, var(--select-text));
+        background: var(--select-option-bg, transparent);
+        transition: 
+          background var(--select-transition-fast),
+          color var(--select-transition-fast),
+          transform var(--select-transition-fast),
+          box-shadow var(--select-transition-fast);
         user-select: none;
         font-size: var(--select-option-font-size, 14px);
+        font-weight: var(--select-option-font-weight);
         line-height: var(--select-option-line-height, 1.5);
-        border: var(--select-option-border, none);
-        border-bottom: var(--select-option-border-bottom, none);
-        border-radius: var(--select-option-border-radius, 0);
-        box-shadow: var(--select-option-shadow, none);
-        transform: var(--select-option-transform, none);
+        border-radius: var(--select-option-border-radius, var(--select-radius-sm));
+        margin: var(--select-option-margin);
       }
 
       .option:hover {
-        background: var(--select-option-hover-bg, #f3f4f6);
-        color: var(--select-option-hover-color, #1f2937);
+        background: var(--select-option-hover-bg, var(--select-surface-elevated));
+        color: var(--select-option-hover-color, var(--select-text));
+        transform: var(--select-option-hover-transform);
       }
 
       .option.selected {
-        background: var(--select-option-selected-bg, #e0e7ff);
-        color: var(--select-option-selected-color, #4338ca);
-        font-weight: var(--select-option-selected-weight, 500);
-        border: var(--select-option-selected-border, var(--select-option-border, none));
-        border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
-        border-radius: var(--select-option-selected-border-radius, var(--select-option-border-radius, 0));
-        box-shadow: var(--select-option-selected-shadow, var(--select-option-shadow, none));
-        transform: var(--select-option-selected-transform, var(--select-option-transform, none));
+        background: var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.08) 0%, rgba(15, 52, 96, 0.04) 100%));
+        color: var(--select-option-selected-color, var(--select-accent));
+        font-weight: var(--select-option-selected-weight, 550);
+      }
+      
+      .option.selected::before {
+        content: '';
+        position: absolute;
+        left: var(--select-option-selected-indicator-left);
+        top: var(--select-option-selected-indicator-top);
+        transform: var(--select-option-selected-indicator-transform);
+        width: var(--select-option-selected-indicator-width);
+        height: var(--select-option-selected-indicator-height);
+        background: var(--select-option-selected-indicator-bg);
+        border-radius: var(--select-option-selected-indicator-radius);
+        animation: var(--select-option-selected-indicator-animation);
+      }
+      
+      @keyframes selectedIndicator {
+        0% {
+          height: var(--select-option-selected-indicator-from-height);
+          opacity: var(--select-option-selected-indicator-from-opacity);
+        }
+        100% {
+          height: var(--select-option-selected-indicator-to-height);
+          opacity: var(--select-option-selected-indicator-to-opacity);
+        }
       }
 
       .option.selected:hover {
-        background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e0e7ff));
-        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #4338ca));
-        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
-        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
-        box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
-        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+        background: var(--select-option-selected-hover-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%));
       }
 
       .option.active:not(.selected) {
-        background: var(--select-option-active-bg, #f3f4f6);
-        color: var(--select-option-active-color, #1f2937);
-        outline: var(--select-option-active-outline, 2px solid rgba(99, 102, 241, 0.45));
-        outline-offset: -2px;
+        background: var(--select-option-active-bg, var(--select-surface-elevated));
+        outline: var(--select-option-active-outline, 2px solid rgba(15, 52, 96, 0.3));
+        outline-offset: var(--select-option-active-outline-offset);
       }
 
       .option.selected.active {
-        background: var(--select-option-selected-active-bg, var(--select-option-selected-bg, #e0e7ff));
-        color: var(--select-option-selected-active-color, var(--select-option-selected-color, #4338ca));
-        border: var(--select-option-selected-active-border, var(--select-option-selected-border, var(--select-option-border, none)));
-        border-bottom: var(--select-option-selected-active-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
-        box-shadow: var(--select-option-selected-active-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
-        transform: var(--select-option-selected-active-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
-        outline: var(--select-option-selected-active-outline, var(--select-option-active-outline, 2px solid rgba(99, 102, 241, 0.45)));
-        outline-offset: -2px;
+        outline: var(--select-option-selected-active-outline, 2px solid rgba(15, 52, 96, 0.4));
+        outline-offset: var(--select-option-selected-active-outline-offset);
       }
 
       .option:active:not(.selected) {
-        background: var(--select-option-pressed-bg, #e5e7eb);
+        background: var(--select-option-pressed-bg, rgba(15, 52, 96, 0.08));
+        transform: var(--select-option-pressed-transform);
       }
 
       .option.selected:active {
-        background: var(--select-option-selected-pressed-bg, var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e0e7ff)));
+        transform: var(--select-option-selected-pressed-transform);
       }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Load More & Busy States — Refined feedback indicators
+       ───────────────────────────────────────────────────────────────────────── */
       
       .load-more-container {
         padding: var(--select-load-more-padding, 12px);
         text-align: center;
-        border-top: var(--select-divider-border, 1px solid #e0e0e0);
-        background: var(--select-load-more-bg, white);
       }
       
       .load-more-button {
-        padding: var(--select-button-padding, 8px 16px);
-        border: var(--select-button-border, 1px solid #1976d2);
-        background: var(--select-button-bg, white);
-        color: var(--select-button-color, #1976d2);
-        border-radius: var(--select-button-border-radius, 4px);
+        padding: var(--select-button-padding, 10px 20px);
+        border: var(--select-button-border, 1.5px solid var(--select-border));
+        background: var(--select-button-bg, transparent);
+        color: var(--select-button-color, var(--select-accent));
+        border-radius: var(--select-button-border-radius, var(--select-radius-md));
         cursor: pointer;
-        font-size: var(--select-button-font-size, 14px);
-        font-family: var(--select-font-family, inherit);
-        transition: all 0.2s ease;
+        font-size: var(--select-button-font-size, 13px);
+        font-weight: var(--select-button-font-weight);
+        letter-spacing: var(--select-button-letter-spacing);
+        transition: 
+          background var(--select-transition-fast),
+          border-color var(--select-transition-fast),
+          color var(--select-transition-fast),
+          transform var(--select-transition-bounce);
       }
       
       .load-more-button:hover {
-        background: var(--select-button-hover-bg, #1976d2);
+        background: var(--select-button-hover-bg, var(--select-accent));
+        border-color: var(--select-accent);
         color: var(--select-button-hover-color, white);
+        transform: var(--select-button-hover-transform);
+      }
+      
+      .load-more-button:active {
+        transform: var(--select-button-active-transform);
       }
       
       .load-more-button:disabled {
         opacity: var(--select-button-disabled-opacity, 0.5);
         cursor: not-allowed;
+        transform: none;
       }
       
       .busy-bucket {
-        padding: var(--select-busy-padding, 16px);
+        padding: var(--select-busy-padding, 20px);
         text-align: center;
-        color: var(--select-busy-color, #666);
-        background: var(--select-busy-bg, white);
-        font-size: var(--select-busy-font-size, 14px);
+        color: var(--select-busy-color, var(--select-text-muted));
+        background: var(--select-busy-bg, transparent);
+        font-size: var(--select-busy-font-size, 13px);
       }
       
       .spinner {
         display: inline-block;
-        width: var(--select-spinner-size, 20px);
-        height: var(--select-spinner-size, 20px);
-        border: var(--select-spinner-border, 2px solid #ccc);
-        border-top-color: var(--select-spinner-active-color, #1976d2);
+        width: var(--select-spinner-size, 22px);
+        height: var(--select-spinner-size, 22px);
+        border: var(--select-spinner-border, 2px solid var(--select-border));
+        border-top-color: var(--select-spinner-active-color, var(--select-accent));
         border-radius: 50%;
-        animation: spin 0.6s linear infinite;
+        animation: var(--select-spinner-animation);
       }
       
       @keyframes spin {
@@ -961,61 +1262,97 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .empty-state {
-        padding: var(--select-empty-padding, 24px);
+        padding: var(--select-empty-padding, 32px 24px);
         text-align: center;
-        color: var(--select-empty-color, #6b7280);
+        color: var(--select-empty-color, var(--select-text-muted));
         font-size: var(--select-empty-font-size, 14px);
-        background: var(--select-empty-bg, white);
+        background: var(--select-empty-bg, transparent);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        min-height: var(--select-empty-min-height, 72px);
+        gap: var(--select-empty-gap);
       }
       
       .searching-state {
-        padding: var(--select-searching-padding, 24px);
+        padding: var(--select-searching-padding, 32px 24px);
         text-align: center;
-        color: var(--select-searching-color, #667eea);
+        color: var(--select-searching-color, var(--select-accent));
         font-size: var(--select-searching-font-size, 14px);
-        font-style: italic;
-        background: var(--select-searching-bg, white);
-        animation: pulse 1.5s ease-in-out infinite;
+        background: var(--select-searching-bg, transparent);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        min-height: var(--select-searching-min-height, 72px);
+        gap: var(--select-searching-gap);
       }
       
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+      .searching-state::before {
+        content: '';
+        width: var(--select-searching-spinner-size);
+        height: var(--select-searching-spinner-size);
+        border: var(--select-searching-spinner-border);
+        border-top-color: var(--select-searching-spinner-active-color);
+        border-radius: 50%;
+        animation: var(--select-searching-spinner-animation);
       }
       
-      /* Error states */
+      /* ─────────────────────────────────────────────────────────────────────────
+         Error States — Clear visual feedback
+       ───────────────────────────────────────────────────────────────────────── */
+      
       .select-input[aria-invalid="true"] {
-        border-color: var(--select-error-border, #dc2626);
+        border-color: var(--select-error-border, #e94560);
       }
       
       .select-input[aria-invalid="true"]:focus {
-        border-color: var(--select-error-border, #dc2626);
-        box-shadow: 0 0 0 2px var(--select-error-shadow, rgba(220, 38, 38, 0.1));
-        outline-color: var(--select-error-border, #dc2626);
+        border-color: var(--select-error-border, #e94560);
+        box-shadow: 0 0 0 3px var(--select-error-shadow, rgba(233, 69, 96, 0.15));
       }
       
-      /* Accessibility: Reduced motion */
+      /* ──────────────────────────────────────────────────��──────────────────────
+         Accessibility — Reduced motion & High contrast
+       ───────────────────────────────────────────────────────────────────────── */
+      
       @media (prefers-reduced-motion: reduce) {
-        * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
+        *,
+        *::before,
+        *::after {
+          animation-duration: var(--select-reduced-motion-duration) !important;
+          animation-iteration-count: var(--select-reduced-motion-iteration-count) !important;
+          transition-duration: var(--select-reduced-motion-duration) !important;
+        }
+        
+        .dropdown-arrow.open {
+          transform: var(--select-arrow-open-transform);
         }
       }
       
-      /* Dark mode - Opt-in via class, data attribute, or ancestor context */
+      @media (prefers-contrast: high) {
+        .select-input:focus {
+          outline-width: var(--select-high-contrast-focus-outline-width);
+          outline-color: var(--select-high-contrast-focus-outline-color);
+        }
+        
+        .input-container {
+          border-width: var(--select-high-contrast-border-width);
+        }
+        
+        .option.selected::before {
+          width: var(--select-high-contrast-indicator-width);
+        }
+      }
+      
+      /* Touch targets (WCAG 2.5.5) */
+      .load-more-button,
+      select-option {
+        min-height: var(--select-touch-target-min-height);
+      }
+      
+      /* ─────────────────────────────────────────────────────────────────────────
+         Dark Mode — Elegant dark theme
+       ───────────────────────────────────────────────────────────────────────── */
+      
       :host(.dark-mode),
       :host([dark-mode]),
       :host([darkmode]),
@@ -1027,139 +1364,129 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([darkmode]),
       :host-context([data-theme="dark"]),
       :host-context([theme="dark"]) {
-        /* map dark tokens to base option tokens so nested <select-option>
-           components also pick up dark mode via inherited CSS variables */
-        --select-option-bg: var(--select-dark-option-bg, #1f2937);
-        --select-option-color: var(--select-dark-option-color, #f9fafb);
-        --select-option-hover-bg: var(--select-dark-option-hover-bg, #374151);
-        --select-option-hover-color: var(--select-dark-option-hover-color, #f9fafb);
-        --select-option-selected-bg: var(--select-dark-option-selected-bg, #3730a3);
-        --select-option-selected-color: var(--select-dark-option-selected-text, #e0e7ff);
-
-        .input-container {
-          background: var(--select-dark-bg, #1f2937);
-          border-color: var(--select-dark-border, #4b5563);
-        }
+        --select-primary: #e5e5e5;
+        --select-primary-light: #2a2a3e;
+        --select-accent: #6366f1;
+        --select-accent-hover: #f43f5e;
+        --select-surface: #1a1a2e;
+        --select-surface-elevated: #252540;
+        --select-border: #3f3f5a;
+        --select-border-focus: #6366f1;
+        --select-text: #f5f5f5;
+        --select-text-muted: #9ca3af;
+        --select-text-placeholder: #6b7280;
+        --select-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --select-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --select-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+        --select-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
         
-        .select-input {
-          color: var(--select-dark-text, #f9fafb);
-        }
-        
-        .select-input::placeholder {
-          color: var(--select-dark-placeholder, #6b7280);
-        }
-        
-        .select-dropdown {
-          background: var(--select-dark-dropdown-bg, #1f2937);
-          border-color: var(--select-dark-dropdown-border, #4b5563);
-        }
-        
-        .options-container {
-          background: var(--select-dark-options-bg, #1f2937);
-        }
-        
-        .option {
-          color: var(--select-dark-option-color, #f9fafb);
-          background: var(--select-dark-option-bg, #1f2937);
-        }
-        
-        .option:hover {
-          background: var(--select-dark-option-hover-bg, #374151);
-          color: var(--select-dark-option-hover-color, #f9fafb);
-        }
-        
-        .option.selected {
-          background: var(--select-dark-option-selected-bg, #3730a3);
-          color: var(--select-dark-option-selected-text, #e0e7ff);
-          border: var(--select-dark-option-selected-border, var(--select-option-selected-border, var(--select-option-border, none)));
-          border-bottom: var(--select-dark-option-selected-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
-          box-shadow: var(--select-dark-option-selected-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
-          transform: var(--select-dark-option-selected-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
-        }
-
-        .option.selected:hover {
-          background: var(--select-dark-option-selected-hover-bg, var(--select-dark-option-selected-bg, #3730a3));
-          color: var(--select-dark-option-selected-hover-color, var(--select-dark-option-selected-text, #e0e7ff));
-          border: var(--select-dark-option-selected-hover-border, var(--select-dark-option-selected-border, var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)))));
-          border-bottom: var(--select-dark-option-selected-hover-border-bottom, var(--select-dark-option-selected-border-bottom, var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)))));
-          box-shadow: var(--select-dark-option-selected-hover-shadow, var(--select-dark-option-selected-shadow, var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)))));
-          transform: var(--select-dark-option-selected-hover-transform, var(--select-dark-option-selected-transform, var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)))));
-        }
-        
-        .option.active:not(.selected) {
-          background-color: var(--select-dark-option-active-bg, #374151);
-          color: var(--select-dark-option-active-color, #f9fafb);
-          outline: var(--select-dark-option-active-outline, 2px solid rgba(129, 140, 248, 0.55));
-        }
-
-        /* Group header in dark mode */
-        .group-header {
-          color: var(--select-dark-group-header-color, var(--select-group-header-color, #6b7280));
-          background-color: var(--select-dark-group-header-bg, var(--select-group-header-bg, #374151));
-        }
-
-        .option.selected.active {
-          background-color: var(--select-dark-option-selected-active-bg, var(--select-dark-option-selected-bg, #3730a3));
-          color: var(--select-dark-option-selected-active-color, var(--select-dark-option-selected-text, #e0e7ff));
-          border: var(--select-dark-option-selected-active-border, var(--select-dark-option-selected-border, var(--select-option-selected-active-border, var(--select-option-selected-border, var(--select-option-border, none)))));
-          border-bottom: var(--select-dark-option-selected-active-border-bottom, var(--select-dark-option-selected-border-bottom, var(--select-option-selected-active-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)))));
-          box-shadow: var(--select-dark-option-selected-active-shadow, var(--select-dark-option-selected-shadow, var(--select-option-selected-active-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)))));
-          transform: var(--select-dark-option-selected-active-transform, var(--select-dark-option-selected-transform, var(--select-option-selected-active-transform, var(--select-option-selected-transform, var(--select-option-transform, none)))));
-          outline: var(--select-dark-option-selected-active-outline, var(--select-dark-option-active-outline, var(--select-option-selected-active-outline, var(--select-option-active-outline, 2px solid rgba(129, 140, 248, 0.55)))));
-          outline-offset: -2px;
-        }
-
-        .selection-badge {
-          background: var(--select-dark-badge-bg, #4f46e5);
-          color: var(--select-dark-badge-color, #eef2ff);
-        }
-
-        .badge-remove {
-          background: var(--select-dark-badge-remove-bg, rgba(255, 255, 255, 0.15));
-          color: var(--select-dark-badge-remove-color, #e5e7eb);
-        }
-
-        .badge-remove:hover {
-          background: var(--select-dark-badge-remove-hover-bg, rgba(255, 255, 255, 0.3));
-        }
-        
-        .busy-bucket,
-        .empty-state {
-          color: var(--select-dark-busy-color, #9ca3af);
-          background: var(--select-dark-empty-bg, #111827);
-        }
-
-        .searching-state {
-          background: var(--select-dark-searching-bg, #111827);
-        }
-        
-        .input-container::after {
-          background: linear-gradient(
-            to bottom,
-            transparent 0%,
-            rgba(255, 255, 255, 0.1) 20%,
-            rgba(255, 255, 255, 0.1) 80%,
-            transparent 100%
-          );
-        }
+        --select-option-bg: transparent;
+        --select-option-color: var(--select-text);
+        --select-option-hover-bg: var(--select-surface-elevated);
+        --select-option-hover-color: var(--select-text);
+        --select-option-selected-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%);
+        --select-option-selected-color: #a5b4fc;
       }
-      
-      /* Accessibility: High contrast mode */
-      @media (prefers-contrast: high) {
-        .select-input:focus {
-          outline-width: 3px;
-          outline-color: Highlight;
-        }
-        
-        .select-input {
-          border-width: 2px;
-        }
+
+      :host(.dark-mode) .input-container,
+      :host([dark-mode]) .input-container,
+      :host([darkmode]) .input-container,
+      :host([data-theme="dark"]) .input-container,
+      :host([theme="dark"]) .input-container,
+      :host-context(.dark-mode) .input-container,
+      :host-context(.dark) .input-container,
+      :host-context([dark-mode]) .input-container,
+      :host-context([darkmode]) .input-container,
+      :host-context([data-theme="dark"]) .input-container,
+      :host-context([theme="dark"]) .input-container {
+        background: var(--select-surface);
+        border-color: var(--select-border);
       }
-      
-      /* Touch targets (WCAG 2.5.5) */
-      .load-more-button,
-      select-option {
-        min-height: 44px;
+
+      :host(.dark-mode) .input-container::after,
+      :host([dark-mode]) .input-container::after,
+      :host([darkmode]) .input-container::after,
+      :host([data-theme="dark"]) .input-container::after,
+      :host([theme="dark"]) .input-container::after,
+      :host-context(.dark-mode) .input-container::after,
+      :host-context(.dark) .input-container::after,
+      :host-context([dark-mode]) .input-container::after,
+      :host-context([darkmode]) .input-container::after,
+      :host-context([data-theme="dark"]) .input-container::after,
+      :host-context([theme="dark"]) .input-container::after {
+        background: var(--select-separator-dark-bg);
+      }
+
+      :host(.dark-mode) .select-dropdown,
+      :host([dark-mode]) .select-dropdown,
+      :host([darkmode]) .select-dropdown,
+      :host([data-theme="dark"]) .select-dropdown,
+      :host([theme="dark"]) .select-dropdown,
+      :host-context(.dark-mode) .select-dropdown,
+      :host-context(.dark) .select-dropdown,
+      :host-context([dark-mode]) .select-dropdown,
+      :host-context([darkmode]) .select-dropdown,
+      :host-context([data-theme="dark"]) .select-dropdown,
+      :host-context([theme="dark"]) .select-dropdown {
+        background: var(--select-surface);
+        border-color: var(--select-border);
+      }
+
+      :host(.dark-mode) .options-container,
+      :host([dark-mode]) .options-container,
+      :host([darkmode]) .options-container,
+      :host([data-theme="dark"]) .options-container,
+      :host([theme="dark"]) .options-container,
+      :host-context(.dark-mode) .options-container,
+      :host-context(.dark) .options-container,
+      :host-context([dark-mode]) .options-container,
+      :host-context([darkmode]) .options-container,
+      :host-context([data-theme="dark"]) .options-container,
+      :host-context([theme="dark"]) .options-container {
+        background: var(--select-surface);
+        scrollbar-color: var(--select-border) transparent;
+      }
+
+      :host(.dark-mode) .selection-badge,
+      :host([dark-mode]) .selection-badge,
+      :host([darkmode]) .selection-badge,
+      :host([data-theme="dark"]) .selection-badge,
+      :host([theme="dark"]) .selection-badge,
+      :host-context(.dark-mode) .selection-badge,
+      :host-context(.dark) .selection-badge,
+      :host-context([dark-mode]) .selection-badge,
+      :host-context([darkmode]) .selection-badge,
+      :host-context([data-theme="dark"]) .selection-badge,
+      :host-context([theme="dark"]) .selection-badge {
+        background: var(--select-badge-dark-bg);
+      }
+
+      :host(.dark-mode) .group-header:not(:first-child),
+      :host([dark-mode]) .group-header:not(:first-child),
+      :host([darkmode]) .group-header:not(:first-child),
+      :host([data-theme="dark"]) .group-header:not(:first-child),
+      :host([theme="dark"]) .group-header:not(:first-child),
+      :host-context(.dark-mode) .group-header:not(:first-child),
+      :host-context(.dark) .group-header:not(:first-child),
+      :host-context([dark-mode]) .group-header:not(:first-child),
+      :host-context([darkmode]) .group-header:not(:first-child),
+      :host-context([data-theme="dark"]) .group-header:not(:first-child),
+      :host-context([theme="dark"]) .group-header:not(:first-child) {
+        border-top-color: var(--select-border);
+      }
+
+      :host(.dark-mode) .option.selected::before,
+      :host([dark-mode]) .option.selected::before,
+      :host([darkmode]) .option.selected::before,
+      :host([data-theme="dark"]) .option.selected::before,
+      :host([theme="dark"]) .option.selected::before,
+      :host-context(.dark-mode) .option.selected::before,
+      :host-context(.dark) .option.selected::before,
+      :host-context([dark-mode]) .option.selected::before,
+      :host-context([darkmode]) .option.selected::before,
+      :host-context([data-theme="dark"]) .option.selected::before,
+      :host-context([theme="dark"]) .option.selected::before {
+        background: var(--select-accent);
       }
     `;
     
@@ -1207,7 +1534,7 @@ export class EnhancedSelect extends HTMLElement {
     // Input container click - focus input and open dropdown
     // Prevent the original pointer event from bubbling/causing default focus behavior
     // which can interfere with option click handling when opening the dropdown
-      this._inputContainer.addEventListener('pointerdown', (e) => {
+    this._inputContainer.addEventListener('pointerdown', (e) => {
       // Prevent propagation to document click listener but do NOT preventDefault.
       // Allow default so browser events (click) on newly opened options still fire.
       // e.stopPropagation(); // BUG: By stopping propagation here, the document click listener doesn't see it, which is fine for not closing it. But be very careful.
@@ -1223,7 +1550,13 @@ export class EnhancedSelect extends HTMLElement {
         e.preventDefault();
       }
 
-      if (this._state.isOpen && this._config.selection.toggleOnTriggerClick !== false) {
+      const clickedInput = Boolean(target && target.matches('.select-input'));
+
+      if (
+        this._state.isOpen &&
+        this._config.selection.toggleOnTriggerClick !== false &&
+        !(clickedInput && this._config.searchable)
+      ) {
         this._handleClose();
         return;
       }
@@ -1294,11 +1627,7 @@ export class EnhancedSelect extends HTMLElement {
     // temporarily suppress blur-based closing until after the click has
     // been handled. Setting a flag that gets cleared in the next tick is
     // sufficient.
-    this._optionsContainer.addEventListener('pointerdown', (e) => {
-      // Prevent focus from moving away from the input to document body
-      // This stops the input from blurring when clicking on an option natively.
-      e.preventDefault();
-
+    this._optionsContainer.addEventListener('pointerdown', () => {
       this._suppressBlurClose = true;
       setTimeout(() => {
         this._suppressBlurClose = false;
@@ -1449,18 +1778,6 @@ export class EnhancedSelect extends HTMLElement {
     this._dropdown.style.display = 'block';
     this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
-
-    // Clear search query when opening to show all options
-    // This ensures we can scroll to selected item
-    if (this._config.searchable) {
-        this._state.searchQuery = '';
-        // Don't clear input value if it represents selection
-        // But if we want to search, we might want to clear it?
-        // Standard behavior: input keeps value (label), but dropdown shows all options
-        // until user types.
-        // However, our filtering logic uses _state.searchQuery.
-        // So clearing it here resets the filter.
-    }
 
     // Render options when opening
     this._renderOptions();
@@ -1733,44 +2050,44 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _setActive(index: number): void {
-    const options = Array.from(this._optionsContainer.children);
-    
     // Clear previous active state
-    if (this._state.activeIndex >= 0 && options[this._state.activeIndex]) {
-      const prevOption = options[this._state.activeIndex];
-      // Check if it's a custom SelectOption or a lightweight DOM element
-      if ('setActive' in prevOption && typeof (prevOption as any).setActive === 'function') {
-        (prevOption as SelectOption).setActive(false);
-      } else {
-        // Lightweight option - remove active class
-        (prevOption as HTMLElement).classList.remove('smilodon-option--active');
+    if (this._state.activeIndex >= 0) {
+      const prevOption = this._getOptionElementByIndex(this._state.activeIndex);
+      if (prevOption) {
+        // Check if it's a custom SelectOption or a lightweight DOM element
+        if ('setActive' in prevOption && typeof (prevOption as any).setActive === 'function') {
+          (prevOption as SelectOption).setActive(false);
+        } else {
+          // Lightweight option - remove active class
+          prevOption.classList.remove('smilodon-option--active');
+        }
       }
     }
     
     this._state.activeIndex = index;
     
     // Set new active state
-    if (options[index]) {
-      const option = options[index];
-      
+    const option = this._getOptionElementByIndex(index);
+    if (option) {
       // Check if it's a custom SelectOption or a lightweight DOM element
       if ('setActive' in option && typeof (option as any).setActive === 'function') {
         (option as SelectOption).setActive(true);
       } else {
         // Lightweight option - add active class
-        (option as HTMLElement).classList.add('smilodon-option--active');
+        option.classList.add('smilodon-option--active');
       }
       
-      if (typeof (option as HTMLElement).scrollIntoView === 'function') {
-        (option as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (typeof option.scrollIntoView === 'function') {
+        // Don't scroll wildly when just opening with pre-selections
+        option.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
       
       // Announce position for screen readers
-      const total = options.length;
+      const total = this._state.loadedItems.length;
       this._announce(`Item ${index + 1} of ${total}`);
       
       // Update aria-activedescendant using the actual option id when available
-      const optionId = (option as HTMLElement).id || `${this._uniqueId}-option-${index}`;
+      const optionId = option.id || `${this._uniqueId}-option-${index}`;
       this._input.setAttribute('aria-activedescendant', optionId);
     }
   }
@@ -2052,7 +2369,11 @@ export class EnhancedSelect extends HTMLElement {
         const badge = document.createElement('span');
         badge.className = 'selection-badge';
         badge.setAttribute('part', 'chip');
-        badge.textContent = getLabel(item);
+
+        const badgeLabel = document.createElement('span');
+        badgeLabel.className = 'selection-badge-label';
+        badgeLabel.textContent = getLabel(item);
+        badge.appendChild(badgeLabel);
         
         // Add remove button to badge
         if (this._config.selection.showRemoveButton !== false) {
@@ -2137,10 +2458,12 @@ export class EnhancedSelect extends HTMLElement {
     
     if (option) {
       // Use smooth scrolling with center alignment for better UX
-      option.scrollIntoView({
-        block: this._config.scrollToSelected.block || 'center',
-        behavior: 'smooth',
-      });
+      if (typeof option.scrollIntoView === 'function') {
+        option.scrollIntoView({
+          block: this._config.scrollToSelected.block || 'center',
+          behavior: 'smooth',
+        });
+      }
       
       // Also set it as active for keyboard navigation
       this._setActive(targetIndex);
@@ -2611,7 +2934,7 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     if (this._clearControlIcon) {
-      this._clearControlIcon.textContent = this._config.clearControl.icon || '×';
+      this._clearControlIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     }
 
     if (this._dropdown) {
@@ -2857,12 +3180,23 @@ export class EnhancedSelect extends HTMLElement {
         if (shouldIncrementalRender) {
           const chunkSize = 80;
           let cursor = 0;
+          let maxRenderTarget = 0;
+
+          if (this._state.selectedIndices.size > 0 && this._config.scrollToSelected.enabled) {
+            const indices = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
+            const targetIndex = this._config.scrollToSelected.multiSelectTarget === 'first' ? indices[0] : indices[indices.length - 1];
+            const filteredPos = filteredIndices.indexOf(targetIndex);
+            if (filteredPos !== -1) {
+              maxRenderTarget = filteredPos + 20; // Ensure we render up to the selection
+            }
+          }
 
           const renderChunk = () => {
             if (renderCycleId !== this._renderCycleId) return;
 
             const fragment = document.createDocumentFragment();
-            const chunkEnd = Math.min(cursor + chunkSize, filteredIndices.length);
+            const chunkEnd = Math.min(Math.max(cursor + chunkSize, maxRenderTarget), filteredIndices.length);
+            maxRenderTarget = 0; // Reset after fast-forwarding
 
             for (; cursor < chunkEnd; cursor += 1) {
               const itemIndex = filteredIndices[cursor];

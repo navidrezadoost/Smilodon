@@ -22,7 +22,7 @@ Additional references:
 - **Known Limitations**: [`docs/KNOWN-LIMITATIONS.md`](../../docs/KNOWN-LIMITATIONS.md)
 
 The complete guide includes:
-- ✅ All 60+ CSS variables for complete customization
+- ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
 - ✅ Vanilla JavaScript patterns (DOM manipulation, event listeners)
 - ✅ Complete API reference with all properties and methods
 - ✅ CDN usage and module bundler integration
@@ -702,18 +702,20 @@ enhanced-select.dark-mode {
 --select-dark-group-header-bg    /* Dark header background */
 ```
 
-**Complete CSS Variables List (60+ variables)**
+**Complete CSS Variables Reference**
 
-See the [full CSS variables reference](https://github.com/navidrezadoost/smilodon/blob/main/CHANGELOG.md#135---2026-02-09) for all 60+ customizable properties including:
-- Input container (gap, padding, height, borders, focus states)
-- Input field (width, padding, font, colors)
-- Arrow/icon (size, color, hover states, position)
-- **Separator line** (width, height, gradient, position)
-- **Selection badges** (padding, colors, **remove/delete button**)
-- Dropdown (margins, max-height, borders, shadows)
-- Options (font size, line height, borders, transitions)
-- Load more button (padding, borders, colors, hover states)
-- Loading/empty states (padding, colors, backgrounds, spinner)
+The canonical styling inventory now lives in:
+
+- [docs/STYLING.md](../../docs/STYLING.md) for strategy and examples
+- [docs/STYLING-TOKENS.md](../../docs/STYLING-TOKENS.md) for the exhaustive token table
+
+That reference covers:
+
+- Theme foundation tokens (palette, shadows, radii, timing)
+- Input shell, separator, arrow, and clear-control hooks
+- Multi-select chip structure, remove-button states, and badge motion
+- Dropdown, scrollbar, group-header, and option-state hooks
+- Empty, loading, searching, error, reduced-motion, and high-contrast hooks
 
 #### Highlighted Customization Features
 

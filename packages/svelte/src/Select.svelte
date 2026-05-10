@@ -197,7 +197,10 @@
     });
   }
 
-  onMount(() => {
+  onMount(async () => {
+    if (!selectRef) return;
+
+    await customElements.whenDefined('enhanced-select');
     if (!selectRef) return;
 
     const element = selectRef;

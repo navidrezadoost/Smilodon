@@ -9,7 +9,7 @@ Production-ready, accessible Select component for React applications.
 👉 **[Complete React Guide](./COMPLETE-GUIDE.md)** 👈
 
 The complete guide includes:
-- ✅ All 60+ CSS variables for complete customization
+- ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
 - ✅ React-specific patterns (hooks, controlled components, refs)
 - ✅ Complete API reference with TypeScript types
 - ✅ React Hook Form integration examples
@@ -91,6 +91,53 @@ or
 ```bash
 pnpm add @smilodon/react @smilodon/core
 ```
+
+## Next.js Integration
+
+`@smilodon/react` is built for client-side React rendering and already includes `'use client';` so it can be imported from Next.js App Router client components without extra wrapper files.
+
+### App Router checklist
+
+1. Put the consuming component behind `'use client';`.
+2. Import `Select` directly from `@smilodon/react`.
+3. Keep large `items` arrays memoized.
+4. Prefer `virtualized` for large datasets and provide `estimatedItemHeight` when rows are visually consistent.
+
+```tsx
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Select } from '@smilodon/react';
+
+export default function CountrySelect() {
+  const [value, setValue] = useState<string | number>('');
+  const items = useMemo(
+    () => [
+      { value: 'de', label: 'Germany' },
+      { value: 'jp', label: 'Japan' },
+      { value: 'ir', label: 'Iran' },
+    ],
+    []
+  );
+
+  return (
+    <Select
+      items={items}
+      value={value}
+      onChange={(next) => setValue(next as string)}
+      searchable
+      clearable
+      placeholder="Choose a country"
+    />
+  );
+}
+```
+
+### When using server components
+
+- Fetch data in a server component if desired.
+- Pass plain serializable arrays into a client component that renders `Select`.
+- Do not render `Select` directly in a server component.
 
 ## Quick Start
 
@@ -1122,7 +1169,7 @@ function OptimizedExample() {
 
 ### Multi-select chip styling
 
-Selected chips in multi-select mode use softer default pill styles and remain fully customizable. Target them with `::part(chip)` and `::part(chip-remove)`, or override CSS variables such as `--select-badge-bg`, `--select-badge-border`, `--select-badge-color`, `--select-badge-remove-bg`, and `--select-badge-remove-color`.
+Selected chips in multi-select mode use softer default pill styles and remain fully customizable. Target them with `::part(chip)` and `::part(chip-remove)`, or override CSS variables such as `--select-badge-bg`, `--select-badge-border`, `--select-badge-color`, `--select-badge-shadow`, `--select-badge-remove-bg`, `--select-badge-remove-color`, and `--select-multi-input-min-width`.
 
 ### Types
 

@@ -24,6 +24,75 @@ export interface GroupedItem {
   items: SelectItem[];
 }
 
+function normalizeGroupedItems(groups: GroupedItem[] | undefined): Array<{ label: string; options: SelectItem[] }> | undefined {
+  if (!groups) return undefined;
+
+  return groups.map((group) => ({
+    label: group.group,
+    options: group.items,
+  }));
+}
+
+function applyConfig(select: any, options: {
+  multiple?: boolean;
+  searchable?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  error?: boolean;
+  infiniteScroll?: boolean;
+  pageSize?: number;
+  virtualized?: boolean;
+  maxSelections?: number;
+  clearable?: boolean;
+  clearSelectionOnClear?: boolean;
+  clearSearchOnClear?: boolean;
+  clearAriaLabel?: string;
+  clearIcon?: string;
+  trackingEnabled?: boolean;
+  trackEvents?: boolean;
+  trackStyling?: boolean;
+  trackLimitations?: boolean;
+  emitDiagnostics?: boolean;
+  trackingMaxEntries?: number;
+  limitationPolicies?: Record<string, { mode: 'default' | 'suppress' | 'strict'; note?: string }>;
+  autoMitigateRuntimeModeSwitch?: boolean;
+}): void {
+  select.updateConfig?.({
+    searchable: options.searchable ?? false,
+    placeholder: options.placeholder,
+    enabled: !(options.disabled ?? false),
+    virtualize: options.virtualized ?? false,
+    selection: {
+      mode: options.multiple ? 'multi' : 'single',
+      maxSelections: options.maxSelections,
+    },
+    infiniteScroll: {
+      enabled: options.infiniteScroll ?? false,
+      pageSize: options.pageSize,
+    },
+    clearControl: {
+      enabled: options.clearable === true,
+      clearSelection: options.clearSelectionOnClear ?? true,
+      clearSearch: options.clearSearchOnClear ?? true,
+      ariaLabel: options.clearAriaLabel,
+      icon: options.clearIcon,
+    },
+    tracking: {
+      enabled: options.trackingEnabled ?? false,
+      events: options.trackEvents ?? true,
+      styling: options.trackStyling ?? true,
+      limitations: options.trackLimitations ?? true,
+      emitDiagnostics: options.emitDiagnostics ?? false,
+      maxEntries: options.trackingMaxEntries ?? 200,
+    },
+    limitations: {
+      policies: options.limitationPolicies,
+      autoMitigateRuntimeModeSwitch: options.autoMitigateRuntimeModeSwitch ?? true,
+    },
+  });
+}
+
 /**
  * Create a select element with options
  */
@@ -97,7 +166,7 @@ export function createSelect(options: {
     select.setItems(options.items);
   }
   if (options.groupedItems) {
-    select.setGroupedItems(options.groupedItems);
+    select.setGroupedItems(normalizeGroupedItems(options.groupedItems));
   }
 
   // Set initial value
@@ -169,27 +238,7 @@ export function createSelect(options: {
     });
   }
 
-  select.updateConfig?.({
-    clearControl: {
-      enabled: options.clearable === true,
-      clearSelection: options.clearSelectionOnClear ?? true,
-      clearSearch: options.clearSearchOnClear ?? true,
-      ariaLabel: options.clearAriaLabel,
-      icon: options.clearIcon,
-    },
-    tracking: {
-      enabled: options.trackingEnabled ?? false,
-      events: options.trackEvents ?? true,
-      styling: options.trackStyling ?? true,
-      limitations: options.trackLimitations ?? true,
-      emitDiagnostics: options.emitDiagnostics ?? false,
-      maxEntries: options.trackingMaxEntries ?? 200,
-    },
-    limitations: {
-      policies: options.limitationPolicies,
-      autoMitigateRuntimeModeSwitch: options.autoMitigateRuntimeModeSwitch ?? true,
-    },
-  });
+  applyConfig(select, options);
 
   return select;
 }
@@ -203,6 +252,19 @@ export function initSelect(
     items?: SelectItem[];
     groupedItems?: GroupedItem[];
     value?: string | number | (string | number)[];
+    multiple?: boolean;
+    searchable?: boolean;
+    placeholder?: string;
+    disabled?: boolean;
+    infiniteScroll?: boolean;
+    pageSize?: number;
+    virtualized?: boolean;
+    maxSelections?: number;
+    clearable?: boolean;
+    clearSelectionOnClear?: boolean;
+    clearSearchOnClear?: boolean;
+    clearAriaLabel?: string;
+    clearIcon?: string;
   }
 ): void {
   const select = element as any;
@@ -212,13 +274,21 @@ export function initSelect(
   }
 
   if (options.groupedItems) {
-    select.setGroupedItems(options.groupedItems);
+    select.setGroupedItems(normalizeGroupedItems(options.groupedItems));
   }
 
   if (options.value !== undefined) {
     const values = Array.isArray(options.value) ? options.value : [options.value];
     select.setSelectedValues(values);
   }
+
+  if (options.multiple) {
+    element.setAttribute('multiple', '');
+  } else {
+    element.removeAttribute('multiple');
+  }
+
+  applyConfig(select, options);
 }
 
 /**

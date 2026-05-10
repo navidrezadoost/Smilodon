@@ -17,60 +17,44 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+- No unreleased changes yet.
+
+## [1.5.0] - 2026-05-10
+
+### Added
+- **New adapter: `@smilodon/solid`** with controlled and uncontrolled flows, JSX-backed custom renderers, grouped-item normalization, runtime capability accessors, and callback-ref imperative control.
+- **New adapter: `@smilodon/react-native`** with a native `WebView` bridge, React Native Web fallback, embedded core bundle synchronization, and parity event forwarding for selection, search, clear, and diagnostics.
+- **System documentation map:** refreshed root guidance so the global README now routes readers into functional documents for getting started, API reference, styling, performance, testing, and limitation handling.
+- **Styling reference system:** promoted the audited token inventory in [docs/STYLING-TOKENS.md](./docs/STYLING-TOKENS.md) to the canonical source for theming, motion, accessibility, and dark-mode overrides.
+
+### Changed
+- **Release alignment:** versioned `@smilodon/core` and all published adapters to `1.5.0` for a single release line across the monorepo.
+- **Architecture reference:** updated [ARCHITECTURE.md](./ARCHITECTURE.md) to reflect the current adapter topology, token-driven styling architecture, documentation topology, and package distribution model.
+- **Root documentation:** updated [README.md](./README.md) to highlight the 1.5.0 system release and link directly to functional docs for onboarding, implementation, styling, performance, and governance.
+- **Core trigger behavior:** added `selection.toggleOnTriggerClick` so repeated trigger clicks can be configured to toggle or remain open.
+- **Core styling surface:** expanded design-token coverage across badges, clear control, dropdown motion, scrollbar geometry, option indicators, reduced-motion handling, and high-contrast defaults so default visuals are fully themeable.
+
 ### Fixed
-- **Core interaction stability:** Resolved dropdown blur/click race conditions that could cause open-close flicker and missed selection when clicking options.
-- **Core selection handling:** Removed duplicate option click handling paths so option selection no longer toggles on/off from a single user click.
-- **Core large-list responsiveness:** Reduced long task spikes in large flat-list rendering by incrementally rendering option batches when virtualization is enabled.
-- **Core cleanup:** Removed temporary debug console output used during interaction diagnostics.
+- **Core interaction stability:** resolved dropdown blur/click race conditions that could cause open-close flicker and missed selection when clicking options.
+- **Core selection handling:** removed duplicate option click handling paths so option selection no longer toggles on/off from a single user click.
+- **Core large-list responsiveness:** reduced long task spikes in large flat-list rendering by incrementally rendering option batches when virtualization is enabled.
+- **Core multi-select rendering:** fixed custom-rendered multi-select removal flows so selected items can be removed on the first interaction without `setSelected()` assumptions.
+- **Core chip styling scope:** moved chip/badge rules back into the primary Shadow DOM stylesheet scope so default badge styling is applied consistently.
 - **React adapter virtualization config:** `virtualized` and `estimatedItemHeight` are now forwarded into core config updates consistently.
-- **React adapter renderer lifecycle:** Fixed `groupHeaderRenderer` React root lifecycle management to prevent stale roots and unnecessary mount churn.
+- **React adapter renderer lifecycle:** fixed `groupHeaderRenderer` React root lifecycle management to prevent stale roots and unnecessary mount churn.
 
 ### Documentation
 - Added troubleshooting guidance for DevTools `[Violation]` warnings (`pointerdown`/`click` long tasks and forced reflow) and practical mitigation steps for large datasets.
 - Clarified React large-list recommendations around `virtualized`, `estimatedItemHeight`, and custom `optionRenderer` usage.
+- Updated root and package documentation to reflect the audited styling system and token-driven customization model.
+- Added Next.js, Nuxt, SvelteKit, SolidJS, and React Native guidance to the framework playbooks and package guides.
 
-### Added
-- **Input clear control (Core + adapters):** Added a configurable clear button inside the select input area that can clear selected values and/or search query.
-  - Core config: `clearControl.enabled`, `clearSelection`, `clearSearch`, `hideWhenEmpty`, `ariaLabel`, `icon`.
-  - New event: `clear` with detail `{ clearedSelection, clearedSearch }`.
-  - Styling hooks: `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` tokens.
-  - Adapter support added for React/Vue/Svelte plus Vanilla helper options.
+### Removed
+- Removed obsolete root-level manual test surfaces: `QUICK-TEST.html`, `test-demo.html`, `test-enhanced.html`, and `test-styling-fixes.html`.
 
-### Testing
-- Added core regression coverage for clear-control rendering, clear action, and emitted event payload.
+### Maintenance
+- Removed generated `playwright-report/` and `test-results/` artifacts from the repository workspace; npm package publishing remains constrained by package-level `files` allowlists.
 
-### Added
-- **Group header rendering (Core + adapters):** new `groupHeaderRenderer` callback allows authors to supply a DOM/React/Vue element for each group label.  Returned element automatically receives `.group-header` class and `part="group-header"`.
-- `group-header` part exposed for styling; adapters include examples in docs.
-- Exposed `--select-group-header-*` CSS vars (color/bg/spacing, plus dark-mode counterparts).
-
-### Changed
-- Opening a dropdown will now automatically close any other open `enhanced-select` instances on the page; resolved #15.
-- Toggled dropdown state when clicking input container (not just arrow) and always move focus to input on open; fixes issue reported in #14.
-- Arrow click handler now delegates to `_handleOpen/_handleClose` for consistent behavior and focus.
-- Input container pointerdown listener now toggles instead of only opening.
-- Dark-mode styles extended to include group header variables; host-context selectors improved for group elements.
-- Improved dark-mode activation compatibility: supports `dark-mode`, `darkmode`, `theme="dark"`, and ancestor attribute aliases in addition to existing class/data-theme forms (#16).
-- Mapped dark option tokens to base option variables in core so nested `select-option` rows consistently honor dark mode background/text tokens (#16).
-- Fixed malformed dark active-option CSS block that could drop `color/outline` declarations in dark mode (#16).
-- Removed hardcoded host inline width in `connectedCallback`, allowing full CSS-token-based sizing (`--select-width`, `--select-height`, `--select-input-width`, `--select-input-height`).
-- Refined input-container toggle behavior: clicking directly inside the text input keeps dropdown open for typing; clicking other container areas still toggles close.
-
-### Styling
-- Added backward‑compatible alias variables: `--select-arrow-height`, `--select-arrow-width`, and `--select-arrow-hover` (maps to hover color).
-- Reviewed and documented `--select-empty-*` tokens for customizing no-results state.
-- Added typo-compatible separator aliases (`--select-seperator-*`) and wired them as fallbacks to `--select-separator-*` tokens (#16).
-- Added `--select-group-header-text-align` token for group label alignment control (#16).
-- `select-option` internal container now applies base option `background`/`color` tokens so option background and border/border-bottom customization consistently take effect (#16).
-- Added option content/checkmark hooks (`--select-option-content-*`, `--select-checkmark-*`) and removed inline checkmark styles to maximize from-scratch theming control.
-
-### Documentation
-- Updated core and adapter READMEs with grouping notes, auto-conversion examples, renderer usage, variable name clarifications and part names for `group-header`/`no-results`.
-- Added new styling guide references and examples for arrow sizing and empty state.
-
-### Tests
-- New unit tests covering group-header part, dark-mode group header styling, arrow alias variables and input toggle focus behavior.
-- E2E tests verify group header rendering, dark mode color change, and keyboard navigation remain intact.
 
 ## [1.4.12] - 2026-02-26
 

@@ -9,7 +9,7 @@ Production-ready, accessible select component for Svelte applications. Part of t
 👉 **[Complete Svelte Guide](./COMPLETE-GUIDE.md)** 👈
 
 The complete guide includes:
-- ✅ All 60+ CSS variables for complete customization
+- ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
 - ✅ Svelte-specific patterns (reactive statements, stores, bind:value)
 - ✅ Complete API reference with TypeScript types
 - ✅ Svelte stores integration (writable, derived)
@@ -63,6 +63,34 @@ The complete guide includes:
 ```bash
 npm install @smilodon/svelte @smilodon/core
 ```
+
+## SvelteKit / SSR Notes
+
+The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`, so it is safe to use in SvelteKit pages as long as imperative browser-only code stays inside lifecycle hooks.
+
+### Recommended pattern
+
+```svelte
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { Select } from '@smilodon/svelte';
+
+  let items = [];
+  let value = [];
+
+  onMount(async () => {
+    items = await fetch('/api/frameworks').then((response) => response.json());
+  });
+</script>
+
+<Select {items} bind:value searchable multiple clearable />
+```
+
+### SSR guidance
+
+- Avoid direct `window`, `document`, or custom-element access outside `onMount()`.
+- Use `bind:value` for regular selection flow and exported instance methods for imperative control.
+- Prefer `optionRenderer` when you need DOM-driven custom options and plain markup when you do not.
 
 ## Quick Start
 

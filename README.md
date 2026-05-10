@@ -15,12 +15,14 @@
 
 > Designed for teams who expect enterprise reliability, uncompromising speed, and platform flexibility without sacrificing developer ergonomics.
 
-> **Latest (v1.4.12):** Added runtime capability reporting, known limitation policies, tracking snapshots, and diagnostic eventing in core; exposed these controls across React/Vue/Svelte/Vanilla adapters with new contract + unit coverage and Playwright preflight checks.
+> **Latest (v1.5.0):** Unified the release line across core and adapters, added first-party SolidJS and React Native adapters, refreshed the architecture reference, and turned the root README into the main router for functional docs.
 
-**Notable changes in v1.4.8**
+**Release highlights in v1.5.0**
 
-- Grouped items: pass either `groupedItems` or a flat `items` array where each item has a `group` property — adapters auto-convert when possible (React, Vue, Svelte).
-- Dark mode: the core web component supports ancestor-level dark themes via parent classes (`.dark`, `.dark-mode`) or `data-theme="dark"`. These are applied inside Shadow DOM using `:host-context`, and are configurable with CSS variables described in `packages/core/src/components/enhanced-select.ts`.
+- New adapters: `@smilodon/solid` and `@smilodon/react-native` now sit alongside React, Vue, Svelte, and Vanilla.
+- Version alignment: published packages now move together on the `1.5.0` line for clearer releases.
+- Documentation routing: the root guide now points directly to getting-started, API, styling, performance, testing, and known-limitations documents.
+- Repository cleanup: obsolete root-level manual HTML test surfaces were removed in favor of package docs, examples, and the maintained playground.
 
 
 ---
@@ -62,6 +64,19 @@ Smilodon is a Web Component powered select/dropdown system that remains responsi
 - **Distribution** — multi-package workspace (`packages/*`) with typed exports and dual ESM/CJS output.
 
 Deep dives: [ARCHITECTURE.md](./ARCHITECTURE.md), [docs/SELECT-IMPLEMENTATION.md](./docs/SELECT-IMPLEMENTATION.md), [docs/ALGORITHMS.md](./docs/ALGORITHMS.md).
+
+### Functional documentation map
+
+| Need | Start here |
+| --- | --- |
+| Platform onboarding | [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md) |
+| API contract | [docs/API-REFERENCE.md](./docs/API-REFERENCE.md) |
+| Component behavior | [docs/SELECT-COMPONENT.md](./docs/SELECT-COMPONENT.md) |
+| Implementation details | [docs/SELECT-IMPLEMENTATION.md](./docs/SELECT-IMPLEMENTATION.md) |
+| Styling and design tokens | [docs/STYLING.md](./docs/STYLING.md), [docs/STYLING-TOKENS.md](./docs/STYLING-TOKENS.md) |
+| Performance and operations | [docs/PERFORMANCE.md](./docs/PERFORMANCE.md), [docs/PERFORMANCE-RUNBOOK.md](./docs/PERFORMANCE-RUNBOOK.md) |
+| Testing model | [docs/TESTING-ARCHITECTURE.md](./docs/TESTING-ARCHITECTURE.md), [tests/README.md](./tests/README.md) |
+| Runtime limits and adapter parity | [docs/KNOWN-LIMITATIONS.md](./docs/KNOWN-LIMITATIONS.md), [docs/ADAPTER-CAPABILITY-MATRIX.md](./docs/ADAPTER-CAPABILITY-MATRIX.md) |
 
 ---
 
@@ -149,167 +164,217 @@ Dataset Size    │ First Paint │ Interactive │ Search (p95) │ Memory │ 
 
 ## Chapter 5 — Framework Playbooks
 
-Each playbook contains installation, configuration, and a realistic example showcasing search, multi-select, keyboard control, and async data.
+Smilodon ships a single core interaction model with framework-native adapters layered on top. That keeps behavior, styling, diagnostics, and known-limitation reporting consistent whether you mount it in React, Vue, Svelte, SolidJS, React Native, or plain DOM code.
 
-### 📚 Complete Framework-Specific Guides
+### Guide matrix
 
-For **comprehensive, unambiguous documentation** covering all features, styling options, and framework-specific patterns:
+| Platform | Package | Best starting document | Notes |
+| --- | --- | --- | --- |
+| React | `@smilodon/react` | [packages/react/README.md](./packages/react/README.md) | Includes controlled mode, refs, renderers, and Next.js notes. |
+| Next.js | `@smilodon/react` | [packages/react/README.md](./packages/react/README.md) | Uses client components; adapter emits `'use client';` for App Router compatibility. |
+| Vue 3 | `@smilodon/vue` | [packages/vue/README.md](./packages/vue/README.md) | Covers `v-model`, emits, `defineExpose`, and custom rendering. |
+| Nuxt | `@smilodon/vue` | [packages/vue/README.md](./packages/vue/README.md) | Requires custom-element treatment for `enhanced-select`. |
+| Svelte | `@smilodon/svelte` | [packages/svelte/README.md](./packages/svelte/README.md) | Covers `bind:value`, dispatch events, and SSR-safe mounting. |
+| SolidJS | `@smilodon/solid` | [packages/solid/README.md](./packages/solid/README.md) | Solid-specific callback ref handle, JSX renderers, and grouped data. |
+| React Native | `@smilodon/react-native` | [packages/react-native/README.md](./packages/react-native/README.md) | Native `WebView` bridge plus web fallback implementation. |
+| Vanilla / Web Components | `@smilodon/core`, `@smilodon/vanilla` | [packages/vanilla/COMPLETE-GUIDE.md](./packages/vanilla/COMPLETE-GUIDE.md) | Lowest-level DOM and custom-element usage. |
 
-- **React**: [packages/react/COMPLETE-GUIDE.md](./packages/react/COMPLETE-GUIDE.md) - Hooks, controlled components, React Hook Form integration
-- **Vue**: [packages/vue/COMPLETE-GUIDE.md](./packages/vue/COMPLETE-GUIDE.md) - Composition API, v-model, Pinia integration
-- **Svelte**: [packages/svelte/COMPLETE-GUIDE.md](./packages/svelte/COMPLETE-GUIDE.md) - Reactive statements, stores, Context API
-- **Vanilla JS**: [packages/vanilla/COMPLETE-GUIDE.md](./packages/vanilla/COMPLETE-GUIDE.md) - Web Components, DOM manipulation, no framework
+### Shared adapter guarantees
 
-Each guide includes:
-- ✅ All 60+ CSS variables for complete customization
-- ✅ Framework-native patterns and best practices
-- ✅ TypeScript integration examples
-- ✅ Performance optimization techniques
-- ✅ Accessibility information (WCAG 2.1 AAA)
-- ✅ Real-world advanced patterns
-- ✅ Troubleshooting sections
+- **Consistent feature surface**: searchable, multi-select, grouped items, virtualization, clear control, diagnostics, and limitation policies are exposed across adapters.
+- **Token-first styling**: all adapters feed into the same shadow-DOM token surface documented in [docs/STYLING.md](./docs/STYLING.md) and [docs/STYLING-TOKENS.md](./docs/STYLING-TOKENS.md).
+- **Imperative escape hatches**: each adapter exposes programmatic control for opening, closing, clearing, and replacing items.
+- **SSR-aware integration**: adapters wait for the underlying custom element where needed instead of assuming immediate browser-only availability.
 
----
+### Quick integration patterns
 
-### Quick Start Examples
-
-### 5.1 React (hooks + refs)
-
-```bash
-npm install @smilodon/react
-```
+#### 5.1 React + Next.js
 
 ```tsx
+'use client';
+
 import { useMemo, useRef, useState } from 'react';
-import { Select } from '@smilodon/react';
+import { Select, type SelectHandle } from '@smilodon/react';
 
-const products = Array.from({ length: 5000 }).map((_, i) => ({
-  value: `product-${i}`,
-  label: `Product ${i}`,
-  tags: i % 2 ? ['hardware'] : ['software']
-}));
-
-export function ProductSelect() {
-  const selectRef = useRef(null);
-  const [selection, setSelection] = useState([]);
-  const items = useMemo(() => products, []);
+export default function ProductPicker() {
+  const ref = useRef<SelectHandle>(null);
+  const [value, setValue] = useState<Array<string | number>>([]);
+  const items = useMemo(
+    () => Array.from({ length: 5000 }, (_, index) => ({
+      value: `product-${index}`,
+      label: `Product ${index}`,
+    })),
+    []
+  );
 
   return (
     <Select
-      ref={selectRef}
+      ref={ref}
       items={items}
+      value={value}
+      onChange={(next) => setValue(next as Array<string | number>)}
+      multiple
       searchable
-      multiSelect
-      placeholder="Search 5K products"
-      onSearch={(term) => console.log('debounced server query', term)}
-      onChange={(selectedItems, values) => setSelection(values)}
-      config={{
-        selection: { mode: 'multi', showChips: true },
-        keyboard: { loop: true, typeAhead: true },
-        metrics: { enabled: true }
-      }}
+      virtualized
+      estimatedItemHeight={40}
+      clearable
+      placeholder="Search products"
     />
   );
 }
 ```
 
-**Highlights**: supports Suspense/SSR, controlled mode via refs (`selectRef.current.setSelectedValues`), compatibility with React 18 concurrent rendering.
-
-### 5.2 Vue (Composition API)
-
-```bash
-npm install @smilodon/vue
-```
+#### 5.2 Vue + Nuxt
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Select } from '@smilodon/vue'
+
+const value = ref<Array<string | number>>([])
+const items = [
+  { value: 'tehran', label: 'Tehran' },
+  { value: 'tokyo', label: 'Tokyo' },
+  { value: 'berlin', label: 'Berlin' },
+]
+</script>
+
 <template>
   <Select
-    :items="cities"
+    v-model="value"
+    :items="items"
+    multiple
     searchable
-    multi-select
-    placeholder="Filter cities"
-    @search="handleSearch"
-    @change="handleChange"
+    clearable
+    placeholder="Choose cities"
   />
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-import { Select } from '@smilodon/vue';
-
-const cities = ref([
-  { value: 'nyc', label: 'New York City' },
-  { value: 'ams', label: 'Amsterdam' },
-  { value: 'tok', label: 'Tokyo' }
-]);
-
-const handleSearch = (term: string) => {
-  // plug into Pinia/Query clients for server filtering
-  console.log('search', term);
-};
-
-const handleChange = (_event, payload) => {
-  console.log('values', payload.selectedValues);
-};
-</script>
 ```
 
-### 5.3 Svelte (stores + reactivity)
+Nuxt note: configure Vue compiler custom-element handling for `enhanced-select` so the wrapped element hydrates correctly.
 
-```bash
-npm install @smilodon/svelte
-```
+#### 5.3 Svelte / SvelteKit
 
 ```svelte
 <script lang="ts">
-  import Select from '@smilodon/svelte';
-  import { writable } from 'svelte/store';
+  import { Select } from '@smilodon/svelte'
 
-  const items = writable([]);
-  const selected = writable([]);
+  const items = [
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'SolidJS' },
+    { value: 'react', label: 'React' },
+  ]
 
-  onMount(async () => {
-    const response = await fetch('/api/countries');
-    items.set(await response.json());
-  });
+  let value: string | number | Array<string | number> = []
 </script>
 
 <Select
   {items}
-  bind:selectedValues={$selected}
+  bind:value
+  multiple
   searchable
-  multiSelect
-  placeholder="Choose countries"
+  clearable
+  placeholder="Pick frameworks"
 />
 ```
 
-### 5.4 Vanilla Web Components
+#### 5.4 SolidJS
 
-```bash
-npm install @smilodon/core
+```tsx
+import { createSignal } from 'solid-js'
+import { Select } from '@smilodon/solid'
+
+export default function SolidDemo() {
+  const [value, setValue] = createSignal<Array<string | number>>([])
+
+  return (
+    <Select
+      items={[
+        { value: 'a', label: 'Alpha' },
+        { value: 'b', label: 'Beta' },
+      ]}
+      value={value()}
+      onChange={(next) => setValue(next as Array<string | number>)}
+      multiple
+      searchable
+    />
+  )
+}
 ```
 
+#### 5.5 React Native
+
+```tsx
+import { useState } from 'react'
+import { View } from 'react-native'
+import { Select } from '@smilodon/react-native'
+
+export default function MobileScreen() {
+  const [value, setValue] = useState<string | number>('')
+
+  return (
+    <View style={{ padding: 16 }}>
+      <Select
+        items={[
+          { value: 'ios', label: 'iOS' },
+          { value: 'android', label: 'Android' },
+        ]}
+        value={value}
+        onChange={(next) => setValue(next as string)}
+        searchable
+        clearable
+        collapsedHeight={64}
+        expandedHeight={320}
+      />
+    </View>
+  )
+}
+```
+
+#### 5.6 Vanilla Web Components
+
 ```html
-<enhanced-select id="people" placeholder="Search directory"></enhanced-select>
+<enhanced-select id="people"></enhanced-select>
 <script type="module">
   import '@smilodon/core';
 
   const select = document.getElementById('people');
-  select.setItems(await (await fetch('/directory.json')).json());
-  select.configure({ searchable: true, selection: { mode: 'multi' } });
-  select.addEventListener('change', (event) => {
-    console.log(event.detail.selectedItems);
+  select.setItems([
+    { value: '1', label: 'Ada Lovelace' },
+    { value: '2', label: 'Grace Hopper' },
+  ]);
+  select.updateConfig({
+    searchable: true,
+    selection: { mode: 'multi' },
+    clearControl: { enabled: true },
   });
 </script>
 ```
 
-> Visit [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md) for additional platform nuances, SSR guidance, and theming recipes.
+> For deeper framework setup, SSR notes, diagnostics, and theming recipes, start with [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md) and the package-level guides above.
 
 ---
 
-## Styling Examples
+## Styling & Design Tokens
 
-The following practical examples show non-destructive ways to style options so authors retain full control: via the JSON `style` on an item, via `className` + `::part()` selectors, and via an `optionRenderer` that applies inline/background-image safely. These examples are also included in `docs/STYLING-EXAMPLES.md` for more detail.
+Smilodon now exposes a fully audited styling surface for the default UI, including micro-interactions and accessibility affordances.
+
+| Area | Representative hooks |
+| --- | --- |
+| Theme foundation | `--select-surface`, `--select-border`, `--select-text`, `--select-shadow-*` |
+| Input shell | `--select-input-*`, `--select-separator-*`, `--select-arrow-*` |
+| Chips | `--select-badge-*`, `--select-badge-remove-*`, `--select-multi-input-min-width` |
+| Dropdown | `--select-dropdown-*`, `--select-options-*`, `--select-scrollbar-*` |
+| Option states | `--select-option-*`, `--select-option-selected-indicator-*` |
+| Accessibility & motion | `--select-error-*`, `--select-reduced-motion-*`, `--select-high-contrast-*`, `--select-touch-target-min-height` |
+
+Reference documents:
+
+- [Styling guide](./docs/STYLING.md)
+- [Full token reference](./docs/STYLING-TOKENS.md)
+- [Runnable styling examples](./docs/STYLING-EXAMPLES.md)
+
+The following practical examples show non-destructive ways to style options so authors retain full control: via the JSON `style` on an item, via `className` + `::part()` selectors, and via an `optionRenderer` that applies inline/background-image safely.
 
 ### 1) Styling via JSON `style` (per-option inline styles)
 
@@ -473,6 +538,7 @@ Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md), [tests/README.md](.
 
 - **Playground** — `/playground` Vite workspace with React, Svelte, Vue demos plus performance overlays.
 - **Deployment** — `npm publish` ready packages inside `packages/*` with semantic versioning.
+- **Architecture reference** — [ARCHITECTURE.md](./ARCHITECTURE.md) tracks adapter topology, runtime layering, and distribution decisions.
 - **Community Channels**
   - Email: navidrezadoost07@gmail.com
   - Discord: [smilodon community](https://discord.gg/smilodon)
@@ -481,8 +547,8 @@ Reference documents: [TESTING-GUIDE.md](./TESTING-GUIDE.md), [tests/README.md](.
   1. Read [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md)
   2. Explore [playground/index.html](./playground/index.html)
   3. Review [docs/PERFORMANCE.md](./docs/PERFORMANCE.md) before production rollout
-    4. Read [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) for transparent cross-library comparisons
-  4. Embed telemetry hooks to feed your observability stack
+  4. Read [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) for transparent cross-library comparisons
+  5. Embed telemetry hooks to feed your observability stack
 
 ---
 

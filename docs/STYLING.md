@@ -2,6 +2,18 @@
 
 This guide helps you style the `enhanced-select` component to match your application's design system using robust, future-proof methods.
 
+For the exhaustive token table with default values, value types, and purposes, see [docs/STYLING-TOKENS.md](./STYLING-TOKENS.md).
+
+## Customization Coverage Checklist
+
+- ✅ Theme colors, surfaces, borders, typography, radii, and elevation
+- ✅ Multi-select chips, chip remove controls, and badge motion
+- ✅ Input shell sizing, hover/focus states, separator, arrow, and clear control
+- ✅ Dropdown panel spacing, animation, scrolling, and scrollbar styling
+- ✅ Option hover, active, selected, pressed, and selected-indicator states
+- ✅ Empty, loading, searching, error, reduced-motion, high-contrast, and touch-target behavior
+- ✅ Dark mode using the same token surface rather than a separate styling API
+
 ## Styling Hierarchy (Recommended)
 
 1. **CSS Variables**: The fastest way to set the overall theme (colors, spacing).
@@ -119,15 +131,15 @@ enhanced-select::part(option):hover {
 }
 
 enhanced-select::part(chip) {
-  background: #eef2ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
 }
 
 enhanced-select::part(chip-remove) {
-  background: rgba(55, 48, 163, 0.12);
-  color: #3730a3;
+  background: #e2e8f0;
+  color: #334155;
 }
 ```
 
@@ -143,10 +155,21 @@ Useful variables:
 - `--select-badge-border-radius`
 - `--select-badge-padding`
 - `--select-badge-font-size`
+- `--select-badge-shadow`
 - `--select-badge-remove-bg`
 - `--select-badge-remove-color`
 - `--select-badge-remove-hover-bg`
 - `--select-badge-remove-focus-outline`
+- `--select-multi-input-min-width`
+
+Motion-related chip hooks are also available:
+
+- `--select-badge-animation`
+- `--select-badge-hover-transform`
+- `--select-badge-remove-hover-transform`
+- `--select-badge-remove-active-transform`
+
+See [docs/STYLING-TOKENS.md](./STYLING-TOKENS.md#selection-badges--chips) for the full chip table.
 
 ---
 
