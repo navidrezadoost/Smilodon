@@ -17,7 +17,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "COMPLETE-GUIDE.md"
   ],
   "scripts": {
     "build": "node scripts/embed-core.mjs && tsc -p tsconfig.json"

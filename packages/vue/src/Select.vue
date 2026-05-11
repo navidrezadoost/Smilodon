@@ -38,6 +38,7 @@ import type {
   LoadMoreEventDetail,
   ClearEventDetail,
   GroupedItem,
+  ClassMap,
   RendererHelpers,
   DiagnosticEventDetail,
   LimitationPolicyMap,
@@ -88,6 +89,8 @@ export interface SelectProps {
   className?: string;
   /** Custom inline styles */
   style?: Record<string, string>;
+  /** State-class mapping for utility CSS frameworks */
+  classMap?: ClassMap;
   /** Enable expandable dropdown */
   expandable?: boolean;
 
@@ -241,6 +244,16 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => props.classMap,
+  (map) => {
+    safeCall((el) => {
+      (el as any).classMap = map;
+    });
+  },
+  { immediate: true, deep: true }
+);
+
 const waitForUpgrade = async () => {
   if (typeof window === 'undefined') return;
 
@@ -269,6 +282,9 @@ const waitForUpgrade = async () => {
       if (resolvedOptionRenderer.value) {
         (candidate as any).optionRenderer = resolvedOptionRenderer.value;
       }
+      if (props.classMap) {
+        (candidate as any).classMap = props.classMap;
+      }
       return;
     }
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -277,6 +293,9 @@ const waitForUpgrade = async () => {
   isElementReady.value = typeof (selectRef.value as any)?.setItems === 'function';
   if (isElementReady.value && resolvedOptionRenderer.value) {
     (selectRef.value as any).optionRenderer = resolvedOptionRenderer.value;
+  }
+  if (isElementReady.value && props.classMap) {
+    (selectRef.value as any).classMap = props.classMap;
   }
 };
 

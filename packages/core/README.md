@@ -20,6 +20,7 @@ Additional references:
 - **Performance Runbook**: [`docs/PERFORMANCE-RUNBOOK.md`](../../docs/PERFORMANCE-RUNBOOK.md)
 - **Performance Guide**: [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md)
 - **Known Limitations**: [`docs/KNOWN-LIMITATIONS.md`](../../docs/KNOWN-LIMITATIONS.md)
+- **Build Tool Integration**: [`docs/BUILD-TOOL-INTEGRATION.md`](../../docs/BUILD-TOOL-INTEGRATION.md)
 
 The complete guide includes:
 - ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
@@ -780,7 +781,7 @@ enhanced-select {
   --select-input-border: 1px solid #ced4da;
   --select-input-border-radius: 0.375rem;
   --select-input-focus-border: #86b7fe;
-  --select-input-focus-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  --select-shadow-focus: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   --select-option-hover-bg: #e9ecef;
   --select-option-selected-bg: #0d6efd;
   --select-option-selected-color: white;
@@ -793,7 +794,7 @@ enhanced-select {
 enhanced-select {
   --select-input-border-radius: 4px;
   --select-input-focus-border: #1976d2;
-  --select-input-focus-shadow: none;
+  --select-shadow-focus: none;
   --select-option-padding: 16px;
   --select-option-hover-bg: rgba(0, 0, 0, 0.04);
   --select-option-selected-bg: #e3f2fd;
@@ -809,13 +810,15 @@ enhanced-select {
   --select-input-border: 1px solid #e5e7eb;
   --select-input-border-radius: 0.5rem;
   --select-input-focus-border: #3b82f6;
-  --select-input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  --select-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.1);
   --select-option-padding: 0.5rem 0.75rem;
   --select-option-hover-bg: #f3f4f6;
   --select-option-selected-bg: #dbeafe;
   --select-option-selected-color: #1e40af;
 }
 ```
+
+Framework compatibility guidance also lives in [../../docs/CSS-FRAMEWORK-COMPATIBILITY.md](../../docs/CSS-FRAMEWORK-COMPATIBILITY.md).
 
 **Example 4: Custom Brand Colors**
 ```css

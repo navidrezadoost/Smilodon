@@ -40,6 +40,7 @@
     LoadMoreEventDetail,
     ClearEventDetail,
     GroupedItem,
+    ClassMap,
     DiagnosticEventDetail,
     LimitationPolicyMap,
   } from '@smilodon/core';
@@ -62,6 +63,7 @@
   export let placement: 'bottom' | 'top' | 'auto' = 'auto';
   export let className: string = '';
   export let style: string = '';
+  export let classMap: ClassMap | undefined = undefined;
   export let clearable: boolean = false;
   export let clearSelectionOnClear: boolean = true;
   export let clearSearchOnClear: boolean = true;
@@ -330,6 +332,8 @@
     } else if ((selectRef as any).optionRenderer === resolvedOptionRenderer) {
       (selectRef as any).optionRenderer = undefined;
     }
+
+    (selectRef as any).classMap = classMap;
   }
 
   $: if (selectRef) {

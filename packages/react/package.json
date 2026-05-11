@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "COMPLETE-GUIDE.md"
   ],
   "scripts": {
     "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js"

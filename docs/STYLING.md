@@ -4,6 +4,8 @@ This guide helps you style the `enhanced-select` component to match your applica
 
 For the exhaustive token table with default values, value types, and purposes, see [docs/STYLING-TOKENS.md](./STYLING-TOKENS.md).
 
+For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recipes, see [docs/CSS-FRAMEWORK-COMPATIBILITY.md](./CSS-FRAMEWORK-COMPATIBILITY.md).
+
 ## Customization Coverage Checklist
 
 - ✅ Theme colors, surfaces, borders, typography, radii, and elevation
@@ -46,7 +48,7 @@ For the exhaustive token table with default values, value types, and purposes, s
 
 1. **Tailwind + Shadow DOM – Best Practice 2026**
 
-   Since Tailwind is global by default and Shadow DOM is disabled, these patterns are the most commonly used:
+  Since Tailwind is global by default and Smilodon renders inside Shadow DOM, these patterns are the most commonly used:
 
    - **Recommended Method A (simplest):** Fill `classMap` with Tailwind classes → no need to generate CSS inside shadow.
      ```js
@@ -62,14 +64,25 @@ For the exhaustive token table with default values, value types, and purposes, s
    - **Method C (library suggestion):** Combine CSS variables with Tailwind theme:
      ```css
      :root {
-       --sm-color-primary: theme('colors.blue.600');
+       --select-accent: theme('colors.blue.600');
+       --select-border-focus: theme('colors.blue.600');
      }
      enhanced-select::part(button) {
-       background-color: var(--sm-color-primary);
+       border-color: var(--select-border-focus);
      }
      ```
 
-2. **Final accessibility tips (for 2026 audit)**
+2. **CSS framework compatibility strategy**
+
+   Smilodon is compatible with utility-first CSS, component-library theming, and raw CSS when you use the right level of the styling API:
+
+   - use host classes for layout, spacing, and wrapper-level framework utilities
+   - use CSS custom properties for colors, radii, focus rings, spacing, and density
+   - use `::part()` for internal structural elements like the trigger, listbox, options, and chips
+   - use `classMap` when you want framework utility classes to control selected, active, or disabled option states
+   - use custom renderers when you want framework classes on rich content inside an option
+
+3. **Final accessibility tips (for 2026 audit)**
 
    - Make sure the **focus ring** on `::part(input)` and `::part(option)` complies with WCAG 2.2 (contrast and visible).
    - Test that **aria-live** area is properly announced for search/loading/selections.

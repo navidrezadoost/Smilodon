@@ -15,7 +15,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "COMPLETE-GUIDE.md"
   ],
   "scripts": {
     "build": "tsc --emitDeclarationOnly --outDir dist/types && vite build",

@@ -7,6 +7,7 @@ import type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  ClassMap,
   DiagnosticEventDetail,
   LimitationPolicyMap,
   LimitationState,
@@ -40,6 +41,7 @@ export interface SelectProps {
   placement?: 'bottom' | 'top' | 'auto';
   className?: string;
   style?: string;
+  classMap?: ClassMap;
   trackingEnabled?: boolean;
   trackEvents?: boolean;
   trackStyling?: boolean;

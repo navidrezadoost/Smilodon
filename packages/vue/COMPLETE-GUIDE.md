@@ -9,23 +9,24 @@ This guide provides comprehensive documentation for using Smilodon Select in Vue
 ## Table of Contents
 
 1. [Installation & Setup](#installation--setup)
-2. [Basic Usage](#basic-usage)
-3. [Complete Props Reference](#complete-props-reference)
-4. [Input Formats](#input-formats)
-5. [Single Selection](#single-selection)
-6. [Multi-Selection](#multi-selection)
-7. [Searchable Select](#searchable-select)
-8. [Grouped Options](#grouped-options)
-9. [Disabled States](#disabled-states)
-10. [Event Handling](#event-handling)
-11. [Styling & Theming](#styling--theming)
-12. [Custom Renderers](#custom-renderers)
-13. [Performance Optimization](#performance-optimization)
-14. [TypeScript Integration](#typescript-integration)
-15. [Composition API](#composition-api)
-16. [Accessibility](#accessibility)
-17. [Advanced Patterns](#advanced-patterns)
-18. [Troubleshooting](#troubleshooting)
+2. [Nuxt & SSR Setup](#nuxt--ssr-setup)
+3. [Basic Usage](#basic-usage)
+4. [Complete Props Reference](#complete-props-reference)
+5. [Input Formats](#input-formats)
+6. [Single Selection](#single-selection)
+7. [Multi-Selection](#multi-selection)
+8. [Searchable Select](#searchable-select)
+9. [Grouped Options](#grouped-options)
+10. [Disabled States](#disabled-states)
+11. [Event Handling](#event-handling)
+12. [Styling & Theming](#styling--theming)
+13. [Custom Renderers](#custom-renderers)
+14. [Performance Optimization](#performance-optimization)
+15. [TypeScript Integration](#typescript-integration)
+16. [Composition API](#composition-api)
+17. [Accessibility](#accessibility)
+18. [Advanced Patterns](#advanced-patterns)
+19. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -78,6 +79,87 @@ import { Select } from '@smilodon/vue';
 import type { SelectItem } from '@smilodon/core';
 </script>
 ```
+
+---
+
+## Nuxt & SSR Setup
+
+Vue works directly in Vite and standard SPA projects, but Nuxt requires one extra compiler-level decision: the underlying `enhanced-select` element must be treated as a custom element.
+
+### `nuxt.config.ts`
+
+```ts
+export default defineNuxtConfig({
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'enhanced-select',
+    },
+  },
+})
+```
+
+### Recommended client component structure
+
+```vue
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { Select } from '@smilodon/vue'
+
+const route = useRoute()
+const value = ref<string | number>('')
+
+const items = computed(() => [
+  { value: 'nuxt', label: 'Nuxt' },
+  { value: 'vue', label: 'Vue' },
+  { value: route.name ?? 'current-route', label: 'Current Route Context' },
+])
+</script>
+
+<template>
+  <Select
+    v-model="value"
+    :items="items"
+    searchable
+    clearable
+    placeholder="Choose a framework"
+  />
+</template>
+```
+
+### Fetching on the server, rendering on the client
+
+```vue
+<script setup lang="ts">
+import { Select } from '@smilodon/vue'
+
+const { data } = await useFetch('/api/countries')
+const value = ref<string | number>('')
+</script>
+
+<template>
+  <Select
+    v-model="value"
+    :items="data ?? []"
+    searchable
+    placeholder="Choose a country"
+  />
+</template>
+```
+
+### Nuxt production checklist
+
+1. Register `enhanced-select` as a custom element in the Vue compiler path.
+2. Keep direct DOM access inside `onMounted()`.
+3. Pass plain serializable item arrays from server-side data loaders.
+4. Prefer `virtualized` for large lists and provide `estimatedItemHeight` when option heights are visually stable.
+5. Style the component with CSS variables and `::part()` instead of assuming access to internal markup.
+
+### SSR and hydration guidance
+
+- Rendering `Select` in a Nuxt page is fine when the compiler is configured correctly.
+- The wrapper waits for the custom element runtime and then syncs props into the element.
+- Avoid mutating element methods during SSR; use refs and imperative methods only after mount.
+- If you provide async search, debounce network requests at the app layer and replace items through the component ref instead of rebuilding the entire page state.
 
 ---
 

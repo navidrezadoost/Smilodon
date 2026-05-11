@@ -9,6 +9,20 @@ This package provides two implementations behind one import:
 
 That split lets you keep one API surface while still using the DOM-based Smilodon core on native platforms.
 
+## 📖 Documentation
+
+**For comprehensive documentation covering installation, Expo and bare setup, native/web architecture, styling, grouped items, diagnostics, performance, and troubleshooting:**
+
+👉 **[Complete React Native Guide](./COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ Native and React Native Web setup flows
+- ✅ Simple, medium, advanced, and production usage patterns
+- ✅ WebView bridge architecture and styling model
+- ✅ Controlled and uncontrolled data flows
+- ✅ Performance and diagnostics guidance
+- ✅ Detailed troubleshooting notes
+
 ## Installation
 
 ```bash

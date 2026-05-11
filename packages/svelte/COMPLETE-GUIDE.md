@@ -9,23 +9,24 @@ This guide provides comprehensive documentation for using Smilodon Select in Sve
 ## Table of Contents
 
 1. [Installation & Setup](#installation--setup)
-2. [Basic Usage](#basic-usage)
-3. [Complete Props Reference](#complete-props-reference)
-4. [Input Formats](#input-formats)
-5. [Single Selection](#single-selection)
-6. [Multi-Selection](#multi-selection)
-7. [Searchable Select](#searchable-select)
-8. [Grouped Options](#grouped-options)
-9. [Disabled States](#disabled-states)
-10. [Event Handling](#event-handling)
-11. [Styling & Theming](#styling--theming)
-12. [Custom Renderers](#custom-renderers)
-13. [Performance Optimization](#performance-optimization)
-14. [TypeScript Integration](#typescript-integration)
-15. [Stores Integration](#stores-integration)
-16. [Accessibility](#accessibility)
-17. [Advanced Patterns](#advanced-patterns)
-18. [Troubleshooting](#troubleshooting)
+2. [SvelteKit & SSR Setup](#sveltekit--ssr-setup)
+3. [Basic Usage](#basic-usage)
+4. [Complete Props Reference](#complete-props-reference)
+5. [Input Formats](#input-formats)
+6. [Single Selection](#single-selection)
+7. [Multi-Selection](#multi-selection)
+8. [Searchable Select](#searchable-select)
+9. [Grouped Options](#grouped-options)
+10. [Disabled States](#disabled-states)
+11. [Event Handling](#event-handling)
+12. [Styling & Theming](#styling--theming)
+13. [Custom Renderers](#custom-renderers)
+14. [Performance Optimization](#performance-optimization)
+15. [TypeScript Integration](#typescript-integration)
+16. [Stores Integration](#stores-integration)
+17. [Accessibility](#accessibility)
+18. [Advanced Patterns](#advanced-patterns)
+19. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -71,6 +72,72 @@ export default defineConfig({
   import type { SelectItem } from '@smilodon/core';
 </script>
 ```
+
+---
+
+## SvelteKit & SSR Setup
+
+The Svelte adapter is designed for browser hydration around the shared custom element runtime.
+
+### Safe SvelteKit pattern
+
+```svelte
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import { Select } from '@smilodon/svelte'
+
+  let items = []
+  let value: string | number | Array<string | number> = []
+
+  onMount(async () => {
+    items = await fetch('/api/frameworks').then((response) => response.json())
+  })
+</script>
+
+<Select
+  {items}
+  bind:value
+  searchable
+  multiple
+  clearable
+/>
+```
+
+### Using SvelteKit `load()` data
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte'
+
+  export let data: {
+    frameworks: Array<{ value: string; label: string }>
+  }
+
+  let value = ''
+</script>
+
+<Select
+  items={data.frameworks}
+  bind:value
+  searchable
+  placeholder="Choose a framework"
+/>
+```
+
+### SSR guidance
+
+- Keep direct `window`, `document`, and element-ref access inside `onMount()`.
+- Pass serializable arrays from `load()` and let the adapter sync those items after hydration.
+- Use exported component methods for imperative control instead of reaching into DOM internals.
+- Prefer `optionRenderer` when you need full DOM-driven option content.
+
+### SvelteKit production checklist
+
+1. Fetch server data in `load()` or browser-only data in `onMount()`.
+2. Avoid direct custom-element mutation before mount.
+3. Keep large `items` arrays stable where possible.
+4. Keep `virtualized` enabled for large lists.
+5. Style through CSS variables and `:global(enhanced-select::part(...))` selectors.
 
 ---
 

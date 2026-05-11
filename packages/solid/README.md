@@ -4,6 +4,20 @@ SolidJS adapter for Smilodon's core custom-element select engine.
 
 This package gives Solid applications a native-feeling wrapper around the shared `enhanced-select` runtime while preserving the same capabilities available in the other adapters: grouped data, multi-select, search, virtualization, clear control, diagnostics, and limitation-policy APIs.
 
+## 📖 Documentation
+
+**For comprehensive documentation covering installation, setup, controlled and uncontrolled usage, renderers, performance, SSR posture, diagnostics, and troubleshooting:**
+
+👉 **[Complete SolidJS Guide](./COMPLETE-GUIDE.md)** 👈
+
+The complete guide includes:
+- ✅ Solid-specific setup and custom-element lifecycle guidance
+- ✅ Simple, medium, and advanced usage patterns
+- ✅ Full prop and callback coverage
+- ✅ JSX renderer and DOM renderer strategies
+- ✅ Performance and large-list guidance
+- ✅ Diagnostics, limitations, and troubleshooting
+
 ## Installation
 
 ```bash

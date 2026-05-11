@@ -7,6 +7,7 @@ import type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  ClassMap,
   RendererHelpers,
 } from '@smilodon/core';
 
@@ -53,6 +54,8 @@ export interface SelectProps {
   className?: string;
   /** Custom inline styles */
   style?: Record<string, string>;
+  /** State-class mapping for utility CSS frameworks */
+  classMap?: ClassMap;
 
   /** Custom option renderer returning an HTMLElement */
   optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;

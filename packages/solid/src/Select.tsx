@@ -7,6 +7,7 @@ import type {
   LoadMoreEventDetail,
   ClearEventDetail,
   GroupedItem,
+  ClassMap,
   RendererHelpers,
   DiagnosticEventDetail,
   LimitationPolicyMap,
@@ -36,6 +37,7 @@ type EnhancedSelectElement = HTMLElement & {
   close?: () => void
   optionRenderer?: ((item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement) | undefined
   groupHeaderRenderer?: ((group: GroupedItem, index: number) => HTMLElement) | undefined
+  classMap?: ClassMap | undefined
   getCapabilities?: () => SelectCapabilitiesReport
   getKnownLimitations?: () => LimitationState[]
   getTrackingSnapshot?: () => TrackingSnapshot
@@ -85,6 +87,7 @@ export interface SelectProps {
   clearSearchOnClear?: boolean
   clearAriaLabel?: string
   clearIcon?: string
+  classMap?: ClassMap
   optionRenderer?: (item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement
   customRenderer?: (item: SelectItem, index: number) => JSX.Element
   trackingEnabled?: boolean
@@ -243,6 +246,16 @@ export default function Select(rawProps: SelectProps) {
   })
 
   createEffect(() => {
+    const ready = isElementReady()
+    const classMap = rawProps.classMap
+    if (!ready) return
+
+    safeCall((el) => {
+      el.classMap = classMap
+    })
+  })
+
+  createEffect(() => {
     const items = rawProps.items
     const groups = rawProps.groupedItems
     const totalItems = groups?.length
@@ -377,6 +390,9 @@ export default function Select(rawProps: SelectProps) {
         if (resolvedOptionRenderer()) {
           selectRef.optionRenderer = resolvedOptionRenderer()
         }
+        if (rawProps.classMap) {
+          selectRef.classMap = rawProps.classMap
+        }
         return
       }
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
@@ -385,6 +401,9 @@ export default function Select(rawProps: SelectProps) {
     setIsElementReady(Boolean(selectRef && typeof selectRef.setItems === 'function'))
     if (selectRef && resolvedOptionRenderer()) {
       selectRef.optionRenderer = resolvedOptionRenderer()
+    }
+    if (selectRef && rawProps.classMap) {
+      selectRef.classMap = rawProps.classMap
     }
   }
 
