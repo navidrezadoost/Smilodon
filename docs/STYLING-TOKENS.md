@@ -48,6 +48,9 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
 | `--select-badge-gap` | `6px` | spacing | Space between badge label and remove control. |
+| `--select-badge-width` | `auto` | size | Explicit badge width. |
+| `--select-badge-min-width` | `0` | size | Minimum badge width. |
+| `--select-badge-height` | `auto` | size | Explicit badge height. |
 | `--select-badge-min-height` | `26px` | size | Minimum badge height. |
 | `--select-badge-padding` | `4px 10px 4px 12px` | spacing | Badge interior spacing. |
 | `--select-badge-margin` | `3px` | spacing | Outer badge spacing in wrapped layouts. |
@@ -69,12 +72,29 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-badge-enter-to-opacity` | `1` | opacity | Badge entry end opacity. |
 | `--select-badge-enter-to-transform` | `scale(1) translateY(0)` | transform | Badge entry end transform. |
 | `--select-badge-hover-transform` | `scale(1.02)` | transform | Badge hover transform. |
+| `--select-badge-hover-bg` | `var(--select-badge-bg)` | color | Badge hover background. |
+| `--select-badge-hover-color` | `var(--select-badge-color)` | color | Badge hover text color. |
+| `--select-badge-hover-border` | `var(--select-badge-border)` | border | Badge hover border. |
+| `--select-badge-active-bg` | `var(--select-badge-hover-bg)` | color | Badge pressed background. |
+| `--select-badge-active-color` | `var(--select-badge-hover-color)` | color | Badge pressed text color. |
+| `--select-badge-active-border` | `var(--select-badge-hover-border)` | border | Badge pressed border. |
+| `--select-badge-active-shadow` | `var(--select-badge-hover-shadow)` | shadow | Badge pressed shadow. |
+| `--select-badge-active-transform` | `scale(0.98)` | transform | Badge pressed transform. |
+| `--select-badge-label-color` | `inherit` | color | Badge label text color. |
+| `--select-badge-label-font-size` | `inherit` | typography | Badge label font size. |
+| `--select-badge-label-font-weight` | `inherit` | typography | Badge label font weight. |
+| `--select-badge-label-line-height` | `var(--select-badge-line-height)` | typography | Badge label line height. |
+| `--select-badge-label-letter-spacing` | `inherit` | typography | Badge label letter spacing. |
+| `--select-badge-label-text-align` | `start` | layout | Badge label alignment. |
 
 ### Badge remove control
 
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
 | `--select-badge-remove-size` | `18px` | size | Remove button size. |
+| `--select-badge-remove-min-width` | `var(--select-badge-remove-size)` | size | Minimum remove button width. |
+| `--select-badge-remove-min-height` | `var(--select-badge-remove-size)` | size | Minimum remove button height. |
+| `--select-badge-remove-icon-size` | `10px` | size | Remove icon wrapper size for text or SVG icons. |
 | `--select-badge-remove-margin-left` | `2px` | spacing | Gap before remove button. |
 | `--select-badge-remove-bg` | `rgba(255, 255, 255, 0.2)` | color | Remove button background. |
 | `--select-badge-remove-border` | `none` | border | Remove button border. |
@@ -83,9 +103,16 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-badge-remove-font-size` | `11px` | typography | Remove icon/text size. |
 | `--select-badge-remove-font-weight` | `600` | typography | Remove icon/text weight. |
 | `--select-badge-remove-hover-bg` | `rgba(233, 69, 96, 0.9)` | color | Remove button hover background. |
+| `--select-badge-remove-hover-color` | `var(--select-badge-remove-color)` | color | Remove button hover icon/text color. |
+| `--select-badge-remove-hover-border` | `var(--select-badge-remove-border)` | border | Remove button hover border. |
+| `--select-badge-remove-hover-shadow` | `none` | shadow | Remove button hover shadow. |
 | `--select-badge-remove-hover-transform` | `scale(1.15) rotate(90deg)` | transform | Remove button hover motion. |
 | `--select-badge-remove-focus-outline` | `2px solid rgba(255, 255, 255, 0.5)` | outline | Keyboard focus outline. |
 | `--select-badge-remove-focus-offset` | `1px` | spacing | Focus outline offset. |
+| `--select-badge-remove-active-bg` | `var(--select-badge-remove-hover-bg)` | color | Remove button pressed background. |
+| `--select-badge-remove-active-color` | `var(--select-badge-remove-hover-color)` | color | Remove button pressed icon/text color. |
+| `--select-badge-remove-active-border` | `var(--select-badge-remove-hover-border)` | border | Remove button pressed border. |
+| `--select-badge-remove-active-shadow` | `var(--select-badge-remove-hover-shadow)` | shadow | Remove button pressed shadow. |
 | `--select-badge-remove-active-transform` | `scale(0.95) rotate(90deg)` | transform | Remove button pressed motion. |
 
 ## Input shell and text field
@@ -108,8 +135,28 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-input-width` | `100%` | layout | Input width in single-select mode. |
 | `--select-input-min-width` | `0` | size | Minimum text input width. |
 | `--select-multi-input-min-width` | `96px` | size | Minimum text input width in multi-select mode. |
+| `--select-multi-input-max-height` | `160px` | size | Maximum visible height of the selected-chip area in multi-select mode. |
+| `--select-multi-input-overflow-x` | `hidden` | layout | Horizontal overflow behavior for the multi-select chip area. |
+| `--select-multi-input-overflow-y` | `auto` | layout | Vertical overflow behavior for the multi-select chip area. |
+| `--select-multi-input-flex-wrap` | `wrap` | layout | Wrapping behavior for selected chips in multi-select mode. |
+| `--select-multi-input-align-content` | `flex-start` | layout | Cross-row alignment for wrapped multi-select chips. |
+| `--select-multi-input-horizontal-input-flex` | `0 0 var(--select-multi-input-min-width)` | layout | Search-input flex basis in horizontal chip-scroll mode. |
+| `--select-multi-input-horizontal-cursor` | `grab` | cursor | Cursor shown in horizontal drag-scroll mode. |
+| `--select-multi-input-horizontal-active-cursor` | `grabbing` | cursor | Cursor shown while dragging in horizontal chip-scroll mode. |
+| `--select-multi-separator-inset-block` | `10px` | spacing | Top and bottom inset for the separator line when the multi-select shell grows taller. |
+| `--select-multi-action-surface-bg` | `var(--select-input-bg)` | color | Background used to protect the right-side action area in horizontal chip-scroll mode. |
+| `--select-multi-action-divider` | `1px solid var(--select-border)` | border | Divider used between horizontal chip content and the right-side action area. |
+| `--select-input-align-items` | `center` | layout | Cross-axis alignment for content inside the input shell. |
+| `--select-input-align-content` | `center` | layout | Wrapped-row alignment inside the input shell. |
+| `--select-input-align-self` | `center` | layout | Alignment of the actual text input within the shell. |
+| `--select-input-justify-content` | `flex-start` | layout | Horizontal alignment strategy for the visible selection row. |
+| `--select-input-text-align` | `start` | typography | Text alignment for the visible selected value inside the input shell. |
+| `--select-input-padding-rtl` | `10px 14px 10px 52px` | spacing | Input shell padding override for RTL layout. |
+| `--select-input-padding-with-clear-rtl` | `10px 14px 10px 84px` | spacing | Input shell padding override for RTL layout when the clear control is visible. |
 | `--select-input-field-padding` | `0` | spacing | Actual text input padding. |
 | `--select-input-font-size` | `15px` | typography | Input text size. |
+| `--select-input-font-family` | `inherit` | typography | Input text family. |
+| `--select-input-font-style` | `normal` | typography | Input text style. |
 | `--select-input-line-height` | `1.5` | typography | Input text line height. |
 | `--select-input-font-weight` | `450` | typography | Input text weight. |
 | `--select-input-letter-spacing` | `0.01em` | typography | Input text tracking. |
@@ -122,17 +169,18 @@ This reference documents the current `enhanced-select` styling surface exposed b
 
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
-| `--select-separator-position` | `42px` | spacing | Separator offset from the right edge. |
+| `--select-separator-position` | `var(--select-arrow-width)` | spacing | Separator offset from the right edge; defaults to the arrow hit-area width. |
 | `--select-separator-width` | `1px` | size | Separator width. |
 | `--select-separator-height` | `50%` | size | Separator height. |
 | `--select-separator-bg` | `linear-gradient(to bottom, transparent 0%, var(--select-border) 20%, var(--select-border) 80%, transparent 100%)` | paint | Separator background. |
 | `--select-separator-dark-bg` | `linear-gradient(to bottom, transparent 0%, var(--select-border) 20%, var(--select-border) 80%, transparent 100%)` | paint | Dark-theme separator background. |
 | `--select-separator-opacity` | `0.6` | opacity | Separator resting opacity. |
 | `--select-separator-active-opacity` | `1` | opacity | Separator hover/focus opacity. |
-| `--select-separator-position-with-clear` | `74px` | spacing | Separator offset when clear control is visible. |
+| `--select-separator-position-with-clear` | `calc(var(--select-arrow-right-with-clear) + var(--select-arrow-width))` | spacing | Separator offset when clear control is visible. |
 | `--select-arrow-width` | `42px` | size | Arrow hit area width. |
 | `--select-arrow-height` | `auto` | layout | Arrow container height. |
 | `--select-arrow-border-radius` | `0 var(--select-radius-md) var(--select-radius-md) 0` | radius | Arrow-side corner radius. |
+| `--select-arrow-border-radius-rtl` | `var(--select-radius-md) 0 0 var(--select-radius-md)` | radius | Arrow-side corner radius in RTL layout. |
 | `--select-arrow-size` | `18px` | size | Arrow icon size. |
 | `--select-arrow-color` | `var(--select-text-muted)` | color | Arrow icon color. |
 | `--select-arrow-stroke-width` | `1.5` | size | Arrow icon stroke width. |
@@ -158,18 +206,25 @@ This reference documents the current `enhanced-select` styling surface exposed b
 
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
+| `--select-host-z-index` | `auto` | layout | Base stacking level of the host custom element. |
+| `--select-host-open-z-index` | `var(--select-dropdown-z-index)` | layout | Host stacking level while the dropdown is open. |
+| `--select-ancestor-open-z-index` | `var(--select-host-open-z-index)` | layout | Temporary stacking level applied to lifted ancestor stacking contexts while the dropdown is open. |
 | `--select-dropdown-top` | `calc(100% + 6px)` | layout | Dropdown offset below the shell. |
+| `--select-dropdown-bottom` | `calc(100% + 6px)` | layout | Dropdown offset above the shell when top placement is active. |
 | `--select-dropdown-max-height` | `320px` | size | Dropdown max height. |
 | `--select-dropdown-bg` | `var(--select-surface)` | color | Dropdown background. |
 | `--select-dropdown-border` | `var(--select-border)` | color | Dropdown border color. |
 | `--select-dropdown-border-radius` | `var(--select-radius-lg)` | radius | Dropdown radius. |
 | `--select-dropdown-shadow` | `var(--select-shadow-lg)` | shadow | Dropdown shadow. |
+| `--select-dropdown-padding` | `6px` | spacing | Outer spacing between the dropdown edge and option rows when `--select-options-padding` is not set. |
 | `--select-dropdown-z-index` | `1000` | layout | Dropdown stacking order. |
 | `--select-dropdown-scroll-behavior` | `smooth` | layout | Dropdown scroll behavior. |
 | `--select-dropdown-transform-origin` | `top center` | layout | Dropdown transform origin. |
+| `--select-dropdown-top-transform-origin` | `bottom center` | layout | Dropdown transform origin when top placement is active. |
 | `--select-dropdown-animation` | `dropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards` | animation | Dropdown enter animation. |
 | `--select-dropdown-enter-from-opacity` | `0` | opacity | Dropdown entry start opacity. |
 | `--select-dropdown-enter-from-transform` | `translateY(-8px) scale(0.98)` | transform | Dropdown entry start transform. |
+| `--select-dropdown-top-enter-from-transform` | `translateY(8px) scale(0.98)` | transform | Dropdown entry start transform when top placement is active. |
 | `--select-dropdown-enter-to-opacity` | `1` | opacity | Dropdown entry end opacity. |
 | `--select-dropdown-enter-to-transform` | `translateY(0) scale(1)` | transform | Dropdown entry end transform. |
 | `--select-options-max-height` | `320px` | size | Internal options scroller max height. |
@@ -183,6 +238,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
 | `--select-group-header-padding` | `10px 12px 6px` | spacing | Group header padding. |
+| `--select-group-header-margin` | `0` | spacing | Group header margin. |
 | `--select-group-header-weight` | `600` | typography | Group header weight. |
 | `--select-group-header-color` | `var(--select-text-muted)` | color | Group header text color. |
 | `--select-group-header-bg` | `transparent` | color | Group header background. |
@@ -190,7 +246,10 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-group-header-font-size` | `11px` | typography | Group header size. |
 | `--select-group-header-text-transform` | `uppercase` | transform | Group header text casing. |
 | `--select-group-header-letter-spacing` | `0.08em` | typography | Group header tracking. |
+| `--select-group-header-border` | `none` | border | Group header border. |
 | `--select-group-header-border-bottom` | `none` | border | Group header bottom border. |
+| `--select-group-header-border-radius` | `0` | radius | Group header radius. |
+| `--select-group-header-shadow` | `none` | shadow | Group header shadow. |
 | `--select-group-header-separator-margin-top` | `8px` | spacing | Gap before later groups. |
 | `--select-group-header-separator-padding-top` | `14px` | spacing | Top padding before later groups. |
 | `--select-group-header-separator-border-top` | `1px solid var(--select-border)` | border | Divider above later groups. |
@@ -198,37 +257,60 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-option-margin` | `2px 0` | spacing | Option spacing. |
 | `--select-option-color` | `var(--select-text)` | color | Option text color. |
 | `--select-option-bg` | `transparent` | color | Resting option background. |
+| `--select-option-border` | `none` | border | Resting option border. |
 | `--select-option-font-size` | `14px` | typography | Option text size. |
 | `--select-option-font-weight` | `450` | typography | Resting option weight. |
 | `--select-option-line-height` | `1.5` | typography | Option line height. |
+| `--select-option-text-align` | `start` | typography | Text alignment for option labels in the dropdown. |
 | `--select-option-border-radius` | `var(--select-radius-sm)` | radius | Option corner radius. |
 | `--select-option-hover-bg` | `var(--select-surface-elevated)` | color | Option hover background. |
+| `--select-option-hover-border` | `var(--select-option-border)` | border | Option hover border. |
+| `--select-option-hover-border-bottom` | `var(--select-option-border-bottom)` | border | Option hover bottom border. |
 | `--select-option-hover-color` | `var(--select-text)` | color | Option hover color. |
+| `--select-option-hover-shadow` | `var(--select-option-shadow)` | shadow | Option hover shadow. |
 | `--select-option-hover-transform` | `translateX(2px)` | transform | Option hover motion. |
 | `--select-option-active-bg` | `var(--select-surface-elevated)` | color | Keyboard-active background. |
+| `--select-option-active-color` | `var(--select-option-hover-color)` | color | Keyboard-active text color. |
+| `--select-option-active-border` | `var(--select-option-hover-border)` | border | Keyboard-active border. |
 | `--select-option-active-outline` | `2px solid rgba(15, 52, 96, 0.3)` | outline | Keyboard-active outline. |
 | `--select-option-active-outline-offset` | `-2px` | spacing | Keyboard-active outline offset. |
+| `--select-option-active-shadow` | `none` | shadow | Keyboard-active shadow. |
+| `--select-option-active-transform` | `none` | transform | Keyboard-active transform. |
 | `--select-option-selected-bg` | `linear-gradient(135deg, rgba(15, 52, 96, 0.08) 0%, rgba(15, 52, 96, 0.04) 100%)` | paint | Selected option background. |
+| `--select-option-selected-border` | `var(--select-option-border)` | border | Selected option border. |
 | `--select-option-selected-color` | `var(--select-accent)` | color | Selected option text color. |
 | `--select-option-selected-weight` | `550` | typography | Selected option weight. |
 | `--select-option-selected-hover-bg` | `linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%)` | paint | Selected + hover background. |
+| `--select-option-selected-hover-border-bottom` | `var(--select-option-selected-border-bottom)` | border | Selected + hover bottom border. |
+| `--select-option-selected-hover-shadow` | `var(--select-option-selected-shadow)` | shadow | Selected + hover shadow. |
+| `--select-option-selected-hover-transform` | `var(--select-option-selected-transform)` | transform | Selected + hover transform. |
+| `--select-option-selected-hover-border` | `var(--select-option-selected-border)` | border | Selected + hover border. |
+| `--select-option-selected-hover-color` | `var(--select-option-selected-color)` | color | Selected + hover text color. |
 | `--select-option-selected-active-outline` | `2px solid rgba(15, 52, 96, 0.4)` | outline | Selected + active outline. |
 | `--select-option-selected-active-outline-offset` | `-2px` | spacing | Selected + active outline offset. |
 | `--select-option-pressed-bg` | `rgba(15, 52, 96, 0.08)` | color | Pressed option background. |
 | `--select-option-pressed-transform` | `translateX(2px) scale(0.99)` | transform | Pressed motion for unselected options. |
 | `--select-option-selected-pressed-transform` | `scale(0.99)` | transform | Pressed motion for selected options. |
+| `--select-option-disabled-bg` | `var(--select-option-bg)` | color | Disabled option background. |
+| `--select-option-disabled-color` | `var(--select-text-muted)` | color | Disabled option text color. |
+| `--select-option-disabled-border` | `var(--select-option-border)` | border | Disabled option border. |
+| `--select-option-disabled-border-bottom` | `var(--select-option-border-bottom)` | border | Disabled option bottom border. |
+| `--select-option-disabled-opacity` | `0.5` | opacity | Disabled option opacity. |
+| `--select-option-disabled-cursor` | `not-allowed` | cursor | Disabled option cursor. |
 
 ### Selected indicator stripe
 
 | Token | Default | Type | Purpose |
 | --- | --- | --- | --- |
 | `--select-option-selected-indicator-left` | `0` | layout | Horizontal anchor for the selected stripe. |
+| `--select-option-selected-indicator-right` | `var(--select-option-selected-indicator-left)` | layout | Horizontal anchor for the selected stripe in RTL layout. |
 | `--select-option-selected-indicator-top` | `50%` | layout | Vertical anchor for the selected stripe. |
 | `--select-option-selected-indicator-transform` | `translateY(-50%)` | transform | Centering transform for the selected stripe. |
 | `--select-option-selected-indicator-width` | `3px` | size | Selected stripe width. |
 | `--select-option-selected-indicator-height` | `60%` | size | Selected stripe height. |
 | `--select-option-selected-indicator-bg` | `var(--select-accent)` | color | Selected stripe color. |
 | `--select-option-selected-indicator-radius` | `0 2px 2px 0` | radius | Selected stripe radius. |
+| `--select-option-selected-indicator-radius-rtl` | `2px 0 0 2px` | radius | Selected stripe radius in RTL layout. |
 | `--select-option-selected-indicator-animation` | `selectedIndicator 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards` | animation | Selected stripe entry animation. |
 | `--select-option-selected-indicator-from-height` | `0` | size | Selected stripe animation start height. |
 | `--select-option-selected-indicator-to-height` | `60%` | size | Selected stripe animation end height. |
@@ -297,7 +379,7 @@ Dark mode is activated through host and ancestor selectors such as `.dark`, `.da
 Instead of switching to a second styling API, dark mode re-seeds the same token surface:
 
 - Palette and elevation tokens: `--select-primary`, `--select-primary-light`, `--select-accent`, `--select-accent-hover`, `--select-surface`, `--select-surface-elevated`, `--select-border`, `--select-border-focus`, `--select-text`, `--select-text-muted`, `--select-text-placeholder`, `--select-shadow-sm`, `--select-shadow-md`, `--select-shadow-lg`, `--select-shadow-focus`
-- State tokens: `--select-option-bg`, `--select-option-color`, `--select-option-hover-bg`, `--select-option-hover-color`, `--select-option-selected-bg`, `--select-option-selected-color`, `--select-badge-dark-bg`, `--select-separator-dark-bg`
+- State tokens: `--select-option-bg`, `--select-option-color`, `--select-option-hover-bg`, `--select-option-hover-color`, `--select-option-selected-bg`, `--select-option-selected-color`, `--select-option-selected-hover-bg`, `--select-option-selected-hover-color`, `--select-badge-dark-bg`, `--select-separator-dark-bg`
 
 ## Example overrides
 

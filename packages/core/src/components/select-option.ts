@@ -32,6 +32,8 @@ export interface OptionConfig {
   classMap?: ClassMap;
   /** Show remove button (for multi-select) */
   showRemoveButton?: boolean;
+  /** Custom icon/markup for the remove button */
+  removeButtonIcon?: string;
 }
 
 export interface OptionEventDetail {
@@ -68,6 +70,8 @@ export class SelectOption extends HTMLElement {
       :host {
         display: block;
         position: relative;
+        font: inherit;
+        color: inherit;
       }
       
       /* Allow authors to style selected state from outside the shadow root
@@ -99,7 +103,7 @@ export class SelectOption extends HTMLElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--select-option-padding, 8px 12px);
+        padding: var(--select-option-padding, 10px 14px);
         cursor: pointer;
         user-select: none;
         color: var(--select-option-color, var(--select-text-color, #1f2937));
@@ -107,13 +111,19 @@ export class SelectOption extends HTMLElement {
         transition: var(--select-option-transition, background-color 0.2s ease);
         border: var(--select-option-border, none);
         border-bottom: var(--select-option-border-bottom, none);
-        border-radius: var(--select-option-border-radius, 0);
+        border-radius: var(--select-option-border-radius, var(--select-radius-sm, 6px));
         box-shadow: var(--select-option-shadow, none);
         transform: var(--select-option-transform, none);
+        font: inherit;
       }
       
       .option-container:hover {
         background: var(--select-option-hover-bg, #f0f0f0);
+        color: var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937)));
+        border: var(--select-option-hover-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-hover-border-bottom, var(--select-option-border-bottom, none));
+        box-shadow: var(--select-option-hover-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-hover-transform, var(--select-option-transform, none));
       }
       
       .option-container.selected {
@@ -136,13 +146,22 @@ export class SelectOption extends HTMLElement {
       }
       
       .option-container.active {
-        outline: 2px solid var(--select-option-active-outline, #1976d2);
-        outline-offset: -2px;
+        background: var(--select-option-active-bg, var(--select-option-hover-bg, #f0f0f0));
+        color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937))));
+        border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
+        box-shadow: var(--select-option-active-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-active-transform, var(--select-option-transform, none));
+        outline: var(--select-option-active-outline, 2px solid #1976d2);
+        outline-offset: var(--select-option-active-outline-offset, -2px);
       }
       
       .option-container.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+        background: var(--select-option-disabled-bg, var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white))));
+        color: var(--select-option-disabled-color, var(--select-option-color, var(--select-text-color, #1f2937)));
+        border: var(--select-option-disabled-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-disabled-border-bottom, var(--select-option-border-bottom, none));
+        opacity: var(--select-option-disabled-opacity, 0.5);
+        cursor: var(--select-option-disabled-cursor, not-allowed);
         pointer-events: none;
       }
       
@@ -159,6 +178,12 @@ export class SelectOption extends HTMLElement {
         color: var(--select-checkmark-color, currentColor);
       }
 
+      :host([dir="rtl"]) .checkmark-icon,
+      :host-context([dir="rtl"]) .checkmark-icon {
+        margin-left: 0;
+        margin-right: var(--select-checkmark-margin-left, 8px);
+      }
+
       :host([aria-selected="true"]) .checkmark-icon,
       .option-container.selected .checkmark-icon {
         display: inline-flex;
@@ -166,20 +191,49 @@ export class SelectOption extends HTMLElement {
       
       .remove-button {
         margin-left: 8px;
-        padding: 2px 6px;
+        width: var(--select-badge-remove-size, 18px);
+        height: var(--select-badge-remove-size, 18px);
+        min-width: var(--select-badge-remove-min-width, var(--select-badge-remove-size, 18px));
+        min-height: var(--select-badge-remove-min-height, var(--select-badge-remove-size, 18px));
+        padding: 0;
         border: none;
-        background-color: var(--select-remove-btn-bg, transparent);
-        color: var(--select-remove-btn-color, #666);
+        background-color: var(--select-badge-remove-bg, rgba(255, 255, 255, 0.2));
+        color: var(--select-badge-remove-color, currentColor);
         cursor: pointer;
-        border-radius: 3px;
-        font-size: 16px;
+        border-radius: var(--select-badge-remove-radius, 50%);
+        font-size: var(--select-badge-remove-font-size, 0.7333em);
+        font-weight: var(--select-badge-remove-font-weight, 600);
         line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.2s ease;
+      }
+
+      :host([dir="rtl"]) .remove-button,
+      :host-context([dir="rtl"]) .remove-button {
+        margin-left: 0;
+        margin-right: 8px;
+      }
+
+      .remove-button-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--select-badge-remove-icon-size, 10px);
+        height: var(--select-badge-remove-icon-size, 10px);
+        pointer-events: none;
+      }
+
+      .remove-button-icon svg {
+        width: 100%;
+        height: 100%;
+        display: block;
       }
       
       .remove-button:hover {
-        background-color: var(--select-remove-btn-hover-bg, #ffebee);
-        color: var(--select-remove-btn-hover-color, #c62828);
+        background-color: var(--select-badge-remove-hover-bg, #ffebee);
+        color: var(--select-badge-remove-hover-color, #c62828);
       }
       
       .remove-button:focus {
@@ -276,10 +330,23 @@ export class SelectOption extends HTMLElement {
     if (showRemoveButton && selected) {
       this._removeButton = document.createElement('button');
       this._removeButton.className = 'remove-button';
-      this._removeButton.innerHTML = '×';
       this._removeButton.setAttribute('part', 'chip-remove');
       this._removeButton.setAttribute('aria-label', 'Remove option');
       this._removeButton.setAttribute('type', 'button');
+
+      const removeIcon = document.createElement('span');
+      removeIcon.className = 'remove-button-icon';
+      removeIcon.setAttribute('part', 'chip-remove-icon');
+      const iconMarkup = this._config.removeButtonIcon && this._config.removeButtonIcon.trim()
+        ? this._config.removeButtonIcon
+        : '×';
+      if (iconMarkup.trim().startsWith('<')) {
+        removeIcon.innerHTML = iconMarkup;
+      } else {
+        removeIcon.textContent = iconMarkup;
+      }
+      this._removeButton.appendChild(removeIcon);
+
       this._container.appendChild(this._removeButton);
     }
     

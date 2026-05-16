@@ -1169,7 +1169,49 @@ function OptimizedExample() {
 
 ### Multi-select chip styling
 
-Selected chips in multi-select mode use softer default pill styles and remain fully customizable. Target them with `::part(chip)` and `::part(chip-remove)`, or override CSS variables such as `--select-badge-bg`, `--select-badge-border`, `--select-badge-color`, `--select-badge-shadow`, `--select-badge-remove-bg`, `--select-badge-remove-color`, and `--select-multi-input-min-width`.
+Selected chips in multi-select mode use softer default pill styles and remain fully customizable. Target them with `::part(chip)`, `::part(chip-label)`, `::part(chip-remove)`, and `::part(chip-remove-icon)`, or override CSS variables such as `--select-badge-bg`, `--select-badge-border`, `--select-badge-color`, `--select-badge-shadow`, `--select-badge-width`, `--select-badge-height`, `--select-badge-remove-size`, `--select-badge-remove-icon-size`, and `--select-multi-input-min-width`.
+
+Group headers and option states now expose a matching styling surface as well, including `--select-group-header-*`, `--select-option-border-radius`, `--select-option-active-*`, and `--select-option-disabled-*`.
+
+If you prefer runtime config over raw CSS variables, the shared `styles` config now supports `badge`, `badgeHover`, `badgeActive`, `badgeLabel`, `badgeRemove`, `badgeRemoveHover`, `badgeRemoveActive`, `groupHeader`, and `activeOption`. Custom chip remove icons are available through `selection.removeButtonIcon`.
+
+### Alignment in closed input and dropdown options
+
+To switch alignment and inspect both the selected value in the closed control and the option labels in the dropdown, use the shared alignment tokens together:
+
+- `--select-input-text-align`
+- `--select-option-text-align`
+- `--select-input-justify-content`
+- `--select-group-header-text-align`
+
+Example:
+
+```tsx
+<Select
+  items={items}
+  style={{
+    '--select-input-text-align': 'center',
+    '--select-option-text-align': 'center',
+  } as React.CSSProperties}
+/>
+```
+
+When testing alignment, inspect the closed selected value first, then open the dropdown and verify the option rows follow the same alignment.
+
+### Direction
+
+The shared default direction is `ltr`, and you can switch a React select to `rtl` through `config.direction`.
+
+```tsx
+<Select
+  items={items}
+  config={{
+    direction: 'rtl',
+  }}
+/>
+```
+
+This mirrors the shell and dropdown layout automatically, including arrow placement, clear-button placement, separator side, and selected indicator side.
 
 ### Types
 

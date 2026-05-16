@@ -55,6 +55,7 @@ export class EnhancedSelect extends HTMLElement {
   private _shadow: ShadowRoot;
   private _container: HTMLElement;
   private _inputContainer: HTMLElement;
+  private _inputContent: HTMLElement;
   private _input: HTMLInputElement;
   private _dropdown: HTMLElement;
   private _optionsContainer: HTMLElement;
@@ -90,6 +91,21 @@ export class EnhancedSelect extends HTMLElement {
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
   private _suppressBlurClose = false;
   private _renderCycleId = 0;
+  private _suppressNextOpenClick = false;
+  private _resolvedDropdownPlacement: 'bottom' | 'top' = 'bottom';
+  private _multiScrollDrag = {
+    active: false,
+    moved: false,
+    pointerId: -1,
+    startX: 0,
+    startScrollLeft: 0,
+  };
+  private _liftedAncestors: Array<{
+    element: HTMLElement;
+    position: string;
+    zIndex: string;
+    hadMarker: boolean;
+  }> = [];
 
   get classMap(): ClassMap | undefined {
     return this._classMap;
@@ -158,6 +174,7 @@ export class EnhancedSelect extends HTMLElement {
     // Create DOM structure
     this._container = this._createContainer();
     this._inputContainer = this._createInputContainer();
+    this._inputContent = this._createInputContent();
     this._input = this._createInput();
     this._arrowContainer = this._createArrowContainer();
     this._clearControl = this._createClearControl();
@@ -167,6 +184,8 @@ export class EnhancedSelect extends HTMLElement {
     
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
+    this._syncStyleConfigVariables();
+    this._syncDirectionConfig();
     this._assembleDOM();
     this._attachEventListeners();
     this._initializeObservers();
@@ -206,6 +225,7 @@ export class EnhancedSelect extends HTMLElement {
     if (this._busyTimeout) clearTimeout(this._busyTimeout);
     if (this._typeTimeout) clearTimeout(this._typeTimeout);
     if (this._searchTimeout) clearTimeout(this._searchTimeout);
+    this._endMultiScrollDrag();
     
     // Cleanup arrow click listener
     if (this._boundArrowClick && this._arrowContainer) {
@@ -355,6 +375,232 @@ export class EnhancedSelect extends HTMLElement {
     return container;
   }
 
+  private _createInputContent(): HTMLElement {
+    const content = document.createElement('div');
+    content.className = 'input-content';
+    return content;
+  }
+
+  private _setCssVariable(name: string, value: unknown): void {
+    if (value == null || value === '') {
+      this.style.removeProperty(name);
+      return;
+    }
+
+    this.style.setProperty(name, String(value));
+  }
+
+  private _applyStyleVariableMap(
+    styleConfig: Partial<CSSStyleDeclaration> | undefined,
+    variableMap: Record<string, string>,
+  ): void {
+    Object.entries(variableMap).forEach(([styleKey, variableName]) => {
+      this._setCssVariable(variableName, (styleConfig as Record<string, unknown> | undefined)?.[styleKey]);
+    });
+  }
+
+  private _syncStyleConfigVariables(): void {
+    const styles = this._config.styles;
+
+    this._applyStyleVariableMap(styles.option, {
+      background: '--select-option-bg',
+      backgroundColor: '--select-option-bg',
+      color: '--select-option-color',
+      border: '--select-option-border',
+      borderBottom: '--select-option-border-bottom',
+      borderRadius: '--select-option-border-radius',
+      boxShadow: '--select-option-shadow',
+      transform: '--select-option-transform',
+      padding: '--select-option-padding',
+      margin: '--select-option-margin',
+      fontSize: '--select-option-font-size',
+      fontWeight: '--select-option-font-weight',
+      lineHeight: '--select-option-line-height',
+      textAlign: '--select-option-text-align',
+    });
+
+    this._applyStyleVariableMap(styles.selectedOption, {
+      background: '--select-option-selected-bg',
+      backgroundColor: '--select-option-selected-bg',
+      color: '--select-option-selected-color',
+      border: '--select-option-selected-border',
+      borderBottom: '--select-option-selected-border-bottom',
+      borderRadius: '--select-option-selected-border-radius',
+      boxShadow: '--select-option-selected-shadow',
+      transform: '--select-option-selected-transform',
+      fontWeight: '--select-option-selected-weight',
+    });
+
+    this._applyStyleVariableMap(styles.hoverOption, {
+      background: '--select-option-hover-bg',
+      backgroundColor: '--select-option-hover-bg',
+      color: '--select-option-hover-color',
+      border: '--select-option-hover-border',
+      borderBottom: '--select-option-hover-border-bottom',
+      boxShadow: '--select-option-hover-shadow',
+      transform: '--select-option-hover-transform',
+    });
+
+    this._applyStyleVariableMap(styles.activeOption, {
+      background: '--select-option-active-bg',
+      backgroundColor: '--select-option-active-bg',
+      color: '--select-option-active-color',
+      border: '--select-option-active-border',
+      outline: '--select-option-active-outline',
+      outlineOffset: '--select-option-active-outline-offset',
+      boxShadow: '--select-option-active-shadow',
+      transform: '--select-option-active-transform',
+    });
+
+    this._applyStyleVariableMap(styles.disabledOption, {
+      background: '--select-option-disabled-bg',
+      backgroundColor: '--select-option-disabled-bg',
+      color: '--select-option-disabled-color',
+      border: '--select-option-disabled-border',
+      borderBottom: '--select-option-disabled-border-bottom',
+      opacity: '--select-option-disabled-opacity',
+      cursor: '--select-option-disabled-cursor',
+    });
+
+    this._applyStyleVariableMap(styles.badge, {
+      width: '--select-badge-width',
+      minWidth: '--select-badge-min-width',
+      maxWidth: '--select-badge-max-width',
+      height: '--select-badge-height',
+      minHeight: '--select-badge-min-height',
+      padding: '--select-badge-padding',
+      margin: '--select-badge-margin',
+      gap: '--select-badge-gap',
+      background: '--select-badge-bg',
+      backgroundColor: '--select-badge-bg',
+      color: '--select-badge-color',
+      border: '--select-badge-border',
+      borderRadius: '--select-badge-border-radius',
+      boxShadow: '--select-badge-shadow',
+      fontSize: '--select-badge-font-size',
+      fontWeight: '--select-badge-font-weight',
+      lineHeight: '--select-badge-line-height',
+      letterSpacing: '--select-badge-letter-spacing',
+    });
+
+    this._applyStyleVariableMap(styles.badgeHover, {
+      background: '--select-badge-hover-bg',
+      backgroundColor: '--select-badge-hover-bg',
+      color: '--select-badge-hover-color',
+      border: '--select-badge-hover-border',
+      boxShadow: '--select-badge-hover-shadow',
+      transform: '--select-badge-hover-transform',
+    });
+
+    this._applyStyleVariableMap(styles.badgeActive, {
+      background: '--select-badge-active-bg',
+      backgroundColor: '--select-badge-active-bg',
+      color: '--select-badge-active-color',
+      border: '--select-badge-active-border',
+      boxShadow: '--select-badge-active-shadow',
+      transform: '--select-badge-active-transform',
+    });
+
+    this._applyStyleVariableMap(styles.badgeLabel, {
+      color: '--select-badge-label-color',
+      fontSize: '--select-badge-label-font-size',
+      fontWeight: '--select-badge-label-font-weight',
+      lineHeight: '--select-badge-label-line-height',
+      letterSpacing: '--select-badge-label-letter-spacing',
+      textAlign: '--select-badge-label-text-align',
+    });
+
+    this._applyStyleVariableMap(styles.badgeRemove, {
+      width: '--select-badge-remove-size',
+      height: '--select-badge-remove-size',
+      minWidth: '--select-badge-remove-min-width',
+      minHeight: '--select-badge-remove-min-height',
+      marginLeft: '--select-badge-remove-margin-left',
+      background: '--select-badge-remove-bg',
+      backgroundColor: '--select-badge-remove-bg',
+      border: '--select-badge-remove-border',
+      borderRadius: '--select-badge-remove-radius',
+      color: '--select-badge-remove-color',
+      fontSize: '--select-badge-remove-font-size',
+      fontWeight: '--select-badge-remove-font-weight',
+    });
+
+    this._applyStyleVariableMap(styles.badgeRemoveHover, {
+      background: '--select-badge-remove-hover-bg',
+      backgroundColor: '--select-badge-remove-hover-bg',
+      color: '--select-badge-remove-hover-color',
+      border: '--select-badge-remove-hover-border',
+      boxShadow: '--select-badge-remove-hover-shadow',
+      transform: '--select-badge-remove-hover-transform',
+    });
+
+    this._applyStyleVariableMap(styles.badgeRemoveActive, {
+      background: '--select-badge-remove-active-bg',
+      backgroundColor: '--select-badge-remove-active-bg',
+      color: '--select-badge-remove-active-color',
+      border: '--select-badge-remove-active-border',
+      boxShadow: '--select-badge-remove-active-shadow',
+      transform: '--select-badge-remove-active-transform',
+    });
+
+    this._applyStyleVariableMap(styles.groupHeader, {
+      padding: '--select-group-header-padding',
+      margin: '--select-group-header-margin',
+      color: '--select-group-header-color',
+      background: '--select-group-header-bg',
+      backgroundColor: '--select-group-header-bg',
+      border: '--select-group-header-border',
+      borderBottom: '--select-group-header-border-bottom',
+      borderRadius: '--select-group-header-border-radius',
+      boxShadow: '--select-group-header-shadow',
+      textAlign: '--select-group-header-text-align',
+      fontSize: '--select-group-header-font-size',
+      fontWeight: '--select-group-header-weight',
+      textTransform: '--select-group-header-text-transform',
+      letterSpacing: '--select-group-header-letter-spacing',
+    });
+  }
+
+  private _resolveDropdownPlacement(): 'bottom' | 'top' {
+    const placementMode = this._config.dropdownPlacement?.mode ?? 'bottom';
+    if (placementMode === 'bottom' || placementMode === 'top') {
+      return placementMode;
+    }
+
+    const hostRect = this._container.getBoundingClientRect();
+    const availableBelow = window.innerHeight - hostRect.bottom;
+    const computedDropdown = window.getComputedStyle(this._dropdown);
+    const maxHeight = Number.parseFloat(computedDropdown.maxHeight || '0');
+    const desiredHeight = Number.isFinite(maxHeight) && maxHeight > 0
+      ? Math.min(this._dropdown.scrollHeight, maxHeight)
+      : this._dropdown.scrollHeight;
+
+    return availableBelow >= desiredHeight ? 'bottom' : 'top';
+  }
+
+  private _syncDropdownPlacement(): void {
+    if (!this._dropdown) return;
+
+    this._resolvedDropdownPlacement = this._resolveDropdownPlacement();
+    this._dropdown.setAttribute('data-placement', this._resolvedDropdownPlacement);
+  }
+
+  private _syncDirectionConfig(): void {
+    this.setAttribute('dir', this._config.direction ?? 'ltr');
+  }
+
+  private _setIconContent(target: HTMLElement, markup: string | undefined, fallback: string): void {
+    const content = markup && markup.trim() ? markup : fallback;
+    target.innerHTML = '';
+
+    if (content.trim().startsWith('<')) {
+      target.innerHTML = content;
+      return;
+    }
+
+    target.textContent = content;
+  }
+
   private _syncInputContainerMode(): void {
     if (!this._inputContainer || !this._input) return;
 
@@ -371,6 +617,132 @@ export class EnhancedSelect extends HTMLElement {
       this._input.style.width = '100%';
       this._input.style.minWidth = '0';
     }
+
+    this._syncMultiSelectDisplayConfig();
+  }
+
+  private _syncMultiSelectDisplayConfig(): void {
+    if (!this._inputContainer || !this._input) return;
+
+    const isMulti = this._config.selection.mode === 'multi';
+    const mode = this._config.multiSelectDisplay?.mode ?? 'wrap';
+    const dragEnabled = this._config.multiSelectDisplay?.dragScroll !== false;
+
+    if (!isMulti) {
+      this._inputContainer.removeAttribute('data-multi-scroll-mode');
+      this._inputContainer.removeAttribute('data-drag-scroll');
+      this._inputContainer.classList.remove('is-dragging-scroll');
+      this._inputContainer.style.removeProperty('--select-multi-input-max-height');
+      this._inputContainer.style.removeProperty('--select-multi-input-overflow-x');
+      this._inputContainer.style.removeProperty('--select-multi-input-overflow-y');
+      this._inputContainer.style.removeProperty('--select-multi-input-flex-wrap');
+      this._inputContainer.style.removeProperty('--select-multi-input-align-content');
+      return;
+    }
+
+    const maxHeight = this._config.multiSelectDisplay?.maxHeight ?? '160px';
+    const overflowX = this._config.multiSelectDisplay?.overflowX ?? (mode === 'horizontal' ? 'auto' : 'hidden');
+    const overflowY = this._config.multiSelectDisplay?.overflowY ?? (mode === 'horizontal' ? 'hidden' : 'auto');
+    const flexWrap = mode === 'horizontal' ? 'nowrap' : 'wrap';
+    const alignContent = mode === 'horizontal' ? 'center' : 'flex-start';
+
+    this._inputContainer.setAttribute('data-multi-scroll-mode', mode);
+    this._inputContainer.setAttribute('data-drag-scroll', String(dragEnabled && mode === 'horizontal'));
+    this._inputContainer.style.setProperty('--select-multi-input-max-height', maxHeight);
+    this._inputContainer.style.setProperty('--select-multi-input-overflow-x', overflowX);
+    this._inputContainer.style.setProperty('--select-multi-input-overflow-y', overflowY);
+    this._inputContainer.style.setProperty('--select-multi-input-flex-wrap', flexWrap);
+    this._inputContainer.style.setProperty('--select-multi-input-align-content', alignContent);
+  }
+
+  private _canUseHorizontalMultiScroll(target: HTMLElement | null): boolean {
+    if (this._config.selection.mode !== 'multi') return false;
+    if ((this._config.multiSelectDisplay?.mode ?? 'wrap') !== 'horizontal') return false;
+    if (this._config.multiSelectDisplay?.dragScroll === false) return false;
+    if (!target) return true;
+    if (target.closest('.dropdown-arrow-container, .clear-control-button, .badge-remove')) return false;
+    if (target.matches('.select-input')) return false;
+    return true;
+  }
+
+  private _isScrollableMultiSelectMode(): boolean {
+    if (this._config.selection.mode !== 'multi') return false;
+    const mode = this._config.multiSelectDisplay?.mode ?? 'wrap';
+    return mode === 'vertical' || mode === 'horizontal';
+  }
+
+  private _isPointerOnInputScrollbar(event: Pick<MouseEvent, 'clientX' | 'clientY'>): boolean {
+    if (!this._isScrollableMultiSelectMode()) return false;
+
+    const rect = this._inputContent.getBoundingClientRect();
+    const verticalScrollbarWidth = this._inputContent.offsetWidth - this._inputContent.clientWidth;
+    const horizontalScrollbarHeight = this._inputContent.offsetHeight - this._inputContent.clientHeight;
+
+    if (
+      verticalScrollbarWidth > 0
+      && event.clientX >= rect.right - verticalScrollbarWidth
+      && event.clientX <= rect.right
+      && event.clientY >= rect.top
+      && event.clientY <= rect.bottom
+    ) {
+      return true;
+    }
+
+    if (
+      horizontalScrollbarHeight > 0
+      && event.clientY >= rect.bottom - horizontalScrollbarHeight
+      && event.clientY <= rect.bottom
+      && event.clientX >= rect.left
+      && event.clientX <= rect.right
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private _beginMultiScrollDrag(e: PointerEvent): void {
+    const scrollHost = this._inputContent;
+    this._multiScrollDrag.active = true;
+    this._multiScrollDrag.moved = false;
+    this._multiScrollDrag.pointerId = e.pointerId;
+    this._multiScrollDrag.startX = e.clientX;
+    this._multiScrollDrag.startScrollLeft = scrollHost.scrollLeft;
+    this._inputContainer.classList.add('is-dragging-scroll');
+
+    try {
+      scrollHost.setPointerCapture(e.pointerId);
+    } catch (_error) {
+      // ignore pointer capture issues
+    }
+  }
+
+  private _updateMultiScrollDrag(e: PointerEvent): void {
+    if (!this._multiScrollDrag.active || this._multiScrollDrag.pointerId !== e.pointerId) return;
+
+    const deltaX = e.clientX - this._multiScrollDrag.startX;
+    if (Math.abs(deltaX) > 3) {
+      this._multiScrollDrag.moved = true;
+    }
+
+    this._inputContent.scrollLeft = this._multiScrollDrag.startScrollLeft - deltaX;
+  }
+
+  private _endMultiScrollDrag(pointerId?: number): void {
+    if (!this._multiScrollDrag.active) return;
+    if (pointerId != null && this._multiScrollDrag.pointerId !== pointerId) return;
+
+    try {
+      if (this._multiScrollDrag.pointerId >= 0) {
+        this._inputContent.releasePointerCapture(this._multiScrollDrag.pointerId);
+      }
+    } catch (_error) {
+      // ignore pointer capture issues
+    }
+
+    this._multiScrollDrag.active = false;
+    this._multiScrollDrag.pointerId = -1;
+    this._inputContainer.classList.remove('is-dragging-scroll');
   }
 
   private _createInput(): HTMLInputElement {
@@ -521,8 +893,8 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _assembleDOM(): void {
-    
-    this._inputContainer.appendChild(this._input);
+    this._inputContent.appendChild(this._input);
+    this._inputContainer.appendChild(this._inputContent);
 
     if (this._clearControl) {
       this._inputContainer.appendChild(this._clearControl);
@@ -590,9 +962,11 @@ export class EnhancedSelect extends HTMLElement {
         --select-badge-enter-from-transform: scale(0.8) translateY(-4px);
         --select-badge-enter-to-opacity: 1;
         --select-badge-enter-to-transform: scale(1) translateY(0);
+        --select-badge-active-transform: scale(0.98);
         --select-badge-hover-transform: scale(1.02);
         --select-badge-letter-spacing: 0.01em;
         --select-badge-hover-shadow: var(--select-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        --select-badge-remove-icon-size: 10px;
         --select-badge-remove-focus-outline: 2px solid rgba(255, 255, 255, 0.5);
         --select-badge-remove-focus-offset: 1px;
         --select-badge-remove-hover-transform: scale(1.15) rotate(90deg);
@@ -602,8 +976,25 @@ export class EnhancedSelect extends HTMLElement {
         --select-input-font-weight: 450;
         --select-input-letter-spacing: 0.01em;
         --select-input-disabled-opacity: 0.6;
+        --select-input-overflow-x: hidden;
+        --select-input-align-items: center;
+        --select-input-align-content: center;
+        --select-input-align-self: center;
+        --select-multi-input-max-height: 160px;
+        --select-multi-input-overflow-x: hidden;
+        --select-multi-input-overflow-y: auto;
+        --select-multi-input-flex-wrap: wrap;
+        --select-multi-input-align-content: flex-start;
+        --select-multi-input-horizontal-input-flex: 0 0 var(--select-multi-input-min-width, 96px);
+        --select-multi-input-horizontal-cursor: grab;
+        --select-multi-input-horizontal-active-cursor: grabbing;
+        --select-multi-separator-inset-block: 10px;
+        --select-multi-action-surface-bg: var(--select-input-bg, var(--select-surface));
+        --select-multi-action-divider: 1px solid var(--select-border);
         --select-separator-opacity: 0.6;
         --select-separator-active-opacity: 1;
+        --select-separator-position: var(--select-arrow-width, 42px);
+        --select-separator-position-with-clear: calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px));
         --select-separator-dark-bg: linear-gradient(
           to bottom,
           transparent 0%,
@@ -617,11 +1008,15 @@ export class EnhancedSelect extends HTMLElement {
         --select-clear-button-focus-offset: 2px;
         --select-clear-icon-size: 14px;
         --select-dropdown-top: calc(100% + 6px);
+        --select-dropdown-bottom: calc(100% + 6px);
         --select-dropdown-animation: dropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
         --select-dropdown-enter-from-opacity: 0;
         --select-dropdown-enter-from-transform: translateY(-8px) scale(0.98);
         --select-dropdown-enter-to-opacity: 1;
         --select-dropdown-enter-to-transform: translateY(0) scale(1);
+        --select-dropdown-top-transform-origin: bottom center;
+        --select-dropdown-top-enter-from-transform: translateY(8px) scale(0.98);
+        --select-dropdown-padding: 6px;
         --select-dropdown-scroll-behavior: smooth;
         --select-dropdown-transform-origin: top center;
         --select-scrollbar-width: 6px;
@@ -629,6 +1024,8 @@ export class EnhancedSelect extends HTMLElement {
         --select-option-hover-transform: translateX(2px);
         --select-option-font-weight: 450;
         --select-option-margin: 2px 0;
+        --select-option-disabled-opacity: 0.5;
+        --select-option-disabled-cursor: not-allowed;
         --select-option-active-outline-offset: -2px;
         --select-option-selected-active-outline-offset: -2px;
         --select-option-selected-indicator-width: 3px;
@@ -670,12 +1067,31 @@ export class EnhancedSelect extends HTMLElement {
         --select-high-contrast-focus-outline-color: Highlight;
         --select-touch-target-min-height: 44px;
         --select-badge-dark-bg: linear-gradient(135deg, var(--select-accent) 0%, #4f46e5 100%);
+        --select-host-z-index: auto;
+        --select-host-open-z-index: var(--select-dropdown-z-index, 1000);
+        --select-ancestor-open-z-index: var(--select-host-open-z-index, var(--select-dropdown-z-index, 1000));
         
         display: block;
         position: relative;
+        z-index: var(--select-host-z-index, auto);
         width: var(--select-width, 100%);
         height: var(--select-height, auto);
-        font-family: var(--select-font-family, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+        font-family: var(--select-font-family, inherit);
+        font-size: var(--select-font-size, inherit);
+        line-height: var(--select-line-height, inherit);
+        color: var(--select-color, inherit);
+      }
+
+      :host([data-open="true"]) {
+        z-index: var(--select-host-open-z-index, var(--select-dropdown-z-index, 1000));
+      }
+
+      :host([dir="ltr"]) {
+        direction: ltr;
+      }
+
+      :host([dir="rtl"]) {
+        direction: rtl;
       }
 
       /* ─────────────────────────────────────────────────────────────────────────
@@ -687,6 +1103,9 @@ export class EnhancedSelect extends HTMLElement {
         align-items: center;
         gap: var(--select-badge-gap, 6px);
         flex: 0 1 auto;
+        width: var(--select-badge-width, auto);
+        min-width: var(--select-badge-min-width, 0);
+        height: var(--select-badge-height, auto);
         min-height: var(--select-badge-min-height, 26px);
         padding: var(--select-badge-padding, 4px 10px 4px 12px);
         margin: var(--select-badge-margin, 3px);
@@ -696,7 +1115,7 @@ export class EnhancedSelect extends HTMLElement {
         border-radius: var(--select-badge-border-radius, 999px);
         box-shadow: var(--select-badge-shadow, var(--select-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.1));
         box-sizing: border-box;
-        font-size: var(--select-badge-font-size, 13px);
+        font-size: var(--select-badge-font-size, 0.8667em);
         font-weight: var(--select-badge-font-weight, 500);
         line-height: var(--select-badge-line-height, 1.2);
         letter-spacing: var(--select-badge-letter-spacing);
@@ -722,8 +1141,19 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .selection-badge:hover {
+        background: var(--select-badge-hover-bg, var(--select-badge-bg, linear-gradient(135deg, var(--select-accent) 0%, var(--select-primary-light) 100%)));
+        color: var(--select-badge-hover-color, var(--select-badge-color, #ffffff));
+        border: var(--select-badge-hover-border, var(--select-badge-border, none));
         box-shadow: var(--select-badge-hover-shadow);
         transform: var(--select-badge-hover-transform);
+      }
+
+      .selection-badge:active {
+        background: var(--select-badge-active-bg, var(--select-badge-hover-bg, var(--select-badge-bg, linear-gradient(135deg, var(--select-accent) 0%, var(--select-primary-light) 100%))));
+        color: var(--select-badge-active-color, var(--select-badge-hover-color, var(--select-badge-color, #ffffff)));
+        border: var(--select-badge-active-border, var(--select-badge-hover-border, var(--select-badge-border, none)));
+        box-shadow: var(--select-badge-active-shadow, var(--select-badge-hover-shadow));
+        transform: var(--select-badge-active-transform);
       }
 
       .selection-badge-label {
@@ -732,7 +1162,12 @@ export class EnhancedSelect extends HTMLElement {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        line-height: var(--select-badge-line-height, 1.2);
+        color: var(--select-badge-label-color, inherit);
+        font-size: var(--select-badge-label-font-size, inherit);
+        font-weight: var(--select-badge-label-font-weight, inherit);
+        line-height: var(--select-badge-label-line-height, var(--select-badge-line-height, 1.2));
+        letter-spacing: var(--select-badge-label-letter-spacing, inherit);
+        text-align: var(--select-badge-label-text-align, start);
       }
 
       .badge-remove {
@@ -741,24 +1176,47 @@ export class EnhancedSelect extends HTMLElement {
         justify-content: center;
         width: var(--select-badge-remove-size, 18px);
         height: var(--select-badge-remove-size, 18px);
+        min-width: var(--select-badge-remove-min-width, var(--select-badge-remove-size, 18px));
+        min-height: var(--select-badge-remove-min-height, var(--select-badge-remove-size, 18px));
         padding: 0;
         margin-left: var(--select-badge-remove-margin-left);
         background: var(--select-badge-remove-bg, rgba(255, 255, 255, 0.2));
         border: var(--select-badge-remove-border, none);
         border-radius: var(--select-badge-remove-radius);
         color: var(--select-badge-remove-color, #ffffff);
-        font-size: var(--select-badge-remove-font-size, 11px);
+        font-size: var(--select-badge-remove-font-size, 0.7333em);
         font-weight: var(--select-badge-remove-font-weight);
         line-height: 1;
         cursor: pointer;
         flex: 0 0 auto;
         transition: 
           background var(--select-transition-fast),
+          color var(--select-transition-fast),
+          border-color var(--select-transition-fast),
+          box-shadow var(--select-transition-fast),
           transform var(--select-transition-bounce);
+      }
+
+      .badge-remove-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--select-badge-remove-icon-size, 10px);
+        height: var(--select-badge-remove-icon-size, 10px);
+        pointer-events: none;
+      }
+
+      .badge-remove-icon svg {
+        width: 100%;
+        height: 100%;
+        display: block;
       }
       
       .badge-remove:hover {
         background: var(--select-badge-remove-hover-bg, rgba(233, 69, 96, 0.9));
+        color: var(--select-badge-remove-hover-color, var(--select-badge-remove-color, #ffffff));
+        border: var(--select-badge-remove-hover-border, var(--select-badge-remove-border, none));
+        box-shadow: var(--select-badge-remove-hover-shadow, none);
         transform: var(--select-badge-remove-hover-transform);
       }
 
@@ -768,7 +1226,16 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .badge-remove:active {
+        background: var(--select-badge-remove-active-bg, var(--select-badge-remove-hover-bg, rgba(233, 69, 96, 0.9)));
+        color: var(--select-badge-remove-active-color, var(--select-badge-remove-hover-color, var(--select-badge-remove-color, #ffffff)));
+        border: var(--select-badge-remove-active-border, var(--select-badge-remove-hover-border, var(--select-badge-remove-border, none)));
+        box-shadow: var(--select-badge-remove-active-shadow, var(--select-badge-remove-hover-shadow, none));
         transform: var(--select-badge-remove-active-transform);
+      }
+
+      :host([dir="rtl"]) .badge-remove {
+        margin-left: 0;
+        margin-right: var(--select-badge-remove-margin-left);
       }
       
       /* ─────────────────────────────────────────────────────────────────────────
@@ -784,15 +1251,17 @@ export class EnhancedSelect extends HTMLElement {
         position: relative;
         width: 100%;
         display: flex;
-        align-items: center;
+        align-items: var(--select-input-align-items, center);
         flex-wrap: nowrap;
+        justify-content: var(--select-input-justify-content, flex-start);
         gap: var(--select-input-gap, 6px);
         padding: var(--select-input-padding, 10px 52px 10px 14px);
         height: var(--select-input-height, auto);
         min-height: var(--select-input-min-height, 48px);
         max-height: var(--select-input-max-height, 160px);
-        overflow-y: var(--select-input-overflow-y, auto);
-        align-content: center;
+        overflow: hidden;
+        align-content: var(--select-input-align-content, center);
+        text-align: var(--select-input-text-align, start);
         background: var(--select-input-bg, var(--select-surface));
         border: var(--select-input-border, 1.5px solid var(--select-border));
         border-radius: var(--select-input-border-radius, var(--select-radius-md));
@@ -802,6 +1271,25 @@ export class EnhancedSelect extends HTMLElement {
           border-color var(--select-transition-fast),
           box-shadow var(--select-transition-smooth),
           transform var(--select-transition-fast);
+      }
+
+      .input-content {
+        position: relative;
+        display: flex;
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        align-self: stretch;
+        align-items: var(--select-input-align-items, center);
+        align-content: var(--select-input-align-content, center);
+        justify-content: var(--select-input-justify-content, flex-start);
+        flex-wrap: nowrap;
+        gap: var(--select-input-gap, 6px);
+        overflow-x: var(--select-input-overflow-x, hidden);
+        overflow-y: var(--select-input-overflow-y, hidden);
+        scrollbar-width: thin;
+        box-sizing: border-box;
       }
       
       .input-container:hover {
@@ -815,8 +1303,75 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .input-container.input-container--multi {
-        flex-wrap: wrap;
-        align-content: flex-start;
+        max-height: var(--select-multi-input-max-height, var(--select-input-max-height, 160px));
+      }
+
+      .input-container.input-container--multi .input-content {
+        flex-wrap: var(--select-multi-input-flex-wrap, wrap);
+        align-content: var(--select-multi-input-align-content, flex-start);
+        overflow-x: var(--select-multi-input-overflow-x, hidden);
+        overflow-y: var(--select-multi-input-overflow-y, auto);
+      }
+
+      .input-container.input-container--multi::after {
+        top: var(--select-multi-separator-inset-block, 10px);
+        bottom: var(--select-multi-separator-inset-block, 10px);
+        height: auto;
+        transform: none;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] {
+        align-items: stretch;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content {
+        cursor: var(--select-multi-input-horizontal-cursor, grab);
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"]::after {
+        display: none;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"].is-dragging-scroll .input-content {
+        cursor: var(--select-multi-input-horizontal-active-cursor, grabbing);
+        user-select: none;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content .selection-badge {
+        flex: 0 0 auto;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content > .select-input,
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content > input.select-input,
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content > .select-input[type="text"] {
+        flex: var(--select-multi-input-horizontal-input-flex, 0 0 var(--select-multi-input-min-width, 96px));
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container {
+        background: var(--select-multi-action-surface-bg, var(--select-input-bg, var(--select-surface)));
+        border-left: var(--select-multi-action-divider, 1px solid var(--select-border));
+        z-index: 4;
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container.with-clear-control {
+        right: var(--select-arrow-right-with-clear, 34px);
+      }
+
+      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container {
+        border-left: none;
+        border-right: var(--select-multi-action-divider, 1px solid var(--select-border));
+      }
+
+      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container.with-clear-control {
+        right: auto;
+        left: var(--select-arrow-right-with-clear, 34px);
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .clear-control-button {
+        background: var(--select-multi-action-surface-bg, var(--select-input-bg, var(--select-surface)));
+        z-index: 4;
       }
       
       .input-container:focus-within {
@@ -829,7 +1384,7 @@ export class EnhancedSelect extends HTMLElement {
         content: '';
         position: absolute;
         top: 50%;
-        right: var(--select-separator-position, 42px);
+        right: var(--select-separator-position, var(--select-arrow-width, 42px));
         transform: translateY(-50%);
         width: var(--select-separator-width, 1px);
         height: var(--select-separator-height, 50%);
@@ -849,6 +1404,11 @@ export class EnhancedSelect extends HTMLElement {
       .input-container:hover::after,
       .input-container:focus-within::after {
         opacity: var(--select-separator-active-opacity);
+      }
+
+      :host([dir="rtl"]) .input-container::after {
+        right: auto;
+        left: var(--select-separator-position, var(--select-arrow-width, 42px));
       }
       
       /* ─────────────────────────────────────────────────────────────────────────
@@ -876,11 +1436,27 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .input-container.has-clear-control::after {
-        right: var(--select-separator-position-with-clear, 74px);
+        right: var(--select-separator-position-with-clear, calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px)));
       }
 
       .dropdown-arrow-container.with-clear-control {
         right: var(--select-arrow-right-with-clear, 34px);
+      }
+
+      :host([dir="rtl"]) .dropdown-arrow-container {
+        right: auto;
+        left: 0;
+        border-radius: var(--select-arrow-border-radius-rtl, var(--select-radius-md) 0 0 var(--select-radius-md));
+      }
+
+      :host([dir="rtl"]) .input-container.has-clear-control::after {
+        right: auto;
+        left: var(--select-separator-position-with-clear, calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px)));
+      }
+
+      :host([dir="rtl"]) .dropdown-arrow-container.with-clear-control {
+        right: auto;
+        left: var(--select-arrow-right-with-clear, 34px);
       }
 
       /* ─────────────────────────────────────────────────────────────────────────
@@ -926,6 +1502,11 @@ export class EnhancedSelect extends HTMLElement {
 
       .clear-control-button[hidden] {
         display: none;
+      }
+
+      :host([dir="rtl"]) .clear-control-button {
+        right: auto;
+        left: var(--select-clear-button-right, 8px);
       }
 
       .clear-control-icon {
@@ -982,7 +1563,7 @@ export class EnhancedSelect extends HTMLElement {
         padding: var(--select-input-field-padding, 0) !important;
         margin: 0 !important;
         border: 0 !important;
-        font-size: var(--select-input-font-size, 15px);
+        font-size: var(--select-input-font-size, inherit);
         line-height: var(--select-input-line-height, 1.5);
         color: var(--select-input-color, var(--select-text));
         background: transparent !important;
@@ -990,19 +1571,30 @@ export class EnhancedSelect extends HTMLElement {
         outline: none !important;
         font-weight: var(--select-input-font-weight);
         letter-spacing: var(--select-input-letter-spacing);
-        align-self: center;
+        font-family: var(--select-input-font-family, inherit);
+        font-style: var(--select-input-font-style, normal);
+        align-self: var(--select-input-align-self, center);
         appearance: none !important;
         -webkit-appearance: none !important;
         box-shadow: none !important;
         border-radius: 0 !important;
         overflow: hidden;
         text-overflow: ellipsis;
+        text-align: var(--select-input-text-align, inherit);
         white-space: nowrap;
       }
       
       .select-input::placeholder {
         color: var(--select-input-placeholder-color, var(--select-text-placeholder));
         font-weight: 400;
+      }
+
+      :host([dir="rtl"]) .input-container {
+        padding: var(--select-input-padding-rtl, 10px 14px 10px 52px);
+      }
+
+      :host([dir="rtl"]) .input-container.has-clear-control {
+        padding: var(--select-input-padding-with-clear-rtl, 10px 14px 10px 84px);
       }
 
       .input-container.input-container--multi > .select-input,
@@ -1035,10 +1627,12 @@ export class EnhancedSelect extends HTMLElement {
         position: absolute;
         scroll-behavior: var(--select-dropdown-scroll-behavior);
         top: var(--select-dropdown-top);
+        bottom: auto;
         left: 0;
         right: 0;
         max-height: var(--select-dropdown-max-height, 320px);
         overflow: hidden;
+        box-sizing: border-box;
         background: var(--select-dropdown-bg, var(--select-surface));
         border: 1px solid var(--select-dropdown-border, var(--select-border));
         border-radius: var(--select-dropdown-border-radius, var(--select-radius-lg));
@@ -1046,6 +1640,16 @@ export class EnhancedSelect extends HTMLElement {
         z-index: var(--select-dropdown-z-index, 1000);
         transform-origin: var(--select-dropdown-transform-origin);
         animation: var(--select-dropdown-animation);
+      }
+
+      .select-dropdown[data-placement="top"] {
+        top: auto;
+        bottom: var(--select-dropdown-bottom, calc(100% + 6px));
+        transform-origin: var(--select-dropdown-top-transform-origin, bottom center);
+      }
+
+      .select-dropdown[data-placement="top"] {
+        --select-dropdown-enter-from-transform: var(--select-dropdown-top-enter-from-transform, translateY(8px) scale(0.98));
       }
       
       @keyframes dropdownEnter {
@@ -1063,8 +1667,9 @@ export class EnhancedSelect extends HTMLElement {
         position: relative;
         max-height: var(--select-options-max-height, 320px);
         overflow: auto;
-        padding: var(--select-options-padding, 6px);
-        background: var(--select-options-bg, var(--select-surface));
+        box-sizing: border-box;
+        padding: var(--select-options-padding, var(--select-dropdown-padding, 6px));
+        background: var(--select-options-bg, var(--select-dropdown-bg, var(--select-surface)));
         
         /* Custom scrollbar styling */
         scrollbar-width: thin;
@@ -1094,17 +1699,21 @@ export class EnhancedSelect extends HTMLElement {
 
       .group-header {
         padding: var(--select-group-header-padding, 10px 12px 6px);
+        margin: var(--select-group-header-margin, 0);
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, var(--select-text-muted));
         background-color: var(--select-group-header-bg, var(--select-surface));
         text-align: var(--select-group-header-text-align, left);
-        font-size: var(--select-group-header-font-size, 11px);
+        font-size: var(--select-group-header-font-size, 0.7333em);
         text-transform: var(--select-group-header-text-transform, uppercase);
         letter-spacing: var(--select-group-header-letter-spacing, 0.08em);
         position: sticky;
         top: 0;
         z-index: 1;
+        border: var(--select-group-header-border, none);
         border-bottom: var(--select-group-header-border-bottom, none);
+        border-radius: var(--select-group-header-border-radius, 0);
+        box-shadow: var(--select-group-header-shadow, none);
       }
       
       .group-header:not(:first-child) {
@@ -1123,13 +1732,16 @@ export class EnhancedSelect extends HTMLElement {
         cursor: pointer;
         color: var(--select-option-color, var(--select-text));
         background: var(--select-option-bg, transparent);
+        border: var(--select-option-border, none);
+        text-align: var(--select-option-text-align, start);
         transition: 
           background var(--select-transition-fast),
           color var(--select-transition-fast),
+          border-color var(--select-transition-fast),
           transform var(--select-transition-fast),
           box-shadow var(--select-transition-fast);
         user-select: none;
-        font-size: var(--select-option-font-size, 14px);
+        font-size: var(--select-option-font-size, inherit);
         font-weight: var(--select-option-font-weight);
         line-height: var(--select-option-line-height, 1.5);
         border-radius: var(--select-option-border-radius, var(--select-radius-sm));
@@ -1138,12 +1750,14 @@ export class EnhancedSelect extends HTMLElement {
 
       .option:hover {
         background: var(--select-option-hover-bg, var(--select-surface-elevated));
+        border: var(--select-option-hover-border, var(--select-option-border, none));
         color: var(--select-option-hover-color, var(--select-text));
         transform: var(--select-option-hover-transform);
       }
 
       .option.selected {
         background: var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.08) 0%, rgba(15, 52, 96, 0.04) 100%));
+        border: var(--select-option-selected-border, var(--select-option-border, none));
         color: var(--select-option-selected-color, var(--select-accent));
         font-weight: var(--select-option-selected-weight, 550);
       }
@@ -1160,6 +1774,12 @@ export class EnhancedSelect extends HTMLElement {
         border-radius: var(--select-option-selected-indicator-radius);
         animation: var(--select-option-selected-indicator-animation);
       }
+
+      :host([dir="rtl"]) .option.selected::before {
+        left: auto;
+        right: var(--select-option-selected-indicator-right, var(--select-option-selected-indicator-left));
+        border-radius: var(--select-option-selected-indicator-radius-rtl, 2px 0 0 2px);
+      }
       
       @keyframes selectedIndicator {
         0% {
@@ -1173,18 +1793,32 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .option.selected:hover {
-        background: var(--select-option-selected-hover-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%));
+        background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%)));
+        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-hover-border, var(--select-option-border, none))));
+        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent)));
       }
 
       .option.active:not(.selected) {
         background: var(--select-option-active-bg, var(--select-surface-elevated));
+        color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text))));
+        border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
         outline: var(--select-option-active-outline, 2px solid rgba(15, 52, 96, 0.3));
         outline-offset: var(--select-option-active-outline-offset);
+        box-shadow: var(--select-option-active-shadow, none);
+        transform: var(--select-option-active-transform, none);
       }
 
       .option.selected.active {
         outline: var(--select-option-selected-active-outline, 2px solid rgba(15, 52, 96, 0.4));
         outline-offset: var(--select-option-selected-active-outline-offset);
+      }
+
+      .option.disabled {
+        background: var(--select-option-disabled-bg, var(--select-option-bg, transparent));
+        color: var(--select-option-disabled-color, var(--select-text-muted));
+        border: var(--select-option-disabled-border, var(--select-option-border, none));
+        opacity: var(--select-option-disabled-opacity, 0.5);
+        cursor: var(--select-option-disabled-cursor, not-allowed);
       }
 
       .option:active:not(.selected) {
@@ -1212,7 +1846,7 @@ export class EnhancedSelect extends HTMLElement {
         color: var(--select-button-color, var(--select-accent));
         border-radius: var(--select-button-border-radius, var(--select-radius-md));
         cursor: pointer;
-        font-size: var(--select-button-font-size, 13px);
+        font-size: var(--select-button-font-size, 0.8667em);
         font-weight: var(--select-button-font-weight);
         letter-spacing: var(--select-button-letter-spacing);
         transition: 
@@ -1244,7 +1878,7 @@ export class EnhancedSelect extends HTMLElement {
         text-align: center;
         color: var(--select-busy-color, var(--select-text-muted));
         background: var(--select-busy-bg, transparent);
-        font-size: var(--select-busy-font-size, 13px);
+        font-size: var(--select-busy-font-size, 0.8667em);
       }
       
       .spinner {
@@ -1265,7 +1899,7 @@ export class EnhancedSelect extends HTMLElement {
         padding: var(--select-empty-padding, 32px 24px);
         text-align: center;
         color: var(--select-empty-color, var(--select-text-muted));
-        font-size: var(--select-empty-font-size, 14px);
+        font-size: var(--select-empty-font-size, 0.9333em);
         background: var(--select-empty-bg, transparent);
         display: flex;
         flex-direction: column;
@@ -1278,7 +1912,7 @@ export class EnhancedSelect extends HTMLElement {
         padding: var(--select-searching-padding, 32px 24px);
         text-align: center;
         color: var(--select-searching-color, var(--select-accent));
-        font-size: var(--select-searching-font-size, 14px);
+        font-size: var(--select-searching-font-size, 0.9333em);
         background: var(--select-searching-bg, transparent);
         display: flex;
         flex-direction: column;
@@ -1368,24 +2002,28 @@ export class EnhancedSelect extends HTMLElement {
         --select-primary-light: #2a2a3e;
         --select-accent: #6366f1;
         --select-accent-hover: #f43f5e;
-        --select-surface: #1a1a2e;
+        --select-surface: var(--select-dark-bg, #1a1a2e);
         --select-surface-elevated: #252540;
-        --select-border: #3f3f5a;
+        --select-border: var(--select-dark-border, #3f3f5a);
         --select-border-focus: #6366f1;
-        --select-text: #f5f5f5;
+        --select-text: var(--select-dark-text, #f5f5f5);
         --select-text-muted: #9ca3af;
         --select-text-placeholder: #6b7280;
         --select-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
         --select-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
         --select-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
         --select-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
+
+        --select-dropdown-bg: var(--select-dark-dropdown-bg, var(--select-surface));
         
-        --select-option-bg: transparent;
-        --select-option-color: var(--select-text);
-        --select-option-hover-bg: var(--select-surface-elevated);
-        --select-option-hover-color: var(--select-text);
-        --select-option-selected-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%);
-        --select-option-selected-color: #a5b4fc;
+        --select-option-bg: var(--select-dark-option-bg, transparent);
+        --select-option-color: var(--select-dark-option-color, var(--select-text));
+        --select-option-hover-bg: var(--select-dark-option-hover-bg, var(--select-surface-elevated));
+        --select-option-hover-color: var(--select-dark-option-hover-color, var(--select-text));
+        --select-option-selected-bg: var(--select-dark-option-selected-bg, linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%));
+        --select-option-selected-color: var(--select-dark-option-selected-color, #a5b4fc);
+        --select-option-selected-hover-bg: var(--select-dark-option-selected-hover-bg, var(--select-option-selected-bg));
+        --select-option-selected-hover-color: var(--select-dark-option-selected-hover-color, var(--select-option-selected-color));
       }
 
       :host(.dark-mode) .input-container,
@@ -1428,7 +2066,7 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([darkmode]) .select-dropdown,
       :host-context([data-theme="dark"]) .select-dropdown,
       :host-context([theme="dark"]) .select-dropdown {
-        background: var(--select-surface);
+        background: var(--select-dropdown-bg, var(--select-surface));
         border-color: var(--select-border);
       }
 
@@ -1443,7 +2081,7 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([darkmode]) .options-container,
       :host-context([data-theme="dark"]) .options-container,
       :host-context([theme="dark"]) .options-container {
-        background: var(--select-surface);
+        background: var(--select-dropdown-bg, var(--select-surface));
         scrollbar-color: var(--select-border) transparent;
       }
 
@@ -1543,6 +2181,21 @@ export class EnhancedSelect extends HTMLElement {
       if (!this._config.enabled) return;
       if (target && target.closest('.dropdown-arrow-container')) return;
       if (target && target.closest('.clear-control-button')) return;
+      if (this._isPointerOnInputScrollbar(e)) {
+        this._suppressNextOpenClick = true;
+        return;
+      }
+
+      const isHorizontalMultiMode = this._config.selection.mode === 'multi'
+        && (this._config.multiSelectDisplay?.mode ?? 'wrap') === 'horizontal';
+      const enableHorizontalDrag = this._canUseHorizontalMultiScroll(target);
+
+      if (enableHorizontalDrag && e.button === 0) {
+        this._beginMultiScrollDrag(e);
+        this._suppressNextOpenClick = false;
+        e.preventDefault();
+        return;
+      }
       
       // If we clicked the container, but not the input itself, we must prevent default
       // otherwise the browser moves focus from our input to the body, immediately triggering blur.
@@ -1555,6 +2208,8 @@ export class EnhancedSelect extends HTMLElement {
       if (
         this._state.isOpen &&
         this._config.selection.toggleOnTriggerClick !== false &&
+        !isHorizontalMultiMode &&
+        !enableHorizontalDrag &&
         !(clickedInput && this._config.searchable)
       ) {
         this._handleClose();
@@ -1580,6 +2235,60 @@ export class EnhancedSelect extends HTMLElement {
         }
       }
     });
+
+    this._inputContainer.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null;
+      const isHorizontalMultiMode = this._config.selection.mode === 'multi'
+        && (this._config.multiSelectDisplay?.mode ?? 'wrap') === 'horizontal';
+
+      if (!this._config.enabled || !isHorizontalMultiMode) {
+        this._suppressNextOpenClick = false;
+        this._multiScrollDrag.moved = false;
+        return;
+      }
+
+      if (target && target.closest('.dropdown-arrow-container, .clear-control-button')) {
+        this._suppressNextOpenClick = false;
+        this._multiScrollDrag.moved = false;
+        return;
+      }
+
+      if (this._suppressNextOpenClick || this._multiScrollDrag.moved || this._isPointerOnInputScrollbar(e)) {
+        this._suppressNextOpenClick = false;
+        this._multiScrollDrag.moved = false;
+        return;
+      }
+
+      this._suppressNextOpenClick = false;
+      this._multiScrollDrag.moved = false;
+
+      if (!this._state.isOpen) {
+        this._handleOpen();
+      }
+
+      this._input.focus();
+    });
+
+    this._inputContent.addEventListener('pointermove', (e) => {
+      this._updateMultiScrollDrag(e);
+    });
+
+    this._inputContent.addEventListener('pointerup', (e) => {
+      this._endMultiScrollDrag(e.pointerId);
+    });
+
+    this._inputContent.addEventListener('pointercancel', (e) => {
+      this._endMultiScrollDrag(e.pointerId);
+    });
+
+    this._inputContent.addEventListener('wheel', (e) => {
+      if (
+        this._config.selection.mode === 'multi'
+        && (this._config.multiSelectDisplay?.mode ?? 'wrap') === 'horizontal'
+      ) {
+        e.preventDefault();
+      }
+    }, { passive: false });
     
     // Input container click - prevent event from reaching document listener
     this._container.addEventListener('click', (e) => {
@@ -1775,12 +2484,15 @@ export class EnhancedSelect extends HTMLElement {
 
     this._markOpenStart();
     this._state.isOpen = true;
+    this.setAttribute('data-open', 'true');
+    this._liftStackingAncestors();
     this._dropdown.style.display = 'block';
     this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
 
     // Render options when opening
     this._renderOptions();
+    this._syncDropdownPlacement();
     this._setInitialActiveOption();
 
     this._emit('open', {});
@@ -1803,7 +2515,10 @@ export class EnhancedSelect extends HTMLElement {
     if (!this._state.isOpen) return;
 
     this._state.isOpen = false;
+    this.removeAttribute('data-open');
+    this._restoreLiftedAncestors();
     this._dropdown.style.display = 'none';
+    this._dropdown.setAttribute('data-placement', this._resolvedDropdownPlacement);
     this._input.setAttribute('aria-expanded', 'false');
     this._input.removeAttribute('aria-activedescendant');
     this._updateArrowRotation();
@@ -1815,12 +2530,74 @@ export class EnhancedSelect extends HTMLElement {
 
   private _updateDropdownVisibility(): void {
     if (this._state.isOpen) {
+      this.setAttribute('data-open', 'true');
+      this._liftStackingAncestors();
       this._dropdown.style.display = 'block';
+      this._syncDropdownPlacement();
       this._input.setAttribute('aria-expanded', 'true');
     } else {
+      this.removeAttribute('data-open');
+      this._restoreLiftedAncestors();
       this._dropdown.style.display = 'none';
       this._input.setAttribute('aria-expanded', 'false');
     }
+  }
+
+  private _liftStackingAncestors(): void {
+    this._restoreLiftedAncestors();
+
+    let ancestor = this.parentElement;
+    while (ancestor && ancestor !== document.body) {
+      if (this._createsStackingContext(ancestor)) {
+        const hadMarker = ancestor.hasAttribute('data-smilodon-open-ancestor');
+        this._liftedAncestors.push({
+          element: ancestor,
+          position: ancestor.style.position,
+          zIndex: ancestor.style.zIndex,
+          hadMarker,
+        });
+
+        if (getComputedStyle(ancestor).position === 'static') {
+          ancestor.style.position = 'relative';
+        }
+
+        ancestor.style.zIndex = 'var(--select-ancestor-open-z-index, var(--select-host-open-z-index, var(--select-dropdown-z-index, 1000)))';
+        ancestor.setAttribute('data-smilodon-open-ancestor', 'true');
+      }
+
+      ancestor = ancestor.parentElement;
+    }
+  }
+
+  private _restoreLiftedAncestors(): void {
+    for (const lifted of this._liftedAncestors) {
+      lifted.element.style.position = lifted.position;
+      lifted.element.style.zIndex = lifted.zIndex;
+
+      if (!lifted.hadMarker) {
+        lifted.element.removeAttribute('data-smilodon-open-ancestor');
+      }
+    }
+
+    this._liftedAncestors = [];
+  }
+
+  private _createsStackingContext(element: HTMLElement): boolean {
+    const style = getComputedStyle(element);
+
+    if (style.position === 'fixed' || style.position === 'sticky') return true;
+    if (style.zIndex !== 'auto' && style.position !== 'static') return true;
+    if (style.opacity !== '1') return true;
+    if (style.transform !== 'none') return true;
+    if (style.filter !== 'none') return true;
+    if ((style as CSSStyleDeclaration & { backdropFilter?: string }).backdropFilter && (style as CSSStyleDeclaration & { backdropFilter?: string }).backdropFilter !== 'none') return true;
+    if (style.perspective !== 'none') return true;
+    if (style.mixBlendMode !== 'normal') return true;
+    if (style.isolation === 'isolate') return true;
+    if (style.contain.includes('paint') || style.contain.includes('layout')) return true;
+    if (style.willChange.includes('transform') || style.willChange.includes('opacity') || style.willChange.includes('filter')) return true;
+
+    return false;
   }
 
   private _updateArrowRotation(): void {
@@ -2350,7 +3127,7 @@ export class EnhancedSelect extends HTMLElement {
       this._input.value = '';
       this._input.placeholder = this._config.placeholder || 'Select an option...';
       // Clear any badges
-      const existingBadges = this._inputContainer.querySelectorAll('.selection-badge');
+      const existingBadges = this._inputContent.querySelectorAll('.selection-badge');
       existingBadges.forEach(badge => badge.remove());
     } else if (this._config.selection.mode === 'single') {
       this._input.value = getLabel(selectedItems[0]);
@@ -2360,7 +3137,7 @@ export class EnhancedSelect extends HTMLElement {
       this._input.placeholder = '';
       
       // Clear existing badges
-      const existingBadges = this._inputContainer.querySelectorAll('.selection-badge');
+      const existingBadges = this._inputContent.querySelectorAll('.selection-badge');
       existingBadges.forEach(badge => badge.remove());
       
       // Create badges for each selected item
@@ -2368,10 +3145,17 @@ export class EnhancedSelect extends HTMLElement {
       selectedEntries.forEach(([index, item]) => {
         const badge = document.createElement('span');
         badge.className = 'selection-badge';
+        if (this._config.styles.classNames?.badge) {
+          badge.classList.add(...this._config.styles.classNames.badge.split(' ').filter(Boolean));
+        }
         badge.setAttribute('part', 'chip');
 
         const badgeLabel = document.createElement('span');
         badgeLabel.className = 'selection-badge-label';
+        if (this._config.styles.classNames?.badgeLabel) {
+          badgeLabel.classList.add(...this._config.styles.classNames.badgeLabel.split(' ').filter(Boolean));
+        }
+        badgeLabel.setAttribute('part', 'chip-label');
         badgeLabel.textContent = getLabel(item);
         badge.appendChild(badgeLabel);
         
@@ -2380,9 +3164,21 @@ export class EnhancedSelect extends HTMLElement {
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.className = 'badge-remove';
+          if (this._config.styles.classNames?.removeButton) {
+            removeBtn.classList.add(...this._config.styles.classNames.removeButton.split(' ').filter(Boolean));
+          }
+          if (this._config.styles.classNames?.badgeRemove) {
+            removeBtn.classList.add(...this._config.styles.classNames.badgeRemove.split(' ').filter(Boolean));
+          }
           removeBtn.setAttribute('part', 'chip-remove');
-          removeBtn.innerHTML = '×';
           removeBtn.setAttribute('aria-label', `Remove ${getLabel(item)}`);
+
+          const removeIcon = document.createElement('span');
+          removeIcon.className = 'badge-remove-icon';
+          removeIcon.setAttribute('part', 'chip-remove-icon');
+          this._setIconContent(removeIcon, this._config.selection.removeButtonIcon, '×');
+          removeBtn.appendChild(removeIcon);
+
           removeBtn.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -2395,7 +3191,7 @@ export class EnhancedSelect extends HTMLElement {
 
           badge.appendChild(removeBtn);
         }
-        this._inputContainer.insertBefore(badge, this._input);
+        this._inputContent.insertBefore(badge, this._input);
       });
     }
 
@@ -2937,6 +3733,8 @@ export class EnhancedSelect extends HTMLElement {
       this._clearControlIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     }
 
+    this._syncStyleConfigVariables();
+
     if (this._dropdown) {
       if (this._config.selection.mode === 'multi') {
         this._dropdown.setAttribute('aria-multiselectable', 'true');
@@ -2945,12 +3743,16 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
 
+    this._syncDirectionConfig();
     this._syncInputContainerMode();
+    this._syncMultiSelectDisplayConfig();
+    this._syncDropdownPlacement();
     
     // Re-initialize observers in case infinite scroll was enabled/disabled
     this._initializeObservers();
 
     this._syncClearControlState();
+    this._updateInputDisplay();
     
     this._renderOptions();
   }
@@ -3134,6 +3936,9 @@ export class EnhancedSelect extends HTMLElement {
         }
 
         header.classList.add('group-header');
+        if (this._config.styles.classNames?.groupHeader) {
+          header.classList.add(...this._config.styles.classNames.groupHeader.split(' ').filter(Boolean));
+        }
         header.setAttribute('part', 'group-header');
         this._optionsContainer.appendChild(header);
 
@@ -3282,6 +4087,7 @@ export class EnhancedSelect extends HTMLElement {
         disabled: isDisabled,
         id: optionId,
       });
+      optionElement.setAttribute('dir', this._config.direction ?? 'ltr');
       targetContainer.appendChild(optionElement);
       return;
     }
@@ -3296,8 +4102,24 @@ export class EnhancedSelect extends HTMLElement {
       getValue,
       getLabel,
       showRemoveButton: this._config.selection.mode === 'multi' && this._config.selection.showRemoveButton,
+      removeButtonIcon: this._config.selection.removeButtonIcon,
       classMap: this.classMap,
+      className: this._config.styles.classNames?.option,
     });
+
+    if (this._config.styles.classNames?.option) {
+      option.classList.add(...this._config.styles.classNames.option.split(' ').filter(Boolean));
+    }
+    option.setAttribute('dir', this._config.direction ?? 'ltr');
+    if (isSelected && this._config.styles.classNames?.selectedOption) {
+      option.classList.add(...this._config.styles.classNames.selectedOption.split(' ').filter(Boolean));
+    }
+    if (this._state.activeIndex === index && this._config.styles.classNames?.activeOption) {
+      option.classList.add(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
+    }
+    if (isDisabled && this._config.styles.classNames?.disabledOption) {
+      option.classList.add(...this._config.styles.classNames.disabledOption.split(' ').filter(Boolean));
+    }
 
     // Valid part attribute on the web component host itself
     option.setAttribute('part', 'option');
@@ -3348,6 +4170,9 @@ export class EnhancedSelect extends HTMLElement {
 
     // Add both semantic namespaced classes and the legacy internal classes that CSS uses
     optionEl.classList.add('smilodon-option', 'option');
+    if (this._config.styles.classNames?.option) {
+      optionEl.classList.add(...this._config.styles.classNames.option.split(' ').filter(Boolean));
+    }
     
     // Toggle state classes using classMap if available
     const isSelected = meta.selected;
@@ -3362,25 +4187,43 @@ export class EnhancedSelect extends HTMLElement {
     if (isSelected) {
       optionEl.classList.add(...selectedClasses);
       optionEl.classList.add('smilodon-option--selected');
+      if (this._config.styles.classNames?.selectedOption) {
+        optionEl.classList.add(...this._config.styles.classNames.selectedOption.split(' ').filter(Boolean));
+      }
     } else {
       optionEl.classList.remove(...selectedClasses);
       optionEl.classList.remove('smilodon-option--selected');
+      if (this._config.styles.classNames?.selectedOption) {
+        optionEl.classList.remove(...this._config.styles.classNames.selectedOption.split(' ').filter(Boolean));
+      }
     }
 
     if (isActive) {
       optionEl.classList.add(...activeClasses);
       optionEl.classList.add('smilodon-option--active');
+      if (this._config.styles.classNames?.activeOption) {
+        optionEl.classList.add(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
+      }
     } else {
       optionEl.classList.remove(...activeClasses);
       optionEl.classList.remove('smilodon-option--active');
+      if (this._config.styles.classNames?.activeOption) {
+        optionEl.classList.remove(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
+      }
     }
 
     if (isDisabled) {
       optionEl.classList.add(...disabledClasses);
       optionEl.classList.add('smilodon-option--disabled');
+      if (this._config.styles.classNames?.disabledOption) {
+        optionEl.classList.add(...this._config.styles.classNames.disabledOption.split(' ').filter(Boolean));
+      }
     } else {
       optionEl.classList.remove(...disabledClasses);
       optionEl.classList.remove('smilodon-option--disabled');
+      if (this._config.styles.classNames?.disabledOption) {
+        optionEl.classList.remove(...this._config.styles.classNames.disabledOption.split(' ').filter(Boolean));
+      }
     }
 
     // Data Attributes Contract

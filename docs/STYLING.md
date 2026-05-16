@@ -88,6 +88,219 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
    - Test that **aria-live** area is properly announced for search/loading/selections.
    - Run 2026 tools like axe DevTools or Lighthouse (accessibility tab) on the playground and aim for zero violations.
 
+4. **Dark mode token compatibility**
+
+  Smilodon uses the shared `--select-*` token surface for dark mode, but also accepts these dark aliases in dark mode contexts for compatibility:
+
+  - `--select-dark-bg`
+  - `--select-dark-text`
+  - `--select-dark-border`
+  - `--select-dark-dropdown-bg`
+  - `--select-dark-option-color`
+  - `--select-dark-option-bg`
+  - `--select-dark-option-hover-bg`
+  - `--select-dark-option-hover-color`
+  - `--select-dark-option-selected-bg`
+  - `--select-dark-option-selected-color`
+  - `--select-dark-option-selected-hover-bg`
+  - `--select-dark-option-selected-hover-color`
+
+5. **Selected-value alignment**
+
+  You can control alignment in both places that users visually inspect most often:
+
+  - the **selected value inside the closed input shell**
+  - the **option labels inside the open dropdown list**
+
+  This makes it easy to switch between left/start, centered, and right/end layouts and verify that the closed state and open state stay visually aligned.
+
+  Primary tokens:
+
+  - `--select-input-text-align`: `start | center | end | left | right`
+  - `--select-input-justify-content`: useful for multi-select badge rows and visible selection layout
+  - `--select-option-text-align`: align option labels inside the dropdown
+
+  Supporting layout tokens:
+
+  - `--select-input-align-items`
+  - `--select-input-align-content`
+  - `--select-input-align-self`
+
+  Recommended inspection workflow:
+
+  1. switch alignment to `center` or `right`
+  2. check the selected value while the control is closed
+  3. open the dropdown and confirm the option rows follow the same visual alignment
+  4. if you are in multi-select mode, also inspect chip-row alignment with `--select-input-justify-content`
+
+  Example:
+
+  ```css
+  enhanced-select.align-center {
+    --select-input-text-align: center;
+    --select-option-text-align: center;
+  }
+
+  enhanced-select.align-right {
+    --select-input-text-align: right;
+    --select-option-text-align: right;
+  }
+  ```
+
+  Runtime config example:
+
+  ```typescript
+  select.updateConfig({
+    styles: {
+      input: {
+        textAlign: 'center',
+      },
+      option: {
+        textAlign: 'center',
+      },
+    },
+  });
+  ```
+
+  For grouped dropdowns, you can align headers independently with `--select-group-header-text-align` or `styles.groupHeader.textAlign`.
+
+6. **Multi-select height and scroll direction**
+
+  Multi-select chip rows can be configured for wrapped, vertical-scroll, or horizontal-scroll layouts.
+
+  Useful hooks:
+
+  - `--select-multi-input-max-height`
+  - `--select-multi-input-overflow-x`
+  - `--select-multi-input-overflow-y`
+  - `--select-multi-input-flex-wrap`
+  - `--select-multi-input-horizontal-cursor`
+
+7. **Dropdown placement mode**
+
+  The dropdown can now open in three placement modes:
+
+  - `bottom` — always open below the input shell
+  - `top` — always open above the input shell
+  - `auto` — open below when there is enough room below; otherwise open above
+
+  This can be configured globally or per select instance.
+
+  Per-instance example:
+
+  ```typescript
+  select.updateConfig({
+    dropdownPlacement: {
+      mode: 'auto',
+    },
+  });
+  ```
+
+  Global default example:
+
+  ```typescript
+  configureSelect({
+    dropdownPlacement: {
+      mode: 'top',
+    },
+  });
+  ```
+
+  Related tokens:
+
+  - `--select-dropdown-top`
+  - `--select-dropdown-bottom`
+  - `--select-dropdown-transform-origin`
+  - `--select-dropdown-top-transform-origin`
+  - `--select-dropdown-enter-from-transform`
+  - `--select-dropdown-top-enter-from-transform`
+
+  In `auto` mode, Smilodon checks the available viewport space below the select. If the dropdown's needed height fits below, it opens below; otherwise it opens above.
+
+8. **Direction: LTR / RTL**
+
+  The select now supports both `ltr` and `rtl` direction modes.
+
+  Default behavior:
+
+  - global default is `ltr`
+  - consumers can override direction globally
+  - consumers can also override direction per select instance
+
+  Global example:
+
+  ```typescript
+  configureSelect({
+    direction: 'rtl',
+  });
+  ```
+
+  Per-instance example:
+
+  ```typescript
+  select.updateConfig({
+    direction: 'rtl',
+  });
+  ```
+
+  What changes automatically in RTL:
+
+  - the input shell direction
+  - arrow and clear-control anchoring
+  - separator placement
+  - selected indicator stripe position in options
+  - chip remove-button spacing
+
+  Useful related hooks:
+
+  - `--select-input-padding-rtl`
+  - `--select-input-padding-with-clear-rtl`
+  - `--select-arrow-border-radius-rtl`
+  - `--select-option-selected-indicator-right`
+  - `--select-option-selected-indicator-radius-rtl`
+
+  Example horizontal chip scroller:
+
+  ```css
+  enhanced-select.tags-scroll {
+    --select-multi-input-max-height: 64px;
+    --select-multi-input-flex-wrap: nowrap;
+    --select-multi-input-overflow-x: auto;
+    --select-multi-input-overflow-y: hidden;
+  }
+  ```
+
+7. **Dropdown layering priority**
+
+  If surrounding layout elements overlap the open listbox, control stacking with:
+
+  - `--select-host-z-index`: base host stacking level
+  - `--select-host-open-z-index`: host stacking level while open
+  - `--select-ancestor-open-z-index`: stacking level for lifted ancestor stacking contexts while open
+  - `--select-dropdown-z-index`: dropdown panel stacking level
+
+  Example:
+
+  ```css
+  enhanced-select {
+    --select-host-z-index: 1;
+    --select-host-open-z-index: 4000;
+    --select-ancestor-open-z-index: 4000;
+    --select-dropdown-z-index: 4001;
+  }
+  ```
+
+8. **CSS Modules targeting reminder**
+
+  If you style the host with CSS Modules, make sure selectors targeting `enhanced-select` are global so they can match the real custom-element tag:
+
+  ```css
+  :global(enhanced-select.dark-mode) {
+    --select-dark-bg: #1f2937;
+    --select-dark-text: #f9fafb;
+  }
+  ```
+
 
 ---
 
@@ -166,11 +379,19 @@ Useful variables:
 - `--select-badge-color`
 - `--select-badge-border`
 - `--select-badge-border-radius`
+- `--select-badge-width`
+- `--select-badge-height`
+- `--select-badge-min-width`
 - `--select-badge-padding`
+- `--select-badge-margin`
 - `--select-badge-font-size`
 - `--select-badge-shadow`
+- `--select-badge-hover-bg`
+- `--select-badge-active-bg`
 - `--select-badge-remove-bg`
 - `--select-badge-remove-color`
+- `--select-badge-remove-size`
+- `--select-badge-remove-icon-size`
 - `--select-badge-remove-hover-bg`
 - `--select-badge-remove-focus-outline`
 - `--select-multi-input-min-width`
@@ -179,8 +400,68 @@ Motion-related chip hooks are also available:
 
 - `--select-badge-animation`
 - `--select-badge-hover-transform`
+- `--select-badge-active-transform`
 - `--select-badge-remove-hover-transform`
 - `--select-badge-remove-active-transform`
+
+You can also replace the default chip remove mark with custom markup:
+
+```typescript
+select.updateConfig({
+  selection: {
+    removeButtonIcon: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>'
+  }
+});
+```
+
+### Runtime style config for badges and groups
+
+In addition to CSS variables, the runtime `styles` config now supports these sections:
+
+- `badge`
+- `badgeHover`
+- `badgeActive`
+- `badgeLabel`
+- `badgeRemove`
+- `badgeRemoveHover`
+- `badgeRemoveActive`
+- `groupHeader`
+- `activeOption`
+
+Example:
+
+```typescript
+select.updateConfig({
+  styles: {
+    badge: {
+      borderRadius: '8px',
+      height: '32px',
+      background: '#0f172a',
+      color: '#fff',
+      border: '1px solid #334155'
+    },
+    badgeRemove: {
+      width: '20px',
+      height: '20px',
+      fontSize: '12px'
+    },
+    groupHeader: {
+      textAlign: 'center',
+      color: '#7c3aed',
+      margin: '6px 0 0',
+      borderBottom: '1px solid #e5e7eb'
+    },
+    option: {
+      border: '1px solid #e2e8f0',
+      borderRadius: '10px'
+    },
+    activeOption: {
+      border: '1px solid #6366f1',
+      outline: '2px solid rgba(99, 102, 241, 0.25)'
+    }
+  }
+});
+```
 
 See [docs/STYLING-TOKENS.md](./STYLING-TOKENS.md#selection-badges--chips) for the full chip table.
 

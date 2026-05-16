@@ -19,6 +19,25 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - No unreleased changes yet.
 
+## [1.6.0] - 2026-05-16
+
+### Added
+- **Multi-select display controls:** added configurable `multiSelectDisplay` modes for `wrap`, `vertical`, and `horizontal` chip layouts, including runtime max-height, overflow, and drag-scroll behavior.
+- **Dropdown placement controls:** added `dropdownPlacement.mode` with `bottom`, `top`, and `auto` placement support for both global defaults and per-instance configuration.
+- **Direction controls:** added first-class `direction` support with `ltr` and `rtl` modes, available globally and per instance.
+- **Expanded styling/config hooks:** added runtime style sections for `badge`, `badgeHover`, `badgeActive`, `badgeLabel`, `badgeRemove`, `badgeRemoveHover`, `badgeRemoveActive`, `groupHeader`, and `activeOption`, plus `selection.removeButtonIcon` for custom chip/remove glyphs.
+
+### Changed
+- **Release alignment:** versioned `@smilodon/core` and the maintained adapters to `1.6.0` for a single release line across the monorepo.
+- **Typography inheritance:** updated the core select shell and built-in option renderer to inherit surrounding project font family, font size, and line height more reliably.
+- **Documentation refresh:** updated the shared docs, package guides, and API reference to cover alignment inspection, direction setup, dropdown placement, chip styling, and font compatibility behavior.
+
+### Fixed
+- **Multi-select interaction stability:** prevented accidental dropdown opening while clicking scrollbars or dragging horizontally in chip scrollers.
+- **Horizontal chip layout stability:** kept the arrow/clear-control action area anchored while chip content scrolls beneath it.
+- **RTL layout mirroring:** fixed separator placement, clear-control anchoring, selected-indicator side, chip remove spacing, and option affordance spacing for RTL layouts.
+- **Font compatibility:** removed hard-coded primary typography defaults from the select shell so embedded usage aligns with host templates across consuming apps.
+
 ## [1.5.0] - 2026-05-10
 
 ### Added

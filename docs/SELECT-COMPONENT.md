@@ -352,20 +352,105 @@ Override global settings per component:
       option: {
         padding: '12px 16px',
         fontSize: '16px',
+        border: '1px solid #e5e7eb',
+        borderRadius: '10px',
       },
       selectedOption: {
         backgroundColor: '#4caf50',
         color: 'white',
       },
+      activeOption: {
+        border: '1px solid #2563eb',
+        outline: '2px solid rgba(37, 99, 235, 0.2)',
+      },
+      badge: {
+        height: '32px',
+        borderRadius: '10px',
+        background: '#0f172a',
+        color: '#fff',
+      },
+      badgeRemove: {
+        width: '20px',
+        height: '20px',
+        fontSize: '12px',
+      },
+      groupHeader: {
+        textAlign: 'center',
+        color: '#7c3aed',
+        margin: '6px 0 0',
+      },
       classNames: {
         container: 'my-select',
         dropdown: 'my-dropdown',
         option: 'my-option',
+        groupHeader: 'my-group-header',
+        badge: 'my-chip',
+        badgeRemove: 'my-chip-remove',
       },
+    },
+    selection: {
+      removeButtonIcon: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>',
     },
   }}
 />
 ```
+
+The latest styling surface also supports dedicated chip parts (`chip`, `chip-label`, `chip-remove`, `chip-remove-icon`), richer `--select-badge-*` sizing/state tokens, `--select-group-header-*` layout tokens, and `--select-option-*` border/radius/active-state tokens.
+
+For alignment-specific styling, switch and inspect both of these together:
+
+- the selected value in the closed input with `--select-input-text-align`
+- the dropdown option labels with `--select-option-text-align`
+
+If needed, also align grouped headers with `--select-group-header-text-align`.
+
+### Dropdown placement
+
+The option box can open in three modes:
+
+- `bottom` (default)
+- `top`
+- `auto`
+
+Per-instance example:
+
+```tsx
+<Select
+  items={items}
+  config={{
+    dropdownPlacement: {
+      mode: 'auto',
+    },
+  }}
+/>
+```
+
+In `auto` mode, the component checks whether the dropdown has enough room below the select. If not, it opens above instead.
+
+### Direction
+
+The select supports both `ltr` and `rtl` directions. The shared default is `ltr`.
+
+Global default:
+
+```ts
+configureSelect({
+  direction: 'rtl',
+});
+```
+
+Per-instance example:
+
+```tsx
+<Select
+  items={items}
+  config={{
+    direction: 'rtl',
+  }}
+/>
+```
+
+This updates the shell direction, arrow/clear-control anchoring, separator side, and selected indicator side in the dropdown. The component also syncs the host `dir` attribute automatically.
 
 ## Advanced Scenarios
 

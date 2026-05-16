@@ -22,6 +22,99 @@ Complete API documentation for `@smilodon` packages.
 
 ## Core Package
 
+### Shared runtime styling and selection config
+
+The current shared runtime exposes styling and chip/remove-button controls through `GlobalSelectConfig`, especially `selection` and `styles`.
+
+#### `selection`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `mode` | `'single' \| 'multi'` | Select mode. |
+| `showRemoveButton` | `boolean` | Shows chip remove buttons in multi-select. |
+| `removeButtonIcon` | `string` | Custom text or SVG markup used for chip and selected-option remove buttons. |
+| `closeOnSelect` | `boolean` | Closes after select in single mode. |
+| `toggleOnTriggerClick` | `boolean` | Allows trigger clicks to toggle open/closed. |
+
+#### `dropdownPlacement`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `mode` | `'bottom' \| 'top' \| 'auto'` | Controls whether the dropdown opens below, above, or automatically based on available room below the select. |
+
+#### `direction`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `direction` | `'ltr' \| 'rtl'` | Controls shell and dropdown directionality. Defaults to `ltr`, but can be configured globally or per instance. |
+
+Set it globally:
+
+```ts
+configureSelect({
+  direction: 'rtl',
+});
+```
+
+Set it per instance:
+
+```ts
+select.updateConfig({
+  direction: 'rtl',
+});
+```
+
+#### `styles`
+
+In addition to `container`, `dropdown`, `option`, `selectedOption`, `hoverOption`, and `input`, the latest runtime styling surface includes:
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `activeOption` | `Partial<CSSStyleDeclaration>` | Keyboard-active option styling. |
+| `badge` | `Partial<CSSStyleDeclaration>` | Multi-select chip sizing, spacing, border, radius, background, and typography. |
+| `badgeHover` | `Partial<CSSStyleDeclaration>` | Chip hover-state styling. |
+| `badgeActive` | `Partial<CSSStyleDeclaration>` | Chip pressed-state styling. |
+| `badgeLabel` | `Partial<CSSStyleDeclaration>` | Chip label typography and alignment. |
+| `badgeRemove` | `Partial<CSSStyleDeclaration>` | Chip remove-button size, radius, color, and border. |
+| `badgeRemoveHover` | `Partial<CSSStyleDeclaration>` | Chip remove-button hover styling. |
+| `badgeRemoveActive` | `Partial<CSSStyleDeclaration>` | Chip remove-button pressed styling. |
+| `groupHeader` | `Partial<CSSStyleDeclaration>` | Group-header spacing, alignment, border, radius, shadow, and color. |
+
+#### `styles.classNames`
+
+Additional class-name hooks now include:
+
+- `activeOption`
+- `badge`
+- `badgeLabel`
+- `badgeRemove`
+- `groupHeader`
+
+#### Related CSS parts and tokens
+
+- Parts: `chip`, `chip-label`, `chip-remove`, `chip-remove-icon`, `group-header`, `option`
+- Token families: `--select-badge-*`, `--select-group-header-*`, `--select-option-*`
+
+Alignment-related tokens commonly used together:
+
+- `--select-input-text-align` for the visible selected value in the closed input shell
+- `--select-option-text-align` for dropdown option labels
+- `--select-input-justify-content` for visible row alignment in multi-select layouts
+- `--select-group-header-text-align` for grouped dropdown headers
+
+Placement-related runtime config:
+
+- `dropdownPlacement.mode = 'bottom'`
+- `dropdownPlacement.mode = 'top'`
+- `dropdownPlacement.mode = 'auto'`
+
+Direction-related runtime config:
+
+- `direction = 'ltr'`
+- `direction = 'rtl'`
+
+For the exhaustive latest token inventory, see [STYLING-TOKENS.md](./STYLING-TOKENS.md). For usage patterns and examples, see [STYLING.md](./STYLING.md).
+
 ### NativeSelectElement
 
 Web Component providing the base select functionality.

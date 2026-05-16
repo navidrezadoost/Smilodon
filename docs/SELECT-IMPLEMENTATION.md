@@ -260,15 +260,32 @@ select.updateConfig({
 import { configureSelect } from '@smilodon/core';
 
 configureSelect({
-  selection: { mode: 'multi' },
+  selection: {
+    mode: 'multi',
+    removeButtonIcon: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>',
+  },
+  dropdownPlacement: {
+    mode: 'auto',
+  },
+  direction: 'ltr',
   scrollToSelected: { enabled: true },
   busyBucket: { enabled: true },
   styles: {
     container: { width: '300px' },
+    badge: { height: '32px', borderRadius: '10px' },
+    badgeRemove: { width: '20px', height: '20px' },
+    groupHeader: { color: '#7c3aed', textAlign: 'center' },
+    activeOption: { border: '1px solid #2563eb' },
     classNames: { container: 'my-select' },
   },
 });
 ```
+
+The current implementation also exposes dedicated styling controls for badge sizing/state, remove-button icons, group-header layout, and option border/radius/active/disabled states. See [STYLING.md](./STYLING.md) and [STYLING-TOKENS.md](./STYLING-TOKENS.md) for the full latest matrix.
+
+Dropdown placement is also configurable globally or per instance through `dropdownPlacement.mode`, with `bottom`, `top`, and `auto` modes.
+
+Direction is configurable globally or per instance through `direction`, with `ltr` and `rtl` modes.
 
 ### Component Override
 ```typescript

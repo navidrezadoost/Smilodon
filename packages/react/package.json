@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "React adapter for @smilodon/core",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,7 +23,7 @@
     "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.5.0",
+    "@smilodon/core": "^1.6.0",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   }

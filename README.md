@@ -14,7 +14,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version `1.5.0` is the current aligned release line for the core package and the maintained adapters.
+Version `1.6.0` is the current aligned release line for the core package and the maintained adapters.
 
 ---
 
@@ -97,7 +97,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ### Intentionally not provided
 
-- Angular adapter support is not part of the maintained `1.5.0` package line.
+- Angular adapter support is not part of the maintained `1.6.0` package line.
 - Legacy browser shims are not a first-class target.
 - Server-rendered HTML replacement for the interactive control is not the primary design goal; adapters focus on safe client hydration around the custom element.
 
@@ -426,6 +426,37 @@ Smilodon uses a shared styling surface so every adapter can be themed in the sam
 - custom renderers for rich option content
 - class-based state mapping where adapters expose it
 
+Recent styling additions are now documented across the shared docs set, including:
+
+- alignment controls for the closed selected value and the open dropdown option list
+- dropdown placement modes: `bottom`, `top`, and `auto`
+- direction support with `ltr` / `rtl` at both global and per-instance levels
+- multi-select chip sizing, spacing, hover, and active states
+- chip remove button sizing and custom SVG/text icons via `selection.removeButtonIcon`
+- group-header spacing, alignment, color, border, radius, and shadow hooks
+- option border, radius, hover, active, selected, and disabled state hooks
+- runtime `styles` config sections such as `badge`, `badgeRemove`, `badgeLabel`, `groupHeader`, and `activeOption`
+
+### Setting direction
+
+The shared default direction is `ltr`. Switch it globally or per instance with `direction`.
+
+Global:
+
+```ts
+configureSelect({
+  direction: 'rtl',
+});
+```
+
+Per instance:
+
+```ts
+select.updateConfig({
+  direction: 'rtl',
+});
+```
+
 ### Styling support summary
 
 | Need | Smilodon support |
@@ -451,11 +482,14 @@ Smilodon is designed to work with browser styling systems rather than compete wi
 
 For exact recipes and browser-oriented examples, see [docs/CSS-FRAMEWORK-COMPATIBILITY.md](./docs/CSS-FRAMEWORK-COMPATIBILITY.md).
 
+Dropdown placement can be configured globally or per instance through `dropdownPlacement.mode` with `bottom`, `top`, or `auto`.
+
 Reference docs:
 
 - [docs/STYLING.md](./docs/STYLING.md)
 - [docs/STYLING-TOKENS.md](./docs/STYLING-TOKENS.md)
 - [docs/STYLING-EXAMPLES.md](./docs/STYLING-EXAMPLES.md)
+- [docs/API-REFERENCE.md](./docs/API-REFERENCE.md#shared-runtime-styling-and-selection-config)
 - [docs/CSS-FRAMEWORK-COMPATIBILITY.md](./docs/CSS-FRAMEWORK-COMPATIBILITY.md)
 - [docs/BUILD-TOOL-INTEGRATION.md](./docs/BUILD-TOOL-INTEGRATION.md)
 

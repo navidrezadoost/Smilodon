@@ -750,6 +750,85 @@ enhanced-select {
 **Gradient Dropdown + Hover/Selected States**
 If your dropdown uses a gradient background (for example via `--select-dropdown-bg`), option hover/selected colors still work as expected. The component intentionally uses the `background` shorthand for hover/selected option states so any inherited `background-image` layers are cleared correctly.
 
+**Closed Input Value + Dropdown Option Alignment**
+You can switch alignment and inspect both the selected value in the closed input and the dropdown options with matching tokens:
+
+```css
+enhanced-select.align-center {
+  --select-input-text-align: center;
+  --select-option-text-align: center;
+}
+
+enhanced-select.align-right {
+  --select-input-text-align: right;
+  --select-option-text-align: right;
+}
+```
+
+Useful related hooks:
+
+- `--select-input-text-align`
+- `--select-input-justify-content`
+- `--select-option-text-align`
+- `--select-group-header-text-align`
+
+This is especially useful when testing centered or right-aligned UI layouts, because you can verify the closed state and open dropdown state together.
+
+**Dropdown Placement: Bottom / Top / Automatic**
+The dropdown can be opened in three modes:
+
+- `bottom` — always below the select
+- `top` — always above the select
+- `auto` — below if there is enough room below, otherwise above
+
+Per-instance:
+
+```ts
+select.updateConfig({
+  dropdownPlacement: {
+    mode: 'auto',
+  },
+});
+```
+
+Global default:
+
+```ts
+configureSelect({
+  dropdownPlacement: {
+    mode: 'top',
+  },
+});
+```
+
+Related styling hooks:
+
+- `--select-dropdown-top`
+- `--select-dropdown-bottom`
+- `--select-dropdown-transform-origin`
+- `--select-dropdown-top-transform-origin`
+
+**Direction: LTR / RTL**
+The select supports both `ltr` and `rtl` directions. The default is `ltr`.
+
+Global default:
+
+```ts
+configureSelect({
+  direction: 'rtl',
+});
+```
+
+Per-instance:
+
+```ts
+select.updateConfig({
+  direction: 'rtl',
+});
+```
+
+RTL support mirrors the shell and dropdown layout, including arrow placement, clear control placement, separator side, selected indicator side, and chip remove spacing. The host `dir` attribute is kept in sync automatically.
+
 **Badge Remove/Delete Button (Multi-Select)**
 The × button that removes selected items in multi-select mode is fully customizable:
 
@@ -762,16 +841,45 @@ enhanced-select {
   /* Customize badge appearance */
   --select-badge-bg: #10b981;              /* Badge background */
   --select-badge-color: white;             /* Badge text color */
+  --select-badge-width: auto;              /* Explicit badge width */
+  --select-badge-height: 32px;             /* Explicit badge height */
   --select-badge-padding: 6px 10px;        /* Badge spacing */
+  --select-badge-margin: 4px;              /* Badge outer spacing */
+  --select-badge-border-radius: 10px;      /* Badge radius */
   
   /* Customize the × (remove/delete) button */
   --select-badge-remove-size: 18px;        /* Button size */
+  --select-badge-remove-icon-size: 12px;   /* Icon glyph / SVG size */
   --select-badge-remove-bg: rgba(255, 255, 255, 0.3);  /* Button background */
   --select-badge-remove-color: white;      /* × symbol color */
   --select-badge-remove-font-size: 18px;   /* × symbol size */
   --select-badge-remove-hover-bg: rgba(255, 255, 255, 0.6);  /* Hover state */
 }
 ```
+
+You can also replace the default `×` with custom SVG or text:
+
+```ts
+select.updateConfig({
+  selection: {
+    removeButtonIcon: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>'
+  }
+});
+```
+
+Runtime style config now also supports higher-level sections for:
+
+- `badge`
+- `badgeHover`
+- `badgeActive`
+- `badgeLabel`
+- `badgeRemove`
+- `badgeRemoveHover`
+- `badgeRemoveActive`
+- `groupHeader`
+- `activeOption`
+
+This means badge size, badge radius, remove-button size, group-header layout, and active-option border/radius can be controlled either with CSS tokens or with `updateConfig({ styles: ... })`.
 
 #### Real-World Customization Examples
 

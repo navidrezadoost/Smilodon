@@ -51,6 +51,13 @@ export interface ExpandableConfig {
   collapseLabel?: string;
 }
 
+export interface DropdownPlacementConfig {
+  /** Preferred dropdown placement mode */
+  mode: 'bottom' | 'top' | 'auto';
+}
+
+export type SelectDirection = 'ltr' | 'rtl';
+
 export interface ClearControlConfig {
   /** Enable clear control button inside input container */
   enabled: boolean;
@@ -75,10 +82,25 @@ export interface SelectionConfig {
   maxSelections?: number;
   /** Show remove button on selected options in multi-select */
   showRemoveButton?: boolean;
+  /** Custom icon/markup for multi-select remove buttons (chips and selected option remove buttons) */
+  removeButtonIcon?: string;
   /** Close dropdown after selection in single-select */
   closeOnSelect?: boolean;
   /** Allow repeated trigger clicks to toggle the dropdown open/closed */
   toggleOnTriggerClick?: boolean;
+}
+
+export interface MultiSelectDisplayConfig {
+  /** Layout mode for selected chips in multi-select mode */
+  mode: 'wrap' | 'vertical' | 'horizontal';
+  /** Maximum visible height of the selected-chip area */
+  maxHeight?: string;
+  /** Horizontal overflow behavior for the chip area */
+  overflowX?: 'auto' | 'scroll' | 'hidden';
+  /** Vertical overflow behavior for the chip area */
+  overflowY?: 'auto' | 'scroll' | 'hidden';
+  /** Enable drag-to-scroll interactions in horizontal mode */
+  dragScroll?: boolean;
 }
 
 export interface StyleConfig {
@@ -94,8 +116,26 @@ export interface StyleConfig {
   disabledOption?: Partial<CSSStyleDeclaration>;
   /** Hover option styles */
   hoverOption?: Partial<CSSStyleDeclaration>;
+  /** Active option styles */
+  activeOption?: Partial<CSSStyleDeclaration>;
   /** Input field styles */
   input?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge styles */
+  badge?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge hover styles */
+  badgeHover?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge active styles */
+  badgeActive?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge label styles */
+  badgeLabel?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge remove button styles */
+  badgeRemove?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge remove button hover styles */
+  badgeRemoveHover?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge remove button active styles */
+  badgeRemoveActive?: Partial<CSSStyleDeclaration>;
+  /** Group header styles */
+  groupHeader?: Partial<CSSStyleDeclaration>;
   /** Loading indicator styles */
   loader?: Partial<CSSStyleDeclaration>;
   /** Custom CSS class names */
@@ -105,9 +145,14 @@ export interface StyleConfig {
     option?: string;
     selectedOption?: string;
     disabledOption?: string;
+    activeOption?: string;
     input?: string;
     loader?: string;
     removeButton?: string;
+    badge?: string;
+    badgeLabel?: string;
+    badgeRemove?: string;
+    groupHeader?: string;
   };
 }
 
@@ -187,6 +232,12 @@ export interface LimitationsConfig {
 export interface GlobalSelectConfig {
   /** Selection behavior */
   selection: SelectionConfig;
+  /** Text and layout direction for the select */
+  direction: SelectDirection;
+  /** Dropdown placement behavior */
+  dropdownPlacement: DropdownPlacementConfig;
+  /** Multi-select chip display behavior */
+  multiSelectDisplay: MultiSelectDisplayConfig;
   /** Scroll to selected configuration */
   scrollToSelected: ScrollToSelectedConfig;
   /** Load more configuration */
@@ -230,8 +281,20 @@ const defaultConfig: GlobalSelectConfig = {
     allowDeselect: false,
     maxSelections: 0,
     showRemoveButton: true,
+    removeButtonIcon: '×',
     closeOnSelect: true,
     toggleOnTriggerClick: true,
+  },
+  direction: 'ltr',
+  dropdownPlacement: {
+    mode: 'bottom',
+  },
+  multiSelectDisplay: {
+    mode: 'wrap',
+    maxHeight: '160px',
+    overflowX: 'hidden',
+    overflowY: 'auto',
+    dragScroll: true,
   },
   scrollToSelected: {
     enabled: true,
