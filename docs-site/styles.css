@@ -1374,6 +1374,15 @@ enhanced-select {
   border-color: #3b82f6;
 }
 
+/* Dark mode framework cards */
+[data-theme="dark"] .framework-card h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .framework-card p {
+  color: #cbd5e1 !important;
+}
+
 /* Inline code - overridden by syntax highlighting styles below */
 .doc-content code {
   background-color: var(--color-bg-secondary);
