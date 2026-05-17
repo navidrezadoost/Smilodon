@@ -137,12 +137,31 @@ class App {
         btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
       });
       
+      // Update current language display
+      const currentLang = document.getElementById('currentLang');
+      const currentFlag = document.getElementById('currentFlag');
+      const selectedBtn = document.querySelector(`[data-lang="${lang}"]`);
+      
+      if (currentLang && selectedBtn) {
+        currentLang.textContent = selectedBtn.textContent.trim();
+      }
+      
+      if (currentFlag && selectedBtn) {
+        const flagSrc = selectedBtn.querySelector('img')?.src;
+        if (flagSrc) {
+          currentFlag.src = flagSrc;
+        }
+      }
+      
       // Update direction for RTL languages
       if (lang === 'fa' || lang === 'ar') {
         this.setDirection('rtl');
       } else {
         this.setDirection('ltr');
       }
+      
+      // Save language preference
+      localStorage.setItem('smilodon-lang', lang);
     }
   }
 
@@ -154,6 +173,7 @@ class App {
 
   setDirection(direction) {
     document.documentElement.setAttribute('data-direction', direction);
+    document.body.setAttribute('data-direction', direction);
     localStorage.setItem('smilodon-direction', direction);
     
     // Update playground
@@ -161,10 +181,14 @@ class App {
       window.playgroundManager.setDirection(direction);
     }
     
-    // Update icon
-    const icon = document.querySelector('#direction-toggle use');
+    // Update icon and label
+    const icon = document.querySelector('#directionToggle use');
+    const label = document.querySelector('#directionToggle .dir-label');
     if (icon) {
       icon.setAttribute('href', direction === 'ltr' ? '#icon-ltr' : '#icon-rtl');
+    }
+    if (label) {
+      label.textContent = direction.toUpperCase();
     }
   }
 
