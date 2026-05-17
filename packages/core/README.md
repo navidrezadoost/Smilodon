@@ -794,12 +794,15 @@ Full control over the vertical separator line (works in all modes):
 ```css
 enhanced-select {
   --select-separator-width: 2px;          /* Line thickness */
-  --select-separator-height: 60%;         /* Line height (% of container) */
+  --select-separator-height: 60%;         /* Line height for single-select (% of container) */
+  --select-multi-separator-height: 40px;  /* Fixed height for multi-select (default: auto) */
   --select-separator-display: none;       /* Hide separator completely */
   --select-separator-bg: #e5e7eb;         /* Custom color/gradient */
   --select-separator-opacity: 0.8;        /* Line opacity */
 }
 ```
+
+**Note:** Multi-select uses `--select-multi-separator-height` (default: `auto` to stretch with container). Set a fixed pixel value like `40px` to maintain consistent separator height regardless of how many items are selected.
 
 #### Input & Badge Typography
 

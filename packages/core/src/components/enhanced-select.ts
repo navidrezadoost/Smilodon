@@ -989,6 +989,7 @@ export class EnhancedSelect extends HTMLElement {
         --select-multi-input-horizontal-cursor: grab;
         --select-multi-input-horizontal-active-cursor: grabbing;
         --select-multi-separator-inset-block: 10px;
+        --select-multi-separator-height: auto;
         --select-multi-action-surface-bg: var(--select-input-bg, var(--select-surface));
         --select-multi-action-divider: 1px solid var(--select-border);
         --select-separator-width: 1px;
@@ -1333,7 +1334,7 @@ export class EnhancedSelect extends HTMLElement {
       .input-container.input-container--multi::after {
         top: var(--select-multi-separator-inset-block, 10px);
         bottom: var(--select-multi-separator-inset-block, 10px);
-        height: auto;
+        height: var(--select-multi-separator-height, auto);
         transform: none;
       }
 
