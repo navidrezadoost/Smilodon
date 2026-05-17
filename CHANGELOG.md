@@ -19,6 +19,26 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - No unreleased changes yet.
 
+## [1.5.1] - 2026-05-17
+
+### Added
+- **Keyboard navigation enhancements:** Added `Space` key support for opening dropdown and selecting options (previously only `Enter` worked).
+- **Multi-select display mode documentation:** Comprehensive documentation for `wrap`, `horizontal`, `vertical`, and `both` scrolling modes with drag-scroll functionality.
+- **Full dark mode CSS variable support:** Added support for all dark mode variables including `--select-dark-arrow-color`, `--select-dark-arrow-bg`, `--select-dark-arrow-hover-bg`, `--select-dark-badge-bg`, `--select-dark-badge-color`, `--select-dark-separator-bg`, `--select-dark-separator-width`, `--select-dark-empty-color`, `--select-group-header-dark-bg`, and `--select-group-header-dark-color`.
+- **Separator dimension controls:** Added `--select-separator-width`, `--select-separator-height`, and `--select-separator-display` CSS variables for complete separator customization.
+- **Input and badge typography controls:** Added `--select-input-font-size`, `--select-input-font-weight`, `--select-badge-font-size`, and `--select-badge-font-weight` for independent text styling.
+- **Multi-select container padding control:** Added `--select-multi-container-padding` variable to control container padding independently of badge padding.
+
+### Fixed
+- **Group headers sticky positioning:** Group headers now extend full width edge-to-edge, stick to top of options container, and completely hide scrolling options underneath with proper z-index (100) and opaque backgrounds.
+- **Keyboard accessibility:** Fixed keyboard navigation to be fully WCAG 2.2 AA compliant with all expected keys working (`Enter`, `Space`, `↑`, `↓`, `Home`, `End`, `PageUp`, `PageDown`, `Escape`, `Tab`, `Ctrl+A` for multi-select).
+- **Dark mode variables application:** All `--select-dark-*` CSS variables now properly apply and override light mode defaults.
+- **Separator visibility in multi-select:** Separator line now respects all CSS variables in both single and multi-select modes.
+
+### Changed
+- **Hover animation control:** Hover effects can now be disabled by setting hover variables to match default states (`--select-option-hover-bg: transparent`, `--select-option-hover-color: inherit`, `--select-option-hover-transform: none`).
+- **Documentation expansion:** Added comprehensive sections for keyboard navigation, multi-select display modes, advanced styling controls, separator management, and dark mode variables in both core README and GitHub Pages documentation.
+
 ## [1.6.0] - 2026-05-16
 
 ### Added
