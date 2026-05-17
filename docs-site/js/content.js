@@ -2692,28 +2692,124 @@ console.log('Item height:', height);</code></pre>
     <h1>Infinite Scroll</h1>
     
     <div class="doc-section">
-      <h2>Load More on Scroll</h2>
-      <p>Automatically load more items as the user scrolls:</p>
+      <h2>Overview</h2>
+      <p>Infinite scroll automatically loads more items as the user scrolls near the bottom of the list. Perfect for paginated APIs, real-time feeds, and progressive data loading.</p>
       
-      <pre><code class="language-tsx">&lt;NativeSelect
-  items={items}
-  onLoadMore={async () => {
-    const moreItems = await fetchNextPage();
-    setItems([...items, ...moreItems]);
-  }}
-  hasMore={hasMore}
-  loading={loading}
-/&gt;</code></pre>
+      <h3>Key Features</h3>
+      <ul>
+        <li>✅ Automatic pagination with scroll detection</li>
+        <li>✅ Configurable threshold (distance from bottom)</li>
+        <li>✅ Loading states and indicators</li>
+        <li>✅ Page caching for better performance</li>
+        <li>✅ Error handling and retry logic</li>
+        <li>✅ Compatible with virtualization</li>
+      </ul>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Basic Usage</h2>
+      
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function InfiniteScrollExample() {
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  
+  const loadMore = async () => {
+    if (loading || !hasMore) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(\`/api/items?page=\${page}&limit=20\`);
+      const data = await response.json();
+      
+      setItems(prev => [...prev, ...data.items]);
+      setPage(prev => prev + 1);
+      setHasMore(data.hasMore);
+    } catch (error) {
+      console.error('Failed to load more:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    &lt;NativeSelect
+      items={items}
+      onLoadMore={loadMore}
+      hasMore={hasMore}
+      loading={loading}
+      threshold={100}  // Load when 100px from bottom
+    /&gt;
+  );
+}</code></pre>
     </div>
     
     <div class="doc-section">
       <h2>Configuration</h2>
-      <ul>
-        <li><code>threshold</code>: Distance from bottom to trigger load (px or %)</li>
-        <li><code>hasMore</code>: Whether more items are available</li>
-        <li><code>loading</code>: Show loading indicator</li>
-        <li><code>loadingText</code>: Custom loading message</li>
-      </ul>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>onLoadMore</code></td>
+            <td><code>() => Promise&lt;void&gt;</code></td>
+            <td>-</td>
+            <td>Function to load more items</td>
+          </tr>
+          <tr>
+            <td><code>hasMore</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Whether more items are available</td>
+          </tr>
+          <tr>
+            <td><code>loading</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Loading state indicator</td>
+          </tr>
+          <tr>
+            <td><code>threshold</code></td>
+            <td><code>number</code></td>
+            <td><code>100</code></td>
+            <td>Distance from bottom (px) to trigger load</td>
+          </tr>
+          <tr>
+            <td><code>loadingText</code></td>
+            <td><code>string</code></td>
+            <td><code>'Loading...'</code></td>
+            <td>Text shown while loading</td>
+          </tr>
+          <tr>
+            <td><code>endMessage</code></td>
+            <td><code>string</code></td>
+            <td><code>'No more items'</code></td>
+            <td>Message when all items loaded</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>With Virtualization</h3>
+      <p>Combine with virtualization for optimal performance:</p>
+      <pre><code class="language-tsx">&lt;NativeSelect
+  items={items}
+  virtualized={true}
+  estimatedItemHeight={48}
+  buffer={15}
+  onLoadMore={loadMore}
+  hasMore={hasMore}
+  loading={loading}
+/&gt;</code></pre>
     </div>
   `,
   
@@ -2721,18 +2817,187 @@ console.log('Item height:', height);</code></pre>
     <h1>Custom Rendering</h1>
     
     <div class="doc-section">
-      <h2>Custom Option Template</h2>
-      <p>Render options with custom HTML/components:</p>
+      <h2>Overview</h2>
+      <p>Custom rendering allows you to fully customize how options and selected values are displayed. Use custom HTML templates, React components, Vue components, or any framework-specific rendering approach.</p>
+      
+      <h3>Key Features</h3>
+      <ul>
+        <li>✅ Custom option templates with HTML or components</li>
+        <li>✅ Custom selected value display</li>
+        <li>✅ Rich content: images, icons, badges, multi-line text</li>
+        <li>✅ Framework-specific component rendering</li>
+        <li>✅ HTML escaping for security</li>
+        <li>✅ Dynamic styling based on item state</li>
+      </ul>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Custom Option Templates</h2>
       
       <h3>React</h3>
-      <pre><code class="language-tsx">&lt;NativeSelect
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+
+function CustomOptionExample() {
+  const users = [
+    { id: 1, name: 'John Doe', email: 'john@example.com', avatar: '/avatars/john.jpg' },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', avatar: '/avatars/jane.jpg' }
+  ];
+  
+  return (
+    &lt;NativeSelect
+      items={users}
+      renderOption={(user) => (
+        &lt;div className="user-option"&gt;
+          &lt;img src={user.avatar} alt="" className="avatar" /&gt;
+          &lt;div className="user-info"&gt;
+            &lt;div className="user-name"&gt;{user.name}&lt;/div&gt;
+            &lt;div className="user-email"&gt;{user.email}&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Vue</h3>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;NativeSelect
+    :items="users"
+    :render-option="renderOption"
+  /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const users = [...];
+
+const renderOption = (user) => {
+  return {
+    template: \`
+      &lt;div class="user-option"&gt;
+        &lt;img :src="user.avatar" class="avatar" /&gt;
+        &lt;div class="user-info"&gt;
+          &lt;div class="user-name"&gt;{{ user.name }}&lt;/div&gt;
+          &lt;div class="user-email"&gt;{{ user.email }}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    \`
+  };
+};
+&lt;/script&gt;</code></pre>
+
+      <h3>Vanilla JS (HTML String)</h3>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.optionTemplate = (user) => \`
+  &lt;div class="user-option"&gt;
+    &lt;img src="\${user.avatar}" alt="" class="avatar" /&gt;
+    &lt;div class="user-info"&gt;
+      &lt;div class="user-name"&gt;\${escapeHtml(user.name)}&lt;/div&gt;
+      &lt;div class="user-email"&gt;\${escapeHtml(user.email)}&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+\`;
+
+// Security: Always escape user content
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Custom Value Display</h2>
+      
+      <p>Customize how the selected value appears in the input:</p>
+      
+      <h3>React</h3>
+      <pre><code class="language-tsx">function CustomValueExample() {
+  return (
+    &lt;NativeSelect
+      items={items}
+      renderValue={(item) => (
+        &lt;div className="selected-value"&gt;
+          &lt;span className="emoji"&gt;{item.emoji}&lt;/span&gt;
+          &lt;span className="label"&gt;{item.label}&lt;/span&gt;
+          {item.badge && &lt;span className="badge"&gt;{item.badge}&lt;/span&gt;}
+        &lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Multi-Select Chip Rendering</h3>
+      <pre><code class="language-tsx">function CustomChipExample() {
+  return (
+    &lt;NativeSelect
+      mode="multi"
+      items={items}
+      renderChip={(item) => (
+        &lt;div className="custom-chip"&gt;
+          &lt;img src={item.icon} alt="" className="chip-icon" /&gt;
+          &lt;span&gt;{item.label}&lt;/span&gt;
+        &lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Rich Content Examples</h2>
+      
+      <h3>With Icons</h3>
+      <pre><code class="language-tsx">const items = [
+  { id: 1, label: 'Settings', icon: '⚙️' },
+  { id: 2, label: 'Profile', icon: '👤' },
+  { id: 3, label: 'Logout', icon: '🚪' }
+];
+
+&lt;NativeSelect
   items={items}
   renderOption={(item) => (
-    &lt;div className="custom-option"&gt;
-      &lt;img src={item.avatar} alt="" /&gt;
+    &lt;div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}&gt;
+      &lt;span style={{ fontSize: '20px' }}&gt;{item.icon}&lt;/span&gt;
+      &lt;span&gt;{item.label}&lt;/span&gt;
+    &lt;/div&gt;
+  )}
+/&gt;</code></pre>
+
+      <h3>With Badges/Tags</h3>
+      <pre><code class="language-tsx">const items = [
+  { id: 1, label: 'React', tags: ['Frontend', 'Popular'] },
+  { id: 2, label: 'Node.js', tags: ['Backend', 'JavaScript'] }
+];
+
+&lt;NativeSelect
+  items={items}
+  renderOption={(item) => (
+    &lt;div className="option-with-tags"&gt;
+      &lt;div className="option-label"&gt;{item.label}&lt;/div&gt;
+      &lt;div className="option-tags"&gt;
+        {item.tags.map(tag => (
+          &lt;span key={tag} className="tag"&gt;{tag}&lt;/span&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )}
+/&gt;</code></pre>
+
+      <h3>With Images</h3>
+      <pre><code class="language-tsx">const products = [
+  { id: 1, name: 'iPhone 15', price: '$999', image: '/products/iphone.jpg' },
+  { id: 2, name: 'MacBook Pro', price: '$2499', image: '/products/macbook.jpg' }
+];
+
+&lt;NativeSelect
+  items={products}
+  renderOption={(item) => (
+    &lt;div className="product-option"&gt;
+      &lt;img src={item.image} alt={item.name} className="product-image" /&gt;
       &lt;div&gt;
-        &lt;strong&gt;{item.label}&lt;/strong&gt;
-        &lt;small&gt;{item.description}&lt;/small&gt;
+        &lt;div className="product-name"&gt;{item.name}&lt;/div&gt;
+        &lt;div className="product-price"&gt;{item.price}&lt;/div&gt;
       &lt;/div&gt;
     &lt;/div&gt;
   )}
@@ -2740,15 +3005,79 @@ console.log('Item height:', height);</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Custom Value Display</h2>
-      <p>Customize how selected value appears:</p>
+      <h2>Security: HTML Escaping</h2>
       
-      <pre><code class="language-tsx">&lt;NativeSelect
-  items={items}
-  renderValue={(item) => (
-    &lt;span&gt;{item.emoji} {item.label}&lt;/span&gt;
-  )}
-/&gt;</code></pre>
+      <p>Always escape user-provided content to prevent XSS attacks:</p>
+      
+      <pre><code class="language-javascript">// Escape function
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Usage in template
+select.optionTemplate = (item) => \`
+  &lt;div class="option"&gt;
+    &lt;div class="title"&gt;\${escapeHtml(item.title)}&lt;/div&gt;
+    &lt;div class="description"&gt;\${escapeHtml(item.description)}&lt;/div&gt;
+  &lt;/div&gt;
+\`;</code></pre>
+
+      <h3>React (Auto-escaped)</h3>
+      <p>React automatically escapes text content, so JSX is safe:</p>
+      <pre><code class="language-tsx">// ✅ Safe - React escapes  automatically
+renderOption={(item) => (
+  &lt;div&gt;{item.userInput}&lt;/div&gt;
+)}
+
+// ⚠️ Dangerous - bypasses escaping
+renderOption={(item) => (
+  &lt;div dangerouslySetInnerHTML={{ __html: item.html }} /&gt;
+)}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Styling Custom Options</h2>
+      
+      <pre><code class="language-css">/* Custom option layout */
+.user-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.user-email {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Hover state */
+.user-option:hover {
+  background-color: #f3f4f6;
+}
+
+/* Selected state */
+.user-option[aria-selected="true"] {
+  background-color: #dbeafe;
+}</code></pre>
     </div>
   `,
   
@@ -2756,30 +3085,369 @@ console.log('Item height:', height);</code></pre>
     <h1>Grouped Options</h1>
     
     <div class="doc-section">
-      <h2>Group Items by Category</h2>
-      <p>Organize options into groups with headers:</p>
+      <h2>Overview</h2>
+      <p>Grouped options organize items into categories with visual headers, making it easier for users to navigate large lists. Perfect for categorized data like file systems, product categories, or hierarchical selections.</p>
       
-      <pre><code class="language-tsx">const groupedItems = {
-  'Fruits': [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' }
-  ],
-  'Vegetables': [
-    { id: 3, label: 'Carrot' },
-    { id: 4, label: 'Broccoli' }
-  ]
-};
-
-&lt;NativeSelect grouped items={groupedItems} /&gt;</code></pre>
+      <h3>Key Features</h3>
+      <ul>
+        <li>✅ Visual group headers with customizable styling</li>
+        <li>✅ Collapsible groups (optional)</li>
+        <li>✅ Group-level search filtering</li>
+        <li>✅ Nested groups support</li>
+        <li>✅ Custom group templates</li>
+        <li>✅ ARIA semantics for accessibility</li>
+      </ul>
     </div>
     
     <div class="doc-section">
-      <h2>Styling Groups</h2>
-      <pre><code class="language-css">enhanced-select::part(group-header) {
-  font-weight: bold;
-  color: var(--primary-color);
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.05);
+      <h2>Basic Usage</h2>
+      
+      <h3>Object Format</h3>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+
+function GroupedExample() {
+  const groupedItems = {
+    'Fruits': [
+      { id: 1, label: 'Apple' },
+      { id: 2, label: 'Banana' },
+      { id: 3, label: 'Orange' }
+    ],
+    'Vegetables': [
+      { id: 4, label: 'Carrot' },
+      { id: 5, label: 'Broccoli' },
+      { id: 6, label: 'Spinach' }
+    ],
+    'Grains': [
+      { id: 7, label: 'Rice' },
+      { id: 8, label: 'Wheat' }
+    ]
+  };
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      items={groupedItems}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Array Format with Category Property</h3>
+      <pre><code class="language-tsx">function CategoryGroupingExample() {
+  const items = [
+    { id: 1, label: 'Apple', category: 'Fruits' },
+    { id: 2, label: 'Banana', category: 'Fruits' },
+    { id: 3, label: 'Carrot', category: 'Vegetables' },
+    { id: 4, label: 'Broccoli', category: 'Vegetables' }
+  ];
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      groupBy="category"
+      items={items}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Custom Group Function</h3>
+      <pre><code class="language-tsx">function CustomGroupingExample() {
+  const items = [
+    { id: 1, name: 'Alice', age: 25 },
+    { id: 2, name: 'Bob', age: 35 },
+    { id: 3, name: 'Charlie', age: 28 }
+  ];
+  
+  const groupByAge = (item) => {
+    if (item.age < 30) return 'Under 30';
+    return '30 and older';
+  };
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      groupBy={groupByAge}
+      items={items}
+    /&gt;
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Styling Group Headers</h2>
+      
+      <h3>Using Shadow Parts</h3>
+      <pre><code class="language-css">/* Style group headers */
+enhanced-select::part(group-header) {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  padding: 12px 16px 8px;
+  background: linear-gradient(to bottom, #f9fafb, transparent);
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Different colors for different groups */
+enhanced-select::part(group-header):nth-of-type(1) {
+  color: #3b82f6;
+}
+
+enhanced-select::part(group-header):nth-of-type(2) {
+  color: #10b981;
+}
+
+enhanced-select::part(group-header):nth-of-type(3) {
+  color: #f59e0b;
+}</code></pre>
+
+      <h3>Using CSS Custom Properties</h3>
+      <pre><code class="language-css">enhanced-select {
+  --select-group-header-bg: #f3f4f6;
+  --select-group-header-color: #374151;
+  --select-group-header-padding: 12px 16px;
+  --select-group-header-font-size: 14px;
+  --select-group-header-font-weight: 600;
+  --select-group-header-text-transform: uppercase;
+  --select-group-header-border: 1px solid #e5e7eb;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Custom Group Headers</h2>
+      
+      <h3>React</h3>
+      <pre><code class="language-tsx">function CustomGroupHeaderExample() {
+  const groupedItems = {
+    'Fruits (3)': [...],
+    'Vegetables (5)': [...]
+  };
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      items={groupedItems}
+      renderGroupHeader={(groupName, items) => (
+        &lt;div className="custom-group-header"&gt;
+          &lt;span className="group-icon"&gt;📁&lt;/span&gt;
+          &lt;span className="group-name"&gt;{groupName}&lt;/span&gt;
+          &lt;span className="group-count"&gt;{items.length}&lt;/span&gt;
+        &lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>With Collapse/Expand</h3>
+      <pre><code class="language-tsx">function CollapsibleGroupsExample() {
+  const [collapsed, setCollapsed] = useState(new Set());
+  
+  const toggleGroup = (groupName) => {
+    const newCollapsed = new Set(collapsed);
+    if (newCollapsed.has(groupName)) {
+      newCollapsed.delete(groupName);
+    } else {
+      newCollapsed.add(groupName);
+    }
+    setCollapsed(newCollapsed);
+  };
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      items={groupedItems}
+      collapsedGroups={collapsed}
+      onGroupToggle={toggleGroup}
+      renderGroupHeader={(groupName, items, isCollapsed) => (
+        &lt;div className="collapsible-group-header" onClick={() => toggleGroup(groupName)}&gt;
+          &lt;span className="toggle-icon"&gt;{isCollapsed ? '▶' : '▼'}&lt;/span&gt;
+          &lt;span&gt;{groupName}&lt;/span&gt;
+          &lt;span className="count"&gt;({items.length})&lt;/span&gt;
+        &lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Nested Groups</h2>
+      
+      <pre><code class="language-tsx">function NestedGroupsExample() {
+  const items = [
+    { id: 1, label: 'Apple', category: 'Produce', subcategory: 'Fruits' },
+    { id: 2, label: 'Carrot', category: 'Produce', subcategory: 'Vegetables' },
+    { id: 3, label: 'Milk', category: 'Dairy', subcategory: 'Beverages' }
+  ];
+  
+  return (
+    &lt;NativeSelect
+      grouped
+      groupBy={(item) => \`\${item.category} > \${item.subcategory}\`}
+      items={items}
+    /&gt;
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Group Filtering with Search</h2>
+      
+      <p>When combined with search, groups automatically hide when all their items are filtered out:</p>
+      
+      <pre><code class="language-tsx">function SearchableGroupedExample() {
+  return (
+    &lt;NativeSelect
+      grouped
+      searchable
+      items={groupedItems}
+      searchableGroupHeaders={true}  // Also search group names
+    /&gt;
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Accessibility</h2>
+      
+      <h3>ARIA Attributes</h3>
+      <p>Grouped options automatically include proper ARIA structure:</p>
+      <ul>
+        <li><code>role="group"</code> on each group</li>
+        <li><code>aria-label</code> with group name</li>
+        <li><code>role="presentation"</code> on group headers</li>
+      </ul>
+      
+      <h3>Example Output</h3>
+      <pre><code class="language-html">&lt;div role="listbox"&gt;
+  &lt;div role="presentation" class="group-header"&gt;Fruits&lt;/div&gt;
+  &lt;div role="group" aria-label="Fruits"&gt;
+    &lt;div role="option"&gt;Apple&lt;/div&gt;
+    &lt;div role="option"&gt;Banana&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div role="presentation" class="group-header"&gt;Vegetables&lt;/div&gt;
+  &lt;div role="group" aria-label="Vegetables"&gt;
+    &lt;div role="option"&gt;Carrot&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Complete Example</h2>
+      
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function ComprehensiveGroupedExample() {
+  const [collapsed, setCollapsed] = useState(new Set());
+  
+  const items = [
+    // Frontend
+    { id: 1, label: 'React', category: 'Frontend', icon: '⚛️', popularity: 'High' },
+    { id: 2, label: 'Vue', category: 'Frontend', icon: '💚', popularity: 'High' },
+    { id: 3, label: 'Svelte', category: 'Frontend', icon: '🔥', popularity: 'Medium' },
+    // Backend
+    { id: 4, label: 'Node.js', category: 'Backend', icon: '🟢', popularity: 'High' },
+    { id: 5, label: 'Python', category: 'Backend', icon: '🐍', popularity: 'High' },
+    { id: 6, label: 'Go', category: 'Backend', icon: '🔵', popularity: 'Medium' },
+    // Database
+    { id: 7, label: 'PostgreSQL', category: 'Database', icon: '🐘', popularity: 'High' },
+    { id: 8, label: 'MongoDB', category: 'Database', icon: '🍃', popularity: 'High' }
+  ];
+  
+  const toggleGroup = (groupName) => {
+    const newCollapsed = new Set(collapsed);
+    if (newCollapsed.has(groupName)) {
+      newCollapsed.delete(groupName);
+    } else {
+      newCollapsed.add(groupName);
+    }
+    setCollapsed(newCollapsed);
+  };
+  
+  return (
+    &lt;div&gt;
+      &lt;NativeSelect
+        grouped
+        searchable
+        groupBy="category"
+        items={items}
+        collapsedGroups={collapsed}
+        onGroupToggle={toggleGroup}
+        renderGroupHeader={(groupName, groupItems, isCollapsed) => (
+          &lt;div 
+            className="group-header"
+            onClick={() => toggleGroup(groupName)}
+          &gt;
+            &lt;span className="toggle"&gt;{isCollapsed ? '▶' : '▼'}&lt;/span&gt;
+            &lt;span className="name"&gt;{groupName}&lt;/span&gt;
+            &lt;span className="count"&gt;{groupItems.length}&lt;/span&gt;
+          &lt;/div&gt;
+        )}
+        renderOption={(item) => (
+          &lt;div className="tech-option"&gt;
+            &lt;span className="icon"&gt;{item.icon}&lt;/span&gt;
+            &lt;span className="label"&gt;{item.label}&lt;/span&gt;
+            &lt;span className={\`popularity \${item.popularity.toLowerCase()}\`}&gt;
+              {item.popularity}
+            &lt;/span&gt;
+          &lt;/div&gt;
+        )}
+      /&gt;
+      
+      &lt;style jsx&gt;{\`
+        .group-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          font-weight: 600;
+          font-size: 12px;
+          text-transform: uppercase;
+          color: #6b7280;
+          background: #f9fafb;
+          cursor: pointer;
+          user-select: none;
+        }
+        
+        .group-header:hover {
+          background: #f3f4f6;
+        }
+        
+        .tech-option {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 24px;
+        }
+        
+        .icon {
+          font-size: 20px;
+        }
+        
+        .popularity {
+          margin-left: auto;
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-weight: 500;
+        }
+        
+        .popularity.high {
+          background: #dcfce7;
+          color: #166534;
+        }
+        
+        .popularity.medium {
+          background: #fef3c7;
+          color: #92400e;
+        }
+      \`}&lt;/style&gt;
+    &lt;/div&gt;
+  );
 }</code></pre>
     </div>
   `,
