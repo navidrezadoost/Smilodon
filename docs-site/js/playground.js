@@ -164,8 +164,7 @@ class PlaygroundManager {
   }
 
   renderSelect(data) {
-    // Render a native select for demo purposes
-    // In production, this would use actual Smilodon components
+    // Render Smilodon select component
     const isMulti = this.config.mode === 'multi';
     const direction = this.config.rtl ? 'rtl' : 'ltr';
     
@@ -174,7 +173,7 @@ class PlaygroundManager {
         <label for="demo-select" class="demo-label">
           ${isMulti ? 'Select multiple items' : 'Select an item'}
         </label>
-        <select 
+        <enhanced-select 
           id="demo-select" 
           class="demo-select"
           ${isMulti ? 'multiple' : ''}
@@ -199,8 +198,7 @@ class PlaygroundManager {
     }
     
     html += `
-        </select>
-        ${this.config.searchable ? '<input type="text" class="demo-search" placeholder="Search...">' : ''}
+        </enhanced-select>
       </div>
     `;
     
@@ -217,14 +215,25 @@ class PlaygroundManager {
   }
 
   initializeSelect(data) {
-    // In production, initialize actual Smilodon component here
     const select = document.getElementById('demo-select');
-    if (select) {
-      // Add custom rendering if enabled
-      if (this.config.customRender) {
-        select.style.background = 'linear-gradient(135deg, var(--color-primary-light), var(--color-primary))';
-        select.style.color = 'white';
-      }
+    if (select && window.Smilodon) {
+      // Set options
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = item.label;
+        if (item.category) option.dataset.category = item.category;
+        select.appendChild(option);
+      });
+      
+      // Apply configuration attributes
+      if (this.config.searchable) select.setAttribute('searchable', '');
+      if (this.config.virtualized) select.setAttribute('virtualized', '');
+      if (this.config.grouped) select.setAttribute('grouped', '');
+      
+      select.addEventListener('change', () => {
+        console.log('Selection changed:', select.value);
+      });
     }
   }
 

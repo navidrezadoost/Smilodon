@@ -1123,6 +1123,18 @@ pre code {
   min-height: 200px;
 }
 
+/* Smilodon component styling */
+enhanced-select {
+  --select-bg: var(--color-bg);
+  --select-border: var(--color-border);
+  --select-text: var(--color-text);
+  --select-focus: var(--color-primary);
+  --select-hover: var(--color-primary-light);
+  display: block;
+  width: 100%;
+  font-family: inherit;
+}
+
 .demo-search {
   padding: var(--spacing-md);
   border: 1px solid var(--color-border);
@@ -1145,6 +1157,10 @@ pre code {
   padding: var(--spacing-2xl);
   max-width: 900px;
   margin: 0 auto;
+}
+
+.content-page.active {
+  display: block !important;
 }
 
 .doc-content {

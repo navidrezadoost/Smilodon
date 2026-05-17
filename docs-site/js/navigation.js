@@ -89,18 +89,21 @@ class NavigationManager {
       // Show hero and playground
       const heroSection = document.querySelector('.page[id="page-home"]');
       if (heroSection) {
+        heroSection.classList.add('active');
         heroSection.style.display = 'block';
       }
       
       // Hide content page if exists
       const contentPage = document.querySelector('.content-page');
       if (contentPage) {
+        contentPage.classList.remove('active');
         contentPage.style.display = 'none';
       }
     } else {
       // Hide home/playground page
       const heroSection = document.querySelector('.page[id="page-home"]');
       if (heroSection) {
+        heroSection.classList.remove('active');
         heroSection.style.display = 'none';
       }
       
@@ -116,6 +119,9 @@ class NavigationManager {
       contentDiv = this.createContentPage();
     }
     
+    // Remove hidden class and show
+    contentDiv.classList.remove('hidden');
+    contentDiv.classList.add('active');
     contentDiv.style.display = 'block';
     
     // Load content from documentationContent
@@ -152,7 +158,8 @@ class NavigationManager {
   createContentPage() {
     const main = document.querySelector('main');
     const div = document.createElement('div');
-    div.className = 'content-page hidden';
+    div.className = 'content-page';
+    div.style.display = 'none';
     main.appendChild(div);
     return div;
   }
