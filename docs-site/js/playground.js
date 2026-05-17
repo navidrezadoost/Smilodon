@@ -177,27 +177,9 @@ class PlaygroundManager {
           id="demo-select" 
           class="demo-select"
           ${isMulti ? 'multiple' : ''}
-          ${this.config.searchable ? 'data-searchable="true"' : ''}
+          ${this.config.searchable ? 'searchable' : ''}
+          placeholder="Choose an option..."
         >
-          <option value="">Choose an option...</option>
-    `;
-    
-    if (this.config.grouped) {
-      const grouped = this.groupData(data);
-      Object.entries(grouped).forEach(([category, items]) => {
-        html += `<optgroup label="${category}">`;
-        items.forEach(item => {
-          html += `<option value="${item.value}">${item.label}</option>`;
-        });
-        html += `</optgroup>`;
-      });
-    } else {
-      data.forEach(item => {
-        html += `<option value="${item.value}">${item.label}</option>`;
-      });
-    }
-    
-    html += `
         </enhanced-select>
       </div>
     `;
@@ -215,13 +197,26 @@ class PlaygroundManager {
   }
 
   initializeSelect(data) {
-    const select = document.getElementById('demo-select');
-    if (select) {
-      // Options are already rendered in HTML, just add event listener
-      select.addEventListener('change', () => {
-        console.log('Selection changed:', select.value);
-      });
-    }
+    // Wait for custom element to be fully connected  
+    requestAnimationFrame(() => {
+      const select = document.getElementById('demo-select');
+      if (select && typeof select.setItems === 'function') {
+        // Prepare data in the format expected by Smilodon
+        const items = data.map(item => ({
+          value: item.value,
+          label: item.label,
+          group: this.config.grouped ? item.category : undefined
+        }));
+        
+        // Set items using the Smilodon API
+        select.setItems(items);
+        
+        // Add event listener for changes
+        select.addEventListener('change', (e) => {
+          console.log('Selection changed:', e.detail);
+        });
+      }
+    });
   }
 
   updatePerformanceDisplay() {
