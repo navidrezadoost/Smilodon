@@ -151,6 +151,13 @@ class NavigationManager {
       }, 100);
     }
     
+    // Apply syntax highlighting with Prism
+    if (window.Prism) {
+      setTimeout(() => {
+        window.Prism.highlightAll();
+      }, 150);
+    }
+    
     // Scroll to top
     window.scrollTo(0, 0);
   }
