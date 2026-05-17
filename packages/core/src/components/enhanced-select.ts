@@ -1698,7 +1698,7 @@ export class EnhancedSelect extends HTMLElement {
        ───────────────────────────────────────────────────────────────────────── */
 
       .group-header {
-        padding: var(--select-group-header-padding, 10px 12px 6px);
+        padding: var(--select-group-header-padding, 10px 12px 8px);
         margin: var(--select-group-header-margin, 0);
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, var(--select-text-muted));
@@ -1709,11 +1709,14 @@ export class EnhancedSelect extends HTMLElement {
         letter-spacing: var(--select-group-header-letter-spacing, 0.08em);
         position: sticky;
         top: 0;
-        z-index: 1;
+        z-index: 10;
         border: var(--select-group-header-border, none);
         border-bottom: var(--select-group-header-border-bottom, none);
         border-radius: var(--select-group-header-border-radius, 0);
         box-shadow: var(--select-group-header-shadow, none);
+        /* Ensure solid background to cover scrolling options */
+        background-clip: padding-box;
+        backdrop-filter: blur(0px);
       }
       
       .group-header:not(:first-child) {
