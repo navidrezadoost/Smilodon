@@ -79,7 +79,8 @@ class PlaygroundManager {
     });
   }
 
-  seconsole.log('Setting mode:', mode);
+  setMode(mode) {
+    console.log('Setting mode:', mode);
     this.config.mode = mode;
     
     // Update button states
