@@ -418,7 +418,7 @@ function handleSelect({ indices, items }) {
     <h1>Props & Configuration</h1>
     
     <div class="doc-section">
-      <h2>Common Props</h2>
+      <h2>Core Properties</h2>
       <table class="doc-table">
         <thead>
           <tr>
@@ -431,45 +431,153 @@ function handleSelect({ indices, items }) {
         <tbody>
           <tr>
             <td><code>items</code></td>
-            <td><code>Array</code></td>
+            <td><code>Array&lt;T&gt;</code></td>
             <td><code>[]</code></td>
-            <td>Array of options to display</td>
+            <td>Array of options to display. Required.</td>
           </tr>
           <tr>
             <td><code>mode</code></td>
             <td><code>'single' | 'multi'</code></td>
             <td><code>'single'</code></td>
-            <td>Selection mode</td>
+            <td>Selection mode. Single allows one selection, multi allows multiple.</td>
           </tr>
           <tr>
-            <td><code>searchable</code></td>
-            <td><code>boolean</code></td>
-            <td><code>false</code></td>
-            <td>Enable search input</td>
-          </tr>
-          <tr>
-            <td><code>virtualized</code></td>
-            <td><code>boolean</code></td>
-            <td><code>auto</code></td>
-            <td>Enable virtualization</td>
+            <td><code>selectedIndices</code></td>
+            <td><code>number[]</code></td>
+            <td><code>[]</code></td>
+            <td>Array of selected item indices (controlled)</td>
           </tr>
           <tr>
             <td><code>placeholder</code></td>
             <td><code>string</code></td>
             <td><code>'Select...'</code></td>
-            <td>Placeholder text</td>
+            <td>Placeholder text when no selection</td>
           </tr>
           <tr>
             <td><code>disabled</code></td>
             <td><code>boolean</code></td>
             <td><code>false</code></td>
-            <td>Disable the select</td>
+            <td>Disable the entire select component</td>
           </tr>
           <tr>
             <td><code>clearable</code></td>
             <td><code>boolean</code></td>
             <td><code>true</code></td>
-            <td>Show clear button</td>
+            <td>Show clear button to reset selection</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Search & Filtering</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>searchable</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Enable search input in dropdown</td>
+          </tr>
+          <tr>
+            <td><code>searchPlaceholder</code></td>
+            <td><code>string</code></td>
+            <td><code>'Search...'</code></td>
+            <td>Search input placeholder</td>
+          </tr>
+          <tr>
+            <td><code>searchDebounce</code></td>
+            <td><code>number</code></td>
+            <td><code>300</code></td>
+            <td>Debounce delay for search (ms)</td>
+          </tr>
+          <tr>
+            <td><code>minSearchLength</code></td>
+            <td><code>number</code></td>
+            <td><code>0</code></td>
+            <td>Minimum characters before search triggers</td>
+          </tr>
+          <tr>
+            <td><code>searchFilter</code></td>
+            <td><code>Function</code></td>
+            <td>Built-in</td>
+            <td>Custom filter function (items, query) => items[]</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Virtualization & Performance</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>virtualized</code></td>
+            <td><code>boolean</code></td>
+            <td><code>auto</code></td>
+            <td>Enable virtualization. Auto enables for >100 items</td>
+          </tr>
+          <tr>
+            <td><code>estimatedItemHeight</code></td>
+            <td><code>number</code></td>
+            <td><code>48</code></td>
+            <td>Estimated height of each item (px). Critical for performance!</td>
+          </tr>
+          <tr>
+            <td><code>buffer</code></td>
+            <td><code>number</code></td>
+            <td><code>5</code></td>
+            <td>Number of items to render outside viewport</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Grouping & Organization</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>grouped</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Enable grouped mode with category headers</td>
+          </tr>
+          <tr>
+            <td><code>groupBy</code></td>
+            <td><code>string | Function</code></td>
+            <td>-</td>
+            <td>Property name or function to group by</td>
+          </tr>
+          <tr>
+            <td><code>renderGroupHeader</code></td>
+            <td><code>Function</code></td>
+            <td>-</td>
+            <td>Custom group header renderer</td>
           </tr>
         </tbody>
       </table>
@@ -488,31 +596,116 @@ function handleSelect({ indices, items }) {
         <tbody>
           <tr>
             <td><code>onSelect</code></td>
-            <td><code>{ indices, items }</code></td>
-            <td>Fired when selection changes</td>
+            <td><code>{ indices, items, source }</code></td>
+            <td>Selection changed. source: 'click' | 'keyboard' | 'api'</td>
           </tr>
           <tr>
             <td><code>onSearch</code></td>
             <td><code>{ query }</code></td>
-            <td>Fired when search input changes</td>
+            <td>Search input changed</td>
           </tr>
           <tr>
             <td><code>onOpen</code></td>
             <td><code>{}</code></td>
-            <td>Fired when dropdown opens</td>
+            <td>Dropdown opened</td>
           </tr>
           <tr>
             <td><code>onClose</code></td>
             <td><code>{}</code></td>
-            <td>Fired when dropdown closes</td>
+            <td>Dropdown closed</td>
           </tr>
           <tr>
             <td><code>onClear</code></td>
             <td><code>{}</code></td>
-            <td>Fired when selection is cleared</td>
+            <td>Selection cleared</td>
+          </tr>
+          <tr>
+            <td><code>onLoadMore</code></td>
+            <td><code>{}</code></td>
+            <td>Scroll threshold reached (infinite scroll)</td>
           </tr>
         </tbody>
       </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Rendering & Customization</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>renderOption</code></td>
+            <td><code>(item) => ReactNode | string</code></td>
+            <td>Custom option renderer</td>
+          </tr>
+          <tr>
+            <td><code>renderValue</code></td>
+            <td><code>(item) => ReactNode | string</code></td>
+            <td>Custom selected value renderer</td>
+          </tr>
+          <tr>
+            <td><code>renderChip</code></td>
+            <td><code>(item) => ReactNode | string</code></td>
+            <td>Custom chip renderer (multi-select)</td>
+          </tr>
+          <tr>
+            <td><code>optionTemplate</code></td>
+            <td><code>(item) => string</code></td>
+            <td>HTML string template for options (Vanilla JS)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Complete Example</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+
+function FullyConfiguredSelect() {
+  return (
+    &lt;NativeSelect
+      // Core
+      items={items}
+      selectedIndices={selected}
+      mode="multi"
+      placeholder="Choose items..."
+      disabled={false}
+      clearable={true}
+      
+      // Search
+      searchable={true}
+      searchPlaceholder="Filter..."
+      searchDebounce={300}
+      minSearchLength={2}
+      
+      // Virtualization
+      virtualized={true}
+      estimatedItemHeight={48}
+      buffer={10}
+      
+      // Grouping
+      grouped={true}
+      groupBy="category"
+      
+      // Events
+      onSelect={({ indices, items }) => console.log(items)}
+      onSearch={({ query }) => console.log(query)}
+      onOpen={() => console.log('opened')}
+      onClose={() => console.log('closed')}
+      
+      // Custom Rendering
+      renderOption={(item) => (
+        &lt;div className="custom-option"&gt;{item.label}&lt;/div&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
     </div>
   `,
   
@@ -3453,10 +3646,15 @@ function ComprehensiveGroupedExample() {
   `,
   
   'css-tokens': `
-    <h1>CSS Custom Properties</h1>
+    <h1>CSS Custom Properties (Tokens)</h1>
     
     <div class="doc-section">
-      <h2>Available Tokens</h2>
+      <h2>Overview</h2>
+      <p>Smilodon provides 100+ CSS custom properties for complete visual customization. These tokens control colors, spacing, typography, animations, and more.</p>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Core Theme Tokens</h2>
       <table class="doc-table">
         <thead>
           <tr>
@@ -3469,7 +3667,7 @@ function ComprehensiveGroupedExample() {
           <tr>
             <td><code>--select-primary-color</code></td>
             <td>#3b82f6</td>
-            <td>Primary accent color</td>
+            <td>Primary accent color (focus, hover, selected)</td>
           </tr>
           <tr>
             <td><code>--select-bg-color</code></td>
@@ -3479,12 +3677,17 @@ function ComprehensiveGroupedExample() {
           <tr>
             <td><code>--select-text-color</code></td>
             <td>#1f2937</td>
-            <td>Text color</td>
+            <td>Primary text color</td>
+          </tr>
+          <tr>
+            <td><code>--select-border-color</code></td>
+            <td>#d1d5db</td>
+            <td>Border color</td>
           </tr>
           <tr>
             <td><code>--select-border-radius</code></td>
             <td>8px</td>
-            <td>Border radius</td>
+            <td>Border radius for rounded corners</td>
           </tr>
           <tr>
             <td><code>--select-shadow</code></td>
@@ -3493,6 +3696,193 @@ function ComprehensiveGroupedExample() {
           </tr>
         </tbody>
       </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Input Shell Tokens</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-input-height</code></td>
+            <td>48px</td>
+            <td>Input container height</td>
+          </tr>
+          <tr>
+            <td><code>--select-input-padding</code></td>
+            <td>12px 16px</td>
+            <td>Input padding</td>
+          </tr>
+          <tr>
+            <td><code>--select-input-font-size</code></td>
+            <td>16px</td>
+            <td>Input text size</td>
+          </tr>
+          <tr>
+            <td><code>--select-input-font-weight</code></td>
+            <td>400</td>
+            <td>Input text weight</td>
+          </tr>
+          <tr>
+            <td><code>--select-placeholder-color</code></td>
+            <td>#9ca3af</td>
+            <td>Placeholder text color</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Dropdown Tokens</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-dropdown-bg</code></td>
+            <td>#ffffff</td>
+            <td>Dropdown background</td>
+          </tr>
+          <tr>
+            <td><code>--select-dropdown-max-height</code></td>
+            <td>320px</td>
+            <td>Maximum dropdown height</td>
+          </tr>
+          <tr>
+            <td><code>--select-dropdown-shadow</code></td>
+            <td>0 10px 20px rgba(0,0,0,0.15)</td>
+            <td>Dropdown shadow</td>
+          </tr>
+          <tr>
+            <td><code>--select-dropdown-border-radius</code></td>
+            <td>8px</td>
+            <td>Dropdown border radius</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Option Tokens</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-option-padding</code></td>
+            <td>12px 16px</td>
+            <td>Option padding</td>
+          </tr>
+          <tr>
+            <td><code>--select-option-hover-bg</code></td>
+            <td>#f3f4f6</td>
+            <td>Option hover background</td>
+          </tr>
+          <tr>
+            <td><code>--select-option-selected-bg</code></td>
+            <td>#dbeafe</td>
+            <td>Selected option background</td>
+          </tr>
+          <tr>
+            <td><code>--select-option-selected-color</code></td>
+            <td>#1e40af</td>
+            <td>Selected option text color</td>
+          </tr>
+          <tr>
+            <td><code>--select-option-disabled-opacity</code></td>
+            <td>0.5</td>
+            <td>Disabled option opacity</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Badge/Chip Tokens (Multi-Select)</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-badge-bg</code></td>
+            <td>#3b82f6</td>
+            <td>Chip background</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-color</code></td>
+            <td>#ffffff</td>
+            <td>Chip text color</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-padding</code></td>
+            <td>4px 8px</td>
+            <td>Chip padding</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-border-radius</code></td>
+            <td>4px</td>
+            <td>Chip border radius</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-gap</code></td>
+            <td>4px</td>
+            <td>Gap between chips</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Usage Examples</h2>
+      
+      <h3>Basic Theme Customization</h3>
+      <pre><code class="language-css">enhanced-select {
+  --select-primary-color: #10b981;
+  --select-bg-color: #ffffff;
+  --select-text-color: #111827;
+  --select-border-color: #e5e7eb;
+  --select-border-radius: 12px;
+}</code></pre>
+
+      <h3>Dark Mode</h3>
+      <pre><code class="language-css">@media (prefers-color-scheme: dark) {
+  enhanced-select {
+    --select-bg-color: #1f2937;
+    --select-text-color: #f9fafb;
+    --select-border-color: #374151;
+    --select-dropdown-bg: #111827;
+    --select-option-hover-bg: #374151;
+  }
+}</code></pre>
+
+      <h3>Compact Size</h3>
+      <pre><code class="language-css">.compact enhanced-select {
+  --select-input-height: 36px;
+  --select-input-padding: 8px 12px;
+  --select-input-font-size: 14px;
+  --select-option-padding: 8px 12px;
+}</code></pre>
     </div>
   `,
   
@@ -3580,29 +3970,259 @@ selectRef.current.open();</code></pre>
     <h1>Events</h1>
     
     <div class="doc-section">
+      <h2>Overview</h2>
+      <p>Smilodon dispatches custom events at key interaction points. All events bubble and can be listened to using standard addEventListener.</p>
+    </div>
+    
+    <div class="doc-section">
       <h2>Event Reference</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Payload</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>select</code></td>
+            <td><code>{ selectedIndices: number[], selectedItems: any[] }</code></td>
+            <td>Fired when selection changes</td>
+          </tr>
+          <tr>
+            <td><code>search</code></td>
+            <td><code>{ query: string }</code></td>
+            <td>Fired when search input changes (debounced)</td>
+          </tr>
+          <tr>
+            <td><code>open</code></td>
+            <td><code>{ isOpen: true }</code></td>
+            <td>Fired when dropdown opens</td>
+          </tr>
+          <tr>
+            <td><code>close</code></td>
+            <td><code>{ isOpen: false }</code></td>
+            <td>Fired when dropdown closes</td>
+          </tr>
+          <tr>
+            <td><code>clear</code></td>
+            <td><code>{}</code></td>
+            <td>Fired when clear button is clicked</td>
+          </tr>
+          <tr>
+            <td><code>loadmore</code></td>
+            <td><code>{ page: number, pageSize: number }</code></td>
+            <td>Fired when infinite scroll reaches threshold</td>
+          </tr>
+          <tr>
+            <td><code>chip-remove</code></td>
+            <td><code>{ removedItem: any, removedIndex: number }</code></td>
+            <td>Fired when a chip is removed (multi-select)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Event Timing & Lifecycle</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Timing</th>
+            <th>Cancelable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>select</code></td>
+            <td>After selection updates</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><code>search</code></td>
+            <td>After debounce period (default 300ms)</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><code>open</code></td>
+            <td>Before dropdown animation starts</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><code>close</code></td>
+            <td>After dropdown closes (animation complete)</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><code>loadmore</code></td>
+            <td>When scroll position reaches threshold</td>
+            <td>No</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Usage Examples</h2>
       
-      <h3>onSelect</h3>
-      <p>Fired when selection changes</p>
-      <pre><code class="language-tsx">onSelect={({ indices, items }) => {
-  console.log('Selected indices:', indices);
-  console.log('Selected items:', items);
-}}</code></pre>
-      
-      <h3>onSearch</h3>
-      <p>Fired when search input changes</p>
-      <pre><code class="language-tsx">onSearch={({ query }) => {
-  console.log('Search query:', query);
-}}</code></pre>
-      
-      <h3>onOpen / onClose</h3>
-      <p>Fired when dropdown opens/closes</p>
-      <pre><code class="language-tsx">onOpen={() => console.log('Opened')}
-onClose={() => console.log('Closed')}</code></pre>
-      
-      <h3>onClear</h3>
-      <p>Fired when selection is cleared</p>
-      <pre><code class="language-tsx">onClear={() => console.log('Cleared')}</code></pre>
+      <h3>Vanilla JavaScript</h3>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+// Selection change
+select.addEventListener('select', (e) => {
+  console.log('Selected:', e.detail.selectedItems);
+  console.log('Indices:', e.detail.selectedIndices);
+});
+
+// Search
+select.addEventListener('search', (e) => {
+  console.log('Search query:', e.detail.query);
+  // Fetch remote data
+  fetchResults(e.detail.query);
+});
+
+// Dropdown open/close
+select.addEventListener('open', () => {
+  console.log('Dropdown opened');
+});
+
+select.addEventListener('close', () => {
+  console.log('Dropdown closed');
+});</code></pre>
+
+      <h3>React</h3>
+      <pre><code class="language-jsx">import { EnhancedSelect } from '@smilodon/react';
+
+function MyComponent() {
+  const handleSelect = (e) => {
+    console.log('Selected:', e.detail.selectedItems);
+  };
+  
+  const handleSearch = async (e) => {
+    const results = await fetchData(e.detail.query);
+    setItems(results);
+  };
+
+  return (
+    &lt;EnhancedSelect
+      items={items}
+      onSelect={handleSelect}
+      onSearch={handleSearch}
+      onOpen={() => console.log('opened')}
+      onClose={() => console.log('closed')}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Vue.js</h3>
+      <pre><code class="language-javascript">&lt;template&gt;
+  &lt;EnhancedSelect
+    :items="items"
+    @select="handleSelect"
+    @search="handleSearch"
+    @open="onOpen"
+    @close="onClose"
+  /&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+  methods: {
+    handleSelect(e) {
+      console.log('Selected:', e.detail.selectedItems);
+    },
+    handleSearch(e) {
+      this.fetchData(e.detail.query);
+    }
+  }
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Event Delegation Pattern</h2>
+      <pre><code class="language-javascript">// Listen to all select events from a container
+document.addEventListener('select', (e) => {
+  if (e.target.tagName === 'ENHANCED-SELECT') {
+    const selectId = e.target.id;
+    console.log(\`Selection changed in \${selectId}\`, e.detail);
+  }
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Error Handling</h2>
+      <pre><code class="language-javascript">select.addEventListener('loadmore', async (e) => {
+  try {
+    const data = await fetchPage(e.detail.page);
+    select.appendItems(data);
+  } catch (error) {
+    console.error('Failed to load more:', error);
+    // Show error UI
+    showErrorMessage('Failed to load more items');
+  }
+});
+
+select.addEventListener('search', async (e) => {
+  try {
+    const results = await searchAPI(e.detail.query);
+    select.items = results;
+  } catch (error) {
+    console.error('Search failed:', error);
+    select.items = [];
+  }
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Complete Example with All Events</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('#my-select');
+
+// Track selection state
+select.addEventListener('select', (e) => {
+  const { selectedItems, selectedIndices } = e.detail;
+  updateUI(selectedItems);
+  saveToLocalStorage(selectedIndices);
+});
+
+// Remote search
+let searchController = null;
+select.addEventListener('search', async (e) => {
+  // Cancel previous request
+  if (searchController) {
+    searchController.abort();
+  }
+  
+  searchController = new AbortController();
+  
+  try {
+    const results = await fetch(\`/api/search?q=\${e.detail.query}\`, {
+      signal: searchController.signal
+    });
+    select.items = await results.json();
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Search failed:', err);
+    }
+  }
+});
+
+// Analytics tracking
+select.addEventListener('open', () => {
+  analytics.track('select_opened');
+});
+
+select.addEventListener('close', () => {
+  analytics.track('select_closed');
+});
+
+// Infinite scroll
+select.addEventListener('loadmore', async (e) => {
+  const newItems = await fetchPage(e.detail.page);
+  select.appendItems(newItems);
+});</code></pre>
     </div>
   `,
   
@@ -3836,39 +4456,314 @@ function App() {
     <h1>Animations & Motion</h1>
     
     <div class="doc-section">
+      <h2>Overview</h2>
+      <p>Smilodon includes performant, accessible animations with automatic reduced-motion support. All animations use GPU-accelerated properties (transform, opacity) for 60fps performance.</p>
+    </div>
+    
+    <div class="doc-section">
       <h2>Built-in Animations</h2>
-      <p>Smilodon includes smooth animations for:</p>
-      <ul>
-        <li>Dropdown open/close</li>
-        <li>Option hover effects</li>
-        <li>Selection changes</li>
-        <li>Chip removal in multi-select</li>
-      </ul>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Animation</th>
+            <th>Duration</th>
+            <th>Easing</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Dropdown Open</td>
+            <td>200ms</td>
+            <td>ease-out</td>
+            <td>Fade in + slide down</td>
+          </tr>
+          <tr>
+            <td>Dropdown Close</td>
+            <td>150ms</td>
+            <td>ease-in</td>
+            <td>Fade out + slide up</td>
+          </tr>
+          <tr>
+            <td>Option Hover</td>
+            <td>100ms</td>
+            <td>ease-out</td>
+            <td>Background color transition</td>
+          </tr>
+          <tr>
+            <td>Chip Add</td>
+            <td>200ms</td>
+            <td>cubic-bezier</td>
+            <td>Scale + fade in</td>
+          </tr>
+          <tr>
+            <td>Chip Remove</td>
+            <td>150ms</td>
+            <td>ease-in</td>
+            <td>Scale down + fade out</td>
+          </tr>
+          <tr>
+            <td>Clear Button</td>
+            <td>200ms</td>
+            <td>ease-out</td>
+            <td>Rotate + fade</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Animation Tokens</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-animation-duration</code></td>
+            <td>200ms</td>
+            <td>Dropdown animation duration</td>
+          </tr>
+          <tr>
+            <td><code>--select-animation-easing</code></td>
+            <td>ease-out</td>
+            <td>Animation timing function</td>
+          </tr>
+          <tr>
+            <td><code>--select-transition-duration</code></td>
+            <td>150ms</td>
+            <td>Transition duration for interactive elements</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     
     <div class="doc-section">
       <h2>Custom Animations</h2>
+      
+      <h3>Custom Dropdown Animation</h3>
       <pre><code class="language-css">enhanced-select::part(dropdown) {
-  animation: slideDown 200ms ease-out;
+  animation: customSlideIn var(--select-animation-duration) ease-out;
 }
 
-@keyframes slideDown {
+@keyframes customSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}</code></pre>
+
+      <h3>Bounce Animation for Options</h3>
+      <pre><code class="language-css">enhanced-select::part(option)[data-sm-state~="selected"] {
+  animation: bounceIn 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}</code></pre>
+
+      <h3>Slide from Side</h3>
+      <pre><code class="language-css">enhanced-select::part(dropdown) {
+  animation: slideFromRight 300ms ease-out;
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }</code></pre>
     </div>
     
     <div class="doc-section">
+      <h2>Performance Considerations</h2>
+      
+      <h3>GPU Acceleration</h3>
+      <p>Always prefer GPU-accelerated properties:</p>
+      <pre><code class="language-css">/* ✅ Good - GPU accelerated */
+.dropdown {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
+/* ❌ Bad - Triggers layout/paint */
+.dropdown {
+  top: 10px;
+  visibility: hidden;
+}</code></pre>
+
+      <h3>Will-Change Hint</h3>
+      <pre><code class="language-css">enhanced-select::part(dropdown) {
+  will-change: transform, opacity;
+}
+
+/* Remove after animation completes */
+enhanced-select::part(dropdown)[data-state="open"] {
+  will-change: auto;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
       <h2>Reduced Motion</h2>
-      <p>Respects user preference for reduced motion:</p>
-      <pre><code class="language-css">@media (prefers-reduced-motion: reduce) {
+      <p>Smilodon automatically respects user preferences for reduced motion:</p>
+      
+      <pre><code class="language-css">/* Built-in support */
+@media (prefers-reduced-motion: reduce) {
   enhanced-select * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}</code></pre>
+
+      <h3>Custom Implementation</h3>
+      <pre><code class="language-css">@media (prefers-reduced-motion: reduce) {
+  enhanced-select::part(dropdown) {
+    animation: none;
+    transition: none;
+  }
+  
+  /* Still show instant state changes */
+  enhanced-select::part(dropdown)[data-state="open"] {
+    opacity: 1;
+    display: block;
+  }
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Animation Timing Functions</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Function</th>
+            <th>Use Case</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ease-out</code></td>
+            <td>Elements entering</td>
+            <td>Dropdown opening</td>
+          </tr>
+          <tr>
+            <td><code>ease-in</code></td>
+            <td>Elements exiting</td>
+            <td>Dropdown closing</td>
+          </tr>
+          <tr>
+            <td><code>ease-in-out</code></td>
+            <td>Smooth transitions</td>
+            <td>State changes</td>
+          </tr>
+          <tr>
+            <td><code>cubic-bezier(0.68, -0.55, 0.265, 1.55)</code></td>
+            <td>Playful bounce</td>
+            <td>Chip animations</td>
+          </tr>
+          <tr>
+            <td><code>cubic-bezier(0.4, 0, 0.2, 1)</code></td>
+            <td>Material Design</td>
+            <td>Standard motion</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Complete Animated Example</h2>
+      <pre><code class="language-css">/* Themed animations */
+enhanced-select {
+  --select-animation-duration: 250ms;
+  --select-animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dropdown */
+enhanced-select::part(dropdown) {
+  animation: dropdownOpen var(--select-animation-duration) var(--select-animation-easing);
+}
+
+@keyframes dropdownOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Options cascade in */
+enhanced-select::part(option) {
+  animation: optionFadeIn 200ms ease-out backwards;
+}
+
+enhanced-select::part(option):nth-child(1) { animation-delay: 0ms; }
+enhanced-select::part(option):nth-child(2) { animation-delay: 30ms; }
+enhanced-select::part(option):nth-child(3) { animation-delay: 60ms; }
+enhanced-select::part(option):nth-child(4) { animation-delay: 90ms; }
+
+@keyframes optionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Chips */
+enhanced-select::part(chip) {
+  animation: chipBounce 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes chipBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  enhanced-select *,
+  enhanced-select::part(*) {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
