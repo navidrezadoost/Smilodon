@@ -1260,6 +1260,40 @@ enhanced-select {
   color: #f8fafc !important;
 }
 
+/* Dark mode text elements */
+[data-theme="dark"] .section-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .control-group label {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .checkbox-label {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .doc-table th,
+[data-theme="dark"] .doc-table td {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .control-btn {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .control-btn:hover {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .feature-card h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .feature-card p {
+  color: #cbd5e1 !important;
+}
+
 /* Inline code - overridden by syntax highlighting styles below */
 .doc-content code {
   background-color: var(--color-bg-secondary);
