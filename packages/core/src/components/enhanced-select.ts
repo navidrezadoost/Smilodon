@@ -941,7 +941,7 @@ export class EnhancedSelect extends HTMLElement {
         --select-accent: #0f3460;
         --select-accent-hover: #e94560;
         --select-surface: #ffffff;
-        --select-surface-elevated: #fafbfc;
+        --select-surface-elevated: rgba(0, 0, 0, 0.04);
         --select-border: #e1e5eb;
         --select-border-focus: #0f3460;
         --select-text: #1a1a2e;
@@ -993,13 +993,11 @@ export class EnhancedSelect extends HTMLElement {
         --select-multi-action-surface-bg: var(--select-input-bg, var(--select-surface));
         --select-multi-action-divider: 1px solid var(--select-border);
         --select-separator-width: 1px;
-        --select-separator-height: 50%;
+        --select-separator-inset-block: 10px;
+        --select-separator-height: auto;
         --select-separator-display: block;
         --select-separator-opacity: 0.6;
         --select-separator-active-opacity: 1;
-        --select-separator-width: 1px;
-        --select-separator-height: 50%;
-        --select-separator-display: block;
         --select-separator-position: var(--select-arrow-width, 42px);
         --select-separator-position-with-clear: calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px));
         --select-separator-dark-bg: linear-gradient(
@@ -1332,10 +1330,9 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .input-container.input-container--multi::after {
-        top: var(--select-multi-separator-inset-block, 10px);
-        bottom: var(--select-multi-separator-inset-block, 10px);
+        top: var(--select-multi-separator-inset-block, var(--select-separator-inset-block, 10px));
+        bottom: var(--select-multi-separator-inset-block, var(--select-separator-inset-block, 10px));
         height: var(--select-multi-separator-height, auto);
-        transform: none;
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] {
@@ -1402,11 +1399,11 @@ export class EnhancedSelect extends HTMLElement {
         content: '';
         display: var(--select-separator-display, block);
         position: absolute;
-        top: 50%;
+        top: var(--select-separator-inset-block, 10px);
+        bottom: var(--select-separator-inset-block, 10px);
         right: var(--select-separator-position, var(--select-arrow-width, 42px));
-        transform: translateY(-50%);
         width: var(--select-separator-width, 1px);
-        height: var(--select-separator-height, 50%);
+        height: var(--select-separator-height, auto);
         background: var(--select-separator-bg, linear-gradient(
           to bottom,
           transparent 0%,
@@ -1758,12 +1755,13 @@ export class EnhancedSelect extends HTMLElement {
         border: var(--select-option-border, none);
         box-sizing: border-box;
         text-align: var(--select-option-text-align, start);
-        transition: 
+        transition: var(--select-option-transition, 
           background var(--select-transition-fast),
           color var(--select-transition-fast),
           border var(--select-transition-fast),
           transform var(--select-transition-fast),
-          box-shadow var(--select-transition-fast);
+          box-shadow var(--select-transition-fast)
+        );
         user-select: none;
         font-size: var(--select-option-font-size, inherit);
         font-weight: var(--select-option-font-weight);

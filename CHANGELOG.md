@@ -19,6 +19,16 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - No unreleased changes yet.
 
+## [1.5.3] - 2026-05-17
+
+### Fixed
+- **Option hover background visibility:** Changed default `--select-surface-elevated` from barely-visible `#fafbfc` to more noticeable `rgba(0, 0, 0, 0.04)` so users can actually see hover effects by default.
+- **Separator height with fixed pixel values:** Fixed single-select separator to use inset-based positioning (`top`/`bottom`) instead of percentage-based centering, allowing `--select-separator-height: 40px` to work correctly. Added `--select-separator-inset-block` variable (default `10px`) for controlling vertical positioning.
+- **Hover animations:** Wrapped option transitions in `--select-option-transition` variable so users can disable all hover animations with a single setting: `--select-option-transition: none`.
+
+### Changed
+- **Separator positioning consistency:** Both single-select and multi-select now use the same inset-based positioning approach. Multi-select falls back to `--select-separator-inset-block` if `--select-multi-separator-inset-block` is not set.
+
 ## [1.5.2] - 2026-05-17
 
 ### Added
