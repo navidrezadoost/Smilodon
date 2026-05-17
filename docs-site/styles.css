@@ -1257,6 +1257,9 @@ enhanced-select {
 /* Explicit dark mode heading colors */
 [data-theme="dark"] .doc-content h1,
 [data-theme="dark"] .doc-content h2,
+[data-theme="dark"] .doc-content h4,
+[data-theme="dark"] .doc-content h5,
+[data-theme="dark"] .doc-content h6,
 [data-theme="dark"] .doc-content h3 {
   color: #f8fafc !important;
 }
