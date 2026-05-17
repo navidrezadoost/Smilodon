@@ -22,6 +22,7 @@ class PlaygroundManager {
       itemsRendered: 0,
       totalItems: 0,
     };
+    this._handleSelectChange = null;
     this.init();
   }
 
@@ -195,44 +196,66 @@ class PlaygroundManager {
   }
 
   initializeSelect(data) {
-    // Wait for custom element to be fully connected  
-    requestAnimationFrame(() => {
+    // Use customElements.whenDefined for more reliable initialization
+    customElements.whenDefined('enhanced-select').then(() => {
       const select = document.getElementById('demo-select');
-      if (select && typeof select.setItems === 'function' && typeof select.updateConfig === 'function') {
-        console.log('Applying config:', this.config);
-        
-        // Configure features using updateConfig
-        select.updateConfig({
-          searchable: this.config.searchable,
-          virtualize: this.config.virtualized,
-          infiniteScroll: {
-            enabled: this.config.infiniteScroll,
-            pageSize: 50,
-            threshold: 100
-          },
-          selection: {
-            mode: this.config.mode,
-            closeOnSelect: this.config.mode === 'single'
-          }
-        });
-        
-        // Prepare data in the format expected by Smilodon
-        const items = data.map(item => ({
-          value: item.value,
-          label: item.label,
-          group: this.config.grouped ? item.category : undefined
-        }));
-        
-        console.log('Setting items, grouped:', this.config.grouped, 'count:', items.length);
-        
-        // Set items using the Smilodon API
-        select.setItems(items);
-        
-        // Add event listener for changes
-        select.addEventListener('change', (e) => {
-          console.log('Selection changed:', e.detail);
-        });
+      if (!select) {
+        console.error('Select element not found');
+        return;
       }
+      
+      if (typeof select.setItems !== 'function') {
+        console.error('setItems method not available on select');
+        return;
+      }
+      
+      if (typeof select.updateConfig !== 'function') {
+        console.error('updateConfig method not available on select');
+        return;
+      }
+      
+      console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
+      
+      // Configure features using updateConfig
+      const config = {
+        searchable: this.config.searchable,
+        virtualize: this.config.virtualized,
+        infiniteScroll: {
+          enabled: this.config.infiniteScroll,
+          pageSize: 50,
+          threshold: 100
+        },
+        selection: {
+          mode: this.config.mode,
+          closeOnSelect: this.config.mode === 'single'
+        }
+      };
+      
+      console.log('Calling updateConfig with:', JSON.stringify(config, null, 2));
+      select.updateConfig(config);
+      
+      // Prepare data in the format expected by Smilodon
+      const items = data.map(item => ({
+        value: item.value,
+        label: item.label,
+        group: this.config.grouped ? item.category : undefined
+      }));
+      
+      console.log('Setting items - Count:', items.length, 'Grouped:', this.config.grouped, 'First 3:', items.slice(0, 3));
+      
+      // Set items using the Smilodon API
+      select.setItems(items);
+      
+      // Add event listener for changes (only once)
+      select.removeEventListener('change', this._handleSelectChange);
+      this._handleSelectChange = (e) => {
+        console.log('Selection changed:', e.detail);
+      };
+      select.addEventListener('change', this._handleSelectChange);
+      
+      console.log('Select initialized successfully');
+    }).catch(err => {
+      console.error('Error initializing select:', err);
     });
   }
 
