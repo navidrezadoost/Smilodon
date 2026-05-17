@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react-native",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "description": "React Native adapter for Smilodon",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/solid",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "description": "SolidJS adapter for @smilodon/core",
   "type": "module",
   "main": "./dist/index.cjs",

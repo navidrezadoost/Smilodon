@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "description": "React adapter for @smilodon/core",
   "type": "module",
   "main": "./dist/index.cjs",
