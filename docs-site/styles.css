@@ -1253,6 +1253,13 @@ enhanced-select {
   color: var(--color-text-secondary);
 }
 
+/* Explicit dark mode heading colors */
+[data-theme="dark"] .doc-content h1,
+[data-theme="dark"] .doc-content h2,
+[data-theme="dark"] .doc-content h3 {
+  color: var(--color-text);
+}
+
 /* Inline code - overridden by syntax highlighting styles below */
 .doc-content code {
   background-color: var(--color-bg-secondary);
