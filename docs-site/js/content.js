@@ -1417,44 +1417,110 @@ export default function MyComponent() {
     
     <div class="doc-section">
       <h2>Installation</h2>
-      <pre><code class="language-bash">npm install @smilodon/core @smilodon/vue</code></pre>
+      <pre><code class="language-bash">npm install @smilodon/core @smilodon/vue
+# or
+yarn add @smilodon/core @smilodon/vue
+# or
+pnpm add @smilodon/core @smilodon/vue</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Basic Usage</h2>
+      <h2>Basic Usage (Composition API)</h2>
       <pre><code class="language-vue">&lt;template&gt;
-  &lt;NativeSelect
+  &lt;EnhancedSelect
     :items="items"
-    :value="selected"
+    :selected-indices="selectedIndices"
     @select="handleSelect"
+    placeholder="Select a fruit"
   /&gt;
 &lt;/template&gt;
 
 &lt;script setup&gt;
 import { ref } from 'vue';
-import { NativeSelect } from '@smilodon/vue';
+import { EnhancedSelect } from '@smilodon/vue';
 
-const selected = ref(null);
+const selectedIndices = ref([]);
 const items = [
-  { id: 1, label: 'Option 1' },
-  { id: 2, label: 'Option 2' },
-  { id: 3, label: 'Option 3' }
+  { id: 1, label: 'Apple', value: 'apple' },
+  { id: 2, label: 'Banana', value: 'banana' },
+  { id: 3, label: 'Cherry', value: 'cherry' }
 ];
 
-function handleSelect({ items }) {
-  selected.value = items[0];
+function handleSelect({ selectedIndices: indices, selectedItems }) {
+  selectedIndices.value = indices;
+  console.log('Selected:', selectedItems);
 }
 &lt;/script&gt;</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Composition API</h2>
-      <pre><code class="language-vue">&lt;script setup&gt;
+      <h2>Multi-Select with Computed</h2>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;div&gt;
+    &lt;EnhancedSelect
+      mode="multi"
+      :items="items"
+      :selected-indices="selectedIndices"
+      @select="handleSelect"
+      :max-selections="3"
+      :close-on-select="false"
+    /&gt;
+    
+    &lt;p&gt;Selected: {{ selectedCount }} items&lt;/p&gt;
+    &lt;button @click="clearSelection"&gt;Clear All&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
 import { ref, computed } from 'vue';
-import { NativeSelect } from '@smilodon/vue';
+import { EnhancedSelect } from '@smilodon/vue';
+
+const selectedIndices = ref([]);
+const items = [
+  { id: 1, label: 'React', icon: '⚛️' },
+  { id: 2, label: 'Vue', icon: '💚' },
+  { id: 3, label: 'Svelte', icon: '🔥' },
+  { id: 4, label: 'Angular', icon: '🅰️' }
+];
+
+const selectedCount = computed(() => selectedIndices.value.length);
+
+function handleSelect({ selectedIndices: indices }) {
+  selectedIndices.value = indices;
+}
+
+function clearSelection() {
+  selectedIndices.value = [];
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Searchable with Filtering</h2>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;EnhancedSelect
+    searchable
+    :items="filteredItems"
+    :selected-indices="selectedIndices"
+    @select="handleSelect"
+    @search="handleSearch"
+    :search-debounce="300"
+    placeholder="Search..."
+  /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, computed } from 'vue';
+import { EnhancedSelect } from '@smilodon/vue';
 
 const searchQuery = ref('');
-const allItems = ref([...]);
+const selectedIndices = ref([]);
+const allItems = ref([
+  { id: 1, label: 'Apple', category: 'Fruit' },
+  { id: 2, label: 'Banana', category: 'Fruit' },
+  { id: 3, label: 'Carrot', category: 'Vegetable' },
+  { id: 4, label: 'Broccoli', category: 'Vegetable' }
+]);
 
 const filteredItems = computed(() => {
   if (!searchQuery.value) return allItems.value;
@@ -1462,6 +1528,210 @@ const filteredItems = computed(() => {
     item.label.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
+
+function handleSearch({ query }) {
+  searchQuery.value = query;
+}
+
+function handleSelect({ selectedIndices: indices }) {
+  selectedIndices.value = indices;
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Custom Rendering with Slots</h2>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;EnhancedSelect
+    :items="users"
+    :selected-indices="selectedIndices"
+    @select="handleSelect"
+  &gt;
+    &lt;template #option="{ item }"&gt;
+      &lt;div class="user-option"&gt;
+        &lt;img :src="item.avatar" :alt="item.name" class="avatar" /&gt;
+        &lt;div&gt;
+          &lt;div class="name"&gt;{{ item.name }}&lt;/div&gt;
+          &lt;div class="email"&gt;{{ item.email }}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/template&gt;
+    
+    &lt;template #value="{ item }"&gt;
+      &lt;div class="selected-user"&gt;
+        &lt;img :src="item.avatar" class="avatar-small" /&gt;
+        &lt;span&gt;{{ item.name }}&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/template&gt;
+  &lt;/EnhancedSelect&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from 'vue';
+import { EnhancedSelect } from '@smilodon/vue';
+
+const selectedIndices = ref([]);
+const users = [
+  { 
+    id: 1, 
+    name: 'John Doe', 
+    email: 'john@example.com', 
+    avatar: '/john.jpg' 
+  },
+  { 
+    id: 2, 
+    name: 'Jane Smith', 
+    email: 'jane@example.com', 
+    avatar: '/jane.jpg' 
+  }
+];
+
+function handleSelect({ selectedIndices: indices }) {
+  selectedIndices.value = indices;
+}
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.user-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.avatar-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.email {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+&lt;/style&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>With Ref & Template Ref</h2>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;div&gt;
+    &lt;EnhancedSelect
+      ref="selectRef"
+      :items="items"
+      :selected-indices="selectedIndices"
+      @select="handleSelect"
+      mode="multi"
+    /&gt;
+    
+    &lt;button @click="clearAll"&gt;Clear All&lt;/button&gt;
+    &lt;button @click="openDropdown"&gt;Open Dropdown&lt;/button&gt;
+    &lt;button @click="closeDropdown"&gt;Close Dropdown&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from 'vue';
+import { EnhancedSelect } from '@smilodon/vue';
+
+const selectRef = ref(null);
+const selectedIndices = ref([]);
+const items = [...];
+
+function handleSelect({ selectedIndices: indices }) {
+  selectedIndices.value = indices;
+}
+
+function clearAll() {
+  selectRef.value?.clear();
+}
+
+function openDropdown() {
+  selectRef.value?.open();
+}
+
+function closeDropdown() {
+  selectRef.value?.close();
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>TypeScript Support</h2>
+      <pre><code class="language-vue">&lt;script setup lang="ts"&gt;
+import { ref } from 'vue';
+import { EnhancedSelect, SelectItem, SelectEvent } from '@smilodon/vue';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+const selectedIndices = ref<number[]>([]);
+const users: SelectItem<User>[] = [
+  { 
+    id: 1, 
+    label: 'John', 
+    value: { id: 1, name: 'John', email: 'john@example.com' } 
+  },
+  { 
+    id: 2, 
+    label: 'Jane', 
+    value: { id: 2, name: 'Jane', email: 'jane@example.com' } 
+  }
+];
+
+function handleSelect(event: SelectEvent<User>) {
+  selectedIndices.value = event.selectedIndices;
+  console.log('Selected users:', event.selectedItems);
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Options API (Vue 2 Style)</h2>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;EnhancedSelect
+    :items="items"
+    :selected-indices="selectedIndices"
+    @select="handleSelect"
+  /&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import { EnhancedSelect } from '@smilodon/vue';
+
+export default {
+  components: {
+    EnhancedSelect
+  },
+  data() {
+    return {
+      selectedIndices: [],
+      items: [
+        { id: 1, label: 'Option 1' },
+        { id: 2, label: 'Option 2' },
+        { id: 3, label: 'Option 3' }
+      ]
+    };
+  },
+  methods: {
+    handleSelect({ selectedIndices, selectedItems }) {
+      this.selectedIndices = selectedIndices;
+      console.log('Selected:', selectedItems);
+    }
+  }
+};
 &lt;/script&gt;</code></pre>
     </div>
   `,
@@ -1471,30 +1741,317 @@ const filteredItems = computed(() => {
     
     <div class="doc-section">
       <h2>Installation</h2>
-      <pre><code class="language-bash">npm install @smilodon/core @smilodon/svelte</code></pre>
+      <pre><code class="language-bash">npm install @smilodon/core @smilodon/svelte
+# or
+yarn add @smilodon/core @smilodon/svelte
+# or
+pnpm add @smilodon/core @smilodon/svelte</code></pre>
     </div>
     
     <div class="doc-section">
       <h2>Basic Usage</h2>
       <pre><code class="language-svelte">&lt;script&gt;
-  import { NativeSelect } from '@smilodon/svelte';
+  import { EnhancedSelect } from '@smilodon/svelte';
   
-  let selected = null;
+  let selectedIndices = [];
   const items = [
-    { id: 1, label: 'Option 1' },
-    { id: 2, label: 'Option 2' },
-    { id: 3, label: 'Option 3' }
+    { id: 1, label: 'Apple', value: 'apple' },
+    { id: 2, label: 'Banana', value: 'banana' },
+    { id: 3, label: 'Cherry', value: 'cherry' }
   ];
   
   function handleSelect(event) {
-    selected = event.detail.items[0];
+    selectedIndices = event.detail.selectedIndices;
+    console.log('Selected:', event.detail.selectedItems);
   }
 &lt;/script&gt;
 
-&lt;NativeSelect
+&lt;EnhancedSelect
   {items}
-  value={selected}
+  {selectedIndices}
   on:select={handleSelect}
+  placeholder="Select a fruit"
+/&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Multi-Select with Reactive Statements</h2>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { EnhancedSelect } from '@smilodon/svelte';
+  
+  let selectedIndices = [];
+  let selectedCount = 0;
+  
+  const items = [
+    { id: 1, label: 'React', icon: '⚛️' },
+    { id: 2, label: 'Vue', icon: '💚' },
+    { id: 3, label: 'Svelte', icon: '🔥' },
+    { id: 4, label: 'Angular', icon: '🅰️' }
+  ];
+  
+  $: selectedCount = selectedIndices.length;
+  
+  function handleSelect(event) {
+    selectedIndices = event.detail.selectedIndices;
+  }
+  
+  function clearSelection() {
+    selectedIndices = [];
+  }
+&lt;/script&gt;
+
+&lt;div&gt;
+  &lt;EnhancedSelect
+    mode="multi"
+    {items}
+    {selectedIndices}
+    on:select={handleSelect}
+    maxSelections={3}
+    closeOnSelect={false}
+  /&gt;
+  
+  &lt;p&gt;Selected: {selectedCount} items&lt;/p&gt;
+  &lt;button on:click={clearSelection}&gt;Clear All&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Searchable with Stores</h2>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { writable, derived } from 'svelte/store';
+  import { EnhancedSelect } from '@smilodon/svelte';
+  
+  const searchQuery = writable('');
+  const allItems = writable([
+    { id: 1, label: 'Apple', category: 'Fruit' },
+    { id: 2, label: 'Banana', category: 'Fruit' },
+    { id: 3, label: 'Carrot', category: 'Vegetable' },
+    { id: 4, label: 'Broccoli', category: 'Vegetable' }
+  ]);
+  
+  const filteredItems = derived(
+    [searchQuery, allItems],
+    ([$query, $items]) => {
+      if (!$query) return $items;
+      return $items.filter(item =>
+        item.label.toLowerCase().includes($query.toLowerCase())
+      );
+    }
+  );
+  
+  let selectedIndices = [];
+  
+  function handleSearch(event) {
+    $searchQuery = event.detail.query;
+  }
+  
+  function handleSelect(event) {
+    selectedIndices = event.detail.selectedIndices;
+  }
+&lt;/script&gt;
+
+&lt;EnhancedSelect
+  searchable
+  items={$filteredItems}
+  {selectedIndices}
+  on:search={handleSearch}
+  on:select={handleSelect}
+  searchDebounce={300}
+  placeholder="Search items..."
+/&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Custom Rendering with Slots</h2>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { EnhancedSelect } from '@smilodon/svelte';
+  
+  let selectedIndices = [];
+  const users = [
+    { 
+      id: 1, 
+      name: 'John Doe', 
+      email: 'john@example.com', 
+      avatar: '/john.jpg' 
+    },
+    { 
+      id: 2, 
+      name: 'Jane Smith', 
+      email: 'jane@example.com', 
+      avatar: '/jane.jpg' 
+    }
+  ];
+  
+  function handleSelect(event) {
+    selectedIndices = event.detail.selectedIndices;
+  }
+&lt;/script&gt;
+
+&lt;EnhancedSelect
+  items={users}
+  {selectedIndices}
+  on:select={handleSelect}
+  let:item
+  let:type
+&gt;
+  {#if type === 'option'}
+    &lt;div class="user-option"&gt;
+      &lt;img src={item.avatar} alt={item.name} class="avatar" /&gt;
+      &lt;div&gt;
+        &lt;div class="name"&gt;{item.name}&lt;/div&gt;
+        &lt;div class="email"&gt;{item.email}&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  {:else if type === 'value'}
+    &lt;div class="selected-user"&gt;
+      &lt;img src={item.avatar} class="avatar-small" /&gt;
+      &lt;span&gt;{item.name}&lt;/span&gt;
+    &lt;/div&gt;
+  {/if}
+&lt;/EnhancedSelect&gt;
+
+&lt;style&gt;
+  .user-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+  
+  .avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  
+  .name {
+    font-weight: 600;
+  }
+  
+  .email {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+&lt;/style&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>With Bindings & Methods</h2>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { EnhancedSelect } from '@smilodon/svelte';
+  
+  let selectComponent;
+  let selectedIndices = [];
+  const items = [...];
+  
+  function handleSelect(event) {
+    selectedIndices = event.detail.selectedIndices;
+  }
+  
+  function clearAll() {
+    selectComponent?.clear();
+  }
+  
+  function openDropdown() {
+    selectComponent?.open();
+  }
+  
+  function closeDropdown() {
+    selectComponent?.close();
+  }
+&lt;/script&gt;
+
+&lt;div&gt;
+  &lt;EnhancedSelect
+    bind:this={selectComponent}
+    {items}
+    {selectedIndices}
+    mode="multi"
+    on:select={handleSelect}
+  /&gt;
+  
+  &lt;button on:click={clearAll}&gt;Clear All&lt;/button&gt;
+  &lt;button on:click={openDropdown}&gt;Open&lt;/button&gt;
+  &lt;button on:click={closeDropdown}&gt;Close&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>TypeScript Support</h2>
+      <pre><code class="language-svelte">&lt;script lang="ts"&gt;
+  import { EnhancedSelect, type SelectItem, type SelectEvent } from '@smilodon/svelte';
+  
+  interface User {
+    id: number;
+    name: string;
+    email: string;
+  }
+  
+  let selectedIndices: number[] = [];
+  const users: SelectItem<User>[] = [
+    { 
+      id: 1, 
+      label: 'John', 
+      value: { id: 1, name: 'John', email: 'john@example.com' } 
+    },
+    { 
+      id: 2, 
+      label: 'Jane', 
+      value: { id: 2, name: 'Jane', email: 'jane@example.com' } 
+    }
+  ];
+  
+  function handleSelect(event: SelectEvent<User>) {
+    selectedIndices = event.detail.selectedIndices;
+    console.log('Selected users:', event.detail.selectedItems);
+  }
+&lt;/script&gt;
+
+&lt;EnhancedSelect
+  items={users}
+  {selectedIndices}
+  on:select={handleSelect}
+/&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>SvelteKit Integration</h2>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { EnhancedSelect } from '@smilodon/svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  
+  let selectedIndices = [];
+  
+  const pages = [
+    { id: 1, label: 'Home', value: '/' },
+    { id: 2, label: 'About', value: '/about' },
+    { id: 3, label: 'Contact', value: '/contact' }
+  ];
+  
+  // Navigate on selection
+  function handleSelect(event) {
+    const selected = event.detail.selectedItems[0];
+    if (selected) {
+      goto(selected.value);
+    }
+  }
+  
+  // Highlight current page
+  $: currentIndex = pages.findIndex(p => p.value === $page.url.pathname);
+  $: if (currentIndex >= 0) selectedIndices = [currentIndex];
+&lt;/script&gt;
+
+&lt;EnhancedSelect
+  items={pages}
+  {selectedIndices}
+  on:select={handleSelect}
+  placeholder="Navigate..."
 /&gt;</code></pre>
     </div>
     
@@ -4331,26 +4888,141 @@ interface SearchEvent {
     
     <div class="doc-section">
       <h2>Installation</h2>
-      <pre><code class="language-bash">npm install @smilodon/core @smilodon/solid</code></pre>
+      <pre><code class="language-bash">npm install @smilodon/core @smilodon/solid
+# or
+yarn add @smilodon/core @smilodon/solid
+# or
+pnpm add @smilodon/core @smilodon/solid</code></pre>
     </div>
     
     <div class="doc-section">
       <h2>Basic Usage</h2>
-      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/solid';
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/solid';
 import { createSignal } from 'solid-js';
 
 function App() {
-  const [selected, setSelected] = createSignal(null);
+  const [selectedIndices, setSelectedIndices] = createSignal<number[]>([]);
   const items = [
-    { id: 1, label: 'Option 1' },
-    { id: 2, label: 'Option 2' }
+    { id: 1, label: 'Apple', value: 'apple' },
+    { id: 2, label: 'Banana', value: 'banana' },
+    { id: 3, label: 'Cherry', value: 'cherry' }
   ];
   
   return (
-    &lt;NativeSelect
+    <EnhancedSelect
       items={items}
-      onSelect={({ items }) => setSelected(items[0])}
-    /&gt;
+      selectedIndices={selectedIndices()}
+      onSelect={({ selectedIndices: indices, selectedItems }) => {
+        setSelectedIndices(indices);
+        console.log('Selected:', selectedItems);
+      }}
+      placeholder="Select a fruit"
+    />
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Multi-Select with Signals</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/solid';
+import { createSignal, createMemo } from 'solid-js';
+
+function MultiSelectExample() {
+  const [selectedIndices, setSelectedIndices] = createSignal<number[]>([]);
+  const selectedCount = createMemo(() => selectedIndices().length);
+  
+  const items = [
+    { id: 1, label: 'React', icon: '⚛️' },
+    { id: 2, label: 'Solid', icon: '🔷' },
+    { id: 3, label: 'Vue', icon: '💚' },
+    { id: 4, label: 'Svelte', icon: '🔥' }
+  ];
+
+  const handleSelect = ({ selectedIndices: indices }) => {
+    setSelectedIndices(indices);
+  };
+  
+  const clearAll = () => setSelectedIndices([]);
+
+  return (
+    <div>
+      <EnhancedSelect
+        mode="multi"
+        items={items}
+        selectedIndices={selectedIndices()}
+        onSelect={handleSelect}
+        maxSelections={3}
+        closeOnSelect={false}
+      />
+      
+      <p>Selected: {selectedCount()} items</p>
+      <button onClick={clearAll}>Clear All</button>
+    </div>
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Searchable with Resources</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/solid';
+import { createSignal, createResource } from 'solid-js';
+
+async function fetchUsers(query: string) {
+  const response = await fetch(\`/api/users?q=\${query}\`);
+  return response.json();
+}
+
+function SearchExample() {
+  const [searchQuery, setSearchQuery] = createSignal('');
+  const [selectedIndices, setSelectedIndices] = createSignal([]);
+  
+  const [users] = createResource(searchQuery, fetchUsers);
+
+  return (
+    <EnhancedSelect
+      searchable
+      items={users() || []}
+      selectedIndices={selectedIndices()}
+      onSearch={({ query }) => setSearchQuery(query)}
+      onSelect={({ selectedIndices: indices }) => setSelectedIndices(indices)}
+      searchDebounce={300}
+      placeholder="Search users..."
+      loading={users.loading}
+    />
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>With Ref & Methods</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/solid';
+import { createSignal } from 'solid-js';
+
+function RefExample() {
+  let selectRef: any;
+  const [selectedIndices, setSelectedIndices] = createSignal([]);
+
+  const handleClearAll = () => {
+    selectRef?.clear();
+  };
+
+  const handleOpen = () => {
+    selectRef?.open();
+  };
+
+  return (
+    <div>
+      <EnhancedSelect
+        ref={selectRef}
+        items={items}
+        mode="multi"
+        selectedIndices={selectedIndices()}
+        onSelect={({ selectedIndices: indices }) => setSelectedIndices(indices)}
+      />
+      
+      <button onClick={handleClearAll}>Clear All</button>
+      <button onClick={handleOpen}>Open Dropdown</button>
+    </div>
   );
 }</code></pre>
     </div>
@@ -4360,23 +5032,142 @@ function App() {
     <h1>Vanilla JS Integration</h1>
     
     <div class="doc-section">
-      <h2>Direct DOM Usage</h2>
-      <pre><code class="language-html">&lt;enhanced-select id="mySelect"&gt;&lt;/enhanced-select&gt;
+      <h2>Installation</h2>
+      <pre><code class="language-bash">npm install @smilodon/core
+# or
+yarn add @smilodon/core
+# or via CDN
+&lt;script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core/+esm"&gt;&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>CDN Usage (No Build Step)</h2>
+      <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Smilodon Example&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;enhanced-select id="mySelect"&gt;&lt;/enhanced-select&gt;
 
-&lt;script type="module"&gt;
-  import { NativeSelectElement } from '@smilodon/core';
+  &lt;script type="module"&gt;
+    import { EnhancedSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core/+esm';
+    
+    const select = document.getElementById('mySelect');
+    
+    select.items = [
+      { id: 1, label: 'Apple', value: 'apple' },
+      { id: 2, label: 'Banana', value: 'banana' },
+      { id: 3, label: 'Cherry', value: 'cherry' }
+    ];
+    
+    select.addEventListener('select', (e) => {
+      console.log('Selected:', e.detail.selectedItems);
+    });
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>ES Module Usage</h2>
+      <pre><code class="language-javascript">import { EnhancedSelect } from '@smilodon/core';
+
+// Create select element
+const select = document.createElement('enhanced-select');
+
+// Configure
+select.items = [
+  { id: 1, label: 'React', value: 'react' },
+  { id: 2, label: 'Vue', value: 'vue' },
+  { id: 3, label: 'Svelte', value: 'svelte' }
+];
+
+select.placeholder = 'Select a framework';
+select.selectedIndices = [];
+
+// Add event listeners
+select.addEventListener('select', (e) => {
+  console.log('Selected:', e.detail.selectedItems);
+});
+
+// Add to DOM
+document.body.appendChild(select);</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Multi-Select Mode</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.mode = 'multi';
+select.items = items;
+select.maxSelections = 5;
+select.closeOnSelect = false;
+
+select.addEventListener('select', (e) => {
+  const { selectedIndices, selectedItems } = e.detail;
+  console.log(\`Selected \${selectedIndices.length} items:\`, selectedItems);
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Searchable with Remote Data</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+select.searchable = true;
+select.searchDebounce = 300;
+
+let abortController = null;
+
+select.addEventListener('search', async (e) => {
+  if (abortController) abortController.abort();
   
-  const select = document.getElementById('mySelect');
+  abortController = new AbortController();
   
-  select.items = [
-    { id: 1, label: 'Option 1' },
-    { id: 2, label: 'Option 2' }
-  ];
-  
-  select.addEventListener('select', (e) => {
-    console.log('Selected:', e.detail.items);
-  });
-&lt;/script&gt;</code></pre>
+  try {
+    const response = await fetch(\`/api/search?q=\${e.detail.query}\`, {
+      signal: abortController.signal
+    });
+    select.items = await response.json();
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('Search failed:', error);
+    }
+  }
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Programmatic Methods</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+// Open/close dropdown
+select.open();
+select.close();
+
+// Clear selection
+select.clear();
+
+// Set selection programmatically
+select.selectedIndices = [0, 2, 4];
+
+// Update items
+select.items = newItems;
+
+// Focus
+select.focus();</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Virtualization for Large Lists</h2>
+      <pre><code class="language-javascript">const items = Array.from({ length: 10000 }, (_, i) => ({
+  id: i,
+  label: \`Option \${i + 1}\`
+}));
+
+select.items = items;
+select.virtualized = true;
+select.estimatedItemHeight = 40;
+select.buffer = 5;</code></pre>
     </div>
   `,
   
