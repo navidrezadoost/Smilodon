@@ -222,11 +222,20 @@ class PlaygroundManager {
         console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
         
         // Prepare data in the format expected by Smilodon
-        const items = data.map(item => ({
+        let items = data.map(item => ({
           value: item.value,
           label: item.label,
           group: this.config.grouped ? item.category : undefined
         }));
+        
+        // Sort by group if grouped to ensure grouped items appear together
+        if (this.config.grouped) {
+          items = items.sort((a, b) => {
+            const groupA = a.group || '';
+            const groupB = b.group || '';
+            return groupA.localeCompare(groupB);
+          });
+        }
         
         console.log('Setting items - Count:', items.length, 'Grouped:', this.config.grouped, 'First 3:', items.slice(0, 3));
         

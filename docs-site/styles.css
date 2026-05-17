@@ -738,9 +738,9 @@ pre code {
 .playground-section {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   padding: var(--spacing-2xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .playground-header {
@@ -779,10 +779,11 @@ pre code {
 .playground-controls {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
-  background-color: var(--color-bg-secondary);
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-2xl);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
 
@@ -793,9 +794,10 @@ pre code {
 }
 
 .control-group label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
 }
 
 .button-group {
@@ -805,28 +807,29 @@ pre code {
 }
 
 .control-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   font-size: var(--font-size-sm);
+  font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
 }
 
 .control-btn:hover {
-  background-color: var(--color-bg-tertiary);
-  border-color: var(--color-border-dark);
-  color: var(--color-text);
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .control-btn.active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background-color: var(--color-primary);
   color: white;
-  border-color: transparent;
+  border-color: var(--color-primary);
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 4px rgba(15, 52, 96, 0.15);
 }
 
 .checkbox-group {
@@ -839,10 +842,17 @@ pre code {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   cursor: pointer;
   user-select: none;
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s ease;
+}
+
+.checkbox-label:hover {
+  background-color: var(--color-bg-secondary);
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -850,23 +860,25 @@ pre code {
   height: 18px;
   cursor: pointer;
   accent-color: var(--color-primary);
+  border-radius: 3px;
 }
 
 /* Playground Demo */
 .playground-demo {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
+  grid-template-columns: 1fr;
+  gap: var(--spacing-2xl);
 }
 
 .demo-container {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: var(--spacing-2xl);
-  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-3xl);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  min-height: 400px;
+  min-height: 200px;
 }
 
 .demo-info {
@@ -1420,6 +1432,38 @@ enhanced-select {
 
 [data-theme="dark"] .demo-label {
   color: #f8fafc !important;
+}
+
+/* Dark mode playground controls */
+[data-theme="dark"] .playground-controls {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .control-btn {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .control-btn:hover {
+  background-color: #334155;
+  border-color: #60a5fa;
+}
+
+[data-theme="dark"] .control-btn.active {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .checkbox-label:hover {
+  background-color: #334155;
+}
+
+[data-theme="dark"] .demo-container {
+  background-color: #1e293b;
+  border-color: #475569;
 }
 
 /* Inline code - overridden by syntax highlighting styles below */
