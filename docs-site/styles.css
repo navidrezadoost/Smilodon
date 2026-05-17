@@ -1257,7 +1257,7 @@ enhanced-select {
 [data-theme="dark"] .doc-content h1,
 [data-theme="dark"] .doc-content h2,
 [data-theme="dark"] .doc-content h3 {
-  color: var(--color-text);
+  color: #f8fafc !important;
 }
 
 /* Inline code - overridden by syntax highlighting styles below */
