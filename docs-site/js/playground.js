@@ -79,7 +79,7 @@ class PlaygroundManager {
     });
   }
 
-  setMode(mode) {
+  seconsole.log('Setting mode:', mode);
     this.config.mode = mode;
     
     // Update button states
@@ -91,6 +91,7 @@ class PlaygroundManager {
   }
 
   setDataSize(size) {
+    console.log('Setting data size:', size);
     this.config.dataSize = size;
     
     // Update button states
@@ -101,6 +102,8 @@ class PlaygroundManager {
     this.updateDemo();
   }
 
+  toggleFeature(feature, enabled) {
+    console.log('Toggling feature:', feature, '=', enabled);
   toggleFeature(feature, enabled) {
     this.config[feature] = enabled;
     this.updateDemo();
