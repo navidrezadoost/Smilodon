@@ -105,7 +105,6 @@ class PlaygroundManager {
 
   toggleFeature(feature, enabled) {
     console.log('Toggling feature:', feature, '=', enabled);
-  toggleFeature(feature, enabled) {
     this.config[feature] = enabled;
     this.updateDemo();
   }
@@ -200,64 +199,74 @@ class PlaygroundManager {
   }
 
   initializeSelect(data) {
-    // Use customElements.whenDefined for more reliable initialization
+    // Use customElements.whenDefined and add delay for element to be fully ready
     customElements.whenDefined('enhanced-select').then(() => {
-      const select = document.getElementById('demo-select');
-      if (!select) {
-        console.error('Select element not found');
-        return;
-      }
-      
-      if (typeof select.setItems !== 'function') {
-        console.error('setItems method not available on select');
-        return;
-      }
-      
-      if (typeof select.updateConfig !== 'function') {
-        console.error('updateConfig method not available on select');
-        return;
-      }
-      
-      console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
-      
-      // Configure features using updateConfig
-      const config = {
-        searchable: this.config.searchable,
-        virtualize: this.config.virtualized,
-        infiniteScroll: {
-          enabled: this.config.infiniteScroll,
-          pageSize: 50,
-          threshold: 100
-        },
-        selection: {
-          mode: this.config.mode,
-          closeOnSelect: this.config.mode === 'single'
+      // Small delay to ensure the element is connected and ready
+      setTimeout(() => {
+        const select = document.getElementById('demo-select');
+        if (!select) {
+          console.error('Select element not found');
+          return;
         }
-      };
-      
-      console.log('Calling updateConfig with:', JSON.stringify(config, null, 2));
-      select.updateConfig(config);
-      
-      // Prepare data in the format expected by Smilodon
-      const items = data.map(item => ({
-        value: item.value,
-        label: item.label,
-        group: this.config.grouped ? item.category : undefined
-      }));
-      
-      console.log('Setting items - Count:', items.length, 'Grouped:', this.config.grouped, 'First 3:', items.slice(0, 3));
-      
-      // Set items using the Smilodon API
-      select.setItems(items);
-      
-      // Add event listener for changes (only once)
-      select.removeEventListener('change', this._handleSelectChange);
-      this._handleSelectChange = (e) => {
-        console.log('Selection changed:', e.detail);
-      };
-      select.addEventListener('change', this._handleSelectChange);
-      
-      console.log('Select initialized successfully');
+        
+        if (typeof select.setItems !== 'function') {
+          console.error('setItems method not available on select');
+          return;
+        }
+        
+        if (typeof select.updateConfig !== 'function') {
+          console.error('updateConfig method not available on select');
+          return;
+        }
+        
+        console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
+        
+        // Prepare data in the format expected by Smilodon
+        const items = data.map(item => ({
+          value: item.value,
+          label: item.label,
+          group: this.config.grouped ? item.category : undefined
+        }));
+        
+        console.log('Setting items - Count:', items.length, 'Grouped:', this.config.grouped, 'First 3:', items.slice(0, 3));
+        
+        // Set items FIRST
+        select.setItems(items);
+        
+        // Then configure features using updateConfig AFTER setItems
+        const config = {
+          searchable: this.config.searchable,
+          virtualize: this.config.virtualized,
+          infiniteScroll: {
+            enabled: this.config.infiniteScroll,
+            pageSize: 50,
+            threshold: 100
+          },
+          selection: {
+            mode: this.config.mode,
+            closeOnSelect: this.config.mode === 'single'
+          }
+        };
+        
+        console.log('Calling updateConfig with:', JSON.stringify(config, null, 2));
+        select.updateConfig(config);
+        
+        // Force a re-render to ensure config is applied
+        if (typeof select._renderOptions === 'function') {
+          select._renderOptions();
+        }
+        
+        // Add event listener for changes (only once)
+        if (this._handleSelectChange) {
+          select.removeEventListener('change', this._handleSelectChange);
+        }
+        this._handleSelectChange = (e) => {
+          console.log('Selection changed:', e.detail);
+        };
+        select.addEventListener('change', this._handleSelectChange);
+        
+        console.log('Select initialized successfully with mode:', config.selection.mode, 'searchable:', config.searchable);
+      }, 50);
     }).catch(err => {
       console.error('Error initializing select:', err);
     });
