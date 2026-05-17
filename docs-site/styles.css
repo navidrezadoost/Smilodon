@@ -576,15 +576,16 @@ pre code {
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background-color: var(--color-primary);
   color: white;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
+  font-weight: 500;
+  padding-left: calc(var(--spacing-md) + 6px);
 }
 
 .nav-link.active::before {
   transform: translateX(0);
   background: white;
+  width: 2px;
 }
 
 /* ===== Content Area ===== */
@@ -1292,6 +1293,82 @@ enhanced-select {
 
 [data-theme="dark"] .feature-card p {
   color: #cbd5e1 !important;
+}
+
+/* Dark mode sidebar navigation */
+[data-theme="dark"] .nav-section-title {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .nav-link {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .nav-link:hover {
+  background-color: #1e293b;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .nav-link.active {
+  background-color: #3b82f6;
+  color: #ffffff !important;
+}
+
+/* Dark mode header controls */
+[data-theme="dark"] .language-btn {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .language-btn:hover {
+  background-color: #334155;
+  border-color: #64748b;
+}
+
+[data-theme="dark"] .language-dropdown {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .language-dropdown button {
+  color: #f8fafc !important;
+  border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .language-dropdown button:hover {
+  background-color: #334155;
+}
+
+[data-theme="dark"] .theme-toggle {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background-color: #334155;
+}
+
+[data-theme="dark"] .direction-toggle {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .direction-toggle:hover {
+  background-color: #334155;
+}
+
+[data-theme="dark"] .github-link {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .github-link:hover {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
 }
 
 /* Inline code - overridden by syntax highlighting styles below */
