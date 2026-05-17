@@ -10,6 +10,9 @@
     <a href="https://bundlephobia.com/package/@smilodon/core"><img src="https://img.shields.io/bundlephobia/minzip/@smilodon/core" alt="bundle size"></a>
     <a href="LICENSE"><img src="https://img.shields.io/npm/l/@smilodon/core.svg" alt="license"></a>
   </p>
+  <p>
+    <strong><a href="https://navidrezadoost.github.io/Smilodon/">📚 View Documentation & Live Examples</a></strong>
+  </p>
 </div>
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
