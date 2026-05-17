@@ -1161,6 +1161,19 @@ enhanced-select {
   --select-text: var(--color-text);
   --select-focus: var(--color-primary);
   --select-hover: var(--color-primary-light);
+  --select-dropdown-bg: var(--color-surface);
+  --select-dropdown-border: var(--color-border);
+  --select-option-bg: var(--color-bg);
+  --select-option-color: var(--color-text);
+  --select-option-hover-bg: var(--color-bg-hover);
+  --select-option-hover-color: var(--color-text);
+  --select-option-selected-bg: var(--color-primary);
+  --select-option-selected-color: #ffffff;
+  --select-option-active-bg: var(--color-bg-secondary);
+  --select-option-active-color: var(--color-text);
+  --select-input-bg: var(--color-bg);
+  --select-input-color: var(--color-text);
+  --select-input-placeholder-color: var(--color-text-muted);
   display: block;
   width: 100%;
   font-family: inherit;
@@ -1381,6 +1394,28 @@ enhanced-select {
 
 [data-theme="dark"] .framework-card p {
   color: #cbd5e1 !important;
+}
+
+/* Dark mode for Smilodon select component */
+[data-theme="dark"] enhanced-select {
+  --select-bg: #1e293b;
+  --select-border: #475569;
+  --select-text: #f8fafc;
+  --select-focus: #60a5fa;
+  --select-hover: #93c5fd;
+  --select-dropdown-bg: #1e293b;
+  --select-dropdown-border: #475569;
+  --select-option-bg: #1e293b;
+  --select-option-color: #e2e8f0;
+  --select-option-hover-bg: #334155;
+  --select-option-hover-color: #f8fafc;
+  --select-option-selected-bg: #3b82f6;
+  --select-option-selected-color: #ffffff;
+  --select-option-active-bg: #2d3748;
+  --select-option-active-color: #f8fafc;
+  --select-input-bg: #1e293b;
+  --select-input-color: #f8fafc;
+  --select-input-placeholder-color: #94a3b8;
 }
 
 /* Inline code - overridden by syntax highlighting styles below */

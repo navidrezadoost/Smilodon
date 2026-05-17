@@ -176,8 +176,6 @@ class PlaygroundManager {
         <enhanced-select 
           id="demo-select" 
           class="demo-select"
-          ${isMulti ? 'multiple' : ''}
-          ${this.config.searchable ? 'searchable' : ''}
           placeholder="Choose an option..."
         >
         </enhanced-select>
@@ -201,6 +199,20 @@ class PlaygroundManager {
     requestAnimationFrame(() => {
       const select = document.getElementById('demo-select');
       if (select && typeof select.setItems === 'function') {
+        // Configure features using updateConfig
+        select.updateConfig({
+          searchable: this.config.searchable,
+          virtualize: this.config.virtualized,
+          infiniteScroll: {
+            enabled: this.config.infiniteScroll,
+            pageSize: 50,
+            threshold: 100
+          },
+          selection: {
+            mode: this.config.mode
+          }
+        });
+        
         // Prepare data in the format expected by Smilodon
         const items = data.map(item => ({
           value: item.value,
