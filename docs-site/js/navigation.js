@@ -144,6 +144,13 @@ class NavigationManager {
       `;
     }
     
+    // Add copy buttons to code blocks
+    if (window.smilodonApp && window.smilodonApp.addCopyButtonsToCodeBlocks) {
+      setTimeout(() => {
+        window.smilodonApp.addCopyButtonsToCodeBlocks();
+      }, 100);
+    }
+    
     // Scroll to top
     window.scrollTo(0, 0);
   }

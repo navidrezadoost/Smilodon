@@ -68,12 +68,38 @@ class App {
   }
 
   setupGlobalListeners() {
-    // Language selector
+    // Language selector toggle
+    const langBtn = document.getElementById('languageBtn');
+    const langDropdown = document.getElementById('languageDropdown');
+    
+    if (langBtn && langDropdown) {
+      langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langDropdown.classList.toggle('active');
+        langBtn.classList.toggle('active');
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!langBtn.contains(e.target) && !langDropdown.contains(e.target)) {
+          langDropdown.classList.remove('active');
+          langBtn.classList.remove('active');
+        }
+      });
+    }
+    
+    // Language selector buttons
     const langBtns = document.querySelectorAll('[data-lang]');
     langBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const lang = btn.getAttribute('data-lang');
         this.changeLanguage(lang);
+        
+        // Close dropdown after selection
+        if (langDropdown) {
+          langDropdown.classList.remove('active');
+          if (langBtn) langBtn.classList.remove('active');
+        }
       });
     });
     
@@ -86,7 +112,7 @@ class App {
     }
     
     // Direction toggle
-    const directionToggle = document.getElementById('direction-toggle');
+    const directionToggle = document.getElementById('directionToggle');
     if (directionToggle) {
       directionToggle.addEventListener('click', () => {
         this.toggleDirection();
@@ -97,6 +123,9 @@ class App {
     document.addEventListener('keydown', (e) => {
       this.handleKeyboardShortcuts(e);
     });
+    
+    // Add copy buttons to code blocks
+    this.addCopyButtonsToCodeBlocks();
   }
 
   changeLanguage(lang) {
@@ -174,6 +203,80 @@ class App {
         btn.classList.toggle('active', btn.getAttribute('data-lang') === savedLang);
       });
     }
+  }
+  
+  addCopyButtonsToCodeBlocks() {
+    // Add copy buttons to all code blocks
+    const codeBlocks = document.querySelectorAll('.doc-content pre');
+    
+    codeBlocks.forEach(pre => {
+      // Skip if already has a copy button
+      if (pre.querySelector('.copy-code-btn')) return;
+      
+      const button = document.createElement('button');
+      button.className = 'copy-code-btn';
+      button.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span>Copy</span>
+      `;
+      
+      button.addEventListener('click', async () => {
+        const code = pre.querySelector('code');
+        const text = code ? code.textContent : pre.textContent;
+        
+        try {
+          await navigator.clipboard.writeText(text);
+          
+          // Update button state
+          button.classList.add('copied');
+          button.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Copied!</span>
+          `;
+          
+          // Reset after 2 seconds
+          setTimeout(() => {
+            button.classList.remove('copied');
+            button.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            `;
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy code:', err);
+          
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            button.classList.add('copied');
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+              button.classList.remove('copied');
+              button.textContent = 'Copy';
+            }, 2000);
+          } catch (err2) {
+            console.error('Fallback copy failed:', err2);
+          }
+          document.body.removeChild(textArea);
+        }
+      });
+      
+      pre.appendChild(button);
+    });
   }
 }
 

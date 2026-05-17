@@ -15,6 +15,7 @@
   --color-bg: #ffffff;
   --color-bg-secondary: #f8f9fa;
   --color-bg-tertiary: #f1f3f5;
+  --color-bg-hover: #f3f4f6;
   --color-surface: #ffffff;
   --color-surface-elevated: #fafbfc;
   
@@ -56,6 +57,11 @@
   --line-height-tight: 1.25;
   --line-height-base: 1.5;
   --line-height-relaxed: 1.75;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
   
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -105,17 +111,18 @@
   
   --color-bg: #0f172a;
   --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
+  --color-bg-tertiary: #2d3748;
+  --color-bg-hover: #334155;
   --color-surface: #1e293b;
   --color-surface-elevated: #334155;
   
-  --color-text: #f1f5f9;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #94a3b8;
+  --color-text: #f8fafc;
+  --color-text-secondary: #e2e8f0;
+  --color-text-muted: #cbd5e1;
   
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-  --color-border-dark: #475569;
+  --color-border: #475569;
+  --color-border-light: #334155;
+  --color-border-dark: #64748b;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -1209,6 +1216,7 @@ enhanced-select {
 }
 
 .doc-content pre {
+  position: relative;
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1223,6 +1231,57 @@ enhanced-select {
   color: var(--color-text);
   font-size: var(--font-size-sm);
   line-height: 1.6;
+}
+
+/* Copy Button for Code Blocks */
+.code-block-wrapper {
+  position: relative;
+}
+
+.copy-code-btn {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-base);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.doc-content pre:hover .copy-code-btn {
+  opacity: 1;
+}
+
+.copy-code-btn:hover {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.copy-code-btn:active {
+  transform: scale(0.95);
+}
+
+.copy-code-btn.copied {
+  background-color: var(--color-success);
+  color: white;
+  border-color: var(--color-success);
+  opacity: 1;
+}
+
+.copy-code-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .doc-section {
