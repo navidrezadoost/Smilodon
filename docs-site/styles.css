@@ -1102,25 +1102,9 @@ pre code {
 }
 
 .demo-select {
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-size: var(--font-size-base);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.demo-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.demo-select[multiple] {
-  min-height: 200px;
+  /* Remove unnecessary wrapper styling - Smilodon handles its own styling */
+  display: block;
+  width: 100%;
 }
 
 /* Smilodon component styling */

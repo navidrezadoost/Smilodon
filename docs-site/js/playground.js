@@ -216,21 +216,8 @@ class PlaygroundManager {
 
   initializeSelect(data) {
     const select = document.getElementById('demo-select');
-    if (select && window.Smilodon) {
-      // Set options
-      data.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.value;
-        option.textContent = item.label;
-        if (item.category) option.dataset.category = item.category;
-        select.appendChild(option);
-      });
-      
-      // Apply configuration attributes
-      if (this.config.searchable) select.setAttribute('searchable', '');
-      if (this.config.virtualized) select.setAttribute('virtualized', '');
-      if (this.config.grouped) select.setAttribute('grouped', '');
-      
+    if (select) {
+      // Options are already rendered in HTML, just add event listener
       select.addEventListener('change', () => {
         console.log('Selection changed:', select.value);
       });
