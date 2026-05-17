@@ -1698,25 +1698,24 @@ export class EnhancedSelect extends HTMLElement {
        ───────────────────────────────────────────────────────────────────────── */
 
       .group-header {
-        padding: var(--select-group-header-padding, 10px 12px 8px);
+        padding: var(--select-group-header-padding, 10px 12px 8px 12px);
         margin: var(--select-group-header-margin, 0);
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, var(--select-text-muted));
-        background-color: var(--select-group-header-bg, var(--select-surface));
+        background: var(--select-group-header-bg, #ffffff);
         text-align: var(--select-group-header-text-align, left);
         font-size: var(--select-group-header-font-size, 0.7333em);
         text-transform: var(--select-group-header-text-transform, uppercase);
         letter-spacing: var(--select-group-header-letter-spacing, 0.08em);
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: 100;
         border: var(--select-group-header-border, none);
-        border-bottom: var(--select-group-header-border-bottom, none);
+        border-bottom: var(--select-group-header-border-bottom, 1px solid rgba(0, 0, 0, 0.08));
         border-radius: var(--select-group-header-border-radius, 0);
-        box-shadow: var(--select-group-header-shadow, none);
-        /* Ensure solid background to cover scrolling options */
-        background-clip: padding-box;
-        backdrop-filter: blur(0px);
+        box-shadow: var(--select-group-header-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+        /* Force solid background to prevent option bleed-through */
+        isolation: isolate;
       }
       
       .group-header:not(:first-child) {
@@ -2114,6 +2113,22 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([data-theme="dark"]) .group-header:not(:first-child),
       :host-context([theme="dark"]) .group-header:not(:first-child) {
         border-top-color: var(--select-border);
+      }
+
+      :host(.dark-mode) .group-header,
+      :host([dark-mode]) .group-header,
+      :host([darkmode]) .group-header,
+      :host([data-theme="dark"]) .group-header,
+      :host([theme="dark"]) .group-header,
+      :host-context(.dark-mode) .group-header,
+      :host-context(.dark) .group-header,
+      :host-context([dark-mode]) .group-header,
+      :host-context([darkmode]) .group-header,
+      :host-context([data-theme="dark"]) .group-header,
+      :host-context([theme="dark"]) .group-header {
+        background: var(--select-group-header-bg, #1a1a2e);
+        border-bottom: var(--select-group-header-border-bottom, 1px solid rgba(255, 255, 255, 0.08));
+        box-shadow: var(--select-group-header-shadow, 0 1px 2px rgba(0, 0, 0, 0.3));
       }
 
       :host(.dark-mode) .option.selected::before,
