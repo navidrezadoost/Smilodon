@@ -517,59 +517,649 @@ function handleSelect({ indices, items }) {
   `,
   
   'styling-guide': `
-    <h1>Styling Guide</h1>
+    <h1>Complete Styling Guide</h1>
     
+    <div class="doc-note">
+      <p>📚 This guide covers all styling methods, tokens, and framework integration patterns for Smilodon.</p>
+    </div>
+
     <div class="doc-section">
-      <h2>CSS Custom Properties</h2>
-      <p>Smilodon uses CSS custom properties for easy theming:</p>
+      <h2>Styling Hierarchy (Recommended)</h2>
+      <p>Use the right styling method for your needs:</p>
       
+      <div class="doc-table-wrapper">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>Method</th>
+              <th>When to Use</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td><strong>CSS Variables</strong></td>
+              <td>Overall organizational theme</td>
+              <td><code>--select-primary: #3b82f6;</code></td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td><strong>::part() Selectors</strong></td>
+              <td>Style key inner elements</td>
+              <td><code>enhanced-select::part(input) { }</code></td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td><strong>classMap</strong></td>
+              <td>Override states with utilities</td>
+              <td><code>classMap: { selected: 'bg-blue-700' }</code></td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td><strong>[data-sm-state]</strong></td>
+              <td>Strong fallback or complex selectors</td>
+              <td><code>[data-sm-state~="selected"]</code></td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td><strong>Custom Renderers</strong></td>
+              <td>Rich option content</td>
+              <td><code>optionRenderer: (item) => ...</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>1. CSS Custom Properties (Variables)</h2>
+      <p>The fastest way to theme the entire component:</p>
+      
+      <h3>Core Theme Tokens</h3>
       <pre><code class="language-css">:root {
-  /* Colors */
-  --select-primary-color: #3b82f6;
-  --select-bg-color: #ffffff;
-  --select-text-color: #1f2937;
-  --select-border-color: #d1d5db;
+  /* Layout */
+  --select-width: 100%;
+  --select-height: auto;
   
-  /* Sizing */
-  --select-border-radius: 8px;
-  --select-padding: 12px;
-  --select-font-size: 14px;
+  /* Colors */
+  --select-primary: #1a1a2e;
+  --select-primary-light: #16213e;
+  --select-accent: #0f3460;
+  --select-accent-hover: #e94560;
+  --select-surface: #ffffff;
+  --select-surface-elevated: #fafbfc;
+  --select-border: #e1e5eb;
+  --select-border-focus: #0f3460;
+  --select-text: #1a1a2e;
+  --select-text-muted: #6b7280;
+  --select-text-placeholder: #9ca3af;
   
   /* Shadows */
-  --select-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --select-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --select-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --select-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --select-shadow-focus: 0 0 0 3px rgba(15, 52, 96, 0.12);
+  
+  /* Border Radius */
+  --select-radius-sm: 6px;
+  --select-radius-md: 10px;
+  --select-radius-lg: 14px;
+  
+  /* Transitions */
+  --select-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --select-transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --select-transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Typography */
+  --select-font-family: 'Inter', -apple-system, sans-serif;
 }</code></pre>
+
+      <h3>Input Shell Tokens</h3>
+      <pre><code class="language-css">/* Input container styling */
+--select-input-gap: 6px;
+--select-input-padding: 10px 52px 10px 14px;
+--select-input-padding-with-clear: 10px 84px 10px 14px;
+--select-input-height: auto;
+--select-input-min-height: 48px;
+--select-input-max-height: 160px;
+--select-input-bg: var(--select-surface);
+--select-input-border: 1.5px solid var(--select-border);
+--select-input-border-radius: var(--select-radius-md);
+--select-input-hover-border: var(--select-border-focus);
+--select-input-focus-border: var(--select-border-focus);
+
+/* Text alignment */
+--select-input-text-align: start;
+--select-input-justify-content: flex-start;
+--select-input-align-items: center;</code></pre>
+
+      <h3>Badge/Chip Tokens (Multi-Select)</h3>
+      <pre><code class="language-css">/* Badge appearance */
+--select-badge-bg: linear-gradient(135deg, var(--select-accent), var(--select-primary-light));
+--select-badge-color: #ffffff;
+--select-badge-border: none;
+--select-badge-border-radius: 999px;
+--select-badge-padding: 4px 10px 4px 12px;
+--select-badge-margin: 3px;
+--select-badge-font-size: 13px;
+--select-badge-font-weight: 500;
+--select-badge-shadow: var(--select-shadow-sm);
+
+/* Badge remove button */
+--select-badge-remove-size: 18px;
+--select-badge-remove-bg: rgba(255, 255, 255, 0.2);
+--select-badge-remove-color: #ffffff;
+--select-badge-remove-hover-bg: rgba(233, 69, 96, 0.9);
+--select-badge-remove-hover-transform: scale(1.15) rotate(90deg);
+
+/* Badge animations */
+--select-badge-animation: badgeEnter 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+--select-badge-hover-transform: scale(1.02);</code></pre>
+
+      <h3>Dropdown & Options Tokens</h3>
+      <pre><code class="language-css">/* Dropdown panel */
+--select-dropdown-bg: var(--select-surface);
+--select-dropdown-border: 1px solid var(--select-border);
+--select-dropdown-border-radius: var(--select-radius-md);
+--select-dropdown-shadow: var(--select-shadow-lg);
+--select-dropdown-max-height: 320px;
+--select-dropdown-padding: 4px;
+
+/* Option styling */
+--select-option-padding: 10px 14px;
+--select-option-min-height: 42px;
+--select-option-border-radius: var(--select-radius-sm);
+--select-option-font-size: 14px;
+--select-option-font-weight: 400;
+--select-option-color: var(--select-text);
+--select-option-bg: transparent;
+
+/* Option states */
+--select-option-hover-bg: var(--select-surface-elevated);
+--select-option-hover-color: var(--select-text);
+--select-option-active-bg: rgba(15, 52, 96, 0.08);
+--select-option-selected-bg: linear-gradient(135deg, #0f3460, #1a1a2e);
+--select-option-selected-color: #ffffff;
+--select-option-selected-indicator-color: #4ade80;
+
+/* Option alignment */
+--select-option-text-align: start;
+--select-option-justify-content: flex-start;</code></pre>
     </div>
-    
+
     <div class="doc-section">
-      <h2>Shadow Parts</h2>
-      <p>Access internal elements using CSS <code>::part()</code>:</p>
+      <h2>2. Shadow Parts Styling</h2>
+      <p>Target internal elements using the <code>::part()</code> pseudo-element:</p>
       
-      <pre><code class="language-css">enhanced-select::part(trigger) {
+      <pre><code class="language-css">/* Style the main trigger/button */
+enhanced-select::part(button) {
+  min-height: 3rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid transparent;
 }
 
-enhanced-select::part(dropdown) {
-  border-radius: 12px;
+/* Style the input field */
+enhanced-select::part(input) {
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+/* Style the dropdown panel */
+enhanced-select::part(listbox) {
+  border-radius: 1rem;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
+/* Style individual options */
 enhanced-select::part(option) {
   padding: 12px 16px;
   transition: all 200ms;
+  font-weight: 500;
+}
+
+/* Style the clear button */
+enhanced-select::part(clear-button) {
+  color: #ef4444;
+  opacity: 0.7;
+  transition: opacity 200ms;
+}
+
+enhanced-select::part(clear-button):hover {
+  opacity: 1;
 }</code></pre>
     </div>
-    
+
     <div class="doc-section">
-      <h2>Dark Mode</h2>
-      <p>Smilodon automatically adapts to dark mode:</p>
+      <h2>3. Class Mapping (classMap)</h2>
+      <p>Override state classes with your framework's utility classes:</p>
       
-      <pre><code class="language-css">@media (prefers-color-scheme: dark) {
+      <h3>Vanilla JavaScript</h3>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.classMap = {
+  selected: 'bg-blue-600 text-white font-semibold ring-2 ring-blue-300',
+  active: 'bg-blue-50 text-blue-900 ring-1 ring-blue-200',
+  disabled: 'opacity-50 cursor-not-allowed grayscale',
+  hover: 'bg-gray-100'
+};</code></pre>
+
+      <h3>React</h3>
+      <pre><code class="language-tsx">import { Select } from '@smilodon/react';
+
+&lt;Select
+  items={items}
+  classMap={{
+    selected: 'bg-blue-600 text-white font-semibold',
+    active: 'bg-blue-50 text-blue-900',
+    disabled: 'opacity-50 cursor-not-allowed',
+  }}
+/&gt;</code></pre>
+
+      <h3>Vue</h3>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;Select
+    :items="items"
+    :class-map="classMap"
+  /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const classMap = {
+  selected: 'bg-blue-600 text-white font-semibold',
+  active: 'bg-blue-50 text-blue-900',
+  disabled: 'opacity-50 cursor-not-allowed'
+};
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>4. Per-Option Styling</h2>
+      <p>Apply custom styles to individual options:</p>
+      
+      <h3>Using Inline Style Object</h3>
+      <pre><code class="language-javascript">const items = [
+  {
+    value: 'gradient',
+    label: 'Gradient Option',
+    style: {
+      backgroundImage: 'linear-gradient(180deg, #f4f4f4 0%, #d7d7d7 100%)',
+      color: '#111',
+      fontWeight: 'bold',
+      borderLeft: '4px solid #0f3460'
+    }
+  },
+  {
+    value: 'image',
+    label: 'Background Image',
+    style: {
+      backgroundImage: 'url(/images/option-bg.jpg)',
+      backgroundSize: 'cover',
+      color: 'white',
+      textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+    }
+  }
+];
+
+select.setItems(items);</code></pre>
+
+      <h3>Using className with ::part()</h3>
+      <pre><code class="language-html">&lt;style&gt;
+enhanced-select::part(option).user-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  align-items: center;
+  background-image: url('/avatars/user.jpg');
+  background-size: cover;
+  color: white;
+}
+
+enhanced-select::part(option).user-card:hover {
+  filter: brightness(0.92);
+}
+
+enhanced-select::part(option).premium {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #1a1a2e;
+  font-weight: bold;
+}
+&lt;/style&gt;
+
+&lt;script&gt;
+const items = [
+  { value: 1, label: 'Alex', className: 'user-card' },
+  { value: 2, label: 'Premium Plan', className: 'premium' }
+];
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>5. Custom Option Renderers</h2>
+      <p>Create rich, custom HTML content for options:</p>
+      
+      <pre><code class="language-javascript">function optionRenderer(item, index) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-option';
+  wrapper.style.display = 'flex';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.gap = '12px';
+  wrapper.style.padding = '12px';
+  
+  // Escape HTML to prevent XSS
+  const escapeHtml = (str) =&gt; {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  };
+  
+  wrapper.innerHTML = \`
+    &lt;img 
+      src="\${escapeHtml(item.avatar) || '/default-avatar.png'}" 
+      alt="\${escapeHtml(item.label)}"
+      style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
+    &gt;
+    &lt;div style="flex: 1;"&gt;
+      &lt;div style="font-weight: 600; color: var(--select-text);"&gt;
+        \${escapeHtml(item.label)}
+      &lt;/div&gt;
+      &lt;div style="font-size: 0.8rem; color: var(--select-text-muted);"&gt;
+        \${escapeHtml(item.subtitle || '')}
+      &lt;/div&gt;
+    &lt;/div&gt;
+    \${item.badge ? \`
+      &lt;span style="
+        padding: 2px 8px;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      "&gt;\${escapeHtml(item.badge)}&lt;/span&gt;
+    \` : ''}
+  \`;
+  
+  return wrapper;
+}
+
+const items = [
+  {
+    value: 1,
+    label: 'John Doe',
+    subtitle: 'john@example.com',
+    avatar: '/avatars/john.jpg',
+    badge: 'Admin',
+    render: optionRenderer
+  },
+  {
+    value: 2,
+    label: 'Jane Smith',
+    subtitle: 'jane@example.com',
+    avatar: '/avatars/jane.jpg',
+    render: optionRenderer
+  }
+];
+
+select.setItems(items);</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Dark Mode Support</h2>
+      <p>Smilodon automatically supports dark mode using CSS custom properties:</p>
+      
+      <pre><code class="language-css">/* Light mode (default) */
+:root {
+  --select-surface: #ffffff;
+  --select-text: #1a1a2e;
+  --select-border: #e1e5eb;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
   :root {
-    --select-bg-color: #1f2937;
-    --select-text-color: #f9fafb;
-    --select-border-color: #374151;
+    --select-surface: #1f2937;
+    --select-text: #f9fafb;
+    --select-border: #374151;
+    --select-text-muted: #9ca3af;
+    --select-surface-elevated: #374151;
+    
+    /* Dark mode specific tokens */
+    --select-dark-bg: #111827;
+    --select-dark-text: #f9fafb;
+    --select-dark-border: #4b5563;
+    --select-dark-dropdown-bg: #1f2937;
+    --select-dark-option-hover-bg: #374151;
+    --select-dark-option-selected-bg: #3b82f6;
+  }
+}
+
+/* Manual dark mode toggle */
+[data-theme="dark"] enhanced-select {
+  --select-surface: #1f2937;
+  --select-text: #f9fafb;
+  --select-border: #374151;
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Framework Integration</h2>
+      
+      <h3>Tailwind CSS</h3>
+      <pre><code class="language-tsx">import { Select } from '@smilodon/react';
+
+&lt;Select
+  className="w-full max-w-xl"
+  style={{
+    '--select-input-border': '1px solid rgb(229 231 235)',
+    '--select-input-border-radius': '0.75rem',
+    '--select-input-focus-border': 'rgb(59 130 246)',
+    '--select-shadow-focus': '0 0 0 3px rgb(59 130 246 / 0.18)',
+    '--select-option-selected-bg': 'rgb(219 234 254)',
+    '--select-option-selected-color': 'rgb(30 64 175)',
+  } as React.CSSProperties}
+  classMap={{
+    selected: 'bg-blue-600 text-white',
+    active: 'bg-blue-50 text-blue-900 ring-2 ring-blue-200',
+    disabled: 'opacity-50 cursor-not-allowed',
+  }}
+/&gt;</code></pre>
+
+      <h3>Bootstrap</h3>
+      <pre><code class="language-html">&lt;div class="container py-4"&gt;
+  &lt;label class="form-label fw-semibold"&gt;Team&lt;/label&gt;
+  &lt;enhanced-select class="d-block w-100"&gt;&lt;/enhanced-select&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+enhanced-select {
+  --select-input-border: 1px solid #ced4da;
+  --select-input-border-radius: 0.375rem;
+  --select-input-focus-border: #86b7fe;
+  --select-shadow-focus: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  --select-option-hover-bg: #e9ecef;
+  --select-option-selected-bg: #0d6efd;
+  --select-option-selected-color: #ffffff;
+  --select-badge-bg: #0d6efd;
+}
+&lt;/style&gt;</code></pre>
+
+      <h3>Material UI (React)</h3>
+      <pre><code class="language-tsx">import { GlobalStyles } from '@mui/material';
+import { Select } from '@smilodon/react';
+
+export function MuiExample() {
+  return (
+    &lt;&gt;
+      &lt;GlobalStyles
+        styles={{
+          'enhanced-select': {
+            '--select-input-border': '1px solid rgba(0,0,0,0.23)',
+            '--select-input-border-radius': '12px',
+            '--select-input-focus-border': '#1976d2',
+            '--select-shadow-focus': '0 0 0 3px rgba(25, 118, 210, 0.12)',
+            '--select-option-selected-bg': '#1976d2',
+            '--select-option-hover-bg': 'rgba(25, 118, 210, 0.08)',
+          },
+        }}
+      /&gt;
+      &lt;Select items={items} /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Accessibility & Motion</h2>
+      
+      <h3>Focus Rings (WCAG 2.2 Compliant)</h3>
+      <pre><code class="language-css">/* Ensure visible focus indicators */
+enhanced-select::part(input):focus {
+  outline: 2px solid var(--select-border-focus);
+  outline-offset: 2px;
+}
+
+enhanced-select::part(option):focus {
+  outline: 2px solid var(--select-border-focus);
+  outline-offset: -2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  enhanced-select {
+    --select-border: #000000;
+    --select-border-focus: #0000ff;
+    --select-option-selected-bg: #0000ff;
   }
 }</code></pre>
+
+      <h3>Reduced Motion</h3>
+      <pre><code class="language-css">/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  enhanced-select {
+    --select-transition-fast: 0ms;
+    --select-transition-smooth: 0ms;
+    --select-transition-bounce: 0ms;
+    --select-badge-animation: none;
+  }
+  
+  enhanced-select::part(dropdown) {
+    animation: none !important;
+  }
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Complete Example: Custom Theme</h2>
+      <p>A full example combining multiple styling techniques:</p>
+      
+      <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;style&gt;
+    :root {
+      /* Custom brand colors */
+      --brand-primary: #6366f1;
+      --brand-surface: #ffffff;
+      --brand-text: #1e293b;
+      --brand-border: #e2e8f0;
+    }
+
+    /* Apply to all select instances */
+    enhanced-select {
+      --select-primary: var(--brand-primary);
+      --select-accent: var(--brand-primary);
+      --select-surface: var(--brand-surface);
+      --select-text: var(--brand-text);
+      --select-border: var(--brand-border);
+      --select-border-focus: var(--brand-primary);
+      --select-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.12);
+      --select-option-selected-bg: var(--brand-primary);
+      --select-badge-bg: linear-gradient(135deg, var(--brand-primary), #8b5cf6);
+    }
+
+    /* Specific customization for user select */
+    enhanced-select.user-select::part(option) {
+      padding: 16px;
+      border-bottom: 1px solid var(--brand-border);
+    }
+
+    enhanced-select.user-select::part(option):last-child {
+      border-bottom: none;
+    }
+
+    /* Premium styling */
+    enhanced-select::part(option).premium-option {
+      background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+      font-weight: 600;
+      position: relative;
+    }
+
+    enhanced-select::part(option).premium-option::before {
+      content: '⭐';
+      margin-right: 8px;
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;enhanced-select class="user-select"&gt;&lt;/enhanced-select&gt;
+
+  &lt;script type="module"&gt;
+    const select = document.querySelector('.user-select');
+    
+    // Safe HTML escaping function
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+    
+    const items = [
+      {
+        value: 1,
+        label: 'Free Plan',
+        subtitle: 'Basic features',
+      },
+      {
+        value: 2,
+        label: 'Pro Plan',
+        subtitle: 'Advanced features',
+        className: 'premium-option'
+      }
+    ];
+    
+    select.setItems(items);
+    
+    // Custom class mapping
+    select.classMap = {
+      selected: 'font-semibold',
+      active: 'bg-indigo-50'
+    };
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+
+    <div class="doc-note">
+      <h3>Security Best Practices</h3>
+      <ul>
+        <li><strong>Always escape user-generated content</strong> when using custom renderers</li>
+        <li>Use <code>textContent</code> instead of <code>innerHTML</code> when possible</li>
+        <li>Sanitize image URLs and other external resources</li>
+        <li>Validate CSS values before applying inline styles</li>
+        <li>Use Content Security Policy (CSP) headers in production</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>More Resources</h2>
+      <ul>
+        <li><a href="#styling-tokens">Complete Token Reference</a> - All CSS variables</li>
+        <li><a href="#styling-examples">Styling Examples</a> - More practical examples</li>
+        <li><a href="#css-frameworks">CSS Framework Guide</a> - Tailwind, Bootstrap, Material UI</li>
+        <li><a href="#performance">Performance Guide</a> - Optimization tips</li>
+      </ul>
     </div>
   `,
   
