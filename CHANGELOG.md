@@ -19,6 +19,18 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - No unreleased changes yet.
 
+## [1.5.2] - 2026-05-17
+
+### Added
+- **Multi-select separator height control:** Added `--select-multi-separator-height` CSS variable for independent control of separator height in multi-select mode (defaults to `auto`, accepts fixed pixel values like `40px`).
+- **Dark mode border variables:** Added missing dark mode border variable mappings: `--select-dark-option-border`, `--select-dark-option-hover-border`, `--select-dark-option-selected-border`, and `--select-dark-option-selected-hover-border`.
+
+### Fixed
+- **Keyboard navigation in grouped mode:** Fixed keyboard navigation (arrows, Home, End, PageUp/PageDown, Enter, Space, Ctrl+A) to correctly skip group headers and only navigate through selectable options when using `setGroupedItems()`.
+- **Option hover background:** Fixed option hover styles by removing invalid CSS syntax (ternary operators) that prevented `--select-option-hover-bg`, `--select-option-hover-border`, and `--select-option-hover-color` from applying.
+- **Group header spacing:** Removed forced spacing between group headers (margin, padding, border) - now defaults to zero for cleaner layouts. Users can add spacing via CSS variables if desired: `--select-group-header-separator-margin-top`, `--select-group-header-separator-padding-top`, `--select-group-header-separator-border-top`.
+- **Dark mode option borders:** Fixed hover and selected option borders not working in dark mode due to missing CSS variable mappings in the dark mode rule sets.
+
 ## [1.5.1] - 2026-05-17
 
 ### Added

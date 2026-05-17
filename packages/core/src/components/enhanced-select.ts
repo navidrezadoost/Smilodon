@@ -1070,9 +1070,9 @@ export class EnhancedSelect extends HTMLElement {
         --select-searching-spinner-size: 24px;
         --select-searching-spinner-border: 2px solid var(--select-border);
         --select-searching-spinner-animation: var(--select-spinner-animation);
-        --select-group-header-separator-margin-top: 8px;
-        --select-group-header-separator-padding-top: 14px;
-        --select-group-header-separator-border-top: 1px solid var(--select-border);
+        --select-group-header-separator-margin-top: 0;
+        --select-group-header-separator-padding-top: 0;
+        --select-group-header-separator-border-top: none;
         --select-reduced-motion-duration: 0.01ms;
         --select-reduced-motion-iteration-count: 1;
         --select-high-contrast-border-width: 2px;
@@ -1756,11 +1756,12 @@ export class EnhancedSelect extends HTMLElement {
         color: var(--select-option-color, var(--select-text));
         background: var(--select-option-bg, transparent);
         border: var(--select-option-border, none);
+        box-sizing: border-box;
         text-align: var(--select-option-text-align, start);
         transition: 
           background var(--select-transition-fast),
           color var(--select-transition-fast),
-          border-color var(--select-transition-fast),
+          border var(--select-transition-fast),
           transform var(--select-transition-fast),
           box-shadow var(--select-transition-fast);
         user-select: none;
@@ -1772,10 +1773,10 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .option:hover {
-        background: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-bg, var(--select-surface-elevated)) : var(--select-option-bg, transparent);
-        border: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-border, var(--select-option-border, none)) : var(--select-option-border, none);
-        color: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-color, var(--select-text)) : var(--select-option-color, var(--select-text));
-        transform: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-transform) : none;
+        background: var(--select-option-hover-bg, var(--select-surface-elevated));
+        border: var(--select-option-hover-border, var(--select-option-border, none));
+        color: var(--select-option-hover-color, var(--select-text));
+        transform: var(--select-option-hover-transform, none);
       }
 
       .option.selected {
@@ -2057,12 +2058,16 @@ export class EnhancedSelect extends HTMLElement {
         
         --select-option-bg: var(--select-dark-option-bg, transparent);
         --select-option-color: var(--select-dark-option-color, var(--select-text));
+        --select-option-border: var(--select-dark-option-border, none);
         --select-option-hover-bg: var(--select-dark-option-hover-bg, var(--select-surface-elevated));
         --select-option-hover-color: var(--select-dark-option-hover-color, var(--select-text));
+        --select-option-hover-border: var(--select-dark-option-hover-border, var(--select-option-border, none));
         --select-option-selected-bg: var(--select-dark-option-selected-bg, linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%));
         --select-option-selected-color: var(--select-dark-option-selected-color, #a5b4fc);
+        --select-option-selected-border: var(--select-dark-option-selected-border, var(--select-option-border, none));
         --select-option-selected-hover-bg: var(--select-dark-option-selected-hover-bg, var(--select-option-selected-bg));
         --select-option-selected-hover-color: var(--select-dark-option-selected-hover-color, var(--select-option-selected-color));
+        --select-option-selected-hover-border: var(--select-dark-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-hover-border, var(--select-option-border, none))));
       }
 
       :host(.dark-mode) .input-container,
@@ -2815,7 +2820,7 @@ export class EnhancedSelect extends HTMLElement {
       case 'End':
         e.preventDefault();
         if (this._state.isOpen) {
-          const options = Array.from(this._optionsContainer.children) as SelectOption[];
+          const options = this._getSelectableOptions();
           const lastIndex = Math.max(0, options.length - 1);
           this._setActive(lastIndex);
           if (this._config.selection.mode === 'multi' && e.shiftKey) {
@@ -2870,7 +2875,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _moveActive(delta: number, opts?: { shiftKey?: boolean; toggleKey?: boolean }): void {
-    const options = Array.from(this._optionsContainer.children) as SelectOption[];
+    const options = this._getSelectableOptions();
     const next = Math.max(0, Math.min(options.length - 1, this._state.activeIndex + delta));
     this._setActive(next);
 
@@ -2931,6 +2936,14 @@ export class EnhancedSelect extends HTMLElement {
     return this._optionsContainer.querySelector(`[data-index="${index}"]`) as HTMLElement | null;
   }
 
+  private _getSelectableOptions(): HTMLElement[] {
+    // Filter out group headers and other non-selectable elements
+    // Only return elements with data-index or data-sm-selectable attributes
+    return Array.from(this._optionsContainer.children).filter((child) => {
+      return child.hasAttribute('data-index') || child.hasAttribute('data-sm-selectable');
+    }) as HTMLElement[];
+  }
+
   private _buildRendererHelpers(): RendererHelpers {
     return {
       onSelect: (_item: unknown, index: number) => this._selectOption(index),
@@ -2970,7 +2983,7 @@ export class EnhancedSelect extends HTMLElement {
   private _selectAll(): void {
     if (this._config.selection.mode !== 'multi') return;
     
-    const options = Array.from(this._optionsContainer.children);
+    const options = this._getSelectableOptions();
     const maxSelections = this._config.selection.maxSelections || 0;
     
     options.forEach((option, index) => {
@@ -3028,7 +3041,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _setInitialActiveOption(): void {
-    const options = Array.from(this._optionsContainer.children);
+    const options = this._getSelectableOptions();
     if (options.length === 0) return;
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
     if (this._config.selection.mode === 'multi' && selected.length === 0) {
