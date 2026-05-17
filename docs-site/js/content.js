@@ -2274,27 +2274,361 @@ test('has no accessibility violations', async () => {
   `,
   
   'single-select': `
-    <h1>Single Select</h1>
+    <h1>Single Select Mode</h1>
     
     <div class="doc-section">
       <h2>Overview</h2>
-      <p>Single select mode allows users to choose one option from the list.</p>
+      <p>Single select mode allows users to choose exactly one option from the list. This is the default mode and most common use case for select components.</p>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Basic Usage</h2>
       
-      <h3>Basic Example</h3>
-      <pre><code class="language-tsx">&lt;NativeSelect
-  mode="single"
-  items={items}
-  onSelect={({ items }) => console.log('Selected:', items[0])}
-/&gt;</code></pre>
+      <h3>React</h3>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function SingleSelectExample() {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  
+  const items = [
+    { id: 1, label: 'Apple', value: 'apple' },
+    { id: 2, label: 'Banana', value: 'banana' },
+    { id: 3, label: 'Cherry', value: 'cherry' }
+  ];
+  
+  return (
+    <EnhancedSelect
+      mode="single"  // or omit (single is default)
+      items={items}
+      selectedIndices={selectedIndex !== null ? [selectedIndex] : []}
+      onSelect={({ selectedIndices, selectedItems }) => {
+        setSelectedIndex(selectedIndices[0]);
+        console.log('Selected:', selectedItems[0]);
+      }}
+      placeholder="Select a fruit"
+    />
+  );
+}</code></pre>
+
+      <h3>Vue</h3>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;EnhancedSelect
+    mode="single"
+    :items="items"
+    :selected-indices="selectedIndex !== null ? [selectedIndex] : []"
+    @select="handleSelect"
+    placeholder="Select a fruit"
+  /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from 'vue';
+import { EnhancedSelect } from '@smilodon/vue';
+
+const selectedIndex = ref(null);
+const items = [
+  { id: 1, label: 'Apple', value: 'apple' },
+  { id: 2, label: 'Banana', value: 'banana' },
+  { id: 3, label: 'Cherry', value: 'cherry' }
+];
+
+function handleSelect({ selectedIndices, selectedItems }) {
+  selectedIndex.value = selectedIndices[0];
+  console.log('Selected:', selectedItems[0]);
+}
+&lt;/script&gt;</code></pre>
+
+      <h3>Vanilla JavaScript</h3>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.mode = 'single';
+select.items = [
+  { id: 1, label: 'Apple', value: 'apple' },
+  { id: 2, label: 'Banana', value: 'banana' },
+  { id: 3, label: 'Cherry', value: 'cherry' }
+];
+
+select.addEventListener('select', (e) => {
+  const selected = e.detail.selectedItems[0];
+  console.log('Selected:', selected);
+});</code></pre>
     </div>
     
     <div class="doc-section">
       <h2>Behavior</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Select Option</td>
+            <td>Replaces previous selection</td>
+          </tr>
+          <tr>
+            <td>Dropdown Behavior</td>
+            <td>Closes automatically after selection</td>
+          </tr>
+          <tr>
+            <td>Clear Button</td>
+            <td>Removes current selection (if <code>clearable={true}</code>)</td>
+          </tr>
+          <tr>
+            <td>Keyboard Selection</td>
+            <td>Enter/Space to select focused option</td>
+          </tr>
+          <tr>
+            <td>Null Selection</td>
+            <td>Placeholder shown when nothing selected</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Configuration Options</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>mode</code></td>
+            <td>string</td>
+            <td>"single"</td>
+            <td>Set to "single" for single-select mode</td>
+          </tr>
+          <tr>
+            <td><code>closeOnSelect</code></td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Close dropdown after selection</td>
+          </tr>
+          <tr>
+            <td><code>clearable</code></td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Show clear button to remove selection</td>
+          </tr>
+          <tr>
+            <td><code>disabled</code></td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Disable the select</td>
+          </tr>
+          <tr>
+            <td><code>placeholder</code></td>
+            <td>string</td>
+            <td>""</td>
+            <td>Text shown when nothing selected</td>
+          </tr>
+          <tr>
+            <td><code>allowDeselect</code></td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Allow clicking selected item to deselect</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Keep Dropdown Open</h2>
+      <pre><code class="language-tsx">// Keep dropdown open after selection
+<EnhancedSelect
+  mode="single"
+  items={items}
+  closeOnSelect={false}
+  onSelect={handleSelect}
+/></code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>With Clear Button</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function ClearableSelect() {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  return (
+    <div>
+      <EnhancedSelect
+        items={items}
+        selectedIndices={selectedIndex !== null ? [selectedIndex] : []}
+        onSelect={({ selectedIndices }) => setSelectedIndex(selectedIndices[0])}
+        clearable
+        onClear={() => {
+          setSelectedIndex(null);
+          console.log('Selection cleared');
+        }}
+      />
+      
+      <button onClick={() => setSelectedIndex(null)}>
+        Clear Programmatically
+      </button>
+    </div>
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Searchable Single Select</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function SearchableSingleSelect() {
+  const [items, setItems] = useState(allItems);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  const handleSearch = ({ query }) => {
+    if (!query) {
+      setItems(allItems);
+      return;
+    }
+    
+    const filtered = allItems.filter(item =>
+      item.label.toLowerCase().includes(query.toLowerCase())
+    );
+    setItems(filtered);
+  };
+
+  return (
+    <EnhancedSelect
+      mode="single"
+      searchable
+      items={items}
+      selectedIndices={selectedIndex !== null ? [selectedIndex] : []}
+      onSelect={({ selectedIndices }) => setSelectedIndex(selectedIndices[0])}
+      onSearch={handleSearch}
+      searchPlaceholder="Search options..."
+    />
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Controlled vs Uncontrolled</h2>
+      
+      <h3>Controlled (Recommended)</h3>
+      <pre><code class="language-tsx">// Parent manages selection state
+function ControlledSelect() {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  return (
+    <EnhancedSelect
+      items={items}
+      selectedIndices={[selectedIndex]}
+      onSelect={({ selectedIndices }) => setSelectedIndex(selectedIndices[0])}
+    />
+  );
+}</code></pre>
+
+      <h3>Uncontrolled</h3>
+      <pre><code class="language-tsx">// Component manages its own state
+function UncontrolledSelect() {
+  return (
+    <EnhancedSelect
+      items={items}
+      defaultSelectedIndices={[0]}
+      onSelect={({ selectedIndices, selectedItems }) => {
+        console.log('Selected:', selectedItems[0]);
+      }}
+    />
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>With Form Integration</h2>
+      <pre><code class="language-tsx">import { EnhancedSelect } from '@smilodon/react';
+import { useState } from 'react';
+
+function FormWithSelect() {
+  const [formData, setFormData] = useState({
+    country: null
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label htmlFor="country">Country:</label>
+      <EnhancedSelect
+        id="country"
+        items={countries}
+        selectedIndices={formData.country !== null ? [formData.country] : []}
+        onSelect={({ selectedIndices }) => 
+          setFormData({ ...formData, country: selectedIndices[0] })
+        }
+        placeholder="Select your country"
+        required
+      />
+      
+      <button type="submit">Submit</button>
+    </form>
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Keyboard Navigation</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Enter / Space</code></td>
+            <td>Open dropdown or select focused option</td>
+          </tr>
+          <tr>
+            <td><code>↓ / ↑</code></td>
+            <td>Navigate through options</td>
+          </tr>
+          <tr>
+            <td><code>Home / End</code></td>
+            <td>Jump to first/last option</td>
+          </tr>
+          <tr>
+            <td><code>Escape</code></td>
+            <td>Close dropdown</td>
+          </tr>
+          <tr>
+            <td><code>Tab</code></td>
+            <td>Move focus (closes dropdown)</td>
+          </tr>
+          <tr>
+            <td><code>Type ahead</code></td>
+            <td>Jump to option starting with typed letter</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Accessibility</h2>
       <ul>
-        <li>Selecting a new option replaces the previous selection</li>
-        <li>Dropdown closes automatically after selection (configurable)</li>
-        <li>Clear button removes current selection</li>
-        <li>Keyboard: Enter/Space to select, Escape to close</li>
+        <li><strong>ARIA Role:</strong> <code>combobox</code> with <code>listbox</code> popup</li>
+        <li><strong>ARIA Props:</strong> <code>aria-expanded</code>, <code>aria-activedescendant</code>, <code>aria-label</code></li>
+        <li><strong>Keyboard Support:</strong> Full keyboard navigation</li>
+        <li><strong>Screen Readers:</strong> Selected value announced</li>
+        <li><strong>Focus Management:</strong> Proper focus order and visible focus indicators</li>
       </ul>
     </div>
   `,
@@ -4447,49 +4781,336 @@ function ComprehensiveGroupedExample() {
     <h1>Shadow Parts</h1>
     
     <div class="doc-section">
+      <h2>Overview</h2>
+      <p>Shadow Parts provide direct access to internal Shadow DOM elements for styling. Use <code>::part()</code> to style specific components without piercing the shadow boundary.</p>
+    </div>
+    
+    <div class="doc-section">
       <h2>Available Parts</h2>
       <table class="doc-table">
         <thead>
           <tr>
             <th>Part</th>
             <th>Description</th>
+            <th>Context</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td><code>trigger</code></td>
-            <td>Main button/input area</td>
+            <td>Main button/input area that opens dropdown</td>
+            <td>Always visible</td>
+          </tr>
+          <tr>
+            <td><code>input</code></td>
+            <td>Selected value display area</td>
+            <td>Inside trigger</td>
+          </tr>
+          <tr>
+            <td><code>placeholder</code></td>
+            <td>Placeholder text element</td>
+            <td>When no selection</td>
+          </tr>
+          <tr>
+            <td><code>clear-button</code></td>
+            <td>Clear selection button</td>
+            <td>When clearable</td>
+          </tr>
+          <tr>
+            <td><code>arrow</code></td>
+            <td>Dropdown indicator icon</td>
+            <td>Right side of trigger</td>
           </tr>
           <tr>
             <td><code>dropdown</code></td>
             <td>Dropdown container</td>
+            <td>When open</td>
+          </tr>
+          <tr>
+            <td><code>search-input</code></td>
+            <td>Search input field</td>
+            <td>When searchable</td>
+          </tr>
+          <tr>
+            <td><code>options-list</code></td>
+            <td>Options container (ul)</td>
+            <td>Inside dropdown</td>
           </tr>
           <tr>
             <td><code>option</code></td>
             <td>Individual option</td>
+            <td>Inside options-list</td>
           </tr>
           <tr>
             <td><code>chip</code></td>
             <td>Selected chip in multi-select</td>
+            <td>Multi-select mode</td>
+          </tr>
+          <tr>
+            <td><code>chip-remove</code></td>
+            <td>Remove button on chip</td>
+            <td>Inside chip</td>
           </tr>
           <tr>
             <td><code>group-header</code></td>
             <td>Group header in grouped mode</td>
+            <td>Grouped options</td>
+          </tr>
+          <tr>
+            <td><code>loading-indicator</code></td>
+            <td>Loading spinner</td>
+            <td>When loading</td>
+          </tr>
+          <tr>
+            <td><code>empty-message</code></td>
+            <td>No results message</td>
+            <td>When no items</td>
           </tr>
         </tbody>
       </table>
     </div>
     
     <div class="doc-section">
-      <h2>Usage</h2>
+      <h2>Basic Usage Examples</h2>
+      
+      <h3>Styling the Trigger</h3>
       <pre><code class="language-css">enhanced-select::part(trigger) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 200ms ease-out;
+}
+
+enhanced-select::part(trigger):hover {
+  transform: translateY(-2px);
+}</code></pre>
+
+      <h3>Styling Options</h3>
+      <pre><code class="language-css">enhanced-select::part(option) {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 4px 8px;
+  transition: all 150ms ease-out;
 }
 
 enhanced-select::part(option):hover {
   background-color: rgba(59, 130, 246, 0.1);
+  transform: translateX(4px);
+}
+
+enhanced-select::part(option)[data-selected="true"] {
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 600;
+}</code></pre>
+
+      <h3>Styling Chips (Multi-Select)</h3>
+      <pre><code class="language-css">enhanced-select::part(chip) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+enhanced-select::part(chip-remove) {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+enhanced-select::part(chip-remove):hover {
+  background: rgba(255, 255, 255, 0.5);
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Advanced Styling Patterns</h2>
+      
+      <h3>Dropdown with Glassmorphism</h3>
+      <pre><code class="language-css">enhanced-select::part(dropdown) {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border-radius: 16px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  enhanced-select::part(dropdown) {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}</code></pre>
+
+      <h3>Material Design Elevation</h3>
+      <pre><code class="language-css">enhanced-select::part(trigger) {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+enhanced-select::part(trigger):hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+enhanced-select::part(trigger):active {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+enhanced-select::part(dropdown) {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1),
+              0 4px 8px rgba(0,0,0,0.08);
+  border-radius: 4px;
+}</code></pre>
+
+      <h3>Neumorphism Style</h3>
+      <pre><code class="language-css">enhanced-select::part(trigger) {
+  background: #e0e5ec;
+  box-shadow: 9px 9px 16px rgba(163, 177, 198, 0.6),
+              -9px -9px 16px rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 12px;
+}
+
+enhanced-select::part(trigger):active {
+  box-shadow: inset 9px 9px 16px rgba(163, 177, 198, 0.6),
+              inset -9px -9px 16px rgba(255, 255, 255, 0.5);
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>State-Based Styling</h2>
+      <pre><code class="language-css">/* Open state */
+enhanced-select[data-open="true"]::part(trigger) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+enhanced-select[data-open="true"]::part(arrow) {
+  transform: rotate(180deg);
+}
+
+/* Disabled state */
+enhanced-select[disabled]::part(trigger) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+}
+
+/* Focus state */
+enhanced-select:focus-within::part(trigger) {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Error state */
+enhanced-select[data-error="true"]::part(trigger) {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Combining with CSS Custom Properties</h2>
+      <pre><code class="language-css">enhanced-select {
+  --select-primary-color: #3b82f6;
+  --select-trigger-radius: 12px;
+  --select-option-padding: 12px 16px;
+}
+
+enhanced-select::part(trigger) {
+  border-radius: var(--select-trigger-radius);
+  border: 2px solid var(--select-primary-color);
+}
+
+enhanced-select::part(option) {
+  padding: var(--select-option-padding);
+}
+
+enhanced-select::part(option):hover {
+  background-color: var(--select-primary-color);
+  color: white;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Responsive Styling</h2>
+      <pre><code class="language-css">/* Mobile */
+@media (max-width: 640px) {
+  enhanced-select::part(trigger) {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 14px;
+  }
+  
+  enhanced-select::part(dropdown) {
+    max-height: 60vh;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  enhanced-select::part(option) {
+    padding: 16px;
+    font-size: 16px;
+  }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  enhanced-select::part(dropdown) {
+    min-width: 300px;
+    max-height: 400px;
+  }
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Animation with Parts</h2>
+      <pre><code class="language-css">enhanced-select::part(dropdown) {
+  animation: slideDown 200ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+enhanced-select::part(option) {
+  animation: fadeIn 150ms ease-out backwards;
+}
+
+enhanced-select::part(option):nth-child(1) { animation-delay: 0ms; }
+enhanced-select::part(option):nth-child(2) { animation-delay: 30ms; }
+enhanced-select::part(option):nth-child(3) { animation-delay: 60ms; }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }</code></pre>
     </div>
   `,
@@ -5176,37 +5797,173 @@ select.buffer = 5;</code></pre>
     
     <div class="doc-section">
       <h2>Installation</h2>
-      <pre><code class="language-bash">npm install @smilodon/core @smilodon/react-native</code></pre>
+      <pre><code class="language-bash">npm install @smilodon/core @smilodon/react-native
+# or
+yarn add @smilodon/core @smilodon/react-native</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Usage</h2>
-      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react-native';
+      <h2>Basic Usage</h2>
+      <pre><code class="language-tsx">import React, { useState } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { NativeSelect } from '@smilodon/react-native';
 
 function App() {
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  
   const items = [
-    { id: 1, label: 'Option 1' },
-    { id: 2, label: 'Option 2' }
+    { id: 1, label: 'Apple', value: 'apple' },
+    { id: 2, label: 'Banana', value: 'banana' },
+    { id: 3, label: 'Cherry', value: 'cherry' }
   ];
   
   return (
-    &lt;NativeSelect
-      items={items}
-      onSelect={({ items }) => console.log(items)}
-      style={styles.select}
-    /&gt;
+    <View style={styles.container}>
+      <Text style={styles.label}>Select a fruit:</Text>
+      <NativeSelect
+        items={items}
+        selectedIndices={selectedIndices}
+        onSelect={({ selectedIndices, selectedItems }) => {
+          setSelectedIndices(selectedIndices);
+          console.log('Selected:', selectedItems);
+        }}
+        placeholder="Select a fruit"
+        style={styles.select}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontWeight: '600'
+  },
+  select: {
+    width: '100%'
+  }
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Platform-Specific Rendering</h2>
+      <p>Smilodon automatically uses native picker components:</p>
+      
+      <h3>iOS</h3>
+      <ul>
+        <li>Native UIPickerView</li>
+        <li>Modal presentation</li>
+        <li>Haptic feedback</li>
+        <li>VoiceOver support</li>
+      </ul>
+      
+      <h3>Android</h3>
+      <ul>
+        <li>Native Spinner/BottomSheet</li>
+        <li>Material Design styling</li>
+        <li>Ripple effects</li>
+        <li>TalkBack support</li>
+      </ul>
+      
+      <h3>React Native Web</h3>
+      <ul>
+        <li>Full web component with search</li>
+        <li>Keyboard navigation</li>
+        <li>Virtualization</li>
+      </ul>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Multi-Select Mode</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react-native';
+import { useState } from 'react';
+import { View, Text, Button } from 'react-native';
+
+function MultiSelectExample() {
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  
+  const frameworks = [
+    { id: 1, label: 'React Native', value: 'rn' },
+    { id: 2, label: 'Flutter', value: 'flutter' },
+    { id: 3, label: 'Ionic', value: 'ionic' }
+  ];
+  
+  return (
+    <View>
+      <NativeSelect
+        mode="multi"
+        items={frameworks}
+        selectedIndices={selectedIndices}
+        onSelect={({ selectedIndices }) => setSelectedIndices(selectedIndices)}
+        maxSelections={2}
+      />
+      
+      <Text style={{ marginTop: 10 }}>
+        Selected: {selectedIndices.length} items
+      </Text>
+      
+      <Button title="Clear All" onPress={() => setSelectedIndices([])} />
+    </View>
   );
 }</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Platform-Specific Features</h2>
-      <ul>
-        <li>Native picker on iOS/Android</li>
-        <li>Web fallback for React Native Web</li>
-        <li>Platform-specific styling</li>
-        <li>Gesture handling</li>
-      </ul>
+      <h2>Custom Styling</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react-native';
+import { StyleSheet, Platform } from 'react-native';
+
+const styles = StyleSheet.create({
+  select: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4
+      },
+      android: {
+        elevation: 4
+      }
+    })
+  }
+});
+
+function StyledSelect() {
+  return (
+    <NativeSelect
+      items={items}
+      style={styles.select}
+    />
+  );
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Accessibility</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react-native';
+
+function AccessibleSelect() {
+  return (
+    <NativeSelect
+      items={items}
+      accessible={true}
+      accessibilityLabel="Select a category"
+      accessibilityHint="Double tap to open picker"
+      accessibilityRole="button"
+    />
+  );
+}</code></pre>
     </div>
   `,
   
@@ -5215,30 +5972,233 @@ function App() {
     
     <div class="doc-section">
       <h2>Automatic Detection</h2>
-      <p>Smilodon automatically adapts to system dark mode preference:</p>
+      <p>Smilodon automatically adapts to system dark mode preference using CSS media queries:</p>
       
       <pre><code class="language-css">@media (prefers-color-scheme: dark) {
   enhanced-select {
+    /* Core Colors */
     --select-bg-color: #1f2937;
     --select-text-color: #f9fafb;
     --select-border-color: #374151;
+    --select-primary-color: #60a5fa;
+    
+    /* Dropdown */
+    --select-dropdown-bg: #111827;
+    --select-dropdown-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    
+    /* Options */
+    --select-option-hover-bg: #374151;
+    --select-option-selected-bg: #1e3a8a;
+    --select-option-selected-color: #93c5fd;
+    
+    /* Badges/Chips */
+    --select-badge-bg: #1e40af;
+    --select-badge-color: #dbeafe;
+    
+    /* Input */
+    --select-placeholder-color: #6b7280;
   }
 }</code></pre>
     </div>
     
     <div class="doc-section">
-      <h2>Manual Toggle</h2>
-      <p>Implement your own dark mode toggle:</p>
+      <h2>Manual Toggle Implementation</h2>
+      <p>Implement your own dark mode toggle with full control:</p>
       
-      <pre><code class="language-tsx">const [isDark, setIsDark] = useState(false);
+      <h3>React Example</h3>
+      <pre><code class="language-tsx">import { useState, useEffect } from 'react';
+import { EnhancedSelect } from '@smilodon/react';
 
-&lt;div data-theme={isDark ? 'dark' : 'light'}&gt;
-  &lt;NativeSelect items={items} /&gt;
-&lt;/div&gt;</code></pre>
+function App() {
+  const [isDark, setIsDark] = useState(false);
+  
+  useEffect(() => {
+    // Apply theme to document root
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+  
+  return (
+    <div>
+      <button onClick={() => setIsDark(!isDark)}>
+        Toggle Dark Mode
+      </button>
       
+      <EnhancedSelect items={items} />
+    </div>
+  );
+}</code></pre>
+
       <pre><code class="language-css">[data-theme="dark"] enhanced-select {
   --select-bg-color: #1f2937;
   --select-text-color: #f9fafb;
+  --select-border-color: #374151;
+  --select-primary-color: #60a5fa;
+  --select-dropdown-bg: #111827;
+}
+
+[data-theme="light"] enhanced-select {
+  --select-bg-color: #ffffff;
+  --select-text-color: #1f2937;
+  --select-border-color: #d1d5db;
+  --select-primary-color: #3b82f6;
+  --select-dropdown-bg: #ffffff;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Class-Based Toggle</h2>
+      <pre><code class="language-javascript">// Vanilla JS
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+}</code></pre>
+
+      <pre><code class="language-css">body.dark enhanced-select {
+  --select-bg-color: #1f2937;
+  --select-text-color: #f9fafb;
+  --select-border-color: #374151;
+  --select-primary-color: #60a5fa;
+  --select-dropdown-bg: #111827;
+  --select-option-hover-bg: #374151;
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Complete Dark Mode Theming</h2>
+      <pre><code class="language-css">/* Light Mode (Default) */
+:root {
+  --select-bg: #ffffff;
+  --select-text: #1f2937;
+  --select-border: #d1d5db;
+  --select-primary: #3b82f6;
+  --select-dropdown-bg: #ffffff;
+  --select-option-hover: #f3f4f6;
+  --select-option-selected: #dbeafe;
+  --select-badge-bg: #3b82f6;
+  --select-badge-text: #ffffff;
+  --select-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --select-bg: #1f2937;
+    --select-text: #f9fafb;
+    --select-border: #374151;
+    --select-primary: #60a5fa;
+    --select-dropdown-bg: #111827;
+    --select-option-hover: #374151;
+    --select-option-selected: #1e3a8a;
+    --select-badge-bg: #1e40af;
+    --select-badge-text: #dbeafe;
+    --select-shadow: 0 4px 6px rgba(0,0,0,0.5);
+  }
+}
+
+enhanced-select {
+  --select-bg-color: var(--select-bg);
+  --select-text-color: var(--select-text);
+  --select-border-color: var(--select-border);
+  --select-primary-color: var(--select-primary);
+  --select-dropdown-bg: var(--select-dropdown-bg);
+  --select-option-hover-bg: var(--select-option-hover);
+  --select-option-selected-bg: var(--select-option-selected);
+  --select-badge-bg: var(--select-badge-bg);
+  --select-badge-color: var(--select-badge-text);
+  --select-shadow: var(--select-shadow);
+}</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Persistent Dark Mode with LocalStorage</h2>
+      <pre><code class="language-javascript">// Save user preference
+function setTheme(isDark) {
+  const theme = isDark ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+}
+
+// Load preference on page load
+function loadTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+// Initialize
+loadTheme();
+
+// Listen for system preference changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  if (!localStorage.getItem('theme')) {
+    setTheme(e.matches);
+  }
+});</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Framework Integration Examples</h2>
+      
+      <h3>Vue 3 with Composition API</h3>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;div&gt;
+    &lt;button @click="toggleDark"&gt;Toggle Dark Mode&lt;/button&gt;
+    &lt;EnhancedSelect :items="items" /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, watchEffect } from 'vue';
+import { EnhancedSelect } from '@smilodon/vue';
+
+const isDark = ref(false);
+
+watchEffect(() => {
+  document.documentElement.setAttribute('data-theme', isDark.value ? 'dark' : 'light');
+});
+
+function toggleDark() {
+  isDark.value = !isDark.value;
+}
+&lt;/script&gt;</code></pre>
+
+      <h3>Svelte with Stores</h3>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { writable } from 'svelte/store';
+  import { EnhancedSelect } from '@smilodon/svelte';
+  
+  const isDark = writable(false);
+  
+  $: {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', $isDark ? 'dark' : 'light');
+    }
+  }
+&lt;/script&gt;
+
+&lt;button on:click={() => $isDark = !$isDark}&gt;
+  Toggle Dark Mode
+&lt;/button&gt;
+
+&lt;EnhancedSelect items={items} /&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Smooth Transitions Between Themes</h2>
+      <pre><code class="language-css">enhanced-select {
+  transition: background-color 200ms ease-out,
+              border-color 200ms ease-out,
+              color 200ms ease-out;
+}
+
+enhanced-select::part(dropdown) {
+  transition: background-color 200ms ease-out,
+              box-shadow 200ms ease-out;
+}
+
+enhanced-select::part(option) {
+  transition: background-color 150ms ease-out,
+              color 150ms ease-out;
 }</code></pre>
     </div>
   `,
