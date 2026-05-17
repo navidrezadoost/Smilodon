@@ -1773,6 +1773,25 @@ function FullyConfiguredSelect() {
 --select-input-justify-content: flex-start;
 --select-input-align-items: center;</code></pre>
 
+      <h3>Separator Tokens</h3>
+      <pre><code class="language-css">/* Separator line (between input and arrow) */
+--select-separator-width: 1px;
+--select-separator-height: 50%;             /* For single-select (percentage) */
+--select-multi-separator-height: auto;      /* For multi-select (fixed px or auto) */
+--select-separator-display: block;
+--select-separator-opacity: 0.6;
+--select-separator-active-opacity: 1;
+--select-separator-bg: linear-gradient(to bottom, transparent, var(--select-border), transparent);
+
+/* Multi-select separator positioning */
+--select-multi-separator-inset-block: 10px;</code></pre>
+
+      <div class="doc-note">
+        <p>💡 <strong>Tip:</strong> Multi-select uses <code>--select-multi-separator-height</code> which defaults to <code>auto</code> 
+        (stretches with container). Set a fixed value like <code>40px</code> to maintain consistent separator height 
+        regardless of how many items are selected.</p>
+      </div>
+
       <h3>Badge/Chip Tokens (Multi-Select)</h3>
       <pre><code class="language-css">/* Badge appearance */
 --select-badge-bg: linear-gradient(135deg, var(--select-accent), var(--select-primary-light));
@@ -6950,6 +6969,58 @@ function ComprehensiveGroupedExample() {
           </tr>
         </tbody>
       </table>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Separator Tokens</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--select-separator-width</code></td>
+            <td>1px</td>
+            <td>Separator line width</td>
+          </tr>
+          <tr>
+            <td><code>--select-separator-height</code></td>
+            <td>50%</td>
+            <td>Separator height for single-select (percentage)</td>
+          </tr>
+          <tr>
+            <td><code>--select-multi-separator-height</code></td>
+            <td>auto</td>
+            <td>Separator height for multi-select (fixed px or auto)</td>
+          </tr>
+          <tr>
+            <td><code>--select-separator-display</code></td>
+            <td>block</td>
+            <td>Separator display property (block/none)</td>
+          </tr>
+          <tr>
+            <td><code>--select-separator-opacity</code></td>
+            <td>0.6</td>
+            <td>Separator opacity</td>
+          </tr>
+          <tr>
+            <td><code>--select-multi-separator-inset-block</code></td>
+            <td>10px</td>
+            <td>Top/bottom inset for multi-select separator</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="doc-note">
+        <p>💡 <strong>Multi-Select Separator:</strong> Use <code>--select-multi-separator-height</code> to control 
+        the separator height independently in multi-select mode. Set to a fixed pixel value like <code>40px</code> 
+        to maintain consistent height when many items are selected, or keep as <code>auto</code> (default) to stretch 
+        with the container.</p>
+      </div>
     </div>
     
     <div class="doc-section">
