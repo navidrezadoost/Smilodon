@@ -198,7 +198,9 @@ class PlaygroundManager {
     // Wait for custom element to be fully connected  
     requestAnimationFrame(() => {
       const select = document.getElementById('demo-select');
-      if (select && typeof select.setItems === 'function') {
+      if (select && typeof select.setItems === 'function' && typeof select.updateConfig === 'function') {
+        console.log('Applying config:', this.config);
+        
         // Configure features using updateConfig
         select.updateConfig({
           searchable: this.config.searchable,
@@ -209,7 +211,8 @@ class PlaygroundManager {
             threshold: 100
           },
           selection: {
-            mode: this.config.mode
+            mode: this.config.mode,
+            closeOnSelect: this.config.mode === 'single'
           }
         });
         
@@ -219,6 +222,8 @@ class PlaygroundManager {
           label: item.label,
           group: this.config.grouped ? item.category : undefined
         }));
+        
+        console.log('Setting items, grouped:', this.config.grouped, 'count:', items.length);
         
         // Set items using the Smilodon API
         select.setItems(items);
