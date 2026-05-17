@@ -3041,6 +3041,7 @@ pnpm add @smilodon/core @smilodon/svelte</code></pre>
     
     <div class="doc-section">
       <h2>Keyboard Navigation</h2>
+      <p>Full keyboard accessibility (WCAG 2.2 AA compliant):</p>
       <table class="doc-table">
         <thead>
           <tr>
@@ -3062,6 +3063,10 @@ pnpm add @smilodon/core @smilodon/svelte</code></pre>
             <td>Jump to first/last option</td>
           </tr>
           <tr>
+            <td><code>PageUp</code> / <code>PageDown</code></td>
+            <td>Jump 10 options up/down</td>
+          </tr>
+          <tr>
             <td><code>Escape</code></td>
             <td>Close dropdown</td>
           </tr>
@@ -3070,11 +3075,41 @@ pnpm add @smilodon/core @smilodon/svelte</code></pre>
             <td>Move focus (closes dropdown)</td>
           </tr>
           <tr>
+            <td><code>Ctrl+A</code> (multi-select)</td>
+            <td>Select all options</td>
+          </tr>
+          <tr>
             <td><code>Type ahead</code></td>
             <td>Jump to option starting with typed letter</td>
           </tr>
         </tbody>
       </table>
+      
+      <h3>Multi-Select Range Selection</h3>
+      <ul>
+        <li><code>Shift + ↑/↓</code> - Range selection</li>
+        <li><code>Ctrl/Cmd + Click</code> - Toggle individual items</li>
+        <li><code>Shift + Home/End</code> - Select from current to first/last</li>
+      </ul>
+      
+      <h3>Multi-Select Display Modes</h3>
+      <p>Control badge scrolling behavior with <code>multiSelectDisplay</code> config:</p>
+      <pre><code class="language-javascript">{
+  multiSelectDisplay: {
+    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical' | 'both'
+    maxHeight: '160px',
+    overflowX: 'auto',
+    overflowY: 'auto',
+    dragScroll: true    // Enable drag-to-scroll (horizontal mode)
+  }
+}</code></pre>
+      <p><strong>Display Modes:</strong></p>
+      <ul>
+        <li><strong>wrap</strong> (default) - Badges wrap to new lines, vertical scroll when needed</li>
+        <li><strong>horizontal</strong> - Single row, horizontal scroll, drag-to-scroll enabled</li>
+        <li><strong>vertical</strong> - Single column, vertical scroll only</li>
+        <li><strong>both</strong> - Both horizontal and vertical scroll, dense packing</li>
+      </ul>
     </div>
     
     <div class="doc-section">

@@ -991,8 +991,14 @@ export class EnhancedSelect extends HTMLElement {
         --select-multi-separator-inset-block: 10px;
         --select-multi-action-surface-bg: var(--select-input-bg, var(--select-surface));
         --select-multi-action-divider: 1px solid var(--select-border);
+        --select-separator-width: 1px;
+        --select-separator-height: 50%;
+        --select-separator-display: block;
         --select-separator-opacity: 0.6;
         --select-separator-active-opacity: 1;
+        --select-separator-width: 1px;
+        --select-separator-height: 50%;
+        --select-separator-display: block;
         --select-separator-position: var(--select-arrow-width, 42px);
         --select-separator-position-with-clear: calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px));
         --select-separator-dark-bg: linear-gradient(
@@ -1021,9 +1027,16 @@ export class EnhancedSelect extends HTMLElement {
         --select-dropdown-transform-origin: top center;
         --select-scrollbar-width: 6px;
         --select-scrollbar-thumb-radius: 3px;
+        --select-option-hover-enabled: 1;
         --select-option-hover-transform: translateX(2px);
         --select-option-font-weight: 450;
         --select-option-margin: 2px 0;
+        --select-input-font-size: inherit;
+        --select-input-font-weight: 400;
+        --select-multi-container-padding: 6px;
+        --select-input-font-size: inherit;
+        --select-input-font-weight: 400;
+        --select-multi-container-padding: 6px;
         --select-option-disabled-opacity: 0.5;
         --select-option-disabled-cursor: not-allowed;
         --select-option-active-outline-offset: -2px;
@@ -1260,9 +1273,13 @@ export class EnhancedSelect extends HTMLElement {
         min-height: var(--select-input-min-height, 48px);
         max-height: var(--select-input-max-height, 160px);
         overflow: hidden;
+        padding: var(--select-multi-container-padding, 6px);
         align-content: var(--select-input-align-content, center);
         text-align: var(--select-input-text-align, start);
         background: var(--select-input-bg, var(--select-surface));
+        font-size: var(--select-input-font-size, inherit);
+        font-weight: var(--select-input-font-weight, 400);
+        font-weight: var(--select-input-font-weight, 400);
         border: var(--select-input-border, 1.5px solid var(--select-border));
         border-radius: var(--select-input-border-radius, var(--select-radius-md));
         box-shadow: var(--select-shadow-sm);
@@ -1382,6 +1399,7 @@ export class EnhancedSelect extends HTMLElement {
       /* Elegant separator line before arrow */
       .input-container::after {
         content: '';
+        display: var(--select-separator-display, block);
         position: absolute;
         top: 50%;
         right: var(--select-separator-position, var(--select-arrow-width, 42px));
@@ -1753,10 +1771,10 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .option:hover {
-        background: var(--select-option-hover-bg, var(--select-surface-elevated));
-        border: var(--select-option-hover-border, var(--select-option-border, none));
-        color: var(--select-option-hover-color, var(--select-text));
-        transform: var(--select-option-hover-transform);
+        background: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-bg, var(--select-surface-elevated)) : var(--select-option-bg, transparent);
+        border: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-border, var(--select-option-border, none)) : var(--select-option-border, none);
+        color: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-color, var(--select-text)) : var(--select-option-color, var(--select-text));
+        transform: calc(var(--select-option-hover-enabled, 1) * 1) > 0 ? var(--select-option-hover-transform) : none;
       }
 
       .option.selected {
@@ -2019,6 +2037,22 @@ export class EnhancedSelect extends HTMLElement {
         --select-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
 
         --select-dropdown-bg: var(--select-dark-dropdown-bg, var(--select-surface));
+        
+        --select-arrow-color: var(--select-dark-arrow-color, #9ca3af);
+        --select-arrow-hover-color: var(--select-dark-arrow-hover-color, #f5f5f5);
+        --select-arrow-bg: var(--select-dark-arrow-bg, transparent);
+        --select-arrow-hover-bg: var(--select-dark-arrow-hover-bg, rgba(156, 163, 175, 0.15));
+        
+        --select-separator-bg: var(--select-dark-separator-bg, var(--select-separator-dark-bg));
+        --select-separator-width: var(--select-dark-separator-width, 1px);
+        
+        --select-badge-bg: var(--select-dark-badge-bg, rgba(99, 102, 241, 0.2));
+        --select-badge-color: var(--select-dark-badge-color, #e0e7ff);
+        
+        --select-group-header-bg: var(--select-group-header-dark-bg, #1a1a2e);
+        --select-group-header-color: var(--select-group-header-dark-color, #9ca3af);
+        
+        --select-empty-color: var(--select-dark-empty-color, #9ca3af);
         
         --select-option-bg: var(--select-dark-option-bg, transparent);
         --select-option-color: var(--select-dark-option-color, var(--select-text));
@@ -2801,8 +2835,11 @@ export class EnhancedSelect extends HTMLElement {
         }
         break;
       case 'Enter':
+      case ' ':
         e.preventDefault();
-        if (this._state.activeIndex >= 0) {
+        if (!this._state.isOpen) {
+          this._handleOpen();
+        } else if (this._state.activeIndex >= 0) {
           this._selectOption(this._state.activeIndex, { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey });
         }
         break;

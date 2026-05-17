@@ -128,6 +128,8 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 - **Zero Dependencies**: 6.6 KB gzipped runtime
 - **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JS
 - **Accessibility**: WCAG 2.2 AA compliant with ARIA 1.2
+- **Full keyboard navigation**: Enter/Space, Arrows, Home/End, PageUp/Down, Escape
+- **Multi-select modes**: wrap, horizontal, vertical, both (with drag-scroll)
 
 ### 🔒 Enterprise Grade
 - **SOC2 Compliant**: Audit-ready security controls
@@ -701,6 +703,117 @@ enhanced-select.dark-mode {
 --select-dark-option-selected-bg /* Dark selected bg (#3730a3) */
 --select-dark-group-header-color /* Dark header text */
 --select-dark-group-header-bg    /* Dark header background */
+--select-dark-badge-bg         /* Dark badge background */
+--select-dark-badge-color      /* Dark badge text */
+--select-dark-arrow-color      /* Dark arrow icon color */
+--select-dark-arrow-bg         /* Dark arrow background */
+--select-dark-arrow-hover-bg   /* Dark arrow hover background */
+--select-dark-separator-bg     /* Dark separator color */
+--select-dark-separator-width  /* Dark separator width */
+--select-dark-empty-color      /* Dark empty state text */
+```
+
+---
+
+### Keyboard Navigation & Accessibility
+
+Smilodon provides full keyboard accessibility (WCAG 2.2 AA compliant):
+
+| Key | Action |
+|-----|--------|
+| `Enter` / `Space` | Open dropdown or select focused option |
+| `↑` / `↓` | Navigate through options |
+| `Home` / `End` | Jump to first/last option |
+| `PageUp` / `PageDown` | Jump 10 options up/down |
+| `Escape` | Close dropdown |
+| `Tab` | Close dropdown and move focus |
+| `Ctrl+A` (multi-select) | Select all options |
+| Type characters | Type-ahead search |
+
+**Multi-Select Range Selection:**
+- `Shift + ↑/↓` - Range selection
+- `Ctrl/Cmd + Click` - Toggle individual items  
+- `Shift + Home/End` - Select from current to first/last
+
+---
+
+### Multi-Select Display Modes
+
+Control badge scrolling behavior in multi-select mode with `multiSelectDisplay` config:
+
+```javascript
+{
+  multiSelectDisplay: {
+    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical' | 'both'
+    maxHeight: '160px',
+    overflowX: 'auto',
+    overflowY: 'auto',
+    dragScroll: true    // Enable drag-to-scroll (horizontal mode)
+  }
+}
+```
+
+**Display Modes:**
+- **`wrap`** (default) - Badges wrap to new lines, vertical scroll when needed
+- **`horizontal`** - Single row, horizontal scroll, drag-to-scroll enabled
+- **`vertical`** - Single column, vertical scroll only
+- **`both`** - Both horizontal and vertical scroll, dense packing
+
+---
+
+### Advanced Styling Controls
+
+#### Disabling Hover Animation
+
+To remove hover effects on options:
+
+```css
+enhanced-select {
+  --select-option-hover-bg: transparent;
+  --select-option-hover-color: inherit;
+  --select-option-hover-transform: none;
+}
+```
+
+#### Multi-Select Container & Badge Padding
+
+Control container padding separately from badge padding:
+
+```css
+enhanced-select {
+  --select-multi-container-padding: 8px;  /* Container internal padding */
+  --select-badge-padding: 4px 8px;        /* Individual badge padding */
+  --select-input-gap: 6px;                /* Gap between badges */
+}
+```
+
+#### Separator Dimension Controls
+
+Full control over the vertical separator line (works in all modes):
+
+```css
+enhanced-select {
+  --select-separator-width: 2px;          /* Line thickness */
+  --select-separator-height: 60%;         /* Line height (% of container) */
+  --select-separator-display: none;       /* Hide separator completely */
+  --select-separator-bg: #e5e7eb;         /* Custom color/gradient */
+  --select-separator-opacity: 0.8;        /* Line opacity */
+}
+```
+
+#### Input & Badge Typography
+
+```css
+enhanced-select {
+  /* Input field text */
+  --select-input-font-size: 14px;
+  --select-input-font-weight: 400;
+  
+  /* Badge text */
+  --select-badge-font-size: 13px;
+  --select-badge-font-weight: 500;
+  --select-badge-line-height: 1.2;
+}
 ```
 
 **Complete CSS Variables Reference**
