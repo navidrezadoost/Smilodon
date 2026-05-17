@@ -1418,6 +1418,10 @@ enhanced-select {
   --select-input-placeholder-color: #94a3b8;
 }
 
+[data-theme="dark"] .demo-label {
+  color: #f8fafc !important;
+}
+
 /* Inline code - overridden by syntax highlighting styles below */
 .doc-content code {
   background-color: var(--color-bg-secondary);
