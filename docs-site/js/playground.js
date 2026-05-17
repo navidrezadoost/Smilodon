@@ -221,26 +221,39 @@ class PlaygroundManager {
         
         console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
         
-        // Prepare data in the format expected by Smilodon
-        let items = data.map(item => ({
-          value: item.value,
-          label: item.label,
-          group: this.config.grouped ? item.category : undefined
-        }));
-        
-        // Sort by group if grouped to ensure grouped items appear together
+        // Use different API based on grouped mode
         if (this.config.grouped) {
-          items = items.sort((a, b) => {
-            const groupA = a.group || '';
-            const groupB = b.group || '';
-            return groupA.localeCompare(groupB);
+          // Group items by category for structured grouped data
+          const groupedData = {};
+          data.forEach(item => {
+            const category = item.category || 'Other';
+            if (!groupedData[category]) {
+              groupedData[category] = [];
+            }
+            groupedData[category].push({
+              value: item.value,
+              label: item.label
+            });
           });
+          
+          // Convert to GroupedItem[] format: [{ label: 'Fruits', options: [...] }, ...]
+          const groupedItems = Object.keys(groupedData).map(category => ({
+            label: category,
+            options: groupedData[category]
+          }));
+          
+          console.log('Setting grouped items:', groupedItems.length, 'groups', groupedItems.map(g => `${g.label} (${g.options.length})`));
+          select.setGroupedItems(groupedItems);
+        } else {
+          // Flat items without grouping
+          const items = data.map(item => ({
+            value: item.value,
+            label: item.label
+          }));
+          
+          console.log('Setting items:', items.length);
+          select.setItems(items);
         }
-        
-        console.log('Setting items - Count:', items.length, 'Grouped:', this.config.grouped, 'First 3:', items.slice(0, 3));
-        
-        // Set items FIRST
-        select.setItems(items);
         
         // Then configure features using updateConfig AFTER setItems
         const config = {
