@@ -23,6 +23,9 @@ class PlaygroundManager {
       totalItems: 0,
     };
     this._handleSelectChange = null;
+    this._handleLoadMore = null;
+    this._updateToken = 0;
+    this._activeLoadMoreToken = 0;
     this.init();
   }
 
@@ -77,6 +80,8 @@ class PlaygroundManager {
         this.toggleFeature(feature, checkbox.checked);
       });
     });
+
+    this.syncControlStates();
   }
 
   setMode(mode) {
@@ -88,6 +93,7 @@ class PlaygroundManager {
       btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
     });
     
+    this.syncControlStates();
     this.updateDemo();
   }
 
@@ -100,17 +106,74 @@ class PlaygroundManager {
       btn.classList.toggle('active', parseInt(btn.getAttribute('data-size')) === size);
     });
     
+    this.syncControlStates();
     this.updateDemo();
   }
 
   toggleFeature(feature, enabled) {
     console.log('Toggling feature:', feature, '=', enabled);
     this.config[feature] = enabled;
+    this.syncControlStates();
     this.updateDemo();
   }
 
-  generateData(size) {
-    const data = [];
+  getEffectiveConfig() {
+    const effective = { ...this.config };
+    const isVeryLargeDataset = effective.dataSize >= 100000;
+    const isLargeDataset = effective.dataSize >= 10000;
+
+    if (isLargeDataset) {
+      effective.virtualized = true;
+    }
+
+    if (isVeryLargeDataset) {
+      effective.infiniteScroll = true;
+      effective.grouped = false;
+      effective.customRender = false;
+    }
+
+    effective.lazyMode = isVeryLargeDataset;
+    effective.initialChunkSize = effective.lazyMode ? 1000 : effective.dataSize;
+    effective.pageSize = effective.lazyMode ? 1000 : Math.min(1000, effective.dataSize);
+    effective.itemsRenderedEstimate = effective.virtualized
+      ? Math.min(effective.initialChunkSize, 50)
+      : effective.initialChunkSize;
+
+    return effective;
+  }
+
+  syncControlStates() {
+    const effective = this.getEffectiveConfig();
+    const featureCheckboxes = document.querySelectorAll('.feature-checkbox');
+
+    featureCheckboxes.forEach((checkbox) => {
+      const feature = checkbox.getAttribute('data-feature');
+      const parentLabel = checkbox.closest('.checkbox-label');
+
+      if (feature === 'virtualized') {
+        checkbox.checked = effective.virtualized;
+        checkbox.disabled = this.config.dataSize >= 10000;
+      } else if (feature === 'infiniteScroll') {
+        checkbox.checked = effective.infiniteScroll;
+        checkbox.disabled = this.config.dataSize >= 100000;
+      } else if (feature === 'grouped') {
+        checkbox.checked = effective.grouped;
+        checkbox.disabled = this.config.dataSize >= 100000;
+      } else if (feature === 'customRender') {
+        checkbox.checked = effective.customRender;
+        checkbox.disabled = this.config.dataSize >= 100000;
+      } else {
+        checkbox.checked = Boolean(effective[feature]);
+        checkbox.disabled = false;
+      }
+
+      if (parentLabel) {
+        parentLabel.classList.toggle('is-disabled', checkbox.disabled);
+      }
+    });
+  }
+
+  createItem(index) {
     const categories = ['Fruits', 'Vegetables', 'Grains', 'Proteins', 'Dairy', 'Beverages'];
     const prefixes = ['Fresh', 'Organic', 'Premium', 'Classic', 'Deluxe', 'Special'];
     const items = [
@@ -122,36 +185,115 @@ class PlaygroundManager {
       'Coffee', 'Tea', 'Juice', 'Water', 'Soda', 'Smoothie'
     ];
 
+    const item = items[index % items.length];
+    const prefix = prefixes[Math.floor(index / items.length) % prefixes.length];
+    const category = categories[Math.floor(index / (items.length * prefixes.length)) % categories.length];
+
+    return {
+      id: index + 1,
+      label: `${prefix} ${item} #${index + 1}`,
+      value: `item-${index + 1}`,
+      category: this.config.grouped ? category : undefined,
+    };
+  }
+
+  async yieldToMain() {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+
+  generateData(size) {
+    const data = [];
     for (let i = 0; i < size; i++) {
-      const item = items[i % items.length];
-      const prefix = prefixes[Math.floor(i / items.length) % prefixes.length];
-      const category = categories[Math.floor(i / (items.length * prefixes.length)) % categories.length];
-      
-      data.push({
-        id: i + 1,
-        label: `${prefix} ${item} #${i + 1}`,
-        value: `item-${i + 1}`,
-        category: this.config.grouped ? category : undefined,
-      });
+      data.push(this.createItem(i));
     }
 
     return data;
   }
 
-  updateDemo() {
+  async generateDataAsync(size, offset = 0, token = this._updateToken) {
+    const data = new Array(size);
+    const batchSize = 2000;
+
+    for (let i = 0; i < size; i++) {
+      if (token !== this._updateToken && token !== this._activeLoadMoreToken) {
+        return null;
+      }
+
+      data[i] = this.createItem(offset + i);
+
+      if (i > 0 && i % batchSize === 0) {
+        await this.yieldToMain();
+      }
+    }
+
+    return data;
+  }
+
+  renderLoadingState(effectiveConfig) {
+    if (!this.demoContainer) return;
+
+    const lazyNotice = effectiveConfig.lazyMode
+      ? `<p class="demo-status-note">Large dataset mode is enabled. The demo now streams items in pages and forces virtualization to keep the page responsive.</p>`
+      : '';
+
+    this.demoContainer.innerHTML = `
+      <div class="demo-loading-state" role="status" aria-live="polite">
+        <div class="demo-loading-spinner"></div>
+        <div>
+          <strong>Preparing demo…</strong>
+          <p>Generating ${effectiveConfig.initialChunkSize.toLocaleString()} of ${effectiveConfig.dataSize.toLocaleString()} rows.</p>
+          ${lazyNotice}
+        </div>
+      </div>
+    `;
+  }
+
+  buildDemoNotice(effectiveConfig) {
+    if (!effectiveConfig.lazyMode && !effectiveConfig.virtualized) {
+      return '';
+    }
+
+    const notices = [];
+
+    if (effectiveConfig.dataSize >= 10000) {
+      notices.push('virtualization is forced for large datasets');
+    }
+
+    if (effectiveConfig.lazyMode) {
+      notices.push('items load in 1,000-row pages');
+      notices.push('grouping and custom rendering are disabled in this demo mode');
+    }
+
+    return `<div class="demo-runtime-note">Performance mode: ${notices.join(' • ')}.</div>`;
+  }
+
+  async updateDemo() {
+    const token = ++this._updateToken;
     const startTime = performance.now();
-    const data = this.generateData(this.config.dataSize);
+    const effectiveConfig = this.getEffectiveConfig();
+    const initialSize = Math.min(effectiveConfig.initialChunkSize, effectiveConfig.dataSize);
+
+    this.renderLoadingState(effectiveConfig);
+    await this.yieldToMain();
+
+    const data = effectiveConfig.lazyMode
+      ? await this.generateDataAsync(initialSize, 0, token)
+      : await this.generateDataAsync(effectiveConfig.dataSize, 0, token);
+
+    if (!data || token !== this._updateToken) {
+      return;
+    }
     
     // Clear container
     if (this.demoContainer) {
       this.demoContainer.innerHTML = '';
       
       // Create select based on framework
-      const selectHTML = this.renderSelect(data);
+      const selectHTML = this.renderSelect(data, effectiveConfig);
       this.demoContainer.innerHTML = selectHTML;
       
       // Initialize the select (this would use actual Smilodon in production)
-      this.initializeSelect(data);
+      this.initializeSelect(data, effectiveConfig, token);
     }
     
     const endTime = performance.now();
@@ -159,24 +301,26 @@ class PlaygroundManager {
     // Update performance metrics
     this.performanceMetrics = {
       renderTime: (endTime - startTime).toFixed(2),
-      itemsRendered: Math.min(data.length, this.config.virtualized ? 50 : data.length),
-      totalItems: data.length,
+      itemsRendered: effectiveConfig.itemsRenderedEstimate,
+      totalItems: effectiveConfig.dataSize,
     };
     
     this.updatePerformanceDisplay();
-    this.updateConfigDisplay();
+    this.updateConfigDisplay(effectiveConfig, data.length);
   }
 
-  renderSelect(data) {
+  renderSelect(data, effectiveConfig = this.getEffectiveConfig()) {
     // Render Smilodon select component
-    const isMulti = this.config.mode === 'multi';
-    const direction = this.config.rtl ? 'rtl' : 'ltr';
+    const isMulti = effectiveConfig.mode === 'multi';
+    const direction = effectiveConfig.rtl ? 'rtl' : 'ltr';
+    const runtimeNotice = this.buildDemoNotice(effectiveConfig);
     
     let html = `
       <div class="demo-select-wrapper" dir="${direction}">
         <label for="demo-select" class="demo-label">
           ${isMulti ? 'Select multiple items' : 'Select an item'}
         </label>
+        ${runtimeNotice}
         <enhanced-select 
           id="demo-select" 
           class="demo-select"
@@ -198,11 +342,15 @@ class PlaygroundManager {
     }, {});
   }
 
-  initializeSelect(data) {
+  initializeSelect(data, effectiveConfig = this.getEffectiveConfig(), token = this._updateToken) {
     // Use customElements.whenDefined and add delay for element to be fully ready
     customElements.whenDefined('enhanced-select').then(() => {
       // Small delay to ensure the element is connected and ready
       setTimeout(() => {
+        if (token !== this._updateToken) {
+          return;
+        }
+
         const select = document.getElementById('demo-select');
         if (!select) {
           console.error('Select element not found');
@@ -219,10 +367,15 @@ class PlaygroundManager {
           return;
         }
         
-        console.log('Initializing select with config:', JSON.stringify(this.config, null, 2));
+        console.log('Initializing select with config:', JSON.stringify(effectiveConfig, null, 2));
+
+        if (this._handleLoadMore) {
+          select.removeEventListener('loadMore', this._handleLoadMore);
+          this._handleLoadMore = null;
+        }
         
         // Use different API based on grouped mode
-        if (this.config.grouped) {
+        if (effectiveConfig.grouped) {
           // Group items by category for structured grouped data
           const groupedData = {};
           data.forEach(item => {
@@ -257,16 +410,16 @@ class PlaygroundManager {
         
         // Then configure features using updateConfig AFTER setItems
         const config = {
-          searchable: this.config.searchable,
-          virtualize: this.config.virtualized,
+          searchable: effectiveConfig.searchable,
+          virtualize: effectiveConfig.virtualized,
           infiniteScroll: {
-            enabled: this.config.infiniteScroll,
-            pageSize: 50,
+            enabled: effectiveConfig.infiniteScroll,
+            pageSize: effectiveConfig.pageSize,
             threshold: 100
           },
           selection: {
-            mode: this.config.mode,
-            closeOnSelect: this.config.mode === 'single'
+            mode: effectiveConfig.mode,
+            closeOnSelect: effectiveConfig.mode === 'single'
           }
         };
         
@@ -287,6 +440,43 @@ class PlaygroundManager {
         };
         select.addEventListener('change', this._handleSelectChange);
         
+        if (effectiveConfig.lazyMode) {
+          let loadedCount = data.length;
+          let isLoadingMore = false;
+
+          this._handleLoadMore = async () => {
+            if (isLoadingMore || token !== this._updateToken || loadedCount >= effectiveConfig.dataSize) {
+              return;
+            }
+
+            isLoadingMore = true;
+            this._activeLoadMoreToken = token;
+
+            const nextBatchSize = Math.min(effectiveConfig.pageSize, effectiveConfig.dataSize - loadedCount);
+            const nextItems = await this.generateDataAsync(nextBatchSize, loadedCount, token);
+
+            if (!nextItems || token !== this._updateToken) {
+              isLoadingMore = false;
+              return;
+            }
+
+            loadedCount += nextItems.length;
+            const mergedItems = data.concat(nextItems);
+            data.length = 0;
+            data.push(...mergedItems);
+
+            select.setItems(mergedItems.map(item => ({
+              value: item.value,
+              label: item.label
+            })));
+
+            this.updateConfigDisplay(effectiveConfig, loadedCount);
+            isLoadingMore = false;
+          };
+
+          select.addEventListener('loadMore', this._handleLoadMore);
+        }
+
         console.log('Select initialized successfully with mode:', config.selection.mode, 'searchable:', config.searchable);
       }, 50);
     }).catch(err => {
@@ -312,8 +502,9 @@ class PlaygroundManager {
     }
   }
 
-  updateConfigDisplay() {
+  updateConfigDisplay(effectiveConfig = this.getEffectiveConfig(), loadedCount = null) {
     const configList = document.querySelector('.config-list');
+    const currentLoadedCount = loadedCount ?? Math.min(effectiveConfig.initialChunkSize, effectiveConfig.dataSize);
     if (configList) {
       configList.innerHTML = `
         <div class="config-item">
@@ -326,13 +517,15 @@ class PlaygroundManager {
         </div>
         <div class="config-item">
           <span class="config-label">Data Size:</span>
-          <span class="config-value">${this.config.dataSize.toLocaleString()}</span>
+          <span class="config-value">${effectiveConfig.dataSize.toLocaleString()}</span>
         </div>
-        ${this.config.searchable ? '<div class="config-item"><span class="config-label">Searchable:</span><span class="config-value">✓</span></div>' : ''}
-        ${this.config.virtualized ? '<div class="config-item"><span class="config-label">Virtualized:</span><span class="config-value">✓</span></div>' : ''}
-        ${this.config.infiniteScroll ? '<div class="config-item"><span class="config-label">Infinite Scroll:</span><span class="config-value">✓</span></div>' : ''}
-        ${this.config.customRender ? '<div class="config-item"><span class="config-label">Custom Render:</span><span class="config-value">✓</span></div>' : ''}
-        ${this.config.grouped ? '<div class="config-item"><span class="config-label">Grouped:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.searchable ? '<div class="config-item"><span class="config-label">Searchable:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.virtualized ? '<div class="config-item"><span class="config-label">Virtualized:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.infiniteScroll ? '<div class="config-item"><span class="config-label">Infinite Scroll:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.customRender ? '<div class="config-item"><span class="config-label">Custom Render:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.grouped ? '<div class="config-item"><span class="config-label">Grouped:</span><span class="config-value">✓</span></div>' : ''}
+        ${effectiveConfig.lazyMode ? `<div class="config-item"><span class="config-label">Loaded Now:</span><span class="config-value">${currentLoadedCount.toLocaleString()} / ${effectiveConfig.dataSize.toLocaleString()}</span></div>` : ''}
+        ${effectiveConfig.lazyMode ? '<div class="config-item"><span class="config-label">Performance Mode:</span><span class="config-value">Lazy paging</span></div>' : ''}
       `;
     }
   }

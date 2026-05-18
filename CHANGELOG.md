@@ -17,7 +17,19 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-- No unreleased changes yet.
+### Added
+- **Angular documentation coverage:** Added Angular navigation, home page guidance, and a dedicated Angular integration page in the docs site, documenting the supported manual integration path via `@smilodon/core` custom elements.
+- **Framework icons in docs playground:** Added SVG icon assets for JavaScript, React, Vue, Svelte, SolidJS, and Angular to improve framework selection visuals in the docs site.
+
+### Changed
+- **Docs site asset loading:** Updated the docs site to load the local Smilodon bundle as an ES module and use a dedicated SVG favicon asset for local and GitHub Pages previews.
+- **Playground customization workflow:** Replaced the old modal customization behavior with an inline, collapsible playground panel that supports compact option styling, scoped CSS output, and side-by-side live previewing.
+
+### Fixed
+- **Large demo dataset freezes:** Reworked the docs playground to force virtualization for large datasets and lazily page `100K` and `1M` demo rows in smaller chunks so the page stays responsive.
+- **Docs site translations and navigation wiring:** Fixed Angular navigation and framework label translation keys so the new Angular docs surface renders correctly across supported languages.
+- **Code block copy controls:** Reworked copy buttons so they render consistently outside Prism code blocks without breaking layout, spacing, or hover/focus behavior.
+- **Documentation typography regression:** Fixed malformed customization-panel CSS that was leaking into later documentation rules and breaking font/layout styling across docs content.
 
 ## [1.5.3] - 2026-05-17
 

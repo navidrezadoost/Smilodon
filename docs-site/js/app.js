@@ -231,21 +231,66 @@ class App {
   
   addCopyButtonsToCodeBlocks() {
     // Add copy buttons to all code blocks
-    const codeBlocks = document.querySelectorAll('.doc-content pre');
+    const codeBlocks = document.querySelectorAll('.doc-content pre, pre[class*="language-"]');
+
+    const copyIcon = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    `;
+
+    const successIcon = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    `;
+
+    const setCopyState = (button) => {
+      button.classList.remove('copied');
+      button.setAttribute('aria-label', 'Copy code');
+      button.setAttribute('title', 'Copy code');
+      button.innerHTML = copyIcon;
+    };
+
+    const setCopiedState = (button) => {
+      button.classList.add('copied');
+      button.setAttribute('aria-label', 'Copied');
+      button.setAttribute('title', 'Copied');
+      button.innerHTML = successIcon;
+    };
     
     codeBlocks.forEach(pre => {
-      // Skip if already has a copy button
-      if (pre.querySelector('.copy-code-btn')) return;
-      
-      const button = document.createElement('button');
-      button.className = 'copy-code-btn';
-      button.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        <span>Copy</span>
-      `;
+      let wrapper = pre.parentElement;
+      if (!wrapper || !wrapper.classList.contains('code-block-wrapper')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+      }
+
+      let button = pre.querySelector('.copy-code-btn');
+
+      if (!button) {
+        button = wrapper.querySelector('.copy-code-btn');
+      }
+
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'copy-code-btn';
+        wrapper.appendChild(button);
+      } else if (button.parentElement !== wrapper) {
+        wrapper.appendChild(button);
+      }
+
+      setCopyState(button);
+
+      if (button.dataset.copyBound === 'true') {
+        return;
+      }
+
+      button.dataset.copyBound = 'true';
       
       button.addEventListener('click', async () => {
         const code = pre.querySelector('code');
@@ -253,26 +298,11 @@ class App {
         
         try {
           await navigator.clipboard.writeText(text);
-          
-          // Update button state
-          button.classList.add('copied');
-          button.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span>Copied!</span>
-          `;
+          setCopiedState(button);
           
           // Reset after 2 seconds
           setTimeout(() => {
-            button.classList.remove('copied');
-            button.innerHTML = `
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span>Copy</span>
-            `;
+            setCopyState(button);
           }, 2000);
         } catch (err) {
           console.error('Failed to copy code:', err);
@@ -286,11 +316,9 @@ class App {
           textArea.select();
           try {
             document.execCommand('copy');
-            button.classList.add('copied');
-            button.textContent = 'Copied!';
+            setCopiedState(button);
             setTimeout(() => {
-              button.classList.remove('copied');
-              button.textContent = 'Copy';
+              setCopyState(button);
             }, 2000);
           } catch (err2) {
             console.error('Fallback copy failed:', err2);
@@ -298,8 +326,6 @@ class App {
           document.body.removeChild(textArea);
         }
       });
-      
-      pre.appendChild(button);
     });
   }
 }

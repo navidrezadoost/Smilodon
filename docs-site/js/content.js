@@ -36,8 +36,56 @@ const documentationContent = {
       </div>
       <div class="feature-card">
         <h3>🔧 Framework Agnostic</h3>
-        <p>Works with React, Vue, Svelte, SolidJS, Vanilla JS, and React Native.</p>
+        <p>Works with React, Vue, Svelte, SolidJS, Vanilla JS, and React Native. Angular is documented separately because the dedicated adapter is not currently maintained.</p>
       </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>Angular Support</h2>
+      <p>Smilodon can be used in Angular today through the core custom element runtime even though there is no maintained <code>@smilodon/angular</code> adapter package in this repository.</p>
+      <ul>
+        <li>Install <code>@smilodon/core</code></li>
+        <li>Register the custom element by importing the package once</li>
+        <li>Allow custom elements with <code>CUSTOM_ELEMENTS_SCHEMA</code></li>
+        <li>Configure the element in <code>ngAfterViewInit()</code> or after the view is ready</li>
+      </ul>
+      <pre><code class="language-ts">import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import '@smilodon/core';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: '&lt;enhanced-select&gt;&lt;/enhanced-select&gt;'
+})
+export class AppComponent {}
+</code></pre>
+      <p>See <a href="#angular">Angular Integration</a> for the full guide, examples, event wiring, and styling notes.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Implementation Status at a Glance</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>How to integrate</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>React / Vue / Svelte / Solid / Vanilla / React Native</td>
+            <td>Use the dedicated Smilodon adapter package</td>
+            <td><span class="badge-success">Maintained</span></td>
+          </tr>
+          <tr>
+            <td>Angular</td>
+            <td>Use <code>@smilodon/core</code> directly as a custom element</td>
+            <td><span class="badge-warning">Manual integration</span></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   `,
   
@@ -116,8 +164,16 @@ const documentationContent = {
             <td>React Native</td>
             <td><span class="badge-success">Maintained</span></td>
           </tr>
+          <tr>
+            <td>Angular adapter</td>
+            <td>Angular</td>
+            <td><span class="badge-warning">Not currently maintained</span></td>
+          </tr>
         </tbody>
       </table>
+      <div class="doc-note">
+        <p>The Angular adapter was intentionally omitted from the maintained package list because there is no active <code>@smilodon/angular</code> package in this repository right now.</p>
+      </div>
     </div>
   `,
   
@@ -145,6 +201,10 @@ const documentationContent = {
       
       <h3>React Native</h3>
       <pre><code class="language-bash">npm install @smilodon/core @smilodon/react-native</code></pre>
+
+      <h3>Angular</h3>
+      <p>There is no maintained <code>@smilodon/angular</code> adapter at the moment. If you need Angular today, use <code>@smilodon/core</code> directly as a custom element.</p>
+      <pre><code class="language-bash">npm install @smilodon/core</code></pre>
     </div>
     
     <div class="doc-section">
@@ -2373,6 +2433,220 @@ export default function MyComponent() {
     setFilteredItems(filtered);
   }}
 /&gt;</code></pre>
+    </div>
+  `,
+
+  angular: `
+    <h1>Angular Integration</h1>
+
+    <div class="doc-section">
+      <h2>Status</h2>
+      <p>Angular was not listed with the maintained adapters because this repository currently does not ship an active <code>@smilodon/angular</code> package.</p>
+      <p>You can still use Smilodon in Angular by registering the core custom element and allowing custom elements in your Angular module or standalone component.</p>
+      <div class="doc-note">
+        <p><strong>Recommendation:</strong> Use Angular with <code>@smilodon/core</code> when you want the shared runtime today. If a dedicated Angular adapter is added later, the underlying element API can remain the foundation for migration.</p>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>Install</h2>
+      <pre><code class="language-bash">npm install @smilodon/core
+# or
+yarn add @smilodon/core
+# or
+pnpm add @smilodon/core</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>How Angular integration works</h2>
+      <ol>
+        <li>Import <code>@smilodon/core</code> once so the browser registers <code>&lt;enhanced-select&gt;</code>.</li>
+        <li>Allow custom elements with <code>CUSTOM_ELEMENTS_SCHEMA</code>.</li>
+        <li>Use <code>ViewChild</code> or a template reference to get the element instance.</li>
+        <li>Call runtime methods such as <code>setItems()</code>, <code>open()</code>, <code>clear()</code>, or <code>updateConfig()</code>.</li>
+        <li>Listen for custom DOM events like <code>change</code>, <code>select</code>, and <code>open</code>.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Minimal setup</h2>
+      <pre><code class="language-ts">import '@smilodon/core';</code></pre>
+      <pre><code class="language-ts">import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import '@smilodon/core';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: &#96;
+    &lt;enhanced-select id="framework-select"&gt;&lt;/enhanced-select&gt;
+  &#96;,
+})
+export class AppComponent {}
+      </code></pre>
+    </div>
+
+    <div class="doc-section">
+  <h2>Bind data after view init</h2>
+      <pre><code class="language-ts">import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, ViewChild } from '@angular/core';
+import '@smilodon/core';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: &#96;
+    &lt;enhanced-select #select&gt;&lt;/enhanced-select&gt;
+  &#96;,
+})
+export class AppComponent implements AfterViewInit {
+  @ViewChild('select', { static: true })
+  selectRef!: ElementRef<any>;
+
+  ngAfterViewInit(): void {
+    const select = this.selectRef.nativeElement;
+
+    select.setItems([
+      { label: 'Angular', value: 'angular' },
+      { label: 'React', value: 'react' },
+      { label: 'Vue', value: 'vue' },
+    ]);
+
+    select.updateConfig({
+      searchable: true,
+      placeholder: 'Choose a framework',
+    });
+
+    select.addEventListener('change', (event: any) => {
+      console.log('Selected values:', event.detail.selectedValues);
+    });
+  }
+}
+      </code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Template + component example</h2>
+      <pre><code class="language-html">&lt;enhanced-select #frameworkSelect&gt;&lt;/enhanced-select&gt;
+&lt;p&gt;Selected: {{ selectedLabel || 'Nothing selected yet' }}&lt;/p&gt;</code></pre>
+      <pre><code class="language-ts">import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, ViewChild } from '@angular/core';
+import '@smilodon/core';
+
+@Component({
+  selector: 'app-framework-picker',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: &#96;
+    &lt;enhanced-select #frameworkSelect&gt;&lt;/enhanced-select&gt;
+    &lt;p&gt;Selected: {{ selectedLabel || 'Nothing selected yet' }}&lt;/p&gt;
+  &#96;,
+})
+export class FrameworkPickerComponent implements AfterViewInit {
+  @ViewChild('frameworkSelect', { static: true })
+  frameworkSelect!: ElementRef<any>;
+
+  selectedLabel = '';
+
+  ngAfterViewInit(): void {
+    const el = this.frameworkSelect.nativeElement;
+
+    el.setItems([
+      { label: 'Angular', value: 'angular' },
+      { label: 'React', value: 'react' },
+      { label: 'Vue', value: 'vue' },
+      { label: 'Svelte', value: 'svelte' },
+    ]);
+
+    el.addEventListener('change', (event: any) => {
+      const firstItem = event.detail.selectedItems?.[0];
+      this.selectedLabel = firstItem?.label ?? '';
+    });
+  }
+}
+      </code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Configuration patterns</h2>
+      <p>Because Angular is talking directly to the custom element, most advanced behavior is configured at runtime:</p>
+      <pre><code class="language-ts">const select = this.selectRef.nativeElement;
+
+select.updateConfig({
+  selection: {
+    mode: 'multi',
+    closeOnSelect: false,
+    maxSelections: 5,
+  },
+  searchable: true,
+  clearControl: {
+    enabled: true,
+  },
+  dropdownPlacement: {
+    mode: 'bottom',
+  },
+});</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Listening to events</h2>
+      <p>The element emits DOM custom events. In Angular, the most reliable approach is to subscribe with <code>addEventListener()</code> after the element is available.</p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Detail payload</th>
+            <th>Use case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>change</code></td>
+            <td><code>selectedItems</code>, <code>selectedValues</code>, <code>selectedIndices</code></td>
+            <td>Sync Angular component state</td>
+          </tr>
+          <tr>
+            <td><code>select</code></td>
+            <td>Single item selection metadata</td>
+            <td>Per-selection side effects</td>
+          </tr>
+          <tr>
+            <td><code>search</code></td>
+            <td><code>query</code>, <code>results</code>, <code>count</code></td>
+            <td>Remote search and analytics</td>
+          </tr>
+          <tr>
+            <td><code>open</code> / <code>close</code></td>
+            <td>UI lifecycle info</td>
+            <td>Telemetry and UI coordination</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Styling in Angular</h2>
+      <p>Since Smilodon is based on a custom element with Shadow DOM, style it with CSS custom properties on the host element:</p>
+      <pre><code class="language-css">enhanced-select {
+  --select-input-border-radius: 12px;
+  --select-option-hover-bg: rgba(59, 130, 246, 0.08);
+  --select-option-transition: none;
+  --select-separator-inset-block: 8px;
+}</code></pre>
+      <p>This works well from Angular component styles, global styles, or design-system tokens.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Current limitations</h2>
+      <ul>
+        <li>No maintained <code>@smilodon/angular</code> adapter package is shipped in this monorepo.</li>
+        <li>Angular forms integration is manual. Wrap the custom element in your own <code>ControlValueAccessor</code> if you need reactive forms binding.</li>
+        <li>TypeScript typing for <code>ViewChild</code> references is looser unless you define your own interface for the element API.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended approach</h2>
+      <p>If you are using Angular now, treat Smilodon as a stable custom element runtime: configure it programmatically, listen to emitted DOM events, and build any Angular-specific wrapper you need close to your application code.</p>
     </div>
   `,
   

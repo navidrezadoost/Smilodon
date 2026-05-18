@@ -28,7 +28,7 @@
     <meta property="twitter:image" content="https://navidrezadoost.github.io/Smilodon/assets/social-preview.png">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -175,6 +175,7 @@
                         <li><a href="#react" class="nav-link" data-page="react" data-i18n="nav.react">React</a></li>
                         <li><a href="#vue" class="nav-link" data-page="vue" data-i18n="nav.vue">Vue 3</a></li>
                         <li><a href="#svelte" class="nav-link" data-page="svelte" data-i18n="nav.svelte">Svelte</a></li>
+                        <li><a href="#angular" class="nav-link" data-page="angular" data-i18n="nav.angular">Angular</a></li>
                         <li><a href="#solid" class="nav-link" data-page="solid" data-i18n="nav.solid">SolidJS</a></li>
                         <li><a href="#vanilla" class="nav-link" data-page="vanilla" data-i18n="nav.vanilla">Vanilla JS</a></li>
                         <li><a href="#react-native" class="nav-link" data-page="react-native" data-i18n="nav.reactNative">React Native</a></li>
@@ -245,28 +246,19 @@
                     <div class="framework-grid" id="frameworkGrid">
                         <button class="framework-card active" data-framework="vanilla">
                             <div class="framework-icon">
-                                <svg width="64" height="64" viewBox="0 0 64 64">
-                                    <rect width="64" height="64" rx="12" fill="url(#vanilla-gradient)"/>
-                                    <text x="32" y="42" font-size="28" font-weight="700" text-anchor="middle" fill="white">JS</text>
-                                    <defs>
-                                        <linearGradient id="vanilla-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" style="stop-color:#f7df1e"/>
-                                            <stop offset="100%" style="stop-color:#e5c700"/>
-                                        </linearGradient>
-                                    </defs>
+                               <svg width="64" height="64" viewBox="0 0 64 64">
+                                    <image href="assets/icons/javascript-svgrepo-com.svg" width="64" height="64"/>
                                 </svg>
                             </div>
                             <h3>Vanilla JS</h3>
                             <p data-i18n="frameworks.vanilla">Pure JavaScript</p>
                         </button>
                         
+                        
                         <button class="framework-card" data-framework="react">
                             <div class="framework-icon">
-                                <svg width="64" height="64" viewBox="0 0 64 64">
-                                    <ellipse cx="32" cy="32" rx="10" ry="4" fill="#61dafb"/>
-                                    <ellipse cx="32" cy="32" rx="10" ry="4" transform="rotate(60 32 32)" fill="#61dafb"/>
-                                    <ellipse cx="32" cy="32" rx="10" ry="4" transform="rotate(120 32 32)" fill="#61dafb"/>
-                                    <circle cx="32" cy="32" r="3" fill="#61dafb"/>
+                               <svg width="64" height="64" viewBox="0 0 64 64">
+                                    <image href="assets/icons/react-svgrepo-com.svg" width="64" height="64"/>
                                 </svg>
                             </div>
                             <h3>React</h3>
@@ -275,9 +267,8 @@
                         
                         <button class="framework-card" data-framework="vue">
                             <div class="framework-icon">
-                                <svg width="64" height="64" viewBox="0 0 64 64">
-                                    <path d="M40 8L32 24 24 8H8L32 56 56 8z" fill="#41b883"/>
-                                    <path d="M40 8L32 24 24 8H16L32 40 48 8z" fill="#35495e"/>
+                               <svg width="64" height="64" viewBox="0 0 64 64">
+                                    <image href="assets/icons/vue-svgrepo-com.svg" width="64" height="64"/>
                                 </svg>
                             </div>
                             <h3>Vue 3</h3>
@@ -287,8 +278,7 @@
                         <button class="framework-card" data-framework="svelte">
                             <div class="framework-icon">
                                 <svg width="64" height="64" viewBox="0 0 64 64">
-                                    <path d="M48 18c-4-6-12-8-18-4L18 24c-3 2-5 6-4 10 1 3 3 5 6 6l12 6c3 1 5 4 4 7-1 3-4 5-7 4l-12-4c-4-2-6-6-5-10" stroke="#ff3e00" fill="none" stroke-width="4"/>
-                                    <path d="M16 46c4 6 12 8 18 4l12-10c3-2 5-6 4-10-1-3-3-5-6-6l-12-6c-3-1-5-4-4-7 1-3 4-5 7-4l12 4c4 2 6 6 5 10" stroke="#ff3e00" fill="none" stroke-width="4"/>
+                                    <image href="assets/icons/svelte-icon-svgrepo-com.svg" width="64" height="64"/>
                                 </svg>
                             </div>
                             <h3>Svelte</h3>
@@ -298,11 +288,7 @@
                         <button class="framework-card" data-framework="solid">
                             <div class="framework-icon">
                                 <svg width="64" height="64" viewBox="0 0 64 64">
-                                    <path d="M24 12l16 8-16 8-16-8z" fill="#446b9e" opacity="0.8"/>
-                                    <path d="M24 28l16 8-16 8-16-8z" fill="#446b9e" opacity="0.9"/>
-                                    <path d="M24 44l16 8-16 8-16-8z" fill="#446b9e"/>
-                                    <path d="M40 20l16 8-16 8" fill="#76b3e1" opacity="0.8"/>
-                                    <path d="M40 36l16 8-16 8" fill="#76b3e1"/>
+                                    <image href="assets/icons/Solidjs-Icon--Streamline-Svg-Logos.svg" width="64" height="64"/>
                                 </svg>
                             </div>
                             <h3>SolidJS</h3>
@@ -319,6 +305,15 @@
                             </div>
                             <h3>React Native</h3>
                             <p data-i18n="frameworks.reactNative">Mobile Development</p>
+                        </button>
+                        <button class="framework-card" data-framework="angular">
+                            <div class="framework-icon">
+                                <svg width="64" height="64" viewBox="0 0 64 64">
+                                    <image href="assets/icons/angular-icon-svgrepo-com.svg" width="64" height="64"/>
+                                </svg>
+                            </div>
+                            <h3>Angular</h3>
+                            <p data-i18n="frameworks.angular">Web Development</p>
                         </button>
                     </div>
                 </section>
@@ -437,73 +432,208 @@
         </div>
         
         <div class="panel-content">
-            <div class="style-control">
-                <label>
-                    <span>Primary Color</span>
-                    <small>Main accent color for the select</small>
-                </label>
-                <input type="color" data-style-property="primaryColor" value="#3b82f6">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Background Color</span>
-                    <small>Background of the select</small>
-                </label>
-                <input type="color" data-style-property="backgroundColor" value="#ffffff">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Text Color</span>
-                    <small>Color of text in options</small>
-                </label>
-                <input type="color" data-style-property="textColor" value="#1f2937">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Border Radius</span>
-                    <small>Roundness of corners (px)</small>
-                </label>
-                <input type="number" data-style-property="borderRadius" value="8" min="0" max="32">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Font Size</span>
-                    <small>Base font size (px)</small>
-                </label>
-                <input type="number" data-style-property="fontSize" value="14" min="10" max="24">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Border Width</span>
-                    <small>Thickness of borders (px)</small>
-                </label>
-                <input type="number" data-style-property="borderWidth" value="1" min="0" max="5">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Spacing</span>
-                    <small>Internal padding (px)</small>
-                </label>
-                <input type="number" data-style-property="spacing" value="12" min="4" max="32">
-            </div>
-            
-            <div class="style-control">
-                <label>
-                    <span>Shadow Intensity</span>
-                    <small>Opacity of shadows (0-1)</small>
-                </label>
-                <input type="range" data-style-property="shadowIntensity" value="0.1" min="0" max="1" step="0.1">
-            </div>
-            
-            <div class="panel-actions">
-                <button id="reset-styles" class="btn-secondary">Reset to Default</button>
-                <button id="export-styles" class="btn-primary">Export CSS</button>
+            <div class="customization-layout">
+                <div class="customization-controls">
+                    <div class="style-controls-grid">
+                        <div class="customization-note style-control--wide">
+                            <strong>More than the basics.</strong>
+                            <span>This panel now exposes a broader set of option-level styles, but the full Smilodon token surface is still available through the generated CSS below.</span>
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Primary Color</span>
+                                <small>Main accent color for the select</small>
+                            </label>
+                            <input type="color" data-style-property="primaryColor" value="#3b82f6">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Light Surface</span>
+                                <small>Background used in light mode</small>
+                            </label>
+                            <input type="color" data-style-property="lightBackgroundColor" value="#ffffff">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Light Text</span>
+                                <small>Text color used in light mode</small>
+                            </label>
+                            <input type="color" data-style-property="lightTextColor" value="#1f2937">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Light Border</span>
+                                <small>Border color in light mode</small>
+                            </label>
+                            <input type="color" data-style-property="lightBorderColor" value="#d1d5db">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Option Surface</span>
+                                <small>Light mode option background</small>
+                            </label>
+                            <input type="color" data-style-property="lightOptionBackgroundColor" value="#ffffff">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Option Text</span>
+                                <small>Light mode option text</small>
+                            </label>
+                            <input type="color" data-style-property="lightOptionTextColor" value="#1f2937">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Hover Surface</span>
+                                <small>Light mode hover background</small>
+                            </label>
+                            <input type="color" data-style-property="lightOptionHoverBackgroundColor" value="#eff6ff">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Selected Surface</span>
+                                <small>Selected option background</small>
+                            </label>
+                            <input type="color" data-style-property="selectedBackgroundColor" value="#2563eb">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Selected Text</span>
+                                <small>Selected option text color</small>
+                            </label>
+                            <input type="color" data-style-property="selectedTextColor" value="#ffffff">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Surface</span>
+                                <small>Background used in dark mode</small>
+                            </label>
+                            <input type="color" data-style-property="darkBackgroundColor" value="#111827">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Text</span>
+                                <small>Text color used in dark mode</small>
+                            </label>
+                            <input type="color" data-style-property="darkTextColor" value="#f9fafb">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Border</span>
+                                <small>Border color in dark mode</small>
+                            </label>
+                            <input type="color" data-style-property="darkBorderColor" value="#374151">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Option Surface</span>
+                                <small>Dark mode option background</small>
+                            </label>
+                            <input type="color" data-style-property="darkOptionBackgroundColor" value="#111827">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Option Text</span>
+                                <small>Dark mode option text</small>
+                            </label>
+                            <input type="color" data-style-property="darkOptionTextColor" value="#f9fafb">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Hover</span>
+                                <small>Dark mode hover background</small>
+                            </label>
+                            <input type="color" data-style-property="darkOptionHoverBackgroundColor" value="#1f2937">
+                        </div>
+
+                        <div class="style-control">
+                            <label>
+                                <span>Dark Selected</span>
+                                <small>Dark mode selected background</small>
+                            </label>
+                            <input type="color" data-style-property="darkSelectedBackgroundColor" value="#1d4ed8">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Border Radius</span>
+                                <small>Roundness of corners (px)</small>
+                            </label>
+                            <input type="number" data-style-property="borderRadius" value="8" min="0" max="32">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Font Size</span>
+                                <small>Base font size (px)</small>
+                            </label>
+                            <input type="number" data-style-property="fontSize" value="14" min="10" max="24">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Border Width</span>
+                                <small>Thickness of borders (px)</small>
+                            </label>
+                            <input type="number" data-style-property="borderWidth" value="1" min="0" max="5">
+                        </div>
+                        
+                        <div class="style-control">
+                            <label>
+                                <span>Spacing</span>
+                                <small>Compact spacing for trigger and options (px)</small>
+                            </label>
+                            <input type="number" data-style-property="spacing" value="12" min="4" max="32">
+                        </div>
+                        
+                        <div class="style-control style-control--wide">
+                            <label>
+                                <span>Shadow Intensity</span>
+                                <small>Opacity of shadows (0-1)</small>
+                            </label>
+                            <input type="range" data-style-property="shadowIntensity" value="0.1" min="0" max="1" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="panel-actions">
+                        <button id="reset-styles" class="btn-secondary">Reset to Default</button>
+                        <button id="export-styles" class="btn-primary">Export CSS</button>
+                    </div>
+                </div>
+
+                <div class="customization-output">
+                    <div class="customization-output-card">
+                        <h3>Applied Select Output</h3>
+                        <p>The generated CSS stays scoped to the Smilodon demo select, covers a broader set of option styles, and remains compatible with light and dark themes.</p>
+
+                        <div class="theme-preview-grid">
+                            <div class="theme-preview-card">
+                                <span class="theme-preview-label">Light Mode</span>
+                                <div class="theme-preview-swatch" id="lightThemePreview"></div>
+                            </div>
+                            <div class="theme-preview-card">
+                                <span class="theme-preview-label">Dark Mode</span>
+                                <div class="theme-preview-swatch" id="darkThemePreview"></div>
+                            </div>
+                        </div>
+
+                        <pre class="custom-output-pre"><code id="custom-css-output" class="language-css"></code></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -513,7 +643,7 @@
 
     <!-- Smilodon Core CDN -->
     <!-- Smilodon Core (local build with sticky group header fix) -->
-    <script src="lib/smilodon.min.js"></script>
+    <script type="module" src="lib/smilodon.min.js"></script>
 
     <!-- Prism.js for Syntax Highlighting -->
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
