@@ -6874,6 +6874,7 @@ function GroupedExample() {
     
     <div class="doc-section">
       <h2>Styling Group Headers</h2>
+      <p>All group headers share the same base padding. Use the separator tokens to add space or dividers before later groups without changing the title padding of those later headers.</p>
       
       <h3>Using Shadow Parts</h3>
       <pre><code class="language-css">/* Style group headers */
@@ -6909,6 +6910,9 @@ enhanced-select::part(group-header):nth-of-type(3) {
   --select-group-header-bg: #f3f4f6;
   --select-group-header-color: #374151;
   --select-group-header-padding: 12px 16px;
+  --select-group-header-separator-margin-top: 8px;
+  --select-group-header-separator-padding-top: 14px;
+  --select-group-header-separator-border-top: 1px solid #e5e7eb;
   --select-group-header-font-size: 14px;
   --select-group-header-font-weight: 600;
   --select-group-header-text-transform: uppercase;

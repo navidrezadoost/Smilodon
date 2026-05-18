@@ -145,7 +145,7 @@ export class SelectOption extends HTMLElement {
         transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
       }
       
-      .option-container.active {
+      .option-container.active:not(.disabled) {
         background: var(--select-option-active-bg, var(--select-option-hover-bg, #f0f0f0));
         color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937))));
         border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
@@ -279,7 +279,7 @@ export class SelectOption extends HTMLElement {
       toggleClasses(this, [...selectedClasses, 'smilodon-option--selected'], false);
     }
 
-    if (active) {
+     if (active && !disabled) {
        toggleClasses(this._container, [...activeClasses, 'smilodon-option--active'], true);
        toggleClasses(this, [...activeClasses, 'smilodon-option--active'], true); // Make focus ring visible on host
     } else {
@@ -353,7 +353,11 @@ export class SelectOption extends HTMLElement {
     // Set ARIA attributes and State attributes on Host
     this.setAttribute('role', 'option');
     this.setAttribute('aria-selected', String(selected));
-    if (disabled) this.setAttribute('aria-disabled', 'true');
+    if (disabled) {
+      this.setAttribute('aria-disabled', 'true');
+    } else {
+      this.removeAttribute('aria-disabled');
+    }
     this.id = this._config.id || `select-option-${index}`;
 
     // Add checkmark (part="checkmark") - standard for object mode
@@ -373,7 +377,7 @@ export class SelectOption extends HTMLElement {
     // Data Attributes Contract on Host
     const state = [];
     if (selected) state.push('selected');
-    if (active) state.push('active');
+    if (active && !disabled) state.push('active');
     if (state.length) {
       this.dataset.smState = state.join(' ');
     } else {
@@ -511,7 +515,7 @@ export class SelectOption extends HTMLElement {
    * Set active state
    */
   setActive(active: boolean): void {
-    this._config.active = active;
+    this._config.active = active && !this._config.disabled;
     this._render();
   }
 

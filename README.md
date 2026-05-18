@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version `1.6.0` is the current aligned release line for the core package and the maintained adapters.
+Version `1.5.4` is the current published release for `@smilodon/core`.
 
 ---
 
@@ -437,6 +437,7 @@ Recent styling additions are now documented across the shared docs set, includin
 - multi-select chip sizing, spacing, hover, and active states
 - chip remove button sizing and custom SVG/text icons via `selection.removeButtonIcon`
 - group-header spacing, alignment, color, border, radius, and shadow hooks
+- additive later-group separator tokens so every group title keeps the same padding while `--select-group-header-separator-*` adds spacing and dividers between sections
 - option border, radius, hover, active, selected, and disabled state hooks
 - runtime `styles` config sections such as `badge`, `badgeRemove`, `badgeLabel`, `groupHeader`, and `activeOption`
 

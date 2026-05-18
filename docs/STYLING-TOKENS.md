@@ -251,7 +251,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-group-header-border-radius` | `0` | radius | Group header radius. |
 | `--select-group-header-shadow` | `none` | shadow | Group header shadow. |
 | `--select-group-header-separator-margin-top` | `8px` | spacing | Gap before later groups. |
-| `--select-group-header-separator-padding-top` | `14px` | spacing | Top padding before later groups. |
+| `--select-group-header-separator-padding-top` | `14px` | spacing | Extra top spacing before later groups without changing their own header padding. |
 | `--select-group-header-separator-border-top` | `1px solid var(--select-border)` | border | Divider above later groups. |
 | `--select-option-padding` | `10px 14px` | spacing | Option padding. |
 | `--select-option-margin` | `2px 0` | spacing | Option spacing. |

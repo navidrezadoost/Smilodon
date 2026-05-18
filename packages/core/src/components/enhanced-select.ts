@@ -632,11 +632,11 @@ export class EnhancedSelect extends HTMLElement {
       this._inputContainer.removeAttribute('data-multi-scroll-mode');
       this._inputContainer.removeAttribute('data-drag-scroll');
       this._inputContainer.classList.remove('is-dragging-scroll');
-      this._inputContainer.style.removeProperty('--select-multi-input-max-height');
-      this._inputContainer.style.removeProperty('--select-multi-input-overflow-x');
-      this._inputContainer.style.removeProperty('--select-multi-input-overflow-y');
-      this._inputContainer.style.removeProperty('--select-multi-input-flex-wrap');
-      this._inputContainer.style.removeProperty('--select-multi-input-align-content');
+      this._inputContainer.style.removeProperty('--select-multi-input-max-height-config');
+      this._inputContainer.style.removeProperty('--select-multi-input-overflow-x-config');
+      this._inputContainer.style.removeProperty('--select-multi-input-overflow-y-config');
+      this._inputContainer.style.removeProperty('--select-multi-input-flex-wrap-config');
+      this._inputContainer.style.removeProperty('--select-multi-input-align-content-config');
       return;
     }
 
@@ -648,11 +648,11 @@ export class EnhancedSelect extends HTMLElement {
 
     this._inputContainer.setAttribute('data-multi-scroll-mode', mode);
     this._inputContainer.setAttribute('data-drag-scroll', String(dragEnabled && mode === 'horizontal'));
-    this._inputContainer.style.setProperty('--select-multi-input-max-height', maxHeight);
-    this._inputContainer.style.setProperty('--select-multi-input-overflow-x', overflowX);
-    this._inputContainer.style.setProperty('--select-multi-input-overflow-y', overflowY);
-    this._inputContainer.style.setProperty('--select-multi-input-flex-wrap', flexWrap);
-    this._inputContainer.style.setProperty('--select-multi-input-align-content', alignContent);
+    this._inputContainer.style.setProperty('--select-multi-input-max-height-config', maxHeight);
+    this._inputContainer.style.setProperty('--select-multi-input-overflow-x-config', overflowX);
+    this._inputContainer.style.setProperty('--select-multi-input-overflow-y-config', overflowY);
+    this._inputContainer.style.setProperty('--select-multi-input-flex-wrap-config', flexWrap);
+    this._inputContainer.style.setProperty('--select-multi-input-align-content-config', alignContent);
   }
 
   private _canUseHorizontalMultiScroll(target: HTMLElement | null): boolean {
@@ -1319,14 +1319,14 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       .input-container.input-container--multi {
-        max-height: var(--select-multi-input-max-height, var(--select-input-max-height, 160px));
+        max-height: var(--select-multi-input-max-height, var(--select-multi-input-max-height-config, var(--select-input-max-height, 160px)));
       }
 
       .input-container.input-container--multi .input-content {
-        flex-wrap: var(--select-multi-input-flex-wrap, wrap);
-        align-content: var(--select-multi-input-align-content, flex-start);
-        overflow-x: var(--select-multi-input-overflow-x, hidden);
-        overflow-y: var(--select-multi-input-overflow-y, auto);
+        flex-wrap: var(--select-multi-input-flex-wrap, var(--select-multi-input-flex-wrap-config, wrap));
+        align-content: var(--select-multi-input-align-content, var(--select-multi-input-align-content-config, flex-start));
+        overflow-x: var(--select-multi-input-overflow-x, var(--select-multi-input-overflow-x-config, hidden));
+        overflow-y: var(--select-multi-input-overflow-y, var(--select-multi-input-overflow-y-config, auto));
       }
 
       .input-container.input-container--multi::after {
@@ -1343,6 +1343,11 @@ export class EnhancedSelect extends HTMLElement {
         cursor: var(--select-multi-input-horizontal-cursor, grab);
         overflow-y: hidden;
         overscroll-behavior-x: contain;
+        padding-right: calc(var(--select-arrow-width, 42px) + var(--select-multi-horizontal-end-gap, 12px));
+      }
+
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"].has-clear-control .input-content {
+        padding-right: calc(var(--select-arrow-width, 42px) + var(--select-clear-button-size, 26px) + var(--select-clear-button-right, 8px) + var(--select-multi-horizontal-end-gap, 12px));
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"]::after {
@@ -1382,6 +1387,15 @@ export class EnhancedSelect extends HTMLElement {
       :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container.with-clear-control {
         right: auto;
         left: var(--select-arrow-right-with-clear, 34px);
+      }
+
+      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content {
+        padding-right: 0;
+        padding-left: calc(var(--select-arrow-width, 42px) + var(--select-multi-horizontal-end-gap, 12px));
+      }
+
+      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"].has-clear-control .input-content {
+        padding-left: calc(var(--select-arrow-width, 42px) + var(--select-clear-button-size, 26px) + var(--select-clear-button-right, 8px) + var(--select-multi-horizontal-end-gap, 12px));
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .clear-control-button {
@@ -1737,8 +1751,10 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .group-header:not(:first-child) {
-        margin-top: var(--select-group-header-separator-margin-top);
-        padding-top: var(--select-group-header-separator-padding-top);
+        margin-top: calc(
+          var(--select-group-header-separator-margin-top, 0px) +
+          var(--select-group-header-separator-padding-top, 0px)
+        );
         border-top: var(--select-group-header-separator-border-top);
       }
 
@@ -1820,7 +1836,7 @@ export class EnhancedSelect extends HTMLElement {
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent)));
       }
 
-      .option.active:not(.selected) {
+      .option.active:not(.selected):not(.disabled) {
         background: var(--select-option-active-bg, var(--select-surface-elevated));
         color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text))));
         border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
@@ -1830,7 +1846,7 @@ export class EnhancedSelect extends HTMLElement {
         transform: var(--select-option-active-transform, none);
       }
 
-      .option.selected.active {
+      .option.selected.active:not(.disabled) {
         outline: var(--select-option-selected-active-outline, 2px solid rgba(15, 52, 96, 0.4));
         outline-offset: var(--select-option-selected-active-outline-offset);
       }
@@ -2048,6 +2064,9 @@ export class EnhancedSelect extends HTMLElement {
         
         --select-badge-bg: var(--select-dark-badge-bg, rgba(99, 102, 241, 0.2));
         --select-badge-color: var(--select-dark-badge-color, #e0e7ff);
+        --select-badge-border: var(--select-dark-badge-border, var(--select-badge-border, none));
+        --select-badge-hover-border: var(--select-dark-badge-hover-border, var(--select-badge-hover-border, var(--select-badge-border, none)));
+        --select-badge-active-border: var(--select-dark-badge-active-border, var(--select-badge-active-border, var(--select-badge-hover-border, var(--select-badge-border, none))));
         
         --select-group-header-bg: var(--select-group-header-dark-bg, #1a1a2e);
         --select-group-header-color: var(--select-group-header-dark-color, #9ca3af);
@@ -2081,6 +2100,36 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([theme="dark"]) .input-container {
         background: var(--select-surface);
         border-color: var(--select-border);
+      }
+
+      :host(.dark-mode) .input-container:hover,
+      :host([dark-mode]) .input-container:hover,
+      :host([darkmode]) .input-container:hover,
+      :host([data-theme="dark"]) .input-container:hover,
+      :host([theme="dark"]) .input-container:hover,
+      :host-context(.dark-mode) .input-container:hover,
+      :host-context(.dark) .input-container:hover,
+      :host-context([dark-mode]) .input-container:hover,
+      :host-context([darkmode]) .input-container:hover,
+      :host-context([data-theme="dark"]) .input-container:hover,
+      :host-context([theme="dark"]) .input-container:hover {
+        border-color: var(--select-dark-input-hover-border, var(--select-input-hover-border, var(--select-dark-border-focus, var(--select-border-focus, #6366f1))));
+        box-shadow: var(--select-dark-input-hover-shadow, var(--select-input-hover-shadow, var(--select-shadow-sm), 0 0 0 1px rgba(99, 102, 241, 0.12)));
+      }
+
+      :host(.dark-mode) .input-container:focus-within,
+      :host([dark-mode]) .input-container:focus-within,
+      :host([darkmode]) .input-container:focus-within,
+      :host([data-theme="dark"]) .input-container:focus-within,
+      :host([theme="dark"]) .input-container:focus-within,
+      :host-context(.dark-mode) .input-container:focus-within,
+      :host-context(.dark) .input-container:focus-within,
+      :host-context([dark-mode]) .input-container:focus-within,
+      :host-context([darkmode]) .input-container:focus-within,
+      :host-context([data-theme="dark"]) .input-container:focus-within,
+      :host-context([theme="dark"]) .input-container:focus-within {
+        border-color: var(--select-dark-border-focus, var(--select-border-focus, #6366f1));
+        box-shadow: var(--select-dark-shadow-focus, var(--select-shadow-focus, 0 0 0 3px rgba(99, 102, 241, 0.25))), var(--select-shadow-sm);
       }
 
       :host(.dark-mode) .input-container::after,
@@ -2138,7 +2187,8 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([darkmode]) .selection-badge,
       :host-context([data-theme="dark"]) .selection-badge,
       :host-context([theme="dark"]) .selection-badge {
-        background: var(--select-badge-dark-bg);
+        background: var(--select-dark-badge-bg, var(--select-badge-bg, var(--select-badge-dark-bg)));
+        color: var(--select-dark-badge-color, var(--select-badge-color, #e0e7ff));
       }
 
       :host(.dark-mode) .group-header:not(:first-child),
@@ -2344,6 +2394,10 @@ export class EnhancedSelect extends HTMLElement {
         this._config.selection.mode === 'multi'
         && (this._config.multiSelectDisplay?.mode ?? 'wrap') === 'horizontal'
       ) {
+        const primaryDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        if (primaryDelta !== 0) {
+          this._inputContent.scrollLeft += primaryDelta;
+        }
         e.preventDefault();
       }
     }, { passive: false });
@@ -2789,6 +2843,8 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
+    if (!this._config.enabled) return;
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -2809,17 +2865,21 @@ export class EnhancedSelect extends HTMLElement {
       case 'Home':
         e.preventDefault();
         if (this._state.isOpen) {
-          this._setActive(0);
+          const selectableIndices = this._getSelectableOptionIndices();
+          const firstIndex = selectableIndices[0];
+          if (firstIndex === undefined) break;
+          this._setActive(firstIndex);
           if (this._config.selection.mode === 'multi' && e.shiftKey) {
-            this._selectRange(this._rangeAnchorIndex ?? 0, 0, { clear: !(e.ctrlKey || e.metaKey) });
+            this._selectRange(this._rangeAnchorIndex ?? firstIndex, firstIndex, { clear: !(e.ctrlKey || e.metaKey) });
           }
         }
         break;
       case 'End':
         e.preventDefault();
         if (this._state.isOpen) {
-          const options = this._getSelectableOptions();
-          const lastIndex = Math.max(0, options.length - 1);
+          const selectableIndices = this._getSelectableOptionIndices();
+          const lastIndex = selectableIndices[selectableIndices.length - 1];
+          if (lastIndex === undefined) break;
           this._setActive(lastIndex);
           if (this._config.selection.mode === 'multi' && e.shiftKey) {
             this._selectRange(this._rangeAnchorIndex ?? lastIndex, lastIndex, { clear: !(e.ctrlKey || e.metaKey) });
@@ -2873,8 +2933,17 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _moveActive(delta: number, opts?: { shiftKey?: boolean; toggleKey?: boolean }): void {
-    const options = this._getSelectableOptions();
-    const next = Math.max(0, Math.min(options.length - 1, this._state.activeIndex + delta));
+    const selectableIndices = this._getSelectableOptionIndices();
+    if (selectableIndices.length === 0) return;
+
+    const currentPosition = selectableIndices.indexOf(this._state.activeIndex);
+    const basePosition = currentPosition >= 0
+      ? currentPosition
+      : delta >= 0
+        ? -1
+        : selectableIndices.length;
+    const nextPosition = Math.max(0, Math.min(selectableIndices.length - 1, basePosition + delta));
+    const next = selectableIndices[nextPosition];
     this._setActive(next);
 
     if (this._config.selection.mode === 'multi' && opts?.shiftKey) {
@@ -2888,6 +2957,11 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _setActive(index: number): void {
+    const option = this._getOptionElementByIndex(index);
+    if (!option || option.getAttribute('aria-disabled') === 'true') {
+      return;
+    }
+
     // Clear previous active state
     if (this._state.activeIndex >= 0) {
       const prevOption = this._getOptionElementByIndex(this._state.activeIndex);
@@ -2905,7 +2979,6 @@ export class EnhancedSelect extends HTMLElement {
     this._state.activeIndex = index;
     
     // Set new active state
-    const option = this._getOptionElementByIndex(index);
     if (option) {
       // Check if it's a custom SelectOption or a lightweight DOM element
       if ('setActive' in option && typeof (option as any).setActive === 'function') {
@@ -2938,8 +3011,15 @@ export class EnhancedSelect extends HTMLElement {
     // Filter out group headers and other non-selectable elements
     // Only return elements with data-index or data-sm-selectable attributes
     return Array.from(this._optionsContainer.children).filter((child) => {
-      return child.hasAttribute('data-index') || child.hasAttribute('data-sm-selectable');
+      return (child.hasAttribute('data-index') || child.hasAttribute('data-sm-selectable'))
+        && child.getAttribute('aria-disabled') !== 'true';
     }) as HTMLElement[];
+  }
+
+  private _getSelectableOptionIndices(): number[] {
+    return this._getSelectableOptions()
+      .map((option) => Number(option.getAttribute('data-sm-index') ?? option.getAttribute('data-index')))
+      .filter((index) => Number.isFinite(index));
   }
 
   private _buildRendererHelpers(): RendererHelpers {
@@ -2984,24 +3064,27 @@ export class EnhancedSelect extends HTMLElement {
     const options = this._getSelectableOptions();
     const maxSelections = this._config.selection.maxSelections || 0;
     
-    options.forEach((option, index) => {
+    options.forEach((option) => {
+      const optionIndex = Number(option.getAttribute('data-sm-index') ?? option.getAttribute('data-index'));
+      if (!Number.isFinite(optionIndex)) return;
+
       if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
         return;
       }
       
-      if (!this._state.selectedIndices.has(index)) {
+      if (!this._state.selectedIndices.has(optionIndex)) {
         // Check if it's a custom SelectOption or a lightweight DOM element
         if ('getConfig' in option && typeof (option as any).getConfig === 'function') {
           const config = (option as SelectOption).getConfig();
-          this._state.selectedIndices.add(index);
-          this._state.selectedItems.set(index, config.item);
+          this._state.selectedIndices.add(optionIndex);
+          this._state.selectedItems.set(optionIndex, config.item);
           (option as SelectOption).setSelected(true);
         } else {
           // Lightweight option - get item from data attribute or state
-          const item = this._state.loadedItems[index];
+          const item = this._state.loadedItems[optionIndex];
           if (item) {
-            this._state.selectedIndices.add(index);
-            this._state.selectedItems.set(index, item);
+            this._state.selectedIndices.add(optionIndex);
+            this._state.selectedItems.set(optionIndex, item);
             (option as HTMLElement).classList.add('smilodon-option--selected');
             (option as HTMLElement).setAttribute('aria-selected', 'true');
           }
@@ -3027,6 +3110,8 @@ export class EnhancedSelect extends HTMLElement {
     for (let i = min; i <= max; i += 1) {
       if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) break;
       const item = this._state.loadedItems[i];
+      const optionEl = this._getOptionElementByIndex(i);
+      if (optionEl?.getAttribute('aria-disabled') === 'true') continue;
       if (!item) continue;
       this._state.selectedIndices.add(i);
       this._state.selectedItems.set(i, item);
@@ -3039,16 +3124,16 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _setInitialActiveOption(): void {
-    const options = this._getSelectableOptions();
-    if (options.length === 0) return;
+    const selectableIndices = this._getSelectableOptionIndices();
+    if (selectableIndices.length === 0) return;
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
     if (this._config.selection.mode === 'multi' && selected.length === 0) {
       this._state.activeIndex = -1;
       this._input.removeAttribute('aria-activedescendant');
       return;
     }
-    const target = selected.length > 0 ? selected[0] : 0;
-    this._setActive(Math.min(target, options.length - 1));
+    const target = selected.find((index) => selectableIndices.includes(index)) ?? selectableIndices[0];
+    this._setActive(target);
   }
 
   private _announce(message: string): void {

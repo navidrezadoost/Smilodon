@@ -674,6 +674,9 @@ enhanced-select.dark-mode {
 
 /* Group headers (when using groupedItems or flat items with `group` property) */
 --select-group-header-padding  /* Padding inside header (8px 12px) */
+--select-group-header-separator-margin-top /* Extra gap before later groups */
+--select-group-header-separator-padding-top /* Adds separator spacing without changing header title padding */
+--select-group-header-separator-border-top /* Divider above later groups */
 --select-group-header-color    /* Text color (#6b7280) */
 --select-group-header-bg       /* Background (#f3f4f6) */
 --select-group-header-font-size

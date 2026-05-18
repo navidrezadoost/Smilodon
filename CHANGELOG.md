@@ -31,6 +31,20 @@ Historical Angular-related changelog entries below are preserved for reference o
 - **Code block copy controls:** Reworked copy buttons so they render consistently outside Prism code blocks without breaking layout, spacing, or hover/focus behavior.
 - **Documentation typography regression:** Fixed malformed customization-panel CSS that was leaking into later documentation rules and breaking font/layout styling across docs content.
 
+## [1.5.4] - 2026-05-18
+
+### Fixed
+- **Grouped header styling consistency:** Later group headers now preserve the same base title padding as the first header. Separator spacing is applied additively so later groups no longer appear visually compressed or unstylable.
+- **Disabled grouped-option interaction:** Keyboard navigation, range selection, and multi-select shortcuts now skip disabled options so disabled rows cannot become active or selected.
+- **Horizontal multi-select scrolling:** Horizontal chip layouts now respect public styling overrides again, reserve action-area space correctly, and respond to wheel scrolling as expected.
+- **Dark-mode token coverage:** Dark-mode hover/focus input tokens and badge border/color fallbacks now apply consistently across the core runtime.
+
+### Changed
+- **Group header separator semantics:** `--select-group-header-separator-padding-top` now adds spacing before later groups without replacing their own header padding.
+
+### Documentation
+- Updated the styling token reference, GitHub Pages documentation, root README, and core package README to clarify grouped-header separator behavior and the `1.5.4` fix set.
+
 ## [1.5.3] - 2026-05-17
 
 ### Fixed
