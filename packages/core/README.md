@@ -131,6 +131,12 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 - **Full keyboard navigation**: Enter/Space, Arrows, Home/End, PageUp/Down, Escape
 - **Multi-select modes**: wrap, horizontal, vertical, both (with drag-scroll)
 
+### 🎨 CSS Framework Compatibility (`1.5.5`)
+- **Scoped mirrored styles**: class-based framework styles used by custom renderers are mirrored only into the options subtree, not the whole shadow root.
+- **Dark variant support**: `.dark`, `.dark-mode`, and theme-attribute variants propagate into custom-rendered option content.
+- **Stable state hooks**: `classMap`, `data-sm-state`, and Smilodon state classes stay available on custom option roots for hover, active, selected, and disabled styling.
+- **Accessible custom renderers**: nested interactive descendants are normalized by default so option renderers stay compatible with listbox semantics.
+
 ### 🔒 Enterprise Grade
 - **SOC2 Compliant**: Audit-ready security controls
 - **CSP Compatible**: No eval(), no inline scripts
@@ -1046,6 +1052,8 @@ enhanced-select {
 ```
 
 Framework compatibility guidance also lives in [../../docs/CSS-FRAMEWORK-COMPATIBILITY.md](../../docs/CSS-FRAMEWORK-COMPATIBILITY.md).
+
+When using Tailwind-style custom renderers, remember that `optionRenderer` may return the option root itself. In that case, put the utility classes and hover/active/selected styling on the returned root element instead of assuming there is a nested wrapper.
 
 **Example 4: Custom Brand Colors**
 ```css

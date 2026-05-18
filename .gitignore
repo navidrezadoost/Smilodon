@@ -236,6 +236,12 @@ local.properties
 .cproject
 .settings/
 
+# Legacy manual verification files
+QUICK-TEST.html
+test-demo.html
+test-enhanced.html
+test-styling-fixes.html
+
 # ============================================
 # Optional: Large Files
 # ============================================

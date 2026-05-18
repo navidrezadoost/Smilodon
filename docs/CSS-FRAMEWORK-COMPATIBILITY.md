@@ -24,6 +24,16 @@ That means Smilodon can participate in:
 - Material UI theme tokens and `sx`-driven wrappers
 - raw CSS, CSS Modules, and design-system stylesheets
 
+### What changed in `1.5.5`
+
+The `1.5.5` release hardens the custom-renderer path used by Tailwind-style and CSS-framework-heavy integrations.
+
+- mirrored document styles are scoped to the options subtree instead of the full shadow root
+- dark theme markers are mirrored into that scoped subtree so `.dark`, `.dark-mode`, and data-theme-driven variants react immediately
+- escaped Tailwind-style selectors such as `dark\:text-white` remain intact during selector scoping
+- custom option roots keep Smilodon state classes and `data-sm-state` attributes so the rendered root can show hover, active, selected, and disabled visuals directly
+- custom renderer accessibility is normalized so nested focusable descendants do not break listbox semantics by default
+
 ---
 
 ## The styling layers
@@ -134,6 +144,9 @@ Tailwind works especially well with Smilodon when you split responsibilities cle
 
 - Tailwind does not automatically pierce Shadow DOM. Use `classMap`, CSS variables, and `::part()`.
 - Custom option content can still use Tailwind utility classes because Smilodon mirrors document stylesheets when class-based rendering paths are active.
+- Mirrored framework styles are now limited to the options subtree, so utility-framework resets do not restyle the closed input shell, badges, or dropdown chrome.
+- Tailwind dark variants continue to work inside custom-rendered option content because Smilodon mirrors host dark markers into the scoped options subtree.
+- When `optionRenderer` returns the option root element, style the root directly for stateful visuals instead of assuming Smilodon will wrap the rendered content in an extra child.
 - Prefer stable utility strings over dynamically constructed class names when using Tailwind JIT/purge workflows.
 
 ---
@@ -277,7 +290,8 @@ Use this checklist when integrating Smilodon into a CSS framework stack:
 3. use `::part()` only for structural/internal styling
 4. use `classMap` for selected, active, and disabled utility classes
 5. use custom renderers for framework-specific rich option content
-6. verify focus ring contrast and keyboard states after theming
+6. style the custom-renderer root directly when your renderer returns the root option element
+7. verify focus ring contrast, keyboard states, and dark-mode text contrast after theming
 
 ---
 

@@ -31,6 +31,21 @@ Historical Angular-related changelog entries below are preserved for reference o
 - **Code block copy controls:** Reworked copy buttons so they render consistently outside Prism code blocks without breaking layout, spacing, or hover/focus behavior.
 - **Documentation typography regression:** Fixed malformed customization-panel CSS that was leaking into later documentation rules and breaking font/layout styling across docs content.
 
+## [1.5.5] - 2026-05-18
+
+### Fixed
+- **Scoped CSS framework mirroring:** Document-level styles mirrored for custom renderers are now scoped to the options subtree instead of the full shadow root, which prevents framework preflight rules from leaking into the Smilodon input shell and dropdown chrome.
+- **Dark variant propagation for custom renderers:** Theme markers such as `.dark`, `.dark-mode`, `[data-theme="dark"]`, and related selectors are mirrored into the scoped options subtree so Tailwind-style dark variants update immediately inside custom-rendered option content.
+- **Escaped utility-selector handling:** Scoped selector rewriting now preserves escaped utility selectors such as Tailwind `dark\:*` classes, preventing dark-mode utility rules from being mis-scoped.
+- **Custom-renderer accessibility normalization:** Custom option renderers now receive fallback accessible names, nested focus targets are neutralized by default, and custom group headers default to `role="presentation"` so screen-reader and keyboard behavior stays aligned with listbox semantics.
+- **Custom renderer state visibility:** Tailwind-style custom renderer roots now receive consistent hover, active, selected, and disabled visual hooks in the real-world compatibility reproduction, including dark-mode text and placeholder alignment fixes.
+
+### Changed
+- **CSS framework integration guidance:** Expanded root docs, package docs, framework compatibility guidance, and docs-site content to explain the recommended split between host layout classes, CSS variables, `::part()`, `classMap`, and custom renderers.
+
+### Removed
+- **Obsolete manual HTML test surfaces:** Removed legacy root-level files `QUICK-TEST.html`, `test-demo.html`, `test-enhanced.html`, and `test-styling-fixes.html`, and added ignore rules so they are not reintroduced accidentally.
+
 ## [1.5.4] - 2026-05-18
 
 ### Fixed

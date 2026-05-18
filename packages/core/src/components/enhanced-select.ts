@@ -50,6 +50,7 @@ interface SelectState {
 export class EnhancedSelect extends HTMLElement {
   /** live set of all connected instances; used to auto-close siblings */
   private static _instances: Set<EnhancedSelect> = new Set();
+  private static readonly _MIRRORED_STYLES_SCOPE_CLASS = 'smilodon-mirrored-styles-scope';
 
   private _config: GlobalSelectConfig;
   private _shadow: ShadowRoot;
@@ -88,6 +89,8 @@ export class EnhancedSelect extends HTMLElement {
   private _mirrorGlobalStylesForCustomOptions = false;
   private _globalStylesObserver: MutationObserver | null = null;
   private _globalStylesContainer: HTMLElement | null = null;
+  private _themeContextObserver: MutationObserver | null = null;
+  private _globalStylesSyncToken = 0;
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
   private _suppressBlurClose = false;
   private _renderCycleId = 0;
@@ -259,6 +262,7 @@ export class EnhancedSelect extends HTMLElement {
     if (typeof document === 'undefined') return;
     if (!this._mirrorGlobalStylesForCustomOptions) return;
 
+    this._setupThemeContextMirroring();
     this._mirrorDocumentStylesIntoShadow();
 
     if (this._globalStylesObserver) return;
@@ -281,6 +285,11 @@ export class EnhancedSelect extends HTMLElement {
       this._globalStylesObserver = null;
     }
 
+    if (this._themeContextObserver) {
+      this._themeContextObserver.disconnect();
+      this._themeContextObserver = null;
+    }
+
     if (this._globalStylesContainer) {
       this._globalStylesContainer.remove();
       this._globalStylesContainer = null;
@@ -298,31 +307,265 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     const container = this._globalStylesContainer;
-    container.innerHTML = '';
-
+    const syncToken = ++this._globalStylesSyncToken;
     const styleNodes = Array.from(document.querySelectorAll('style,link[rel="stylesheet"]'));
 
-    styleNodes.forEach((node, index) => {
-      if (node instanceof HTMLStyleElement) {
-        const clonedStyle = document.createElement('style');
-        clonedStyle.setAttribute('data-smilodon-global-style', String(index));
-        clonedStyle.textContent = node.textContent || '';
-        container.appendChild(clonedStyle);
-        return;
+    void Promise.all(styleNodes.map((node, index) => this._createScopedGlobalStyleNode(node, index))).then((mirroredNodes) => {
+      if (!this._globalStylesContainer || syncToken !== this._globalStylesSyncToken) return;
+      container.replaceChildren(...mirroredNodes.filter((node): node is Node => Boolean(node)));
+      this._syncMirroredThemeContext();
+    });
+  }
+
+  private _setupThemeContextMirroring(): void {
+    if (typeof document === 'undefined') return;
+
+    this._syncMirroredThemeContext();
+
+    if (this._themeContextObserver) return;
+
+    this._themeContextObserver = new MutationObserver(() => {
+      this._syncMirroredThemeContext();
+    });
+
+    const targets = new Set<Node>([this, document.documentElement]);
+    if (document.body) {
+      targets.add(document.body);
+    }
+
+    let ancestor: HTMLElement | null = this.parentElement;
+    while (ancestor) {
+      targets.add(ancestor);
+      ancestor = ancestor.parentElement;
+    }
+
+    targets.forEach((target) => {
+      this._themeContextObserver?.observe(target, {
+        attributes: true,
+        attributeFilter: ['class', 'dark-mode', 'darkmode', 'data-theme', 'theme'],
+      });
+    });
+  }
+
+  private _syncMirroredThemeContext(): void {
+    const scopeTarget = this._optionsContainer;
+    if (!scopeTarget) return;
+
+    const darkSelectors = [
+      '.dark-mode',
+      '.dark',
+      '[dark-mode]',
+      '[darkmode]',
+      '[data-theme="dark"]',
+      '[theme="dark"]',
+    ];
+
+    const isDark = darkSelectors.some((selector) => this.matches(selector) || Boolean(this.closest(selector)))
+      || document.documentElement.matches('.dark-mode, .dark, [dark-mode], [darkmode], [data-theme="dark"], [theme="dark"]')
+      || Boolean(document.body?.matches('.dark-mode, .dark, [dark-mode], [darkmode], [data-theme="dark"], [theme="dark"]'));
+
+    scopeTarget.classList.toggle('dark', isDark);
+    scopeTarget.classList.toggle('dark-mode', isDark);
+
+    if (isDark) {
+      scopeTarget.setAttribute('dark-mode', '');
+      scopeTarget.setAttribute('data-theme', 'dark');
+      scopeTarget.setAttribute('theme', 'dark');
+    } else {
+      scopeTarget.removeAttribute('dark-mode');
+      scopeTarget.removeAttribute('data-theme');
+      scopeTarget.removeAttribute('theme');
+    }
+  }
+
+  private async _createScopedGlobalStyleNode(node: Element, index: number): Promise<Node | null> {
+    if (node instanceof HTMLStyleElement) {
+      return this._buildScopedStyleElement(node.textContent || '', String(index));
+    }
+
+    if (node instanceof HTMLLinkElement && node.href) {
+      try {
+        const response = await fetch(node.href, {
+          credentials: node.crossOrigin === 'use-credentials' ? 'include' : 'same-origin',
+          mode: 'cors',
+        });
+        if (!response.ok) {
+          return null;
+        }
+
+        const cssText = await response.text();
+        return this._buildScopedStyleElement(cssText, String(index));
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  private _buildScopedStyleElement(cssText: string, id: string): HTMLStyleElement | null {
+    const scopedCss = this._scopeMirroredCssText(cssText);
+    if (!scopedCss.trim()) return null;
+
+    const style = document.createElement('style');
+    style.setAttribute('data-smilodon-global-style', id);
+    style.textContent = scopedCss;
+    return style;
+  }
+
+  private _scopeMirroredCssText(cssText: string): string {
+    if (!cssText.trim()) return '';
+
+    try {
+      if (typeof CSSStyleSheet !== 'undefined') {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(cssText);
+        return this._serializeScopedCssRules(Array.from(sheet.cssRules));
+      }
+    } catch (_error) {
+      return '';
+    }
+
+    return '';
+  }
+
+  private _serializeScopedCssRules(rules: CSSRule[]): string {
+    return rules.map((rule) => this._serializeScopedCssRule(rule)).filter(Boolean).join('\n');
+  }
+
+  private _serializeScopedCssRule(rule: CSSRule): string {
+    if (rule instanceof CSSStyleRule) {
+      const selectors = this._splitSelectorList(rule.selectorText)
+        .map((selector) => this._scopeMirroredSelector(selector))
+        .filter(Boolean);
+
+      if (selectors.length === 0) return '';
+      return `${selectors.join(', ')} { ${rule.style.cssText} }`;
+    }
+
+    if (rule instanceof CSSMediaRule) {
+      const nested = this._serializeScopedCssRules(Array.from(rule.cssRules));
+      return nested ? `@media ${rule.conditionText} { ${nested} }` : '';
+    }
+
+    if (typeof CSSSupportsRule !== 'undefined' && rule instanceof CSSSupportsRule) {
+      const nested = this._serializeScopedCssRules(Array.from(rule.cssRules));
+      return nested ? `@supports ${rule.conditionText} { ${nested} }` : '';
+    }
+
+    if (rule instanceof CSSFontFaceRule || rule instanceof CSSKeyframesRule) {
+      return rule.cssText;
+    }
+
+    const nestedRule = rule as CSSRule & { cssRules?: CSSRuleList; name?: string; conditionText?: string };
+    if (nestedRule.cssRules) {
+      const nested = this._serializeScopedCssRules(Array.from(nestedRule.cssRules));
+      if (!nested) return '';
+
+      const ctorName = nestedRule.constructor?.name ?? '';
+      if (ctorName.includes('Layer')) {
+        return `@layer ${nestedRule.name ?? ''} { ${nested} }`;
+      }
+      if (ctorName.includes('Container')) {
+        return `@container ${nestedRule.conditionText ?? ''} { ${nested} }`;
+      }
+    }
+
+    return '';
+  }
+
+  private _splitSelectorList(selectorText: string): string[] {
+    const selectors: string[] = [];
+    let current = '';
+    let depthRound = 0;
+    let depthSquare = 0;
+
+    for (const char of selectorText) {
+      if (char === '(') depthRound += 1;
+      if (char === ')') depthRound = Math.max(0, depthRound - 1);
+      if (char === '[') depthSquare += 1;
+      if (char === ']') depthSquare = Math.max(0, depthSquare - 1);
+
+      if (char === ',' && depthRound === 0 && depthSquare === 0) {
+        if (current.trim()) selectors.push(current.trim());
+        current = '';
+        continue;
       }
 
-      if (node instanceof HTMLLinkElement && node.href) {
-        const clonedLink = document.createElement('link');
-        clonedLink.rel = 'stylesheet';
-        clonedLink.href = node.href;
-        if (node.media) clonedLink.media = node.media;
-        if (node.crossOrigin) clonedLink.crossOrigin = node.crossOrigin;
-        if (node.referrerPolicy) clonedLink.referrerPolicy = node.referrerPolicy;
-        if (node.integrity) clonedLink.integrity = node.integrity;
-        if (node.type) clonedLink.type = node.type;
-        if (node.nonce) clonedLink.nonce = node.nonce;
-        clonedLink.setAttribute('data-smilodon-global-link', String(index));
-        container.appendChild(clonedLink);
+      current += char;
+    }
+
+    if (current.trim()) selectors.push(current.trim());
+    return selectors;
+  }
+
+  private _scopeMirroredSelector(selector: string): string {
+    const scopeClass = `.${EnhancedSelect._MIRRORED_STYLES_SCOPE_CLASS}`;
+
+    let scopedSelector = selector
+      .replace(/(^|\s|>|\+|~)(:root|html|body)(?=\b|\s|[.#[:>+~]|$)/g, `$1${scopeClass}`);
+
+    const themePatterns = [
+      /\.dark-mode(?![\w-]|\\:)/g,
+      /\.dark(?![\w-]|\\:)/g,
+      /\[dark-mode\]/g,
+      /\[darkmode\]/g,
+      /\[data-theme=(?:"dark"|'dark'|dark)\]/g,
+      /\[theme=(?:"dark"|'dark'|dark)\]/g,
+    ];
+
+    let injectedThemeScope = false;
+    themePatterns.forEach((pattern) => {
+      scopedSelector = scopedSelector.replace(pattern, (match) => {
+        injectedThemeScope = true;
+        return `${match}${scopeClass}`;
+      });
+    });
+
+    if (!scopedSelector.includes(EnhancedSelect._MIRRORED_STYLES_SCOPE_CLASS) && !injectedThemeScope) {
+      scopedSelector = `${scopeClass} ${scopedSelector}`;
+    }
+
+    return scopedSelector;
+  }
+
+  private _normalizeCustomOptionAccessibility(optionEl: HTMLElement, meta: {
+    label: string;
+    disabled: boolean;
+  }): void {
+    if (!optionEl.hasAttribute('aria-label') && !optionEl.hasAttribute('aria-labelledby')) {
+      optionEl.setAttribute('aria-label', meta.label);
+    }
+
+    const nestedFocusableSelectors = [
+      'a[href]',
+      'button',
+      'input',
+      'select',
+      'textarea',
+      'summary',
+      '[tabindex]',
+      '[contenteditable=""]',
+      '[contenteditable="true"]',
+      '[role="button"]',
+      '[role="link"]',
+      '[role="checkbox"]',
+      '[role="switch"]',
+      '[role="radio"]',
+      '[role="textbox"]',
+    ].join(', ');
+
+    optionEl.querySelectorAll<HTMLElement>(nestedFocusableSelectors).forEach((child) => {
+      if (child === optionEl) return;
+
+      child.tabIndex = -1;
+
+      if (!child.hasAttribute('data-smilodon-keep-role')) {
+        child.setAttribute('role', 'presentation');
+      }
+
+      if ((meta.disabled || child.matches('button, input, select, textarea, summary, a[href]')) && !child.hasAttribute('data-smilodon-keep-aria')) {
+        child.setAttribute('aria-hidden', 'true');
       }
     });
   }
@@ -850,7 +1093,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _createOptionsContainer(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'options-container';
+    container.className = `options-container ${EnhancedSelect._MIRRORED_STYLES_SCOPE_CLASS}`;
     return container;
   }
 
@@ -4093,6 +4336,9 @@ export class EnhancedSelect extends HTMLElement {
         if (this._config.styles.classNames?.groupHeader) {
           header.classList.add(...this._config.styles.classNames.groupHeader.split(' ').filter(Boolean));
         }
+        if (!header.hasAttribute('role')) {
+          header.setAttribute('role', 'presentation');
+        }
         header.setAttribute('part', 'group-header');
         this._optionsContainer.appendChild(header);
 
@@ -4412,9 +4658,6 @@ export class EnhancedSelect extends HTMLElement {
     if (!optionEl.getAttribute('role')) {
       optionEl.setAttribute('role', 'option');
     }
-    if (!optionEl.getAttribute('aria-label')) {
-      optionEl.setAttribute('aria-label', meta.label);
-    }
     optionEl.setAttribute('aria-selected', String(meta.selected));
     if (meta.disabled) {
       optionEl.setAttribute('aria-disabled', 'true');
@@ -4433,6 +4676,11 @@ export class EnhancedSelect extends HTMLElement {
       
       this._customOptionBoundElements.add(optionEl);
     }
+
+    this._normalizeCustomOptionAccessibility(optionEl, {
+      label: meta.label,
+      disabled: meta.disabled,
+    });
 
     return optionEl;
   }

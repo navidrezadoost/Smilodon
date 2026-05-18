@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version `1.5.4` is the current published release for `@smilodon/core`.
+Version `1.5.5` is the current published release for `@smilodon/core`.
 
 ---
 
@@ -483,6 +483,16 @@ Smilodon is designed to work with browser styling systems rather than compete wi
 - Bootstrap can provide page layout, spacing, forms alignment, and token-driven select theming.
 - Material UI can theme the host wrapper through `sx`, `styled()`, or `GlobalStyles`, while Smilodon consumes the resulting CSS variables and `::part()` rules.
 - Raw CSS always remains a first-class path through host selectors, CSS custom properties, and shadow parts.
+
+### CSS framework compatibility in `1.5.5`
+
+The `1.5.5` release hardens the custom-renderer path used by Tailwind-style and framework-driven option UIs.
+
+- mirrored document styles are now scoped to the options subtree instead of the entire shadow root, which reduces framework-preflight bleed into the Smilodon shell
+- dark framework selectors such as `.dark`, `.dark-mode`, `[data-theme="dark"]`, and similar theme markers are mirrored into the scoped options subtree so dark variants update immediately
+- escaped utility selectors such as Tailwind `dark\:*` classes are preserved correctly during selector scoping
+- custom-rendered option roots continue to receive Smilodon state classes and data attributes, so hover, active, selected, and disabled visuals can be styled reliably at the rendered root element
+- custom renderer accessibility is normalized so nested interactive descendants do not break option semantics or keyboard/screen-reader behavior
 
 For exact recipes and browser-oriented examples, see [docs/CSS-FRAMEWORK-COMPATIBILITY.md](./docs/CSS-FRAMEWORK-COMPATIBILITY.md).
 

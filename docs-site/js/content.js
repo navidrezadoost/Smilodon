@@ -2161,7 +2161,49 @@ select.setItems(items);</code></pre>
     </div>
 
     <div class="doc-section">
-      <h2>Framework Integration</h2>
+      <h2>CSS Framework Compatibility</h2>
+      <p>Smilodon is designed to let CSS frameworks own layout and utility authoring while the component keeps control semantics, tokens, and internal structure stable.</p>
+
+      <h3>What changed in 1.5.5</h3>
+      <ul>
+        <li><strong>Scoped mirrored styles:</strong> mirrored document styles now stay inside the options subtree instead of the full shadow root.</li>
+        <li><strong>Dark variant bridging:</strong> <code>.dark</code>, <code>.dark-mode</code>, and theme attributes are mirrored into the options subtree so utility dark variants update immediately.</li>
+        <li><strong>Escaped utility selector support:</strong> Tailwind-style selectors such as <code>dark\:text-white</code> keep working when styles are mirrored.</li>
+        <li><strong>Accessible custom renderers:</strong> custom option roots keep listbox semantics while nested focus targets are neutralized by default.</li>
+        <li><strong>Stable state styling:</strong> hover, active, selected, and disabled classes remain available on the custom renderer root so framework utilities can style the actual rendered surface.</li>
+      </ul>
+
+      <h3>Recommended layering</h3>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Need</th>
+            <th>Recommended Smilodon hook</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Layout, spacing, responsive width</td>
+            <td>Framework classes on the host or wrapper</td>
+          </tr>
+          <tr>
+            <td>Shell theming</td>
+            <td>CSS variables on <code>enhanced-select</code></td>
+          </tr>
+          <tr>
+            <td>Internal structure tweaks</td>
+            <td><code>::part()</code> selectors</td>
+          </tr>
+          <tr>
+            <td>Selected / active / disabled states</td>
+            <td><code>classMap</code></td>
+          </tr>
+          <tr>
+            <td>Rich option UI</td>
+            <td><code>optionRenderer</code> and <code>groupHeaderRenderer</code></td>
+          </tr>
+        </tbody>
+      </table>
       
       <h3>Tailwind CSS</h3>
       <pre><code class="language-tsx">import { Select } from '@smilodon/react';
@@ -2182,6 +2224,10 @@ select.setItems(items);</code></pre>
     disabled: 'opacity-50 cursor-not-allowed',
   }}
 /&gt;</code></pre>
+
+      <div class="doc-note">
+        <p><strong>Renderer note:</strong> if <code>optionRenderer</code> returns the option root element itself, style that root directly for hover and active visuals. Do not assume there is an extra wrapper child.</p>
+      </div>
 
       <h3>Bootstrap</h3>
       <pre><code class="language-html">&lt;div class="container py-4"&gt;
@@ -2374,7 +2420,7 @@ enhanced-select::part(option):focus {
       <ul>
         <li><a href="#styling-tokens">Complete Token Reference</a> - All CSS variables</li>
         <li><a href="#styling-examples">Styling Examples</a> - More practical examples</li>
-        <li><a href="#css-frameworks">CSS Framework Guide</a> - Tailwind, Bootstrap, Material UI</li>
+        <li><a href="#css-frameworks">CSS Framework Guide</a> - Tailwind, Bootstrap, Material UI, and scoped custom-renderer integration</li>
         <li><a href="#performance">Performance Guide</a> - Optimization tips</li>
       </ul>
     </div>
