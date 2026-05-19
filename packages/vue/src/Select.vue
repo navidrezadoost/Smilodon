@@ -23,6 +23,7 @@
   <enhanced-select
     ref="selectRef"
     :class="className"
+    :dir="direction"
     :style="style"
   />
 </template>
@@ -83,6 +84,18 @@ export interface SelectProps {
   virtualized?: boolean;
   /** Maximum number of selections (for multi-select) */
   maxSelections?: number;
+  /** Custom icon/markup for selected chip remove buttons */
+  removeButtonIcon?: string;
+  /** Behavior overrides for visually disabled options */
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+  /** Show the selected-state side indicator */
+  showSelectedIndicator?: boolean;
+  /** Text and layout direction */
+  direction?: 'ltr' | 'rtl';
   /** Dropdown placement */
   placement?: 'bottom' | 'top' | 'auto';
   /** Custom CSS class */
@@ -173,6 +186,7 @@ const props = withDefaults(defineProps<SelectProps>(), {
   infiniteScroll: false,
   pageSize: 50,
   virtualized: true,
+  showSelectedIndicator: true,
   placement: 'auto',
   clearable: false,
   clearSelectionOnClear: true,
@@ -518,9 +532,13 @@ const updateConfig = () => {
       placeholder: props.placeholder,
       enabled: !props.disabled,
       virtualize: props.virtualized,
+      direction: props.direction,
       selection: {
         mode: props.multiple ? 'multi' : 'single',
         maxSelections: props.maxSelections,
+        removeButtonIcon: props.removeButtonIcon,
+        disabledOptionBehavior: props.disabledOptionBehavior,
+        showSelectedIndicator: props.showSelectedIndicator,
       },
       infiniteScroll: {
         enabled: props.infiniteScroll,
@@ -561,9 +579,13 @@ watch(
     () => props.disabled,
     () => props.multiple,
     () => props.maxSelections,
+    () => props.removeButtonIcon,
     () => props.infiniteScroll,
     () => props.pageSize,
     () => props.virtualized,
+    () => props.direction,
+    () => props.disabledOptionBehavior,
+    () => props.showSelectedIndicator,
     () => props.expandable,
     () => props.clearable,
     () => props.clearSelectionOnClear,

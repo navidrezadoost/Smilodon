@@ -77,6 +77,14 @@ export interface SelectProps {
   pageSize?: number
   virtualized?: boolean
   maxSelections?: number
+  removeButtonIcon?: string
+  disabledOptionBehavior?: {
+    selectable?: boolean
+    hoverable?: boolean
+    focusable?: boolean
+  }
+  showSelectedIndicator?: boolean
+  direction?: 'ltr' | 'rtl'
   clearable?: boolean
   clearSelectionOnClear?: boolean
   clearSearchOnClear?: boolean
@@ -279,6 +287,10 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     pageSize = 50,
     virtualized = true,
     maxSelections,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator = true,
+    direction,
     clearable = false,
     clearSelectionOnClear = true,
     clearSearchOnClear = true,
@@ -326,9 +338,13 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
       placeholder,
       enabled: !disabled,
       virtualize: virtualized,
+      direction,
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections,
+        removeButtonIcon,
+        disabledOptionBehavior,
+        showSelectedIndicator,
       },
       infiniteScroll: {
         enabled: infiniteScroll,
@@ -368,6 +384,10 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     virtualized,
     multiple,
     maxSelections,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator,
+    direction,
     infiniteScroll,
     pageSize,
     expandable,

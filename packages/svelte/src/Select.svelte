@@ -60,6 +60,10 @@
   export let pageSize: number = 50;
   export let virtualized: boolean = true;
   export let maxSelections: number | undefined = undefined;
+  export let removeButtonIcon: string | undefined = undefined;
+  export let disabledOptionBehavior: { selectable?: boolean; hoverable?: boolean; focusable?: boolean } | undefined = undefined;
+  export let showSelectedIndicator: boolean = true;
+  export let direction: 'ltr' | 'rtl' | undefined = undefined;
   export let placement: 'bottom' | 'top' | 'auto' = 'auto';
   export let className: string = '';
   export let style: string = '';
@@ -169,9 +173,13 @@
       searchable,
       placeholder,
       enabled: !disabled,
+      direction,
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections,
+        removeButtonIcon,
+        disabledOptionBehavior,
+        showSelectedIndicator,
       },
       infiniteScroll: {
         enabled: infiniteScroll,
@@ -219,6 +227,7 @@
     if (pageSize) element.setAttribute('page-size', String(pageSize));
     if (maxSelections) element.setAttribute('max-selections', String(maxSelections));
     if (placement) element.setAttribute('placement', placement);
+    if (direction) element.setAttribute('dir', direction);
 
     if (optionRenderer) {
       (element as any).optionRenderer = resolvedOptionRenderer;
@@ -313,6 +322,11 @@
       selectRef.setAttribute('searchable', '');
     } else {
       selectRef.removeAttribute('searchable');
+    }
+    if (direction) {
+      selectRef.setAttribute('dir', direction);
+    } else {
+      selectRef.removeAttribute('dir');
     }
     if (multiple) {
       selectRef.setAttribute('multiple', '');

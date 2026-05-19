@@ -225,6 +225,21 @@ export class AppComponent {}
     <h1>Quick Start</h1>
     
     <div class="doc-section">
+      <h2>Start Here</h2>
+      <p>Smilodon is designed so you can get a real select working quickly and then layer in advanced capabilities only when you need them. The best first milestone is simple: render a select, provide a small item array, and confirm that selection events update your app state.</p>
+      <ol>
+        <li>Install <code>@smilodon/core</code> and the adapter package for your framework.</li>
+        <li>Render a small select with 3-5 items.</li>
+        <li>Listen for selection changes and store the result in your app state.</li>
+        <li>Add a placeholder and keyboard test before styling heavily.</li>
+        <li>Only then add search, grouping, virtualization, or custom rendering.</li>
+      </ol>
+      <div class="doc-note">
+        <p><strong>Tip:</strong> When the first minimal select works, you have already validated most integration concerns: package wiring, adapter registration, event flow, and styling reachability.</p>
+      </div>
+    </div>
+
+    <div class="doc-section">
       <h2>React Example</h2>
       <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
 
@@ -291,6 +306,101 @@ function handleSelect({ indices, items }) {
   {items}
   on:select={handleSelect}
 /&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>What to Add Next</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>If you need...</th>
+            <th>Use...</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Form submissions</td>
+            <td>Controlled selection state</td>
+            <td>Keeps the select aligned with your validation and submit payloads</td>
+          </tr>
+          <tr>
+            <td>Fast filtering</td>
+            <td><code>searchable</code> and <code>onSearch</code></td>
+            <td>Lets you plug in local or remote filtering cleanly</td>
+          </tr>
+          <tr>
+            <td>Huge datasets</td>
+            <td>Virtualization</td>
+            <td>Keeps DOM size small and scrolling responsive</td>
+          </tr>
+          <tr>
+            <td>Custom visuals</td>
+            <td>CSS variables, <code>::part()</code>, or renderers</td>
+            <td>Lets you scale from light theming to fully custom options</td>
+          </tr>
+          <tr>
+            <td>Framework utility classes</td>
+            <td><code>classMap</code> / custom renderers</td>
+            <td>Works well with Tailwind, Bootstrap, and similar systems</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Mental Model for New Teams</h2>
+      <p>The fastest way to adopt Smilodon successfully is to separate three concerns from the beginning:</p>
+      <ol>
+        <li><strong>Data shape:</strong> decide what an item looks like in your application and keep that shape stable.</li>
+        <li><strong>Selection state:</strong> decide whether your application stores indices, values, or full selected objects.</li>
+        <li><strong>Presentation:</strong> start with default rendering and add theming or custom rendering only after behavior is correct.</li>
+      </ol>
+      <p>Teams often slow themselves down by mixing all three concerns at once. If you first prove that items render, selection updates, and events flow correctly, every later enhancement becomes easier.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Suggested First Production Setup</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useMemo, useState } from 'react';
+
+const countryItems = [
+  { id: 'us', label: 'United States', value: 'US' },
+  { id: 'ca', label: 'Canada', value: 'CA' },
+  { id: 'mx', label: 'Mexico', value: 'MX' }
+];
+
+export function CountryField() {
+  const [countryValue, setCountryValue] = useState(null);
+
+  const selectedIndices = useMemo(() => {
+    if (!countryValue) return [];
+    const index = countryItems.findIndex((item) => item.value === countryValue);
+    return index &gt;= 0 ? [index] : [];
+  }, [countryValue]);
+
+  return (
+    &lt;NativeSelect
+      items={countryItems}
+      selectedIndices={selectedIndices}
+      placeholder="Select a country"
+      clearable
+      onSelect={({ items }) =&gt; setCountryValue(items[0]?.value ?? null)}
+    /&gt;
+  );
+}</code></pre>
+      <p>This is a strong default because it keeps a stable business value in state while still allowing the select to work with item arrays internally.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Common Setup Mistakes</h2>
+      <ul>
+        <li>Using array indices as permanent business identifiers after filtering or reordering.</li>
+        <li>Adding complex custom option rendering before confirming default selection behavior.</li>
+        <li>Skipping keyboard checks during initial integration.</li>
+        <li>Testing only with tiny lists and discovering performance issues later.</li>
+        <li>Styling the wrong element when using a custom renderer that returns the option root.</li>
+      </ul>
     </div>
   `,
   
@@ -1417,6 +1527,119 @@ element.addEventListener('select-change', (e) => {
       <p>Run benchmarks locally:</p>
       <pre><code class="language-bash">npm run benchmark</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>How to Measure Real Performance</h2>
+      <p>Benchmarks are useful, but production tuning should be based on your real item shape, not just raw item count. A 1,000-row list with avatars, badges, and multi-line descriptions behaves very differently from 1,000 plain text rows.</p>
+      <ol>
+        <li>Measure first open time with representative data.</li>
+        <li>Record scroll smoothness on desktop and a mid-range mobile device.</li>
+        <li>Test search with empty, common, and highly selective queries.</li>
+        <li>Repeat with custom renderers enabled.</li>
+      </ol>
+      <pre><code class="language-javascript">performance.mark('open-start');
+select.open();
+
+requestAnimationFrame(() => {
+  performance.mark('open-end');
+  performance.measure('select-open', 'open-start', 'open-end');
+  console.log(performance.getEntriesByName('select-open')[0]);
+});</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Common Performance Mistakes</h2>
+      <ul>
+        <li>Disabling virtualization for large lists without a strong reason.</li>
+        <li>Using expensive custom option markup for every row.</li>
+        <li>Passing unstable inline render functions that change every parent render.</li>
+        <li>Using an inaccurate <code>estimatedItemHeight</code> in virtualized lists.</li>
+        <li>Triggering remote searches without debounce or request cancellation.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Pre-Ship Performance Checklist</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>What to verify</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Open time</td>
+            <td>Dropdown opens without long blocking tasks for common datasets</td>
+          </tr>
+          <tr>
+            <td>Scrolling</td>
+            <td>No blank gaps or flashing during quick wheel / touchpad movement</td>
+          </tr>
+          <tr>
+            <td>Search</td>
+            <td>Typing remains responsive and stale responses are ignored</td>
+          </tr>
+          <tr>
+            <td>Selection feedback</td>
+            <td>Selected, active, and hover states are visible immediately</td>
+          </tr>
+          <tr>
+            <td>Custom renderers</td>
+            <td>Option UI complexity does not undo virtualization gains</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Performance by Scenario</h2>
+      <h3>Small static list</h3>
+      <p>Focus on accessibility, clarity, and low styling overhead. Full rendering is usually fine.</p>
+
+      <h3>Large local dataset</h3>
+      <p>Enable virtualization, keep item height accurate, and avoid expensive custom rows.</p>
+
+      <h3>Remote search</h3>
+      <p>Debounce aggressively enough to protect the backend, cancel stale requests, and make loading state obvious.</p>
+
+      <h3>Rich enterprise filter panels</h3>
+      <p>Memoize items and callbacks, avoid recreating renderers every render, and measure the cost of badges, icons, and nested layouts.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Profiling Recipe</h2>
+      <pre><code class="language-javascript">console.time('set-items');
+select.setItems(largeDataset);
+console.timeEnd('set-items');
+
+performance.mark('dropdown-open-start');
+select.open();
+
+requestAnimationFrame(() => {
+  performance.mark('dropdown-open-end');
+  performance.measure(
+    'dropdown-open',
+    'dropdown-open-start',
+    'dropdown-open-end'
+  );
+
+  console.table(performance.getEntriesByName('dropdown-open'));
+});</code></pre>
+      <p>Use this in development together with browser performance tools to isolate whether the bottleneck is rendering, layout, styling, or network wait time.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Optimization Order</h2>
+      <ol>
+        <li>Measure with realistic data.</li>
+        <li>Enable virtualization when the list is large enough.</li>
+        <li>Simplify row rendering before attempting micro-optimizations.</li>
+        <li>Stabilize callbacks and derived lists.</li>
+        <li>Only after that, optimize network behavior and background processing.</li>
+      </ol>
+      <p>This order prevents teams from spending time on minor gains while a larger structural issue is still present.</p>
+    </div>
   `,
   
   'props-config': `
@@ -1712,6 +1935,117 @@ function FullyConfiguredSelect() {
   );
 }</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>How to Organize Configuration</h2>
+      <p>In larger apps, configuration is easier to reason about when you group it conceptually:</p>
+      <ol>
+        <li><strong>Data:</strong> <code>items</code>, grouping, disabled state, selected indices</li>
+        <li><strong>Interaction:</strong> mode, clearability, close behavior, search behavior</li>
+        <li><strong>Scale:</strong> virtualization, infinite scroll, buffering, debouncing</li>
+        <li><strong>Presentation:</strong> placeholders, renderers, classes, theme tokens</li>
+      </ol>
+      <p>This separation makes shared wrapper components much easier to maintain.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Practical Recipes</h2>
+      <h3>Simple form field</h3>
+      <pre><code class="language-tsx">&lt;NativeSelect
+  items={countries}
+  placeholder="Select a country"
+  clearable
+/&gt;</code></pre>
+
+      <h3>Remote searchable picker</h3>
+      <pre><code class="language-tsx">&lt;NativeSelect
+  items={results}
+  searchable
+  searchDebounce={250}
+  onSearch={handleSearch}
+  loading={loading}
+/&gt;</code></pre>
+
+      <h3>Large dataset picker</h3>
+      <pre><code class="language-tsx">&lt;NativeSelect
+  items={largeDataset}
+  virtualized
+  estimatedItemHeight={44}
+  buffer={12}
+/&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>When to Be Explicit</h2>
+      <ul>
+        <li>Set <code>mode</code> explicitly in shared components so consumers do not rely on defaults accidentally.</li>
+        <li>Set <code>closeOnSelect</code> explicitly in multi-step selection flows.</li>
+        <li>Set <code>estimatedItemHeight</code> explicitly when using virtualization.</li>
+        <li>Set <code>searchDebounce</code> explicitly when real network requests are involved.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Controlled vs Uncontrolled Configuration</h2>
+      <p>Configuration decisions often become easier when you decide early how much state the parent owns.</p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Approach</th>
+            <th>Best for</th>
+            <th>Tradeoff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Controlled</td>
+            <td>Forms, filters, saved state, synchronized UI</td>
+            <td>More parent code, but maximum predictability</td>
+          </tr>
+          <tr>
+            <td>Uncontrolled</td>
+            <td>Simple demos, temporary tools, isolated pickers</td>
+            <td>Less explicit state ownership</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Shared Wrapper Example</h2>
+      <pre><code class="language-tsx">export function AppSelect({
+  items,
+  selectedIndices,
+  onSelect,
+  placeholder = 'Select an option',
+  searchable = false,
+  ...rest
+}) {
+  return (
+    &lt;NativeSelect
+      items={items}
+      selectedIndices={selectedIndices}
+      onSelect={onSelect}
+      placeholder={placeholder}
+      searchable={searchable}
+      clearable
+      {...rest}
+    /&gt;
+  );
+}</code></pre>
+      <p>Shared wrappers help teams standardize defaults, styling tokens, accessibility labels, and event normalization across the application.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Configuration Review Checklist</h2>
+      <ul>
+        <li>Are item values stable across filtering and sorting?</li>
+        <li>Is search local or remote, and is debounce appropriate?</li>
+        <li>Will this dataset eventually require virtualization?</li>
+        <li>Should the field be clearable?</li>
+        <li>Does the wrapper expose only the options consumers actually need?</li>
+      </ul>
+    </div>
   `,
   
   'styling-guide': `
@@ -1973,7 +2307,15 @@ select.classMap = {
     active: 'bg-blue-50 text-blue-900',
     disabled: 'opacity-50 cursor-not-allowed',
   }}
+  disabledOptionBehavior={{
+    hoverable: false,
+    focusable: false,
+    selectable: false,
+  }}
+  showSelectedIndicator={false}
 /&gt;</code></pre>
+
+      <p><strong>Note:</strong> <code>classMap.disabled</code> controls the dimmed appearance, while <code>disabledOptionBehavior</code> controls whether a dimmed option can still be hovered, focused, or selected.</p>
 
       <h3>Vue</h3>
       <pre><code class="language-vue">&lt;template&gt;
@@ -2479,6 +2821,169 @@ export default function MyComponent() {
     setFilteredItems(filtered);
   }}
 /&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended React Pattern</h2>
+      <p>The React adapter works best when selection state lives in React and the select acts as a fast UI surface. Keep your item arrays stable when possible, memoize expensive derived lists, and use refs only for imperative flows such as <code>open()</code> or <code>clear()</code>.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Controlled Example with Stable Values</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useMemo, useState } from 'react';
+
+const users = [
+  { id: 'u1', label: 'Ada Lovelace', value: 'ada' },
+  { id: 'u2', label: 'Grace Hopper', value: 'grace' },
+  { id: 'u3', label: 'Margaret Hamilton', value: 'margaret' }
+];
+
+export default function UserPicker() {
+  const [selectedValues, setSelectedValues] = useState([]);
+
+  const selectedIndices = useMemo(() => {
+    const indexByValue = new Map(users.map((item, index) => [item.value, index]));
+    return selectedValues
+      .map((value) => indexByValue.get(value))
+      .filter((index) => index != null);
+  }, [selectedValues]);
+
+  return (
+    &lt;NativeSelect
+      items={users}
+      selectedIndices={selectedIndices}
+      onSelect={({ items }) =&gt; setSelectedValues(items.map((item) =&gt; item.value))}
+      placeholder="Choose a user"
+    /&gt;
+  );
+}</code></pre>
+      <p>This approach is useful when your form or API layer expects stable values instead of array positions.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Imperative Control with Refs</h2>
+      <pre><code class="language-tsx">import { useRef } from 'react';
+import { NativeSelect } from '@smilodon/react';
+
+function ToolbarFilter() {
+  const selectRef = useRef(null);
+
+  return (
+    &lt;&gt;
+      &lt;div className="toolbar"&gt;
+        &lt;button onClick={() =&gt; selectRef.current?.open()}&gt;Open&lt;/button&gt;
+        &lt;button onClick={() =&gt; selectRef.current?.clear()}&gt;Clear&lt;/button&gt;
+      &lt;/div&gt;
+
+      &lt;NativeSelect ref={selectRef} items={items} searchable /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>React SSR Notes</h2>
+      <ul>
+        <li>Use Smilodon from client-rendered boundaries.</li>
+        <li>Keep browser-only imperative work out of server components.</li>
+        <li>Resolve remote data first when possible, then pass <code>items</code> into the adapter.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>React Form Pattern</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useMemo, useState } from 'react';
+
+const roles = [
+  { id: 'admin', label: 'Administrator', value: 'admin' },
+  { id: 'editor', label: 'Editor', value: 'editor' },
+  { id: 'viewer', label: 'Viewer', value: 'viewer' }
+];
+
+export function RoleField() {
+  const [roleValue, setRoleValue] = useState('viewer');
+
+  const selectedIndices = useMemo(() => {
+    const index = roles.findIndex((item) => item.value === roleValue);
+    return index &gt;= 0 ? [index] : [];
+  }, [roleValue]);
+
+  return (
+    &lt;NativeSelect
+      items={roles}
+      selectedIndices={selectedIndices}
+      onSelect={({ items }) =&gt; setRoleValue(items[0]?.value ?? '')}
+      aria-label="Role"
+    /&gt;
+  );
+}</code></pre>
+      <p>This pattern keeps the React form model independent from transient array positions.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Remote Search Pattern</h2>
+      <pre><code class="language-tsx">import { NativeSelect } from '@smilodon/react';
+import { useRef, useState } from 'react';
+
+export function SearchUsers() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const controllerRef = useRef(null);
+
+  async function handleSearch({ query }) {
+    controllerRef.current?.abort();
+    controllerRef.current = new AbortController();
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/users?q=' + encodeURIComponent(query), {
+        signal: controllerRef.current.signal,
+      });
+      setItems(await response.json());
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error(error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    &lt;NativeSelect
+      items={items}
+      searchable
+      searchDebounce={250}
+      loading={loading}
+      onSearch={handleSearch}
+      placeholder="Search users"
+    /&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>React Performance Guidance</h2>
+      <ul>
+        <li>Memoize large item lists when they are derived from other state.</li>
+        <li>Do not rebuild renderer functions unless their dependencies changed.</li>
+        <li>Keep expensive filtering outside render when possible.</li>
+        <li>Prefer stable values in form state and remap indices as needed.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended Wrapper Responsibilities</h2>
+      <p>Many React teams benefit from a thin internal wrapper that handles:</p>
+      <ul>
+        <li>design-token defaults</li>
+        <li>error and helper text layout</li>
+        <li>consistent empty-state copy</li>
+        <li>controlled value-to-index mapping</li>
+        <li>analytics or logging hooks where needed</li>
+      </ul>
     </div>
   `,
 
@@ -3435,20 +3940,50 @@ pnpm add @smilodon/core @smilodon/svelte</code></pre>
       <p>Control badge scrolling behavior with <code>multiSelectDisplay</code> config:</p>
       <pre><code class="language-javascript">{
   multiSelectDisplay: {
-    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical' | 'both'
-    maxHeight: '160px',
-    overflowX: 'auto',
-    overflowY: 'auto',
+    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical'
+    maxHeight: '160px', // used by vertical / horizontal modes
+    overflowX: 'hidden',
+    overflowY: 'hidden',
     dragScroll: true    // Enable drag-to-scroll (horizontal mode)
   }
 }</code></pre>
       <p><strong>Display Modes:</strong></p>
       <ul>
-        <li><strong>wrap</strong> (default) - Badges wrap to new lines, vertical scroll when needed</li>
-        <li><strong>horizontal</strong> - Single row, horizontal scroll, drag-to-scroll enabled</li>
-        <li><strong>vertical</strong> - Single column, vertical scroll only</li>
-        <li><strong>both</strong> - Both horizontal and vertical scroll, dense packing</li>
+        <li><strong>wrap</strong> (default) - Badges wrap naturally and grow the input shell without an internal chip scrollbar</li>
+        <li><strong>horizontal</strong> - Chips stay on one row, the trigger height stays stable, and the chip row scrolls horizontally under the fixed action controls</li>
+        <li><strong>vertical</strong> - Badges still wrap, but the chip area is constrained to <code>maxHeight</code> and scrolls vertically before the arrow / clear-control region</li>
       </ul>
+      <p><strong>Important:</strong> do not rely on overflow variables alone. Use <code>multiSelectDisplay.mode</code> so Smilodon also switches wrapping, input sizing, scrollbar placement, reserved action-area spacing, and drag-scroll behavior.</p>
+
+      <h3>Disabled / Dimmed Options</h3>
+      <p>Options with <code>disabled: true</code> are dimmed and non-selectable by default. They also skip hover styling and keyboard activation unless you opt into a different behavior.</p>
+      <pre><code class="language-javascript">select.updateConfig({
+  selection: {
+    disabledOptionBehavior: {
+      hoverable: true,
+      focusable: true,
+      selectable: false,
+    },
+  },
+});</code></pre>
+      <p>Use <code>styles.disabledOption</code>, <code>classMap.disabled</code>, or the <code>--select-option-disabled-*</code> tokens to style the dimmed state.</p>
+
+      <h3>Selected Indicator and Click-State Styling</h3>
+      <p>You no longer need to target internal <code>::before</code> selectors just to hide the selected-side indicator. Use the supported controls instead:</p>
+      <pre><code class="language-javascript">select.updateConfig({
+  selection: {
+    showSelectedIndicator: false,
+  },
+  styles: {
+    selectedIndicator: {
+      width: '4px',
+      background: '#2563eb',
+      right: '0',
+      left: 'auto',
+    },
+  },
+});</code></pre>
+      <p>The default option pressed transform and active outline are also disabled now, so options no longer add the older click animation / border unless you set those tokens explicitly.</p>
     </div>
     
     <div class="doc-section">
@@ -3541,6 +4076,120 @@ test('has no accessibility violations', async () => {
   const results = await axe(container);
   expect(results).toHaveNoViolations();
 });</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Testing Strategy by Layer</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>What to test</th>
+            <th>Typical tools</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Unit</td>
+            <td>Selection logic, search behavior, event payloads</td>
+            <td>Vitest, Jest</td>
+          </tr>
+          <tr>
+            <td>Adapter contract</td>
+            <td>Framework wrapper behavior matches core expectations</td>
+            <td>Vitest + framework test utils</td>
+          </tr>
+          <tr>
+            <td>Browser E2E</td>
+            <td>Keyboard navigation, focus, scrolling, real DOM interaction</td>
+            <td>Playwright, Cypress</td>
+          </tr>
+          <tr>
+            <td>Accessibility</td>
+            <td>ARIA, focus order, announcements, contrast</td>
+            <td>axe + manual screen reader checks</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>What Good Tests Assert</h2>
+      <ul>
+        <li>The placeholder is visible before selection.</li>
+        <li>Opening the dropdown updates the correct ARIA state.</li>
+        <li>Disabled items cannot be selected by mouse or keyboard.</li>
+        <li><code>onSelect</code> receives the expected items and indices.</li>
+        <li>Search results replace stale results correctly.</li>
+        <li>Virtualized lists still reveal the intended option during navigation.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Manual QA Checklist</h2>
+      <ol>
+        <li>Mouse: open, hover, select, clear.</li>
+        <li>Keyboard: Enter, Space, arrows, Home/End, Escape, Tab.</li>
+        <li>Search: empty state, common match, no-result state, cleared query.</li>
+        <li>Theming: light mode, dark mode, and any framework utility styling.</li>
+        <li>Scale: small list, medium list, and a large virtualized list.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Mocked Network Search Example</h2>
+      <pre><code class="language-tsx">test('updates results from remote search', async () => {
+  global.fetch = vi.fn().mockResolvedValue({
+    json: async () => [
+      { id: 1, label: 'Ada Lovelace', value: 'ada' }
+    ]
+  });
+
+  render(&lt;NativeSelect searchable items={[]} onSearch={handleSearch} /&gt;);
+
+  fireEvent.click(screen.getByRole('combobox'));
+  fireEvent.change(screen.getByPlaceholderText('Search...'), {
+    target: { value: 'Ada' }
+  });
+
+  expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
+});</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Virtualization E2E Assertion Example</h2>
+      <pre><code class="language-typescript">test('can navigate to a far item in a virtualized list', async ({ page }) => {
+  await page.goto('/');
+  await page.click('enhanced-select');
+
+  for (let i = 0; i &lt; 25; i++) {
+    await page.keyboard.press('ArrowDown');
+  }
+
+  await page.keyboard.press('Enter');
+  await expect(page.locator('enhanced-select')).toContainText('Item 26');
+});</code></pre>
+      <p>The exact selector strategy may vary, but the goal is to validate behavior rather than implementation details.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Accessibility Review Notes</h2>
+      <ul>
+        <li>Automated tools catch many issues, but not all announcement problems.</li>
+        <li>Manual checks with screen readers are especially important when custom renderers are involved.</li>
+        <li>Keyboard-only testing should be part of every release cycle, not just accessibility audits.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Regression Areas Worth Snapshotting</h2>
+      <ul>
+        <li>selected and hover states</li>
+        <li>dark mode token coverage</li>
+        <li>group headers and separators</li>
+        <li>multi-select chip layouts</li>
+        <li>custom option renderer layouts</li>
+      </ul>
     </div>
   `,
   
@@ -4941,6 +5590,7 @@ class ReactAdapter {
     <div class="doc-section">
       <h2>Overview</h2>
       <p>Single select mode allows users to choose exactly one option from the list. This is the default mode and most common use case for select components.</p>
+      <p>It is the right fit for classic form fields such as country, assignee, category, or status pickers. Because only one item can be active at a time, it also tends to be the easiest mode to reason about for validation, submit payloads, and keyboard behavior.</p>
     </div>
     
     <div class="doc-section">
@@ -5292,6 +5942,107 @@ function FormWithSelect() {
         <li><strong>Screen Readers:</strong> Selected value announced</li>
         <li><strong>Focus Management:</strong> Proper focus order and visible focus indicators</li>
       </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended Usage Patterns</h2>
+      <ul>
+        <li>Store stable item values in your form state whenever possible.</li>
+        <li>Use controlled mode for forms, filters, and any workflow with external reset buttons.</li>
+        <li>Use <code>allowDeselect</code> only when an explicit "no value" state makes sense.</li>
+        <li>Keep <code>closeOnSelect</code> enabled unless users need to compare options immediately after choosing one.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Troubleshooting</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Likely cause</th>
+            <th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Selection disappears after filtering</td>
+            <td>Selection tied only to current array position</td>
+            <td>Persist a stable value and remap indices after filtering</td>
+          </tr>
+          <tr>
+            <td>Cannot clear the field</td>
+            <td><code>clearable</code> disabled or no external reset path</td>
+            <td>Enable <code>clearable</code> or call <code>clear()</code> programmatically</td>
+          </tr>
+          <tr>
+            <td>Unexpected deselection</td>
+            <td><code>allowDeselect</code> enabled</td>
+            <td>Disable it unless optional deselection is intentional</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Selection Lifecycle</h2>
+      <ol>
+        <li>User opens the dropdown.</li>
+        <li>An option becomes active through pointer or keyboard navigation.</li>
+        <li>Selecting a new option replaces the current selection.</li>
+        <li>The input display updates and the dropdown usually closes.</li>
+        <li>The parent state or form model receives the new value.</li>
+      </ol>
+      <p>This simple lifecycle is why single-select is usually the easiest mode to introduce first when a team is migrating from another library.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Stable Value Mapping Recipe</h2>
+      <pre><code class="language-tsx">const [selectedValue, setSelectedValue] = useState('banana');
+
+const selectedIndices = useMemo(() => {
+  const index = items.findIndex((item) => item.value === selectedValue);
+  return index &gt;= 0 ? [index] : [];
+}, [items, selectedValue]);
+
+&lt;EnhancedSelect
+  items={items}
+  selectedIndices={selectedIndices}
+  onSelect={({ selectedItems }) =&gt; {
+    setSelectedValue(selectedItems[0]?.value ?? null);
+  }}
+/&gt;</code></pre>
+      <p>This pattern is more resilient than storing raw indices when the list can be filtered or re-ordered.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Validation Example</h2>
+      <pre><code class="language-tsx">function RequiredStatusField() {
+  const [statusValue, setStatusValue] = useState(null);
+  const [showError, setShowError] = useState(false);
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!statusValue) {
+      setShowError(true);
+      return;
+    }
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;EnhancedSelect
+        items={statuses}
+        onSelect={({ selectedItems }) =&gt; {
+          setStatusValue(selectedItems[0]?.value ?? null);
+          setShowError(false);
+        }}
+        placeholder="Select a status"
+      /&gt;
+      {showError ? &lt;p className="error"&gt;Status is required&lt;/p&gt; : null}
+    &lt;/form&gt;
+  );
+}</code></pre>
     </div>
   `,
   
@@ -6432,6 +7183,83 @@ console.log('Item height:', height);</code></pre>
   );
 }</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>How Virtualization Works</h2>
+      <p>Instead of rendering the entire dataset, Smilodon renders a sliding window of rows around the visible viewport. As the user scrolls, rows entering view are rendered and rows leaving view are recycled. This keeps DOM size small and layout work predictable even with very large datasets.</p>
+      <ul>
+        <li><strong>Viewport rows:</strong> what the user can currently see</li>
+        <li><strong>Buffer rows:</strong> extra rows above and below the viewport to avoid flashing</li>
+        <li><strong>Estimated item height:</strong> used for scroll math and total spacer height</li>
+        <li><strong>DOM reuse:</strong> avoids creating and destroying large numbers of nodes repeatedly</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Tuning Guide</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Symptom</th>
+            <th>Likely cause</th>
+            <th>Adjustment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scroll jumpiness</td>
+            <td>Item height estimate is off</td>
+            <td>Measure real option height and update <code>estimatedItemHeight</code></td>
+          </tr>
+          <tr>
+            <td>Blank gap on fast scroll</td>
+            <td>Buffer is too small</td>
+            <td>Increase <code>buffer</code></td>
+          </tr>
+          <tr>
+            <td>Still heavy on low-end devices</td>
+            <td>Option renderer is too complex</td>
+            <td>Simplify row DOM and reduce nested layout work</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>When Not to Force It</h2>
+      <p>For small static lists, full rendering is often simpler and equally fast. Virtualization becomes valuable when row count, renderer complexity, or device constraints make full DOM rendering expensive.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Virtualization + Remote Data</h2>
+      <p>Virtualization and remote data solve different problems. Virtualization reduces DOM cost for currently loaded data. Remote loading reduces how much data you keep in memory at once. Large production systems often use both together.</p>
+      <ul>
+        <li>Use virtualization when loaded pages are still large.</li>
+        <li>Use remote paging when the full result set is too large to fetch upfront.</li>
+        <li>Use both when data is both large and visually complex.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Variable Height Warning</h2>
+      <p>Virtualization works best when item height is consistent or at least predictable. If custom renderers make rows vary significantly in height, scrolling calculations may become less accurate.</p>
+      <p>When that happens, choose one of these strategies:</p>
+      <ul>
+        <li>normalize row layout to a shared height</li>
+        <li>increase the height estimate conservatively</li>
+        <li>reduce visual complexity in the list view and move extra details elsewhere</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Debugging Checklist</h2>
+      <ul>
+        <li>Confirm <code>estimatedItemHeight</code> matches actual rendered height.</li>
+        <li>Check whether custom option markup creates unexpected extra spacing.</li>
+        <li>Increase <code>buffer</code> if you see flashing during fast scrolls.</li>
+        <li>Profile whether the real bottleneck is rendering or network response time.</li>
+      </ul>
+    </div>
   `,
   
   'infinite-scroll': `
@@ -6556,6 +7384,93 @@ function InfiniteScrollExample() {
   hasMore={hasMore}
   loading={loading}
 /&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended Backend Shape</h2>
+      <p>Infinite scroll is easiest to implement when the API returns both new items and pagination metadata.</p>
+      <pre><code class="language-json">{
+  "items": [{ "label": "Ada", "value": "ada" }],
+  "page": 3,
+  "pageSize": 50,
+  "hasMore": true,
+  "total": 4312
+}</code></pre>
+      <p>The most important field is <code>hasMore</code>. It should reliably tell the client whether to keep loading.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>UX Recommendations</h2>
+      <ul>
+        <li>Show a loading state in the dropdown so users know the list is still progressing.</li>
+        <li>Guard against duplicate loads when the threshold is reached repeatedly.</li>
+        <li>Reset paging when the search query changes significantly.</li>
+        <li>Cache loaded pages when reopening the dropdown improves the workflow.</li>
+        <li>Pair infinite scroll with virtualization when total result counts can become large.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Error and Retry Pattern</h2>
+      <pre><code class="language-tsx">async function loadMore() {
+  try {
+    await fetchNextPage();
+    setLoadError(null);
+  } catch (error) {
+    setLoadError('Could not load more results');
+  }
+}
+
+return (
+  &lt;&gt;
+    &lt;NativeSelect
+      items={items}
+      onLoadMore={loadMore}
+      hasMore={hasMore}
+      loading={loading}
+    /&gt;
+    {loadError ? &lt;button onClick={loadMore}&gt;Retry&lt;/button&gt; : null}
+  &lt;/&gt;
+);</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Search + Pagination Reset</h2>
+      <pre><code class="language-tsx">async function handleSearch({ query }) {
+  setPage(1);
+  setHasMore(true);
+  setItems([]);
+  setSearchQuery(query);
+  await loadFirstPageForQuery(query);
+}</code></pre>
+      <p>Whenever the query meaningfully changes, reset the paging state. Otherwise users can end up with mixed results from previous queries.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Duplicate Request Protection</h2>
+      <pre><code class="language-tsx">const loadingRef = useRef(false);
+
+async function loadMore() {
+  if (loadingRef.current || !hasMore) return;
+  loadingRef.current = true;
+
+  try {
+    await fetchNextPage();
+  } finally {
+    loadingRef.current = false;
+  }
+}</code></pre>
+      <p>This pattern helps when rapid scrolling reaches the threshold multiple times before state updates settle.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>When Infinite Scroll Is a Bad Fit</h2>
+      <ul>
+        <li>Users need a clear sense of total result count and exact position.</li>
+        <li>Users frequently jump to specific pages or alphabet ranges.</li>
+        <li>The backend cannot provide stable page boundaries.</li>
+      </ul>
+      <p>In those cases, a dedicated search experience or explicit pagination may be a better UX.</p>
     </div>
   `,
   
@@ -7458,8 +8373,32 @@ function ComprehensiveGroupedExample() {
             <td>4px</td>
             <td>Gap between chips</td>
           </tr>
+          <tr>
+            <td><code>--select-badge-remove-icon-size</code></td>
+            <td>10px</td>
+            <td>Remove icon width/height</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-remove-icon-color</code></td>
+            <td>currentColor</td>
+            <td>Remove icon color</td>
+          </tr>
+          <tr>
+            <td><code>--select-badge-remove-icon-transform</code></td>
+            <td>none</td>
+            <td>Remove icon transform</td>
+          </tr>
         </tbody>
       </table>
+
+      <h3>Custom chip remove icon</h3>
+      <p>You can replace the default <code>×</code> icon with text or inline SVG markup:</p>
+      <pre><code class="language-javascript">select.updateConfig({
+  selection: {
+    removeButtonIcon: '&lt;svg viewBox="0 0 16 16" fill="none"&gt;&lt;path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" /&gt;&lt;/svg&gt;'
+  }
+});</code></pre>
+      <p>To style the icon separately from the circular remove button, use <code>::part(chip-remove-icon)</code>, <code>styles.badgeRemoveIcon</code>, or the <code>--select-badge-remove-icon-*</code> tokens.</p>
     </div>
     
     <div class="doc-section">
@@ -7860,6 +8799,87 @@ selectRef.current.open();</code></pre>
       <p>Focus the select:</p>
       <pre><code class="language-tsx">selectRef.current.focus();</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>When to Use Each Method</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Use case</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>open()</code></td>
+            <td>Toolbar actions, guided flows, keyboard shortcuts</td>
+            <td>Best when user intent is already clear</td>
+          </tr>
+          <tr>
+            <td><code>close()</code></td>
+            <td>Dismiss after workflow completion or route changes</td>
+            <td>Useful when surrounding UI context changes</td>
+          </tr>
+          <tr>
+            <td><code>clear()</code></td>
+            <td>Reset filters or clear form state</td>
+            <td>Prefer syncing your controlled state at the same time</td>
+          </tr>
+          <tr>
+            <td><code>setItems()</code></td>
+            <td>Replace dataset after fetch or transformation</td>
+            <td>Use grouped APIs for grouped content</td>
+          </tr>
+          <tr>
+            <td><code>focus()</code></td>
+            <td>Accessibility flows and error recovery</td>
+            <td>Helpful when moving users to the next required field</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Safe Initialization Order</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.setItems(items);
+select.updateConfig({ searchable: true, clearable: true });
+select.open();</code></pre>
+      <p>Set data first, then apply behavior, then trigger visible UI actions. This avoids confusing intermediate states during startup.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Method Usage Guidelines</h2>
+      <ul>
+        <li>Prefer declarative props for normal application flows.</li>
+        <li>Use methods when the action is truly imperative: focusing an invalid field, opening from a keyboard shortcut, or clearing from a toolbar action.</li>
+        <li>Keep parent state in sync when calling methods that affect visible selection.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Workflow Example</h2>
+      <pre><code class="language-tsx">function FilterBar() {
+  const selectRef = useRef(null);
+
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; selectRef.current?.focus()}&gt;Focus field&lt;/button&gt;
+      &lt;button onClick={() =&gt; selectRef.current?.open()}&gt;Open filter&lt;/button&gt;
+      &lt;button onClick={() =&gt; selectRef.current?.clear()}&gt;Reset filter&lt;/button&gt;
+
+      &lt;NativeSelect ref={selectRef} items={items} searchable /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Imperative Safety Notes</h2>
+      <p>If you call <code>setItems()</code>, <code>clear()</code>, or <code>updateConfig()</code> from outside the normal render flow, keep the rest of your application state synchronized. Desynchronization usually causes confusing bugs that look like rendering errors but are really state ownership problems.</p>
+    </div>
   `,
   
   events: `
@@ -8158,6 +9178,83 @@ interface SearchEvent {
   query: string;
 }</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>Recommended Item Modeling</h2>
+      <p>In production apps, item types usually need both UI and business metadata. A practical pattern is to define a shared item type and reuse it across renderers, submit handlers, and API mapping code.</p>
+      <pre><code class="language-typescript">type UserOption = {
+  id: string;
+  label: string;
+  value: string;
+  disabled?: boolean;
+  team?: string;
+  avatarUrl?: string;
+};</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Helpful Type Patterns</h2>
+      <ul>
+        <li>Keep <code>value</code> stable for persistence and form submissions.</li>
+        <li>Add renderer metadata only when it is actually used.</li>
+        <li>Model disabled states directly on items when business rules determine selectability.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Typing Event Handlers</h2>
+      <pre><code class="language-typescript">function handleSelect(event: { indices: number[]; items: UserOption[] }) {
+  console.log(event.items[0]?.value);
+}
+
+function handleSearch(event: { query: string }) {
+  console.log(event.query);
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Grouped Type Pattern</h2>
+      <pre><code class="language-typescript">type TeamOption = {
+  id: string;
+  label: string;
+  value: string;
+  department: 'Engineering' | 'Design' | 'Operations';
+};
+
+type OptionGroup = {
+  label: string;
+  options: TeamOption[];
+};</code></pre>
+      <p>Keeping grouped data typed explicitly makes custom headers and grouped rendering easier to reason about.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Adapter Typing Advice</h2>
+      <ul>
+        <li>Keep a single canonical item type per select use case.</li>
+        <li>Avoid overly generic <code>any</code>-based item models in shared components.</li>
+        <li>Use utility functions to convert business entities into select items when the original objects are too large or unstable.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Mapping Domain Types</h2>
+      <pre><code class="language-typescript">type User = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  status: 'active' | 'inactive';
+};
+
+function toUserOption(user: User): UserOption {
+  return {
+    id: user.id,
+    label: user.firstName + ' ' + user.lastName,
+    value: user.id,
+    disabled: user.status === 'inactive',
+  };
+}</code></pre>
+    </div>
   `,
   
   migration: `
@@ -8192,6 +9289,62 @@ interface SearchEvent {
         <li><code>isDisabled</code> → <code>disabled</code></li>
       </ul>
     </div>
+
+    <div class="doc-section">
+      <h2>Migration Checklist</h2>
+      <ol>
+        <li>Map your old option objects to Smilodon <code>items</code>.</li>
+        <li>Replace old change handlers with <code>onSelect</code> or DOM event listeners.</li>
+        <li>Move styling into CSS variables, <code>::part()</code>, or renderer hooks.</li>
+        <li>Retest keyboard behavior, clear flows, placeholders, and disabled states.</li>
+        <li>Enable virtualization before shipping large datasets.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Incremental Migration Strategy</h2>
+      <p>Do not migrate every select in one step unless the app is very small. Start with a simple single-select field, standardize your item mapping function, confirm styling tokens, and then move on to more advanced cases such as remote search, grouped lists, or multi-select.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Migration Phases</h2>
+      <ol>
+        <li><strong>Discovery:</strong> catalog existing select variants, custom styles, and special behaviors.</li>
+        <li><strong>Foundation:</strong> create a shared item mapper and a shared wrapper component.</li>
+        <li><strong>Parity:</strong> migrate simple single-select fields and verify forms, validation, and keyboard behavior.</li>
+        <li><strong>Advanced adoption:</strong> migrate grouped, searchable, remote, and multi-select workflows.</li>
+        <li><strong>Cleanup:</strong> remove old helper utilities, duplicate styling, and deprecated field wrappers.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Parity Checklist</h2>
+      <ul>
+        <li>placeholder text matches expectations</li>
+        <li>disabled behavior matches old workflows</li>
+        <li>clear button behavior is acceptable</li>
+        <li>selected values serialize correctly in forms</li>
+        <li>custom styling covers hover, focus, and selected states</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Migration Example: Native HTML Select</h2>
+      <pre><code class="language-tsx">// Before
+&lt;select value={status} onChange={(e) =&gt; setStatus(e.target.value)}&gt;
+  &lt;option value="todo"&gt;Todo&lt;/option&gt;
+  &lt;option value="doing"&gt;Doing&lt;/option&gt;
+  &lt;option value="done"&gt;Done&lt;/option&gt;
+&lt;/select&gt;
+
+// After
+&lt;NativeSelect
+  items={statusItems}
+  selectedIndices={selectedIndices}
+  onSelect={({ items }) =&gt; setStatus(items[0]?.value ?? '')}
+/&gt;</code></pre>
+      <p>This is often the easiest migration path to validate before moving on to more customized legacy selects.</p>
+    </div>
   `,
   
   limitations: `
@@ -8219,6 +9372,86 @@ interface SearchEvent {
       
       <h3>3. Touch Device Considerations</h3>
       <p>Some interactions optimized for pointer devices. Mobile-specific features are in development.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Mitigation Strategies</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Limitation</th>
+            <th>Mitigation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SSR / browser-only runtime</td>
+            <td>Mount from client boundaries and avoid server-only execution paths</td>
+          </tr>
+          <tr>
+            <td>Legacy browser constraints</td>
+            <td>Target modern browsers or provide an app-specific fallback</td>
+          </tr>
+          <tr>
+            <td>Variable-height custom rows</td>
+            <td>Test virtualization carefully and use a realistic height estimate</td>
+          </tr>
+          <tr>
+            <td>Remote latency</td>
+            <td>Use debounce, loading states, and request cancellation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>How to Evaluate a Limitation</h2>
+      <p>Ask whether the limitation affects correctness, accessibility, performance, or only convenience. Many teams do not need every advanced capability on day one. It is often enough to adopt Smilodon for its shared runtime, then address edge constraints at the adapter or application layer.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Limitations That Commonly Matter Most</h2>
+      <ul>
+        <li><strong>SSR boundaries:</strong> important for Next.js, Nuxt, and similar environments.</li>
+        <li><strong>Variable-height virtualized rows:</strong> important when custom options become visually dense.</li>
+        <li><strong>Mobile interaction expectations:</strong> important for touch-heavy enterprise and consumer flows.</li>
+        <li><strong>Legacy browser support:</strong> important only when product requirements still include outdated platforms.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Adoption Decision Guide</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>If yes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Do you need modern browser support only?</td>
+            <td>Smilodon is usually a strong fit immediately.</td>
+          </tr>
+          <tr>
+            <td>Do you require heavy SSR rendering of the field itself?</td>
+            <td>Plan a client-only boundary or wrapper strategy.</td>
+          </tr>
+          <tr>
+            <td>Do you need extremely custom variable-height option cards?</td>
+            <td>Test virtualization carefully before standardizing.</td>
+          </tr>
+          <tr>
+            <td>Do you rely on legacy browsers?</td>
+            <td>Define a fallback path before rollout.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h2>Practical Takeaway</h2>
+      <p>Most teams will not be blocked by these limitations. The important part is to identify whether any of them intersect with your product requirements before committing to a broad rollout. In many cases, a thin wrapper or a clear browser support policy is enough.</p>
     </div>
   `,
   
@@ -8508,6 +9741,93 @@ select.virtualized = true;
 select.estimatedItemHeight = 40;
 select.buffer = 5;</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>Recommended Vanilla Pattern</h2>
+      <p>The vanilla runtime is a strong fit for server-rendered pages, design systems, microsites, and apps that want direct browser APIs. A simple pattern works well:</p>
+      <ol>
+        <li>Register the element once.</li>
+        <li>Query the element after it exists in the DOM.</li>
+        <li>Call <code>setItems()</code> or assign <code>items</code>.</li>
+        <li>Use <code>updateConfig()</code> for grouped behavior changes.</li>
+        <li>Listen to DOM events like <code>select</code> and <code>search</code>.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Grouped Example</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.setGroupedItems([
+  {
+    label: 'Frontend',
+    options: [
+      { label: 'React', value: 'react' },
+      { label: 'Vue', value: 'vue' }
+    ]
+  },
+  {
+    label: 'Backend',
+    options: [
+      { label: 'Node.js', value: 'node' },
+      { label: 'Go', value: 'go' }
+    ]
+  }
+]);
+
+select.updateConfig({ searchable: true });</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Styling in Plain CSS</h2>
+      <pre><code class="language-css">enhanced-select.project-filter {
+  --select-input-border: 1px solid #d1d5db;
+  --select-input-border-radius: 12px;
+  --select-option-hover-bg: rgba(37, 99, 235, 0.08);
+  --select-option-selected-bg: #2563eb;
+  --select-option-selected-color: #ffffff;
+}</code></pre>
+      <p>This approach keeps styling normal and predictable without requiring a framework wrapper.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Lifecycle and Cleanup</h2>
+      <p>When you integrate Smilodon in vanilla JavaScript, you are responsible for normal DOM lifecycle concerns:</p>
+      <ul>
+        <li>attach event listeners after the element exists</li>
+        <li>remove long-lived listeners if the element is destroyed manually</li>
+        <li>replace data through <code>setItems()</code> or <code>items</code> assignment rather than rebuilding the element unnecessarily</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Form Submission Example</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('#country-select');
+const form = document.querySelector('#profile-form');
+const hiddenInput = document.querySelector('#country-value');
+
+select.addEventListener('select', (event) => {
+  hiddenInput.value = event.detail.selectedItems?.[0]?.value ?? '';
+});
+
+form.addEventListener('submit', (event) => {
+  if (!hiddenInput.value) {
+    event.preventDefault();
+    alert('Please select a country');
+  }
+});</code></pre>
+      <p>This pattern works well when you want standard form serialization without a framework.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Production Advice for Plain Browser Apps</h2>
+      <ul>
+        <li>Prefer stable item values over display labels for persistence.</li>
+        <li>Keep fetch and search logic outside the element itself.</li>
+        <li>Use CSS variables first before reaching for heavy DOM customization.</li>
+        <li>Test keyboard and screen-reader behavior even in non-framework apps.</li>
+      </ul>
+    </div>
   `,
   
   'react-native': `
@@ -8682,6 +10002,81 @@ function AccessibleSelect() {
     />
   );
 }</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>How to Approach React Native Usage</h2>
+      <p>The React Native adapter is most useful when you want selection logic and data shapes to stay aligned across web and native surfaces. Keep business state in React, pass stable values through your form model, and let the adapter provide the platform-appropriate presentation.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Recommended Mobile Defaults</h2>
+      <ul>
+        <li>Keep labels concise and easy to scan on narrow screens.</li>
+        <li>Prefer remote paging over huge initial payloads.</li>
+        <li>Test with VoiceOver and TalkBack, not just visual inspection.</li>
+        <li>Use clear placeholder and label text so the field intent is obvious.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Form State Example</h2>
+      <pre><code class="language-tsx">const [formState, setFormState] = useState({ categoryValues: [] });
+
+&lt;NativeSelect
+  mode="multi"
+  items={categories}
+  selectedIndices={selectedIndices}
+  onSelect={({ selectedItems }) =&gt; {
+    setFormState({
+      categoryValues: selectedItems.map((item) =&gt; item.value)
+    });
+  }}
+/&gt;</code></pre>
+      <p>Persist values rather than display labels so your app state remains stable even if UI copy changes later.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Async Data Example</h2>
+      <pre><code class="language-tsx">function CategoryPicker() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCategories() {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      if (active) {
+        setItems(data);
+        setLoading(false);
+      }
+    }
+
+    loadCategories();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return &lt;NativeSelect items={items} loading={loading} placeholder="Select category" /&gt;;
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Mobile UX Checklist</h2>
+      <ul>
+        <li>Keep option labels short enough to scan quickly.</li>
+        <li>Do not overload the picker with non-essential metadata.</li>
+        <li>Use clear labels and helper text because available space is limited.</li>
+        <li>Test both portrait and landscape layouts when the picker is central to the workflow.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Cross-Platform State Strategy</h2>
+      <p>If your web and React Native apps share business logic, keep a shared item mapping layer and store stable values rather than indices. That makes it much easier to keep selection behavior aligned across platforms.</p>
     </div>
   `,
   

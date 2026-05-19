@@ -78,16 +78,29 @@ export interface SelectionConfig {
   mode: 'single' | 'multi';
   /** Allow deselection in single-select mode */
   allowDeselect?: boolean;
+  /** Control how visually disabled (dimmed) options behave */
+  disabledOptionBehavior?: DisabledOptionBehaviorConfig;
   /** Maximum selections in multi-select (0 = unlimited) */
   maxSelections?: number;
   /** Show remove button on selected options in multi-select */
   showRemoveButton?: boolean;
+  /** Show the selected-state side indicator on lightweight/custom-rendered options */
+  showSelectedIndicator?: boolean;
   /** Custom icon/markup for multi-select remove buttons (chips and selected option remove buttons) */
   removeButtonIcon?: string;
   /** Close dropdown after selection in single-select */
   closeOnSelect?: boolean;
   /** Allow repeated trigger clicks to toggle the dropdown open/closed */
   toggleOnTriggerClick?: boolean;
+}
+
+export interface DisabledOptionBehaviorConfig {
+  /** Allow visually disabled options to be selected */
+  selectable?: boolean;
+  /** Allow visually disabled options to receive hover styling */
+  hoverable?: boolean;
+  /** Allow visually disabled options to receive keyboard active/focus styling */
+  focusable?: boolean;
 }
 
 export interface MultiSelectDisplayConfig {
@@ -118,6 +131,8 @@ export interface StyleConfig {
   hoverOption?: Partial<CSSStyleDeclaration>;
   /** Active option styles */
   activeOption?: Partial<CSSStyleDeclaration>;
+  /** Selected indicator bar styles for lightweight/custom-rendered options */
+  selectedIndicator?: Partial<CSSStyleDeclaration>;
   /** Input field styles */
   input?: Partial<CSSStyleDeclaration>;
   /** Multi-select badge styles */
@@ -130,6 +145,8 @@ export interface StyleConfig {
   badgeLabel?: Partial<CSSStyleDeclaration>;
   /** Multi-select badge remove button styles */
   badgeRemove?: Partial<CSSStyleDeclaration>;
+  /** Multi-select badge remove icon styles */
+  badgeRemoveIcon?: Partial<CSSStyleDeclaration>;
   /** Multi-select badge remove button hover styles */
   badgeRemoveHover?: Partial<CSSStyleDeclaration>;
   /** Multi-select badge remove button active styles */
@@ -152,6 +169,7 @@ export interface StyleConfig {
     badge?: string;
     badgeLabel?: string;
     badgeRemove?: string;
+    badgeRemoveIcon?: string;
     groupHeader?: string;
   };
 }
@@ -279,8 +297,14 @@ const defaultConfig: GlobalSelectConfig = {
   selection: {
     mode: 'single',
     allowDeselect: false,
+    disabledOptionBehavior: {
+      selectable: false,
+      hoverable: false,
+      focusable: false,
+    },
     maxSelections: 0,
     showRemoveButton: true,
+    showSelectedIndicator: true,
     removeButtonIcon: '×',
     closeOnSelect: true,
     toggleOnTriggerClick: true,

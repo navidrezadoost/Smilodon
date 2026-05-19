@@ -85,11 +85,27 @@ export interface SelectProps {
   /** Maximum number of selections (for multiple mode) */
   maxSelections?: number;
 
+  /** Custom icon/markup for selected chip remove buttons */
+  removeButtonIcon?: string;
+
+  /** Behavior overrides for visually disabled (dimmed) options */
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+
+  /** Show the selected-state side indicator on lightweight/custom-rendered options */
+  showSelectedIndicator?: boolean;
+
   /** Allow repeated clicks on the trigger to toggle the dropdown open and closed */
   toggleOnTriggerClick?: boolean;
   
   /** Dropdown placement */
   placement?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+
+  /** Text and layout direction */
+  direction?: 'ltr' | 'rtl';
 
   /** Enable clear control button inside input */
   clearable?: boolean;
@@ -299,8 +315,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     virtualized = false,
     estimatedItemHeight = 48,
     maxSelections,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator = true,
     toggleOnTriggerClick = true,
     placement = 'bottom-start',
+    direction,
     clearable = false,
     clearSelectionOnClear = true,
     clearSearchOnClear = true,
@@ -515,8 +535,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
+        removeButtonIcon,
+        disabledOptionBehavior,
+        showSelectedIndicator,
         toggleOnTriggerClick,
       },
+      direction,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize: pageSize,
@@ -576,7 +600,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -627,8 +651,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       selection: {
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
+        removeButtonIcon,
+        disabledOptionBehavior,
+        showSelectedIndicator,
         toggleOnTriggerClick,
       },
+      direction,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize: pageSize,
@@ -655,7 +683,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, isElementReady]);
+  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, isElementReady]);
 
   // Update error state
   useEffect(() => {
@@ -805,6 +833,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   return React.createElement('enhanced-select', {
     ref: elementRef,
     className,
+    dir: direction,
     style,
   });
 });

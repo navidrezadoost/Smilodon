@@ -19,9 +19,12 @@ class NavigationManager {
     this.setupNavLinks();
     this.setupSidebarToggle();
     this.setupMobileClose();
+    this.setupHashRouting();
     
     // Load initial page
-    this.loadPage(window.location.hash.slice(1) || 'home');
+    this.currentPage = window.location.hash.slice(1) || 'home';
+    this.loadPage(this.currentPage);
+    this.updateActiveState(this.currentPage);
   }
 
   setupNavLinks() {
@@ -66,11 +69,7 @@ class NavigationManager {
     this.currentPage = page;
     window.location.hash = page;
     this.loadPage(page);
-    
-    // Update active state
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.toggle('active', link.getAttribute('data-page') === page);
-    });
+    this.updateActiveState(page);
     
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {
@@ -79,6 +78,26 @@ class NavigationManager {
     
     // Scroll to top
     window.scrollTo(0, 0);
+  }
+
+  setupHashRouting() {
+    window.addEventListener('hashchange', () => {
+      const page = window.location.hash.slice(1) || 'home';
+
+      if (page === this.currentPage) {
+        return;
+      }
+
+      this.currentPage = page;
+      this.loadPage(page);
+      this.updateActiveState(page);
+    });
+  }
+
+  updateActiveState(page) {
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.toggle('active', link.getAttribute('data-page') === page);
+    });
   }
 
   async loadPage(page) {

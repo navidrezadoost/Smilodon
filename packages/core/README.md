@@ -753,20 +753,106 @@ Control badge scrolling behavior in multi-select mode with `multiSelectDisplay` 
 ```javascript
 {
   multiSelectDisplay: {
-    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical' | 'both'
-    maxHeight: '160px',
-    overflowX: 'auto',
-    overflowY: 'auto',
+    mode: 'wrap',       // 'wrap' | 'horizontal' | 'vertical'
+    maxHeight: '160px', // used by vertical / horizontal modes
+    overflowX: 'hidden',
+    overflowY: 'hidden',
     dragScroll: true    // Enable drag-to-scroll (horizontal mode)
   }
 }
 ```
 
 **Display Modes:**
-- **`wrap`** (default) - Badges wrap to new lines, vertical scroll when needed
-- **`horizontal`** - Single row, horizontal scroll, drag-to-scroll enabled
-- **`vertical`** - Single column, vertical scroll only
-- **`both`** - Both horizontal and vertical scroll, dense packing
+- **`wrap`** (default) - Badges wrap naturally and the input shell grows with them; no internal chip scrollbar by default
+- **`horizontal`** - Single row, stable trigger height, horizontal scroll, drag-to-scroll enabled, and action-area spacing reserved automatically
+- **`vertical`** - Wrapped badges inside a constrained chip area with vertical scrolling that stops before the arrow / clear-control region
+
+> **Important:** setting only overflow CSS variables is not the full mode contract. Use `multiSelectDisplay.mode` so Smilodon can switch wrapping, scroll direction, input sizing, and reserved arrow/clear-control spacing correctly.
+
+#### Disabled / dimmed option behavior
+
+Items with `disabled: true` are dimmed and non-selectable by default.
+
+- no click selection
+- no keyboard selection
+- no hover affordance by default
+- skipped by default keyboard navigation and range-selection helpers
+
+If you need a dimmed option to remain hoverable, focusable, or selectable, configure it explicitly:
+
+```javascript
+{
+  selection: {
+    disabledOptionBehavior: {
+      hoverable: true,
+      focusable: true,
+      selectable: false
+    }
+  }
+}
+```
+
+Styling hooks:
+
+- `styles.disabledOption`
+- `classMap.disabled`
+- `--select-option-disabled-bg`
+- `--select-option-disabled-color`
+- `--select-option-disabled-border`
+- `--select-option-disabled-opacity`
+- `--select-option-disabled-cursor`
+
+### Selected + active state tokens
+
+When keyboard focus lands on an already selected option, Smilodon now keeps the selected surface and layers the active affordance on top of it.
+
+Use these tokens to customize that combined state:
+
+- `--select-option-selected-active-bg`
+- `--select-option-selected-active-color`
+- `--select-option-selected-active-border`
+- `--select-option-selected-active-shadow`
+- `--select-option-selected-active-outline`
+- `--select-option-selected-active-outline-offset`
+
+### Selected indicator controls
+
+Smilodon exposes the selected side indicator directly now, so you do not need to rely on custom `::before` overrides.
+
+Runtime control:
+
+- `selection.showSelectedIndicator` - quickly show / hide the indicator
+- `styles.selectedIndicator` - configure width, height, placement, background, radius, transform, and animation
+
+Related CSS variables:
+
+- `--select-option-selected-indicator-display`
+- `--select-option-selected-indicator-width`
+- `--select-option-selected-indicator-height`
+- `--select-option-selected-indicator-bg`
+- `--select-option-selected-indicator-left`
+- `--select-option-selected-indicator-right`
+- `--select-option-selected-indicator-top`
+- `--select-option-selected-indicator-transform`
+- `--select-option-selected-indicator-animation`
+
+Example:
+
+```javascript
+{
+  selection: {
+    showSelectedIndicator: false
+  },
+  styles: {
+    selectedIndicator: {
+      width: '4px',
+      background: '#2563eb',
+      right: '0',
+      left: 'auto'
+    }
+  }
+}
+```
 
 ---
 
@@ -781,6 +867,19 @@ enhanced-select {
   --select-option-hover-bg: transparent;
   --select-option-hover-color: inherit;
   --select-option-hover-transform: none;
+}
+```
+
+#### Removing Option Press Animation / Active Border
+
+Smilodon now ships without the old pressed transform and active outline by default. If you want to enforce a flat option surface explicitly:
+
+```css
+enhanced-select {
+  --select-option-pressed-transform: none;
+  --select-option-selected-pressed-transform: none;
+  --select-option-active-outline: none;
+  --select-option-selected-active-outline: none;
 }
 ```
 
@@ -992,6 +1091,36 @@ select.updateConfig({
 });
 ```
 
+If you want to style the icon itself separately from the circular button shell, use the dedicated icon hooks:
+
+- `styles.badgeRemoveIcon`
+- `classNames.badgeRemoveIcon`
+- `::part(chip-remove-icon)`
+- `--select-badge-remove-icon-size`
+- `--select-badge-remove-icon-color`
+- `--select-badge-remove-icon-font-size`
+- `--select-badge-remove-icon-line-height`
+- `--select-badge-remove-icon-transform`
+- `--select-badge-remove-icon-opacity`
+
+Example:
+
+```ts
+select.updateConfig({
+  selection: {
+    removeButtonIcon: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+  },
+  styles: {
+    badgeRemoveIcon: {
+      width: '12px',
+      height: '12px',
+      color: '#ffffff',
+      transform: 'scale(0.95)'
+    }
+  }
+});
+```
+
 Runtime style config now also supports higher-level sections for:
 
 - `badge`
@@ -999,6 +1128,7 @@ Runtime style config now also supports higher-level sections for:
 - `badgeActive`
 - `badgeLabel`
 - `badgeRemove`
+- `badgeRemoveIcon`
 - `badgeRemoveHover`
 - `badgeRemoveActive`
 - `groupHeader`

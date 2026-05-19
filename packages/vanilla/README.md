@@ -40,6 +40,27 @@ const select = createSelect({
 document.body.appendChild(select);
 ```
 
+### Direction and option-state controls
+
+```typescript
+const select = createSelect({
+  items,
+  direction: 'rtl',
+  removeButtonIcon: '−',
+  disabledOptionBehavior: {
+    hoverable: true,
+    focusable: true,
+    selectable: false,
+  },
+  showSelectedIndicator: false,
+});
+```
+
+- `direction` switches the instance between `ltr` and `rtl`
+- `removeButtonIcon` replaces the chip remove icon with text or inline SVG markup
+- `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
+- `showSelectedIndicator` hides or shows the selected side indicator without custom pseudo-element overrides
+
 ### Using the Web Component Directly
 
 ```html

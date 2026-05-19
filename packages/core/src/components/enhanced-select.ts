@@ -642,6 +642,23 @@ export class EnhancedSelect extends HTMLElement {
     });
   }
 
+  private _getDisabledOptionBehavior() {
+    const behavior = this._config.selection.disabledOptionBehavior ?? {};
+    return {
+      selectable: behavior.selectable === true,
+      hoverable: behavior.hoverable === true,
+      focusable: behavior.focusable === true,
+    };
+  }
+
+  private _isDisabledOptionSelectable(item: unknown): boolean {
+    return Boolean((item as any)?.disabled) && this._getDisabledOptionBehavior().selectable;
+  }
+
+  private _isOptionSelectionBlocked(item: unknown): boolean {
+    return Boolean((item as any)?.disabled) && !this._isDisabledOptionSelectable(item);
+  }
+
   private _syncStyleConfigVariables(): void {
     const styles = this._config.styles;
 
@@ -705,6 +722,26 @@ export class EnhancedSelect extends HTMLElement {
       cursor: '--select-option-disabled-cursor',
     });
 
+    this._applyStyleVariableMap(styles.selectedIndicator, {
+      width: '--select-option-selected-indicator-width',
+      height: '--select-option-selected-indicator-height',
+      background: '--select-option-selected-indicator-bg',
+      backgroundColor: '--select-option-selected-indicator-bg',
+      borderRadius: '--select-option-selected-indicator-radius',
+      left: '--select-option-selected-indicator-left',
+      right: '--select-option-selected-indicator-right',
+      top: '--select-option-selected-indicator-top',
+      transform: '--select-option-selected-indicator-transform',
+      animation: '--select-option-selected-indicator-animation',
+    });
+
+    this._setCssVariable(
+      '--select-option-selected-indicator-display',
+      this._config.selection.showSelectedIndicator === false
+        ? 'none'
+        : (styles.selectedIndicator as Record<string, unknown> | undefined)?.display
+    );
+
     this._applyStyleVariableMap(styles.badge, {
       width: '--select-badge-width',
       minWidth: '--select-badge-min-width',
@@ -766,6 +803,16 @@ export class EnhancedSelect extends HTMLElement {
       color: '--select-badge-remove-color',
       fontSize: '--select-badge-remove-font-size',
       fontWeight: '--select-badge-remove-font-weight',
+    });
+
+    this._applyStyleVariableMap(styles.badgeRemoveIcon, {
+      width: '--select-badge-remove-icon-size',
+      height: '--select-badge-remove-icon-size',
+      color: '--select-badge-remove-icon-color',
+      fontSize: '--select-badge-remove-icon-font-size',
+      lineHeight: '--select-badge-remove-icon-line-height',
+      transform: '--select-badge-remove-icon-transform',
+      opacity: '--select-badge-remove-icon-opacity',
     });
 
     this._applyStyleVariableMap(styles.badgeRemoveHover, {
@@ -883,11 +930,25 @@ export class EnhancedSelect extends HTMLElement {
       return;
     }
 
-    const maxHeight = this._config.multiSelectDisplay?.maxHeight ?? '160px';
-    const overflowX = this._config.multiSelectDisplay?.overflowX ?? (mode === 'horizontal' ? 'auto' : 'hidden');
-    const overflowY = this._config.multiSelectDisplay?.overflowY ?? (mode === 'horizontal' ? 'hidden' : 'auto');
-    const flexWrap = mode === 'horizontal' ? 'nowrap' : 'wrap';
-    const alignContent = mode === 'horizontal' ? 'center' : 'flex-start';
+    const configuredMaxHeight = this._config.multiSelectDisplay?.maxHeight;
+    const defaultMaxHeight = '160px';
+
+    let maxHeight = configuredMaxHeight ?? 'none';
+    let overflowX = this._config.multiSelectDisplay?.overflowX ?? 'hidden';
+    let overflowY = this._config.multiSelectDisplay?.overflowY ?? 'hidden';
+    let flexWrap = 'wrap';
+    let alignContent = 'flex-start';
+
+    if (mode === 'vertical') {
+      maxHeight = configuredMaxHeight ?? defaultMaxHeight;
+      overflowY = this._config.multiSelectDisplay?.overflowY ?? 'auto';
+    } else if (mode === 'horizontal') {
+      maxHeight = configuredMaxHeight ?? defaultMaxHeight;
+      overflowX = this._config.multiSelectDisplay?.overflowX ?? 'auto';
+      overflowY = this._config.multiSelectDisplay?.overflowY ?? 'hidden';
+      flexWrap = 'nowrap';
+      alignContent = 'center';
+    }
 
     this._inputContainer.setAttribute('data-multi-scroll-mode', mode);
     this._inputContainer.setAttribute('data-drag-scroll', String(dragEnabled && mode === 'horizontal'));
@@ -1210,6 +1271,11 @@ export class EnhancedSelect extends HTMLElement {
         --select-badge-letter-spacing: 0.01em;
         --select-badge-hover-shadow: var(--select-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.15);
         --select-badge-remove-icon-size: 10px;
+        --select-badge-remove-icon-color: currentColor;
+        --select-badge-remove-icon-font-size: inherit;
+        --select-badge-remove-icon-line-height: 1;
+        --select-badge-remove-icon-transform: none;
+        --select-badge-remove-icon-opacity: 1;
         --select-badge-remove-focus-outline: 2px solid rgba(255, 255, 255, 0.5);
         --select-badge-remove-focus-offset: 1px;
         --select-badge-remove-hover-transform: scale(1.15) rotate(90deg);
@@ -1228,9 +1294,11 @@ export class EnhancedSelect extends HTMLElement {
         --select-multi-input-overflow-y: auto;
         --select-multi-input-flex-wrap: wrap;
         --select-multi-input-align-content: flex-start;
+        --select-multi-input-horizontal-height: var(--select-input-min-height, 48px);
         --select-multi-input-horizontal-input-flex: 0 0 var(--select-multi-input-min-width, 96px);
         --select-multi-input-horizontal-cursor: grab;
         --select-multi-input-horizontal-active-cursor: grabbing;
+        --select-multi-input-end-gap: 12px;
         --select-multi-separator-inset-block: 10px;
         --select-multi-separator-height: auto;
         --select-multi-action-surface-bg: var(--select-input-bg, var(--select-surface));
@@ -1281,8 +1349,16 @@ export class EnhancedSelect extends HTMLElement {
         --select-multi-container-padding: 6px;
         --select-option-disabled-opacity: 0.5;
         --select-option-disabled-cursor: not-allowed;
+        --select-option-active-outline: none;
         --select-option-active-outline-offset: -2px;
+        --select-option-selected-active-bg: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%)));
+        --select-option-selected-active-color: var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent)));
+        --select-option-selected-active-border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
+        --select-option-selected-active-shadow: var(--select-option-active-shadow, none);
+        --select-option-selected-active-transform: var(--select-option-active-transform, none);
+        --select-option-selected-active-outline: none;
         --select-option-selected-active-outline-offset: -2px;
+        --select-option-selected-indicator-display: block;
         --select-option-selected-indicator-width: 3px;
         --select-option-selected-indicator-height: 60%;
         --select-option-selected-indicator-bg: var(--select-accent);
@@ -1295,8 +1371,8 @@ export class EnhancedSelect extends HTMLElement {
         --select-option-selected-indicator-to-height: 60%;
         --select-option-selected-indicator-from-opacity: 0;
         --select-option-selected-indicator-to-opacity: 1;
-        --select-option-pressed-transform: translateX(2px) scale(0.99);
-        --select-option-selected-pressed-transform: scale(0.99);
+        --select-option-pressed-transform: none;
+        --select-option-selected-pressed-transform: none;
         --select-button-hover-transform: translateY(-1px);
         --select-button-active-transform: translateY(0) scale(0.98);
         --select-button-font-weight: 550;
@@ -1458,6 +1534,11 @@ export class EnhancedSelect extends HTMLElement {
         justify-content: center;
         width: var(--select-badge-remove-icon-size, 10px);
         height: var(--select-badge-remove-icon-size, 10px);
+        color: var(--select-badge-remove-icon-color, currentColor);
+        font-size: var(--select-badge-remove-icon-font-size, inherit);
+        line-height: var(--select-badge-remove-icon-line-height, 1);
+        transform: var(--select-badge-remove-icon-transform, none);
+        opacity: var(--select-badge-remove-icon-opacity, 1);
         pointer-events: none;
       }
 
@@ -1563,13 +1644,26 @@ export class EnhancedSelect extends HTMLElement {
 
       .input-container.input-container--multi {
         max-height: var(--select-multi-input-max-height, var(--select-multi-input-max-height-config, var(--select-input-max-height, 160px)));
+        --select-multi-action-area-width: var(--select-arrow-width, 42px);
       }
 
       .input-container.input-container--multi .input-content {
+        flex: 1 1 calc(100% - var(--select-multi-action-area-width, var(--select-arrow-width, 42px)));
+        width: calc(100% - var(--select-multi-action-area-width, var(--select-arrow-width, 42px)));
+        max-width: calc(100% - var(--select-multi-action-area-width, var(--select-arrow-width, 42px)));
         flex-wrap: var(--select-multi-input-flex-wrap, var(--select-multi-input-flex-wrap-config, wrap));
         align-content: var(--select-multi-input-align-content, var(--select-multi-input-align-content-config, flex-start));
         overflow-x: var(--select-multi-input-overflow-x, var(--select-multi-input-overflow-x-config, hidden));
         overflow-y: var(--select-multi-input-overflow-y, var(--select-multi-input-overflow-y-config, auto));
+        padding-inline-end: var(--select-multi-input-end-gap, 12px);
+      }
+
+      .input-container.input-container--multi .input-content .selection-badge {
+        flex: 0 0 auto;
+      }
+
+      .input-container.input-container--multi.has-clear-control .input-content {
+        --select-multi-action-area-width: calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px));
       }
 
       .input-container.input-container--multi::after {
@@ -1580,17 +1674,31 @@ export class EnhancedSelect extends HTMLElement {
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] {
         align-items: stretch;
+        height: var(--select-multi-input-horizontal-height, var(--select-input-min-height, 48px));
+        min-height: var(--select-multi-input-horizontal-height, var(--select-input-min-height, 48px));
+        max-height: var(--select-multi-input-horizontal-height, var(--select-input-min-height, 48px));
+        overflow: hidden;
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        height: 100%;
         cursor: var(--select-multi-input-horizontal-cursor, grab);
+        align-items: center;
+        align-content: center;
+        flex-wrap: nowrap;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
-        padding-right: calc(var(--select-arrow-width, 42px) + var(--select-multi-horizontal-end-gap, 12px));
+        overscroll-behavior-y: none;
+        padding-inline-end: 0;
+        scroll-padding-inline-end: var(--select-multi-action-area-width, var(--select-arrow-width, 42px));
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"].has-clear-control .input-content {
-        padding-right: calc(var(--select-arrow-width, 42px) + var(--select-clear-button-size, 26px) + var(--select-clear-button-right, 8px) + var(--select-multi-horizontal-end-gap, 12px));
+        --select-multi-action-area-width: calc(var(--select-arrow-right-with-clear, 34px) + var(--select-arrow-width, 42px));
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"]::after {
@@ -1602,8 +1710,10 @@ export class EnhancedSelect extends HTMLElement {
         user-select: none;
       }
 
-      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content .selection-badge {
+      .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .selection-badge {
         flex: 0 0 auto;
+        margin-top: 0;
+        margin-bottom: 0;
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content > .select-input,
@@ -1630,15 +1740,6 @@ export class EnhancedSelect extends HTMLElement {
       :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .dropdown-arrow-container.with-clear-control {
         right: auto;
         left: var(--select-arrow-right-with-clear, 34px);
-      }
-
-      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .input-content {
-        padding-right: 0;
-        padding-left: calc(var(--select-arrow-width, 42px) + var(--select-multi-horizontal-end-gap, 12px));
-      }
-
-      :host([dir="rtl"]) .input-container.input-container--multi[data-multi-scroll-mode="horizontal"].has-clear-control .input-content {
-        padding-left: calc(var(--select-arrow-width, 42px) + var(--select-clear-button-size, 26px) + var(--select-clear-button-right, 8px) + var(--select-multi-horizontal-end-gap, 12px));
       }
 
       .input-container.input-container--multi[data-multi-scroll-mode="horizontal"] .clear-control-button {
@@ -2029,7 +2130,8 @@ export class EnhancedSelect extends HTMLElement {
         margin: var(--select-option-margin);
       }
 
-      .option:hover {
+      .option:hover:not(.disabled):not(.smilodon-option--disabled),
+      .option.smilodon-option--disabled-hoverable:hover {
         background: var(--select-option-hover-bg, var(--select-surface-elevated));
         border: var(--select-option-hover-border, var(--select-option-border, none));
         color: var(--select-option-hover-color, var(--select-text));
@@ -2044,7 +2146,8 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .option.selected::before {
-        content: '';
+        content: var(--select-option-selected-indicator-content, '');
+        display: var(--select-option-selected-indicator-display, block);
         position: absolute;
         left: var(--select-option-selected-indicator-left);
         top: var(--select-option-selected-indicator-top);
@@ -2079,35 +2182,50 @@ export class EnhancedSelect extends HTMLElement {
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent)));
       }
 
-      .option.active:not(.selected):not(.disabled) {
+      .option.active:not(.selected):not(.disabled):not(.smilodon-option--disabled),
+      .option.active.smilodon-option--disabled-focusable:not(.selected) {
         background: var(--select-option-active-bg, var(--select-surface-elevated));
         color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text))));
         border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
-        outline: var(--select-option-active-outline, 2px solid rgba(15, 52, 96, 0.3));
+        outline: var(--select-option-active-outline, none);
         outline-offset: var(--select-option-active-outline-offset);
         box-shadow: var(--select-option-active-shadow, none);
         transform: var(--select-option-active-transform, none);
       }
 
-      .option.selected.active:not(.disabled) {
-        outline: var(--select-option-selected-active-outline, 2px solid rgba(15, 52, 96, 0.4));
+      .option.selected.active:not(.disabled):not(.smilodon-option--disabled),
+      .option.selected.active.smilodon-option--disabled-focusable {
+        background: var(--select-option-selected-active-bg, var(--select-option-selected-hover-bg, var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%))));
+        color: var(--select-option-selected-active-color, var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent))));
+        border: var(--select-option-selected-active-border, var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none))));
+        outline: var(--select-option-selected-active-outline, var(--select-option-active-outline, none));
         outline-offset: var(--select-option-selected-active-outline-offset);
+        box-shadow: var(--select-option-selected-active-shadow, var(--select-option-active-shadow, none));
+        transform: var(--select-option-selected-active-transform, var(--select-option-active-transform, none));
       }
 
-      .option.disabled {
+      .option.disabled,
+      .option.smilodon-option--disabled {
         background: var(--select-option-disabled-bg, var(--select-option-bg, transparent));
         color: var(--select-option-disabled-color, var(--select-text-muted));
         border: var(--select-option-disabled-border, var(--select-option-border, none));
         opacity: var(--select-option-disabled-opacity, 0.5);
         cursor: var(--select-option-disabled-cursor, not-allowed);
+        pointer-events: var(--select-option-disabled-pointer-events, none);
       }
 
-      .option:active:not(.selected) {
+      .option.smilodon-option--disabled-interactive {
+        pointer-events: auto;
+      }
+
+      .option:active:not(.selected):not(.disabled):not(.smilodon-option--disabled),
+      .option.smilodon-option--disabled-selectable:active:not(.selected) {
         background: var(--select-option-pressed-bg, rgba(15, 52, 96, 0.08));
         transform: var(--select-option-pressed-transform);
       }
 
-      .option.selected:active {
+      .option.selected:active:not(.disabled):not(.smilodon-option--disabled),
+      .option.selected.smilodon-option--disabled-selectable:active {
         transform: var(--select-option-selected-pressed-transform);
       }
       
@@ -2716,7 +2834,7 @@ export class EnhancedSelect extends HTMLElement {
         }
       }
 
-      if (option && !option.hasAttribute('aria-disabled')) {
+      if (option && (!option.hasAttribute('aria-disabled') || option.classList.contains('smilodon-option--disabled-selectable'))) {
         const indexStr = option.getAttribute('data-sm-index') ?? option.getAttribute('data-index');
         const index = Number(indexStr);
         if (!Number.isNaN(index)) {
@@ -3201,7 +3319,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _setActive(index: number): void {
     const option = this._getOptionElementByIndex(index);
-    if (!option || option.getAttribute('aria-disabled') === 'true') {
+    if (!option || (option.getAttribute('aria-disabled') === 'true' && !option.classList.contains('smilodon-option--disabled-focusable'))) {
       return;
     }
 
@@ -3255,7 +3373,7 @@ export class EnhancedSelect extends HTMLElement {
     // Only return elements with data-index or data-sm-selectable attributes
     return Array.from(this._optionsContainer.children).filter((child) => {
       return (child.hasAttribute('data-index') || child.hasAttribute('data-sm-selectable'))
-        && child.getAttribute('aria-disabled') !== 'true';
+        && (child.getAttribute('aria-disabled') !== 'true' || child.classList.contains('smilodon-option--disabled-focusable'));
     }) as HTMLElement[];
   }
 
@@ -3319,13 +3437,14 @@ export class EnhancedSelect extends HTMLElement {
         // Check if it's a custom SelectOption or a lightweight DOM element
         if ('getConfig' in option && typeof (option as any).getConfig === 'function') {
           const config = (option as SelectOption).getConfig();
+          if (this._isOptionSelectionBlocked(config.item)) return;
           this._state.selectedIndices.add(optionIndex);
           this._state.selectedItems.set(optionIndex, config.item);
           (option as SelectOption).setSelected(true);
         } else {
           // Lightweight option - get item from data attribute or state
           const item = this._state.loadedItems[optionIndex];
-          if (item) {
+          if (item && !this._isOptionSelectionBlocked(item)) {
             this._state.selectedIndices.add(optionIndex);
             this._state.selectedItems.set(optionIndex, item);
             (option as HTMLElement).classList.add('smilodon-option--selected');
@@ -3354,8 +3473,9 @@ export class EnhancedSelect extends HTMLElement {
       if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) break;
       const item = this._state.loadedItems[i];
       const optionEl = this._getOptionElementByIndex(i);
-      if (optionEl?.getAttribute('aria-disabled') === 'true') continue;
+      if (optionEl?.getAttribute('aria-disabled') === 'true' && !optionEl.classList.contains('smilodon-option--disabled-selectable')) continue;
       if (!item) continue;
+      if (this._isOptionSelectionBlocked(item)) continue;
       this._state.selectedIndices.add(i);
       this._state.selectedItems.set(i, item);
     }
@@ -3394,6 +3514,9 @@ export class EnhancedSelect extends HTMLElement {
 
     const item = this._state.loadedItems[index];
     if (!item) {
+      return;
+    }
+    if (this._isOptionSelectionBlocked(item)) {
       return;
     }
     const isCurrentlySelected = this._state.selectedIndices.has(index);
@@ -3572,6 +3695,9 @@ export class EnhancedSelect extends HTMLElement {
 
           const removeIcon = document.createElement('span');
           removeIcon.className = 'badge-remove-icon';
+          if (this._config.styles.classNames?.badgeRemoveIcon) {
+            removeIcon.classList.add(...this._config.styles.classNames.badgeRemoveIcon.split(' ').filter(Boolean));
+          }
           removeIcon.setAttribute('part', 'chip-remove-icon');
           this._setIconContent(removeIcon, this._config.selection.removeButtonIcon, '×');
           removeBtn.appendChild(removeIcon);
@@ -4003,7 +4129,7 @@ export class EnhancedSelect extends HTMLElement {
       this._state.selectedItems.clear();
       
       this._state.loadedItems.forEach((item, index) => {
-        if (values.includes(getValue(item))) {
+        if (values.includes(getValue(item)) && !this._isOptionSelectionBlocked(item)) {
           this._state.selectedIndices.add(index);
           this._state.selectedItems.set(index, item);
         }
@@ -4030,6 +4156,7 @@ export class EnhancedSelect extends HTMLElement {
       this._state.selectedItems.clear();
       
       items.forEach((item, index) => {
+        if (this._isOptionSelectionBlocked(item)) return;
         this._state.selectedIndices.add(index);
         this._state.selectedItems.set(index, item);
       });
@@ -4473,6 +4600,7 @@ export class EnhancedSelect extends HTMLElement {
   ) {
     const isSelected = this._state.selectedIndices.has(index);
     const isDisabled = Boolean((item as any)?.disabled);
+    const disabledBehavior = this._getDisabledOptionBehavior();
     const optionId = `${this._uniqueId}-option-${index}`;
 
     if (this._optionRenderer) {
@@ -4485,6 +4613,7 @@ export class EnhancedSelect extends HTMLElement {
         selected: isSelected,
         active: this._state.activeIndex === index,
         disabled: isDisabled,
+        disabledBehavior,
         id: optionId,
       });
       optionElement.setAttribute('dir', this._config.direction ?? 'ltr');
@@ -4498,6 +4627,7 @@ export class EnhancedSelect extends HTMLElement {
       id: optionId,
       selected: isSelected,
       disabled: isDisabled,
+      disabledBehavior,
       active: this._state.activeIndex === index,
       getValue,
       getLabel,
@@ -4559,6 +4689,11 @@ export class EnhancedSelect extends HTMLElement {
     selected: boolean;
     active: boolean;
     disabled: boolean;
+    disabledBehavior: {
+      selectable: boolean;
+      hoverable: boolean;
+      focusable: boolean;
+    };
     id: string;
   }): HTMLElement {
     const optionEl = element instanceof HTMLElement ? element : document.createElement('div');
@@ -4578,6 +4713,10 @@ export class EnhancedSelect extends HTMLElement {
     const isSelected = meta.selected;
     const isActive = meta.active;
     const isDisabled = meta.disabled;
+    const isDisabledSelectable = isDisabled && meta.disabledBehavior.selectable;
+    const isDisabledHoverable = isDisabled && meta.disabledBehavior.hoverable;
+    const isDisabledFocusable = isDisabled && meta.disabledBehavior.focusable;
+    const isDisabledInteractive = isDisabled && (isDisabledSelectable || isDisabledHoverable);
 
     // Resolve classes from classMap or defaults
     const selectedClasses = (this.classMap?.selected ?? 'selected sm-selected').split(' ').filter(Boolean);
@@ -4626,6 +4765,11 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
 
+    optionEl.classList.toggle('smilodon-option--disabled-interactive', isDisabledInteractive);
+    optionEl.classList.toggle('smilodon-option--disabled-hoverable', isDisabledHoverable);
+    optionEl.classList.toggle('smilodon-option--disabled-focusable', isDisabledFocusable);
+    optionEl.classList.toggle('smilodon-option--disabled-selectable', isDisabledSelectable);
+
     // Data Attributes Contract
     const state = [];
     if (isSelected) state.push('selected');
@@ -4659,7 +4803,7 @@ export class EnhancedSelect extends HTMLElement {
       optionEl.setAttribute('role', 'option');
     }
     optionEl.setAttribute('aria-selected', String(meta.selected));
-    if (meta.disabled) {
+    if (meta.disabled && !meta.disabledBehavior.selectable) {
       optionEl.setAttribute('aria-disabled', 'true');
     } else {
       optionEl.removeAttribute('aria-disabled');

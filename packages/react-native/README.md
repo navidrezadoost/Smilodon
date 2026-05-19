@@ -103,6 +103,7 @@ On web, the adapter:
 ### Interaction
 
 - `searchable`
+- `direction`
 - `clearable`
 - `clearSelectionOnClear`
 - `clearSearchOnClear`
@@ -111,6 +112,20 @@ On web, the adapter:
 - `infiniteScroll`
 - `pageSize`
 - `virtualized`
+- `disabledOptionBehavior`
+- `showSelectedIndicator`
+
+Example:
+
+```tsx
+<Select
+	items={items}
+	direction="rtl"
+	removeButtonIcon="−"
+	disabledOptionBehavior={{ hoverable: true, focusable: true, selectable: false }}
+	showSelectedIndicator={false}
+/>
+```
 
 ### Native layout control
 

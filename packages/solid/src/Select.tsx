@@ -77,6 +77,14 @@ export interface SelectProps {
   pageSize?: number
   virtualized?: boolean
   maxSelections?: number
+  removeButtonIcon?: string
+  disabledOptionBehavior?: {
+    selectable?: boolean
+    hoverable?: boolean
+    focusable?: boolean
+  }
+  showSelectedIndicator?: boolean
+  direction?: 'ltr' | 'rtl'
   placement?: 'bottom' | 'top' | 'auto'
   class?: string
   className?: string
@@ -120,6 +128,7 @@ const defaultProps = {
   infiniteScroll: false,
   pageSize: 50,
   virtualized: true,
+  showSelectedIndicator: true,
   placement: 'auto' as const,
   clearable: false,
   clearSelectionOnClear: true,
@@ -334,9 +343,13 @@ export default function Select(rawProps: SelectProps) {
         placeholder: rawProps.placeholder,
         enabled: !(rawProps.disabled ?? props.disabled),
         virtualize: rawProps.virtualized ?? props.virtualized,
+        direction: rawProps.direction,
         selection: {
           mode: (rawProps.multiple ?? props.multiple) ? 'multi' : 'single',
           maxSelections: rawProps.maxSelections,
+          removeButtonIcon: rawProps.removeButtonIcon,
+            disabledOptionBehavior: rawProps.disabledOptionBehavior,
+            showSelectedIndicator: rawProps.showSelectedIndicator ?? props.showSelectedIndicator,
         },
         infiniteScroll: {
           enabled: rawProps.infiniteScroll ?? props.infiniteScroll,
@@ -525,6 +538,7 @@ export default function Select(rawProps: SelectProps) {
       }}
       class={rawProps.class ?? rawProps.className}
       style={rawProps.style as JSX.CSSProperties}
+        dir={rawProps.direction}
     />
   )
 }

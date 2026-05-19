@@ -44,6 +44,14 @@ function applyConfig(select: any, options: {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  removeButtonIcon?: string;
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+  showSelectedIndicator?: boolean;
+  direction?: 'ltr' | 'rtl';
   clearable?: boolean;
   clearSelectionOnClear?: boolean;
   clearSearchOnClear?: boolean;
@@ -63,9 +71,13 @@ function applyConfig(select: any, options: {
     placeholder: options.placeholder,
     enabled: !(options.disabled ?? false),
     virtualize: options.virtualized ?? false,
+    direction: options.direction,
     selection: {
       mode: options.multiple ? 'multi' : 'single',
       maxSelections: options.maxSelections,
+      removeButtonIcon: options.removeButtonIcon,
+      disabledOptionBehavior: options.disabledOptionBehavior,
+      showSelectedIndicator: options.showSelectedIndicator,
     },
     infiniteScroll: {
       enabled: options.infiniteScroll ?? false,
@@ -110,6 +122,14 @@ export function createSelect(options: {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  removeButtonIcon?: string;
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+  showSelectedIndicator?: boolean;
+  direction?: 'ltr' | 'rtl';
   placement?: 'bottom' | 'top' | 'auto';
   clearable?: boolean;
   clearSelectionOnClear?: boolean;
@@ -150,6 +170,7 @@ export function createSelect(options: {
   if (options.pageSize) select.setAttribute('page-size', String(options.pageSize));
   if (options.maxSelections) select.setAttribute('max-selections', String(options.maxSelections));
   if (options.placement) select.setAttribute('placement', options.placement);
+  if (options.direction) select.setAttribute('dir', options.direction);
 
   // Set class name
   if (options.className) {

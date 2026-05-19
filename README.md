@@ -435,10 +435,12 @@ Recent styling additions are now documented across the shared docs set, includin
 - dropdown placement modes: `bottom`, `top`, and `auto`
 - direction support with `ltr` / `rtl` at both global and per-instance levels
 - multi-select chip sizing, spacing, hover, and active states
+- multi-select display modes for wrapped, vertical-scroll, and true horizontal drag-scroll chip rows
 - chip remove button sizing and custom SVG/text icons via `selection.removeButtonIcon`
 - group-header spacing, alignment, color, border, radius, and shadow hooks
 - additive later-group separator tokens so every group title keeps the same padding while `--select-group-header-separator-*` adds spacing and dividers between sections
 - option border, radius, hover, active, selected, and disabled state hooks
+- dedicated selected + active option tokens so keyboard focus on a selected option keeps the selected surface while still showing an active outline/shadow
 - runtime `styles` config sections such as `badge`, `badgeRemove`, `badgeLabel`, `groupHeader`, and `activeOption`
 
 ### Setting direction
@@ -483,6 +485,86 @@ Smilodon is designed to work with browser styling systems rather than compete wi
 - Bootstrap can provide page layout, spacing, forms alignment, and token-driven select theming.
 - Material UI can theme the host wrapper through `sx`, `styled()`, or `GlobalStyles`, while Smilodon consumes the resulting CSS variables and `::part()` rules.
 - Raw CSS always remains a first-class path through host selectors, CSS custom properties, and shadow parts.
+
+For multi-select chip layouts, prefer `multiSelectDisplay.mode` over raw overflow overrides alone. `wrap` grows naturally, `vertical` adds a constrained chip area with vertical scrolling, and `horizontal` enables the single-row chip contract, drag-scroll handling, and end-of-row spacing for the arrow/clear controls.
+
+In practice that means:
+
+- `wrap` lets the control grow with its chips and does not add an internal chip scrollbar by default
+- `vertical` keeps wrapping enabled but constrains the chip area to `maxHeight`, so the scrollbar stays inside the value area and stops before the arrow / clear-control region
+- `horizontal` locks the chip row to a single line, keeps the trigger height stable, and lets chips scroll underneath the fixed action area
+
+### Disabled / dimmed options
+
+Items marked with `disabled: true` are dimmed and non-selectable by default.
+
+- they do not select on click or keyboard activation
+- they do not receive hover styling by default
+- they are skipped by default keyboard navigation and range-selection flows
+
+If you want a dimmed option to remain partially interactive, use `selection.disabledOptionBehavior`:
+
+```ts
+select.updateConfig({
+  selection: {
+    disabledOptionBehavior: {
+      hoverable: true,
+      focusable: true,
+      selectable: false,
+    },
+  },
+});
+```
+
+Styling hooks for dimmed options remain:
+
+- `styles.disabledOption`
+- `classMap.disabled`
+- `--select-option-disabled-*` CSS variables
+
+### Selected indicator and pressed-state control
+
+Smilodon now makes the selected option indicator and click-state styling easier to control without reaching for internal pseudo-element selectors.
+
+- hide the selected side indicator with `selection.showSelectedIndicator = false`
+- customize its placement and appearance with `styles.selectedIndicator` or `--select-option-selected-indicator-*`
+- the default pressed transform and active outline are now disabled, so options no longer add the old click animation / border unless you opt back in
+
+Example:
+
+```ts
+select.updateConfig({
+  selection: {
+    showSelectedIndicator: false,
+  },
+  styles: {
+    selectedIndicator: {
+      width: '4px',
+      background: '#2563eb',
+      right: '0',
+      left: 'auto',
+    },
+  },
+});
+```
+
+If you want the older pressed feedback back, set these tokens explicitly:
+
+- `--select-option-pressed-transform`
+- `--select-option-selected-pressed-transform`
+- `--select-option-active-outline`
+- `--select-option-selected-active-outline`
+
+### Chip remove icon control
+
+Selected chips can use a custom remove icon through `selection.removeButtonIcon` in the shared runtime or `removeButtonIcon` in adapter props.
+
+The icon can be plain text or inline SVG markup. To style the icon separately from the remove button shell, use:
+
+- `::part(chip-remove-icon)`
+- `styles.badgeRemoveIcon`
+- `classNames.badgeRemoveIcon`
+- `--select-badge-remove-icon-*` CSS variables
 
 ### CSS framework compatibility in `1.5.5`
 

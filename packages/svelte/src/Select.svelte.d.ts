@@ -38,6 +38,14 @@ export interface SelectProps {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  removeButtonIcon?: string;
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+  showSelectedIndicator?: boolean;
+  direction?: 'ltr' | 'rtl';
   placement?: 'bottom' | 'top' | 'auto';
   className?: string;
   style?: string;

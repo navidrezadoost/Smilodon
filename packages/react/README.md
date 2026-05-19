@@ -1200,18 +1200,71 @@ When testing alignment, inspect the closed selected value first, then open the d
 
 ### Direction
 
-The shared default direction is `ltr`, and you can switch a React select to `rtl` through `config.direction`.
+The shared default direction is `ltr`, and you can switch a React select to `rtl` through the `direction` prop.
 
 ```tsx
 <Select
   items={items}
-  config={{
-    direction: 'rtl',
-  }}
+  direction="rtl"
 />
 ```
 
 This mirrors the shell and dropdown layout automatically, including arrow placement, clear-button placement, separator side, and selected indicator side.
+
+### Disabled / dimmed options
+
+Items with `disabled: true` are dimmed and non-selectable by default.
+
+If you want a dimmed option to remain hoverable or keyboard-focusable while still looking disabled:
+
+```tsx
+<Select
+  items={items}
+  disabledOptionBehavior={{
+    hoverable: true,
+    focusable: true,
+    selectable: false,
+  }}
+/>
+```
+
+### Selected indicator
+
+To hide the selected side indicator without targeting internal pseudo-elements:
+
+```tsx
+<Select
+  items={items}
+  showSelectedIndicator={false}
+/>
+```
+
+If you want to restyle the indicator instead of hiding it, set the related CSS variables through the component `style` prop.
+
+### Chip remove icon
+
+You can replace the default chip remove icon with the `removeButtonIcon` prop:
+
+```tsx
+<Select
+  items={items}
+  multiple
+  removeButtonIcon="−"
+/>
+```
+
+Markup strings are supported too, so inline SVG icons work.
+
+To style the icon separately from the round remove button, use the host `style` prop with these tokens:
+
+- `--select-badge-remove-icon-size`
+- `--select-badge-remove-icon-color`
+- `--select-badge-remove-icon-font-size`
+- `--select-badge-remove-icon-line-height`
+- `--select-badge-remove-icon-transform`
+- `--select-badge-remove-icon-opacity`
+
+You can also target the icon directly with `::part(chip-remove-icon)`.
 
 ### Types
 

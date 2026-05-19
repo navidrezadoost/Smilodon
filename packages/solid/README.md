@@ -110,6 +110,23 @@ You can supply either `groupedItems` directly or pass flat `items` with a `group
 
 If you already have grouped data, pass `groupedItems` and optionally render headers with `groupHeaderRenderer`.
 
+## Direction and option-state controls
+
+```tsx
+<Select
+  items={items}
+  direction="rtl"
+  removeButtonIcon="−"
+  disabledOptionBehavior={{ hoverable: true, focusable: true, selectable: false }}
+  showSelectedIndicator={false}
+/>
+```
+
+- `direction` switches the instance between `ltr` and `rtl`
+- `removeButtonIcon` replaces the chip remove icon with text or inline SVG markup
+- `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
+- `showSelectedIndicator` hides or shows the selected side indicator without custom pseudo-element rules
+
 ## Renderers
 
 ### `customRenderer`

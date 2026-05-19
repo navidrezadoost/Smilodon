@@ -3,6 +3,7 @@
  * High cohesion, low coupling - handles its own selection state and events
  */
 
+import type { DisabledOptionBehaviorConfig } from '../config/global-config';
 import { ClassMap } from '../types';
 
 export interface OptionConfig {
@@ -16,6 +17,8 @@ export interface OptionConfig {
   selected: boolean;
   /** Whether this option is disabled */
   disabled?: boolean;
+  /** Behavior overrides for visually disabled options */
+  disabledBehavior?: DisabledOptionBehaviorConfig;
   /** Whether this option is focused/active */
   active?: boolean;
   /** Custom value accessor */
@@ -71,15 +74,31 @@ export class SelectOption extends HTMLElement {
         display: block;
         position: relative;
         font: inherit;
-        color: inherit;
+        color: var(--select-option-color, var(--select-text-color, #1f2937));
+        background: var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white)));
+        border: var(--select-option-border, none);
+        border-bottom: var(--select-option-border-bottom, none);
+        border-radius: var(--select-option-border-radius, var(--select-radius-sm, 6px));
+        box-shadow: var(--select-option-shadow, none);
+        transform: var(--select-option-transform, none);
+        transition: var(--select-option-transition, background-color 0.2s ease);
       }
-      
-      /* Allow authors to style selected state from outside the shadow root
-         by setting attributes/classes on the host element. This mirrors the
-         internal .option-container.selected rules but reads the same CSS
-         custom properties so themes can fully control selected appearance. */
-      :host([aria-selected="true"]) .option-container,
-      :host(.smilodon-option--selected) .option-container {
+
+      :host(:hover):not(.smilodon-option--disabled):not([aria-disabled="true"]),
+      :host(.smilodon-option--disabled-hoverable:hover) {
+        background: var(--select-option-hover-bg, #f0f0f0);
+        color: var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937)));
+        border: var(--select-option-hover-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-hover-border-bottom, var(--select-option-border-bottom, none));
+        box-shadow: var(--select-option-hover-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-hover-transform, var(--select-option-transform, none));
+      }
+
+      /* Keep the visual surface on the host so external utility classes applied
+         through classMap can override selected/active/disabled styles in both
+         light and dark themes. */
+      :host([aria-selected="true"]),
+      :host(.smilodon-option--selected) {
         background: var(--select-option-selected-bg, #e3f2fd);
         color: var(--select-option-selected-color, #1976d2);
         border: var(--select-option-selected-border, var(--select-option-border, none));
@@ -89,14 +108,40 @@ export class SelectOption extends HTMLElement {
         transform: var(--select-option-selected-transform, var(--select-option-transform, none));
       }
 
-      :host([aria-selected="true"]) .option-container:hover,
-      :host(.smilodon-option--selected) .option-container:hover {
+      :host([aria-selected="true"]:hover),
+      :host(.smilodon-option--selected:hover) {
         background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
         border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
         border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
         box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
         transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+      }
+
+      :host(.smilodon-option--active):not(.smilodon-option--disabled):not([aria-disabled="true"]),
+      :host(.smilodon-option--active.smilodon-option--disabled-focusable) {
+        background: var(--select-option-active-bg, var(--select-option-hover-bg, #f0f0f0));
+        color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937))));
+        border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
+        box-shadow: var(--select-option-active-shadow, var(--select-option-shadow, none));
+        transform: var(--select-option-active-transform, var(--select-option-transform, none));
+        outline: var(--select-option-active-outline, none);
+        outline-offset: var(--select-option-active-outline-offset, -2px);
+      }
+
+      :host(.smilodon-option--disabled),
+      :host([aria-disabled="true"]) {
+        background: var(--select-option-disabled-bg, var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white))));
+        color: var(--select-option-disabled-color, var(--select-option-color, var(--select-text-color, #1f2937)));
+        border: var(--select-option-disabled-border, var(--select-option-border, none));
+        border-bottom: var(--select-option-disabled-border-bottom, var(--select-option-border-bottom, none));
+        opacity: var(--select-option-disabled-opacity, 0.5);
+        cursor: var(--select-option-disabled-cursor, not-allowed);
+        pointer-events: none;
+      }
+
+      :host(.smilodon-option--disabled-interactive) {
+        pointer-events: auto;
       }
       
       .option-container {
@@ -106,62 +151,62 @@ export class SelectOption extends HTMLElement {
         padding: var(--select-option-padding, 10px 14px);
         cursor: pointer;
         user-select: none;
-        color: var(--select-option-color, var(--select-text-color, #1f2937));
-        background: var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white)));
-        transition: var(--select-option-transition, background-color 0.2s ease);
-        border: var(--select-option-border, none);
-        border-bottom: var(--select-option-border-bottom, none);
-        border-radius: var(--select-option-border-radius, var(--select-radius-sm, 6px));
-        box-shadow: var(--select-option-shadow, none);
-        transform: var(--select-option-transform, none);
+        color: inherit;
+        background: inherit;
+        transition: inherit;
+        border: inherit;
+        border-bottom: inherit;
+        border-radius: inherit;
+        box-shadow: inherit;
+        transform: inherit;
         font: inherit;
       }
       
       .option-container:hover {
-        background: var(--select-option-hover-bg, #f0f0f0);
-        color: var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937)));
-        border: var(--select-option-hover-border, var(--select-option-border, none));
-        border-bottom: var(--select-option-hover-border-bottom, var(--select-option-border-bottom, none));
-        box-shadow: var(--select-option-hover-shadow, var(--select-option-shadow, none));
-        transform: var(--select-option-hover-transform, var(--select-option-transform, none));
+        background: inherit;
+        color: inherit;
+        border: inherit;
+        border-bottom: inherit;
+        box-shadow: inherit;
+        transform: inherit;
       }
       
       .option-container.selected {
-        background: var(--select-option-selected-bg, #e3f2fd);
-        color: var(--select-option-selected-color, #1976d2);
-        border: var(--select-option-selected-border, var(--select-option-border, none));
-        border-bottom: var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none));
-        border-radius: var(--select-option-selected-border-radius, var(--select-option-border-radius, 0));
-        box-shadow: var(--select-option-selected-shadow, var(--select-option-shadow, none));
-        transform: var(--select-option-selected-transform, var(--select-option-transform, none));
+        background: inherit;
+        color: inherit;
+        border: inherit;
+        border-bottom: inherit;
+        border-radius: inherit;
+        box-shadow: inherit;
+        transform: inherit;
       }
 
       .option-container.selected:hover {
-        background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
-        color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
-        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
-        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
-        box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
-        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
+        background: inherit;
+        color: inherit;
+        border: inherit;
+        border-bottom: inherit;
+        box-shadow: inherit;
+        transform: inherit;
       }
       
       .option-container.active:not(.disabled) {
-        background: var(--select-option-active-bg, var(--select-option-hover-bg, #f0f0f0));
-        color: var(--select-option-active-color, var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937))));
-        border: var(--select-option-active-border, var(--select-option-hover-border, var(--select-option-border, none)));
-        box-shadow: var(--select-option-active-shadow, var(--select-option-shadow, none));
-        transform: var(--select-option-active-transform, var(--select-option-transform, none));
-        outline: var(--select-option-active-outline, 2px solid #1976d2);
-        outline-offset: var(--select-option-active-outline-offset, -2px);
+        background: inherit;
+        color: inherit;
+        border: inherit;
+        box-shadow: inherit;
+        transform: inherit;
+        outline: none;
+        outline-offset: 0;
       }
       
       .option-container.disabled {
-        background: var(--select-option-disabled-bg, var(--select-option-bg, var(--select-dropdown-bg, var(--select-bg, white))));
-        color: var(--select-option-disabled-color, var(--select-option-color, var(--select-text-color, #1f2937)));
-        border: var(--select-option-disabled-border, var(--select-option-border, none));
-        border-bottom: var(--select-option-disabled-border-bottom, var(--select-option-border-bottom, none));
-        opacity: var(--select-option-disabled-opacity, 0.5);
-        cursor: var(--select-option-disabled-cursor, not-allowed);
+        background: inherit;
+        color: inherit;
+        border: inherit;
+        border-bottom: inherit;
+        opacity: inherit;
+        cursor: inherit;
         pointer-events: none;
       }
       
@@ -222,6 +267,11 @@ export class SelectOption extends HTMLElement {
         justify-content: center;
         width: var(--select-badge-remove-icon-size, 10px);
         height: var(--select-badge-remove-icon-size, 10px);
+        color: var(--select-badge-remove-icon-color, currentColor);
+        font-size: var(--select-badge-remove-icon-font-size, inherit);
+        line-height: var(--select-badge-remove-icon-line-height, 1);
+        transform: var(--select-badge-remove-icon-transform, none);
+        opacity: var(--select-badge-remove-icon-opacity, 1);
         pointer-events: none;
       }
 
@@ -244,8 +294,22 @@ export class SelectOption extends HTMLElement {
     this._shadow.appendChild(style);
   }
 
+  private _getDisabledBehavior(): Required<DisabledOptionBehaviorConfig> {
+    const behavior = this._config.disabledBehavior ?? {};
+    return {
+      selectable: behavior.selectable === true,
+      hoverable: behavior.hoverable === true,
+      focusable: behavior.focusable === true,
+    };
+  }
+
+  private _isDisabledSelectionBlocked(): boolean {
+    return Boolean(this._config.disabled) && !this._getDisabledBehavior().selectable;
+  }
+
   private _render(): void {
     const { item, index, selected, disabled, active, render, showRemoveButton, classMap } = this._config;
+    const disabledBehavior = this._getDisabledBehavior();
     
     // Clear container
     this._container.innerHTML = '';
@@ -279,7 +343,7 @@ export class SelectOption extends HTMLElement {
       toggleClasses(this, [...selectedClasses, 'smilodon-option--selected'], false);
     }
 
-     if (active && !disabled) {
+     if (active && (!disabled || disabledBehavior.focusable)) {
        toggleClasses(this._container, [...activeClasses, 'smilodon-option--active'], true);
        toggleClasses(this, [...activeClasses, 'smilodon-option--active'], true); // Make focus ring visible on host
     } else {
@@ -294,6 +358,17 @@ export class SelectOption extends HTMLElement {
        toggleClasses(this._container, [...disabledClasses, 'smilodon-option--disabled'], false);
        toggleClasses(this, [...disabledClasses, 'smilodon-option--disabled'], false);
     }
+
+    const interactiveDisabled = Boolean(disabled && (disabledBehavior.hoverable || disabledBehavior.selectable));
+    const toggleBehaviorClass = (className: string, add: boolean) => {
+      toggleClasses(this._container, [className], add);
+      toggleClasses(this, [className], add);
+    };
+
+    toggleBehaviorClass('smilodon-option--disabled-interactive', interactiveDisabled);
+    toggleBehaviorClass('smilodon-option--disabled-hoverable', Boolean(disabled && disabledBehavior.hoverable));
+    toggleBehaviorClass('smilodon-option--disabled-focusable', Boolean(disabled && disabledBehavior.focusable));
+    toggleBehaviorClass('smilodon-option--disabled-selectable', Boolean(disabled && disabledBehavior.selectable));
     
     // Custom class name
     if (this._config.className) {
@@ -353,7 +428,7 @@ export class SelectOption extends HTMLElement {
     // Set ARIA attributes and State attributes on Host
     this.setAttribute('role', 'option');
     this.setAttribute('aria-selected', String(selected));
-    if (disabled) {
+    if (disabled && !disabledBehavior.selectable) {
       this.setAttribute('aria-disabled', 'true');
     } else {
       this.removeAttribute('aria-disabled');
@@ -377,7 +452,7 @@ export class SelectOption extends HTMLElement {
     // Data Attributes Contract on Host
     const state = [];
     if (selected) state.push('selected');
-    if (active && !disabled) state.push('active');
+    if (active && (!disabled || disabledBehavior.focusable)) state.push('active');
     if (state.length) {
       this.dataset.smState = state.join(' ');
     } else {
@@ -398,7 +473,7 @@ export class SelectOption extends HTMLElement {
         return;
       }
       
-      if (!this._config.disabled) {
+      if (!this._isDisabledSelectionBlocked()) {
         this._handleSelect();
       }
     });
@@ -413,7 +488,7 @@ export class SelectOption extends HTMLElement {
     
     // Keyboard handler
     this.addEventListener('keydown', (e) => {
-      if (this._config.disabled) return;
+      if (this._isDisabledSelectionBlocked()) return;
       
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -515,7 +590,7 @@ export class SelectOption extends HTMLElement {
    * Set active state
    */
   setActive(active: boolean): void {
-    this._config.active = active && !this._config.disabled;
+    this._config.active = active && (!this._config.disabled || this._getDisabledBehavior().focusable);
     this._render();
   }
 

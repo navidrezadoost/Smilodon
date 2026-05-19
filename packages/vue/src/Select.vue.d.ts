@@ -48,6 +48,18 @@ export interface SelectProps {
   virtualized?: boolean;
   /** Maximum number of selections (for multi-select) */
   maxSelections?: number;
+  /** Custom icon/markup for selected chip remove buttons */
+  removeButtonIcon?: string;
+  /** Behavior overrides for visually disabled options */
+  disabledOptionBehavior?: {
+    selectable?: boolean;
+    hoverable?: boolean;
+    focusable?: boolean;
+  };
+  /** Show the selected-state side indicator */
+  showSelectedIndicator?: boolean;
+  /** Text and layout direction */
+  direction?: 'ltr' | 'rtl';
   /** Dropdown placement */
   placement?: 'bottom' | 'top' | 'auto';
   /** Custom CSS class */

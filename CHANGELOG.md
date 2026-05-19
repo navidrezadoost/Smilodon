@@ -17,19 +17,40 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-19
+
 ### Added
-- **Angular documentation coverage:** Added Angular navigation, home page guidance, and a dedicated Angular integration page in the docs site, documenting the supported manual integration path via `@smilodon/core` custom elements.
-- **Framework icons in docs playground:** Added SVG icon assets for JavaScript, React, Vue, Svelte, SolidJS, and Angular to improve framework selection visuals in the docs site.
+- **Chip remove icon customization:** Added `removeButtonIcon` prop across all adapters (React, Vue, Svelte, Solid, React Native, Vanilla) to customize the chip remove button icon content (supports text or inline SVG markup).
+- **Chip remove icon styling hooks:** Added dedicated styling system for chip remove icons:
+  - `styles.badgeRemoveIcon` object config for inline styles
+  - `classNames.badgeRemoveIcon` for utility CSS framework integration
+  - `::part(chip-remove-icon)` shadow part for external CSS targeting
+  - CSS variables: `--select-badge-remove-icon-size`, `--select-badge-remove-icon-color`, `--select-badge-remove-icon-font-size`, `--select-badge-remove-icon-line-height`, `--select-badge-remove-icon-transform`, `--select-badge-remove-icon-opacity`
+- **Text direction control:** Added `direction` prop across all adapters to support LTR/RTL layouts with proper attribute binding to the custom element.
+- **Disabled option behavior control:** Added `disabledOptionBehavior` prop with three modes:
+  - `'show'` - Display disabled options normally (default)
+  - `'hide'` - Hide disabled options from dropdown
+  - `'showIcon'` - Display disabled options with a visual indicator icon
+- **Selected indicator control:** Added `showSelectedIndicator` prop to toggle checkmark visibility for selected options across all adapters.
 
 ### Changed
-- **Docs site asset loading:** Updated the docs site to load the local Smilodon bundle as an ES module and use a dedicated SVG favicon asset for local and GitHub Pages previews.
-- **Playground customization workflow:** Replaced the old modal customization behavior with an inline, collapsible playground panel that supports compact option styling, scoped CSS output, and side-by-side live previewing.
+- **Documentation:** Updated all adapter READMEs, core package README, root README, and docs site with comprehensive examples for new customization features.
+- **Icon styling scope:** Badge remove icon styling now applies to both multi-select chip badges and option-level remove buttons for consistent appearance.
+
+## [1.5.5] - 2026-05-18
 
 ### Fixed
-- **Large demo dataset freezes:** Reworked the docs playground to force virtualization for large datasets and lazily page `100K` and `1M` demo rows in smaller chunks so the page stays responsive.
-- **Docs site translations and navigation wiring:** Fixed Angular navigation and framework label translation keys so the new Angular docs surface renders correctly across supported languages.
-- **Code block copy controls:** Reworked copy buttons so they render consistently outside Prism code blocks without breaking layout, spacing, or hover/focus behavior.
-- **Documentation typography regression:** Fixed malformed customization-panel CSS that was leaking into later documentation rules and breaking font/layout styling across docs content.
+- **Scoped CSS framework mirroring:** Document-level styles mirrored for custom renderers are now scoped to the options subtree instead of the full shadow root, which prevents framework preflight rules from leaking into the Smilodon input shell and dropdown chrome.
+- **Dark variant propagation for custom renderers:** Theme markers such as `.dark`, `.dark-mode`, `[data-theme="dark"]`, and related selectors are mirrored into the scoped options subtree so Tailwind-style dark variants update immediately inside custom-rendered option content.
+- **Escaped utility-selector handling:** Scoped selector rewriting now preserves escaped utility selectors such as Tailwind `dark\:*` classes, preventing dark-mode utility rules from being mis-scoped.
+- **Custom-renderer accessibility normalization:** Custom option renderers now receive fallback accessible names, nested focus targets are neutralized by default, and custom group headers default to `role="presentation"` so screen-reader and keyboard behavior stays aligned with listbox semantics.
+- **Custom renderer state visibility:** Tailwind-style custom renderer roots now receive consistent hover, active, selected, and disabled visual hooks in the real-world compatibility reproduction, including dark-mode text and placeholder alignment fixes.
+
+### Changed
+- **CSS framework integration guidance:** Expanded root docs, package docs, framework compatibility guidance, and docs-site content to explain the recommended split between host layout classes, CSS variables, `::part()`, `classMap`, and custom renderers.
+
+### Removed
+- **Obsolete manual HTML test surfaces:** Removed legacy root-level files `QUICK-TEST.html`, `test-demo.html`, `test-enhanced.html`, and `test-styling-fixes.html`, and added ignore rules so they are not reintroduced accidentally.
 
 ## [1.5.5] - 2026-05-18
 

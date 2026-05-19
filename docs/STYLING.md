@@ -176,6 +176,18 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
   - `--select-multi-input-flex-wrap`
   - `--select-multi-input-horizontal-cursor`
 
+  `wrap` grows naturally without an internal chip scrollbar. `vertical` keeps wrapping but constrains the chip area to `maxHeight` and scrolls vertically. `horizontal` keeps chips on one row and scrolls sideways.
+
+  For true horizontal chip scrolling, configure `multiSelectDisplay.mode = 'horizontal'`. That mode does more than flip overflow values: it keeps chips on one row, preserves drag-scroll behavior, and reserves space for the arrow / clear controls.
+
+  When an option is both selected and active, customize the combined surface with:
+
+  - `--select-option-selected-active-bg`
+  - `--select-option-selected-active-color`
+  - `--select-option-selected-active-border`
+  - `--select-option-selected-active-shadow`
+  - `--select-option-selected-active-outline`
+
 7. **Dropdown placement mode**
 
   The dropdown can now open in three placement modes:
@@ -259,14 +271,85 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
   - `--select-option-selected-indicator-right`
   - `--select-option-selected-indicator-radius-rtl`
 
-  Example horizontal chip scroller:
+  Multi-select chip scrolling should be configured with `multiSelectDisplay.mode` instead of raw overflow variables alone:
+
+  - `wrap`: grows naturally with chips and does not add an internal chip scrollbar by default
+  - `vertical`: keeps wrapping enabled but constrains the chip area to `maxHeight`, with vertical scrolling before the fixed arrow / clear-control area
+  - `horizontal`: keeps chips on one row, preserves the closed-control height, and scrolls horizontally under the fixed action area
+
+  Example:
+
+  ```typescript
+  select.updateConfig({
+    multiSelectDisplay: {
+      mode: 'horizontal',
+      maxHeight: '54px',
+      dragScroll: true,
+    },
+  });
+  ```
+
+9. **Disabled / dimmed options**
+
+  Items marked with `disabled: true` are non-selectable and non-hoverable by default.
+
+  If you want dimmed options to keep some interaction, use:
+
+  ```typescript
+  select.updateConfig({
+    selection: {
+      disabledOptionBehavior: {
+        hoverable: true,
+        focusable: true,
+        selectable: false,
+      },
+    },
+  });
+  ```
+
+  Styling hooks:
+
+  - `styles.disabledOption`
+  - `classMap.disabled`
+  - `--select-option-disabled-*`
+
+10. **Selected indicator and pressed state**
+
+  If you want to hide or move the selected side indicator, do not target internal pseudo-elements directly. Use the supported controls:
+
+  ```typescript
+  select.updateConfig({
+    selection: {
+      showSelectedIndicator: false,
+    },
+    styles: {
+      selectedIndicator: {
+        width: '4px',
+        background: '#2563eb',
+        right: '0',
+        left: 'auto',
+      },
+    },
+  });
+  ```
+
+  Relevant tokens:
+
+  - `--select-option-selected-indicator-display`
+  - `--select-option-selected-indicator-width`
+  - `--select-option-selected-indicator-height`
+  - `--select-option-selected-indicator-bg`
+  - `--select-option-selected-indicator-left`
+  - `--select-option-selected-indicator-right`
+
+  Smilodon also removes the older option pressed animation and active outline by default. To keep the option surface flat explicitly:
 
   ```css
-  enhanced-select.tags-scroll {
-    --select-multi-input-max-height: 64px;
-    --select-multi-input-flex-wrap: nowrap;
-    --select-multi-input-overflow-x: auto;
-    --select-multi-input-overflow-y: hidden;
+  enhanced-select {
+    --select-option-pressed-transform: none;
+    --select-option-selected-pressed-transform: none;
+    --select-option-active-outline: none;
+    --select-option-selected-active-outline: none;
   }
   ```
 

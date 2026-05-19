@@ -60,9 +60,22 @@ class CustomizationManager {
 
   relocatePanel() {
     const playgroundDemo = document.getElementById('playgroundDemo');
+    const demoContainer = document.getElementById('demo-container');
 
-    if (this.panel && playgroundDemo && playgroundDemo.firstChild !== this.panel) {
-      playgroundDemo.insertBefore(this.panel, playgroundDemo.firstChild);
+    if (!this.panel || !playgroundDemo) {
+      return;
+    }
+
+    if (demoContainer?.parentElement === playgroundDemo) {
+      const nextSibling = demoContainer.nextElementSibling;
+      if (nextSibling !== this.panel) {
+        playgroundDemo.insertBefore(this.panel, nextSibling);
+      }
+      return;
+    }
+
+    if (playgroundDemo.lastElementChild !== this.panel) {
+      playgroundDemo.appendChild(this.panel);
     }
   }
 

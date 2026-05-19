@@ -139,6 +139,26 @@ The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`,
 
 Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
 
+## Direction and option-state controls
+
+The Svelte adapter exposes the same runtime controls as the shared core:
+
+```svelte
+<Select
+  {items}
+  bind:value
+  direction="rtl"
+  removeButtonIcon="−"
+  disabledOptionBehavior={{ hoverable: true, focusable: true, selectable: false }}
+  showSelectedIndicator={false}
+/>
+```
+
+- `direction` switches the instance between `ltr` and `rtl`
+- `removeButtonIcon` replaces the chip remove icon with text or inline SVG markup
+- `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
+- `showSelectedIndicator` hides or shows the selected side indicator without internal selector overrides
+
 ## Examples
 
 ### Searchable Select
