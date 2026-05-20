@@ -825,23 +825,23 @@ See [TESTING-ARCHITECTURE.md](./docs/TESTING-ARCHITECTURE.md) for complete testi
 
 ```
 npm registry
-├── @smilodon/core@1.6.0 (6.6 KB gzipped core runtime)
-├── @smilodon/react@1.6.0 (framework adapter)
-├── @smilodon/vue@1.6.0 (framework adapter)
-├── @smilodon/svelte@1.6.0 (framework adapter)
-├── @smilodon/solid@1.6.0 (framework adapter)
-├── @smilodon/react-native@1.6.0 (native bridge + web fallback)
-└── @smilodon/vanilla@1.6.0 (DOM helper layer)
+├── @smilodon/core@1.9.1-debug.0 (6.6 KB gzipped core runtime)
+├── @smilodon/react@1.9.1-debug.0 (framework adapter)
+├── @smilodon/vue@1.9.1-debug.0 (framework adapter)
+├── @smilodon/svelte@1.9.1-debug.0 (framework adapter)
+├── @smilodon/solid@1.9.1-debug.0 (framework adapter)
+├── @smilodon/react-native@1.9.1-debug.0 (native bridge + web fallback)
+└── @smilodon/vanilla@1.9.1-debug.0 (DOM helper layer)
 ```
 
 ### CDN Strategy
 
 ```html
 <!-- Core component -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.6.0/dist/index.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1-debug.0/dist/index.js"></script>
 
 <!-- Framework wrappers -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.6.0/dist/index.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.9.1-debug.0/dist/index.js"></script>
 ```
 
 ### Build Pipeline
@@ -916,5 +916,5 @@ jobs:
 ---
 
 **Last Updated**: May 16, 2026
-**Version**: 1.6.0
+**Version**: 1.9.1-debug.0
 **Maintainer**: Navid Rezadoost

@@ -1266,6 +1266,172 @@ To style the icon separately from the round remove button, use the host `style` 
 
 You can also target the icon directly with `::part(chip-remove-icon)`.
 
+## Core config parity and global defaults
+
+The React adapter now exposes the same runtime configuration surface as `@smilodon/core` through both convenience props and the full `config` prop.
+
+### Convenience props for the most common core features
+
+Use these when you want adapter-friendly props without building the full config object yourself:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+Example: horizontal chip scrolling with a custom remove icon style.
+
+```tsx
+import { Select } from '@smilodon/react';
+import { useState } from 'react';
+
+function HorizontalChipExample() {
+  const [values, setValues] = useState<Array<string | number>>(['react', 'vue']);
+
+  return (
+    <Select
+      multiple
+      items={[
+        { value: 'react', label: 'React' },
+        { value: 'vue', label: 'Vue' },
+        { value: 'svelte', label: 'Svelte' },
+        { value: 'solid', label: 'Solid' },
+      ]}
+      value={values}
+      onChange={(next) => setValues(next as Array<string | number>)}
+      multiSelectDisplay={{
+        mode: 'horizontal',
+        maxHeight: '56px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        dragScroll: true,
+      }}
+      selectionConfig={{
+        closeOnSelect: false,
+        toggleOnTriggerClick: true,
+      }}
+      styles={{
+        badgeRemoveIcon: {
+          color: '#dc2626',
+          transform: 'scale(1.1)',
+        },
+      }}
+      removeButtonIcon="−"
+      searchable
+      clearable
+      placeholder="Select frameworks"
+    />
+  );
+}
+```
+
+### Full core config passthrough with `config`
+
+Use `config` when you want to pass the same shape you would send directly to `enhanced-select.updateConfig()`.
+
+```tsx
+import { Select } from '@smilodon/react';
+
+<Select
+  items={items}
+  multiple
+  config={{
+    dropdownPlacement: { mode: 'auto' },
+    multiSelectDisplay: {
+      mode: 'vertical',
+      maxHeight: '120px',
+      overflowY: 'auto',
+    },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+      behavior: 'smooth',
+      block: 'nearest',
+    },
+    selection: {
+      closeOnSelect: false,
+      allowDeselect: true,
+      disabledOptionBehavior: {
+        hoverable: true,
+        focusable: true,
+      },
+    },
+    styles: {
+      badge: {
+        background: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#1d4ed8',
+      },
+      badgeRemoveIcon: {
+        color: '#1d4ed8',
+      },
+    },
+  }}
+/>
+```
+
+### Global defaults from the adapter package
+
+The React package now re-exports the shared global config helpers, so React apps can set runtime defaults without importing from `@smilodon/core` directly.
+
+```tsx
+import { configureSelect, resetSelectConfig, Select } from '@smilodon/react';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+  multiSelectDisplay: {
+    mode: 'wrap',
+  },
+});
+
+function App() {
+  return <Select items={items} placeholder="Inherited defaults" />;
+}
+
+// Later, if you need to clear the global defaults:
+resetSelectConfig();
+```
+
+### Runtime control from refs
+
+`SelectHandle` now includes the common core-style imperative helpers in addition to the existing diagnostics APIs.
+
+```tsx
+import { useRef } from 'react';
+import { Select, type SelectHandle } from '@smilodon/react';
+
+function RuntimeControlExample() {
+  const ref = useRef<SelectHandle>(null);
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button onClick={() => ref.current?.open()}>Open</button>
+        <button onClick={() => ref.current?.clearSearch()}>Clear Search</button>
+        <button onClick={() => ref.current?.updateConfig({ selection: { showSelectedIndicator: false } })}>
+          Hide Indicator
+        </button>
+        <button onClick={() => ref.current?.setError('Selection is required')}>Set Error</button>
+        <button onClick={() => ref.current?.clearError()}>Clear Error</button>
+        <button onClick={() => console.log(ref.current?.validate())}>Validate</button>
+      </div>
+
+      <Select ref={ref} items={items} required searchable />
+    </>
+  );
+}
+```
+
 ### Types
 
 #### SelectItem
@@ -1291,6 +1457,12 @@ interface SelectHandle {
   setItems: (items: SelectItem[]) => void;
   setGroupedItems: (groups: GroupedItem[]) => void;
   clear: () => void;
+  clearSearch: () => void;
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
+  setError: (message: string) => void;
+  clearError: () => void;
+  setRequired: (required: boolean) => void;
+  validate: () => boolean;
 }
 ```
 

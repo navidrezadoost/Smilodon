@@ -159,6 +159,136 @@ The Svelte adapter exposes the same runtime controls as the shared core:
 - `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
 - `showSelectedIndicator` hides or shows the selected side indicator without internal selector overrides
 
+## Core config parity and global defaults
+
+The Svelte adapter now accepts the same advanced runtime configuration model as the shared core.
+
+### Convenience props
+
+Use the Svelte props below for the most common advanced core features:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  let value: Array<string | number> = ['react', 'solid'];
+  const items = [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'Solid' },
+  ];
+</script>
+
+<Select
+  {items}
+  bind:value
+  multiple
+  searchable
+  multiSelectDisplay={{
+    mode: 'horizontal',
+    maxHeight: '56px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    dragScroll: true,
+  }}
+  selectionConfig={{
+    closeOnSelect: false,
+    toggleOnTriggerClick: true,
+  }}
+  styles={{
+    badgeRemoveIcon: {
+      color: '#dc2626',
+      transform: 'scale(1.1)',
+    },
+  }}
+  removeButtonIcon="−"
+  placeholder="Select frameworks"
+/>
+```
+
+### Full `config` passthrough
+
+```svelte
+<Select
+  {items}
+  bind:value
+  multiple
+  config={{
+    dropdownPlacement: { mode: 'auto' },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+    },
+    multiSelectDisplay: {
+      mode: 'vertical',
+      maxHeight: '120px',
+    },
+    selection: {
+      allowDeselect: true,
+      closeOnSelect: false,
+    },
+    styles: {
+      badge: {
+        background: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#1d4ed8',
+      },
+      badgeRemoveIcon: {
+        color: '#1d4ed8',
+      },
+    },
+  }}
+/>
+```
+
+### Global defaults from `@smilodon/svelte`
+
+```ts
+import { configureSelect } from '@smilodon/svelte';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+});
+```
+
+### `bind:this` runtime methods
+
+The Svelte component exports additional runtime helpers beyond `open()` and `clear()`.
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+
+  let picker: Select;
+
+  function runRuntimeActions() {
+    picker?.clearSearch();
+    picker?.updateCoreConfig({ selection: { showSelectedIndicator: false } });
+    picker?.setError('Please review this field');
+    console.log(picker?.validate());
+  }
+</script>
+
+<Select bind:this={picker} {items} required searchable />
+<button on:click={runRuntimeActions}>Run runtime actions</button>
+```
+
 ## Examples
 
 ### Searchable Select

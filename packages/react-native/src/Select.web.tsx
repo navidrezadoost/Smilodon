@@ -8,6 +8,13 @@ import React, {
   type CSSProperties,
 } from 'react'
 import coreBundle from './generated/coreBundle.js'
+import type {
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
+} from '@smilodon/core'
 
 export interface SelectItem {
   value: string | number
@@ -52,9 +59,17 @@ export interface SelectHandle {
   open: () => void
   close: () => void
   clear: () => void
+  clearSearch: () => void
+  getSelectedItems: () => SelectItem[]
+  getSelectedValues: () => Array<string | number>
   setItems: (items: SelectItem[]) => void
   setGroupedItems: (groups: GroupedItem[]) => void
   setValue: (value: SelectValue | undefined) => void
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void
+  setError: (message: string) => void
+  clearError: () => void
+  setRequired: (required: boolean) => void
+  validate: () => boolean
 }
 
 export interface SelectProps {
@@ -70,6 +85,11 @@ export interface SelectProps {
   pageSize?: number
   virtualized?: boolean
   maxSelections?: number
+  selectionConfig?: Partial<SelectionConfig>
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
+  scrollToSelected?: Partial<ScrollToSelectedConfig>
+  styles?: StyleConfig
+  config?: Partial<GlobalSelectConfig>
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -110,11 +130,17 @@ export interface SelectProps {
 type EnhancedSelectElement = HTMLElement & {
   setItems?: (items: SelectItem[]) => void
   setGroupedItems?: (groups: GroupedItem[]) => void
+  getSelectedItems?: () => SelectItem[]
   setSelectedValues?: (values: Array<string | number>) => void
   getSelectedValues?: () => Array<string | number>
   updateConfig?: (config: unknown) => void
   open?: () => void
   close?: () => void
+  clearSearch?: () => void
+  setError?: (message: string) => void
+  clearError?: () => void
+  setRequired?: (required: boolean) => void
+  validate?: () => boolean
 }
 
 declare global {
@@ -158,6 +184,11 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     pageSize = 50,
     virtualized = true,
     maxSelections,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    styles: stylesConfig,
+    config: coreConfig,
     removeButtonIcon,
     disabledOptionBehavior,
     showSelectedIndicator = true,
@@ -204,17 +235,27 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     enabled: !disabled,
     virtualize: virtualized,
     direction,
+    dropdownPlacement: {
+      mode: 'auto',
+    },
     selection: {
+      ...(selectionConfig ?? {}),
       mode: multiple ? 'multi' : 'single',
       maxSelections,
       removeButtonIcon,
       disabledOptionBehavior,
       showSelectedIndicator,
     },
+    multiSelectDisplay,
     infiniteScroll: {
       enabled: infiniteScroll,
       pageSize,
     },
+    scrollToSelected: {
+      enabled: true,
+      ...(scrollToSelected ?? {}),
+    },
+    styles: stylesConfig,
     expandable: {
       enabled: expandable,
     },
@@ -242,6 +283,10 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     placeholder,
     disabled,
     virtualized,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    stylesConfig,
     multiple,
     maxSelections,
     removeButtonIcon,
@@ -270,9 +315,17 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     open: () => elementRef.current?.open?.(),
     close: () => elementRef.current?.close?.(),
     clear: () => elementRef.current?.setSelectedValues?.([]),
+    clearSearch: () => elementRef.current?.clearSearch?.(),
+    getSelectedItems: () => elementRef.current?.getSelectedItems?.() ?? [],
+    getSelectedValues: () => elementRef.current?.getSelectedValues?.() ?? [],
     setItems: (nextItems) => elementRef.current?.setItems?.(nextItems),
     setGroupedItems: (nextGroups) => elementRef.current?.setGroupedItems?.(nextGroups),
     setValue: (nextValue) => elementRef.current?.setSelectedValues?.(toArrayValue(nextValue)),
+    updateConfig: (nextConfig) => elementRef.current?.updateConfig?.(nextConfig),
+    setError: (message) => elementRef.current?.setError?.(message),
+    clearError: () => elementRef.current?.clearError?.(),
+    setRequired: (required) => elementRef.current?.setRequired?.(required),
+    validate: () => elementRef.current?.validate?.() ?? true,
   }), [])
 
   useEffect(() => {
@@ -394,7 +447,10 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     const element = elementRef.current
     if (!element) return
     element.updateConfig?.(config)
-  }, [config, isReady])
+    if (coreConfig) {
+      element.updateConfig?.(coreConfig)
+    }
+  }, [config, coreConfig, isReady])
 
   useEffect(() => {
     if (!isReady) return

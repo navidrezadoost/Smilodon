@@ -6,9 +6,15 @@ import type {
   SearchEventDetail,
   ChangeEventDetail,
   LoadMoreEventDetail,
+  ErrorEventDetail,
   GroupedItem,
   ClassMap,
   RendererHelpers,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -48,6 +54,16 @@ export interface SelectProps {
   virtualized?: boolean;
   /** Maximum number of selections (for multi-select) */
   maxSelections?: number;
+  /** Partial core selection config for advanced selection behavior */
+  selectionConfig?: Partial<SelectionConfig>;
+  /** Multi-select chip display behavior */
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+  /** Scroll-to-selected behavior */
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+  /** Core style configuration for internal parts */
+  styles?: StyleConfig;
+  /** Full core config passthrough for advanced runtime features */
+  config?: Partial<GlobalSelectConfig>;
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
   /** Behavior overrides for visually disabled options */
@@ -93,6 +109,8 @@ export interface SelectEmits {
   loadMore: (page: number) => void;
   /** Emitted when user creates a new item (if enabled) */
   create: (value: string) => void;
+  /** Emitted when core reports an error */
+  error: (detail: ErrorEventDetail) => void;
 }
 
 export interface SelectExposed {
@@ -108,6 +126,22 @@ export interface SelectExposed {
   setGroupedItems: (groups: GroupedItem[]) => void;
   /** Clear selection */
   clear: () => void;
+  /** Get selected items */
+  getSelectedItems: () => SelectItem[];
+  /** Get selected values */
+  getSelectedValues: () => Array<string | number>;
+  /** Clear current search query */
+  clearSearch: () => void;
+  /** Apply partial core config at runtime */
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
+  /** Set error state */
+  setError: (message: string) => void;
+  /** Clear error state */
+  clearError: () => void;
+  /** Toggle required state */
+  setRequired: (required: boolean) => void;
+  /** Validate the component */
+  validate: () => boolean;
 }
 
 declare const Select: DefineComponent<SelectProps, SelectExposed, SelectEmits>;

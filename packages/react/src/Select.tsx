@@ -17,6 +17,11 @@ import type {
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
 } from '@smilodon/core';
 
 /**
@@ -84,6 +89,21 @@ export interface SelectProps {
   
   /** Maximum number of selections (for multiple mode) */
   maxSelections?: number;
+
+  /** Partial core selection config for advanced selection behavior */
+  selectionConfig?: Partial<SelectionConfig>;
+
+  /** Multi-select chip display behavior */
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+
+  /** Scroll-to-selected behavior */
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+
+  /** Core style configuration for internal parts */
+  styles?: StyleConfig;
+
+  /** Full core config passthrough for advanced runtime features */
+  config?: Partial<GlobalSelectConfig>;
 
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
@@ -238,6 +258,24 @@ export interface SelectHandle {
   /** Clear the selection */
   clear: () => void;
 
+  /** Clear the current search query */
+  clearSearch: () => void;
+
+  /** Apply partial core config at runtime */
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
+
+  /** Set an error state message */
+  setError: (message: string) => void;
+
+  /** Clear the current error state */
+  clearError: () => void;
+
+  /** Toggle required state */
+  setRequired: (required: boolean) => void;
+
+  /** Validate the component state */
+  validate: () => boolean;
+
   /** Runtime capability report */
   getCapabilities: () => SelectCapabilitiesReport | undefined;
 
@@ -315,6 +353,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     virtualized = false,
     estimatedItemHeight = 48,
     maxSelections,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    styles: stylesConfig,
+    config: coreConfig,
     removeButtonIcon,
     disabledOptionBehavior,
     showSelectedIndicator = true,
@@ -355,6 +398,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   } = props;
 
   const elementRef = useRef<any>(null);
+    const resolvedDropdownPlacement = useMemo<'top' | 'bottom'>(() => {
+      if (placement?.startsWith('top')) return 'top';
+      return 'bottom';
+    }, [placement]);
+
   const [isControlled] = useState(value !== undefined);
   const [internalValue, setInternalValue] = useState(defaultValue);
   const hasAppliedInitialValueRef = useRef(false);
@@ -532,7 +580,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       virtualize: virtualized,
       estimatedItemHeight,
       enabled: !disabled,
+      dropdownPlacement: {
+        mode: resolvedDropdownPlacement,
+      },
       selection: {
+        ...selectionConfig,
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
         removeButtonIcon,
@@ -541,14 +593,17 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         toggleOnTriggerClick,
       },
       direction,
+      multiSelectDisplay,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize: pageSize,
       },
       scrollToSelected: {
         enabled: true,
+        ...scrollToSelected,
       },
       creatable: creatable,
+      styles: stylesConfig,
       clearControl: {
         enabled: clearable,
         clearSelection: clearSelectionOnClear,
@@ -571,6 +626,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
 
     element.updateConfig(config);
+    if (coreConfig) {
+      element.updateConfig(coreConfig);
+    }
 
     // Set classMap if provided
     if (classMap) {
@@ -600,7 +658,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
+  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, selectionConfig, multiSelectDisplay, scrollToSelected, stylesConfig, coreConfig, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, resolvedDropdownPlacement, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
 
   // Update items when they change
   useEffect(() => {
@@ -648,7 +706,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       virtualize: virtualized,
       estimatedItemHeight,
       enabled: !disabled,
+      dropdownPlacement: {
+        mode: resolvedDropdownPlacement,
+      },
       selection: {
+        ...selectionConfig,
         mode: multiple ? 'multi' : 'single',
         maxSelections: maxSelections,
         removeButtonIcon,
@@ -657,10 +719,16 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         toggleOnTriggerClick,
       },
       direction,
+      multiSelectDisplay,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize: pageSize,
       },
+      scrollToSelected: {
+        enabled: true,
+        ...scrollToSelected,
+      },
+      styles: stylesConfig,
       clearControl: {
         enabled: clearable,
         clearSelection: clearSelectionOnClear,
@@ -683,7 +751,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
 
     element.updateConfig(config);
-  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, isElementReady]);
+    if (coreConfig) {
+      element.updateConfig(coreConfig);
+    }
+  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, selectionConfig, multiSelectDisplay, scrollToSelected, stylesConfig, coreConfig, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, resolvedDropdownPlacement, isElementReady]);
 
   // Update error state
   useEffect(() => {
@@ -812,6 +883,24 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         setInternalValue(multiple ? [] : undefined);
       }
       onChange?.(multiple ? [] : '', []);
+    },
+    clearSearch: () => {
+      elementRef.current?.clearSearch?.();
+    },
+    updateConfig: (config: Partial<GlobalSelectConfig>) => {
+      elementRef.current?.updateConfig?.(config);
+    },
+    setError: (message: string) => {
+      elementRef.current?.setError?.(message);
+    },
+    clearError: () => {
+      elementRef.current?.clearError?.();
+    },
+    setRequired: (isRequired: boolean) => {
+      elementRef.current?.setRequired?.(isRequired);
+    },
+    validate: () => {
+      return elementRef.current?.validate?.() ?? true;
     },
     getCapabilities: () => {
       return elementRef.current?.getCapabilities?.();

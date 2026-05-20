@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version `1.5.5` is the current published release for `@smilodon/core`.
+Version `1.9.1-debug.0` is the current debug release for `@smilodon/core`.
 
 ---
 
@@ -70,6 +70,154 @@ Smilodon provides a complete select system for teams that need more than a style
 - Architecture, styling, performance, and compliance documentation
 - Known-limitation reporting and policy controls
 
+## Adapter parity and configuration model
+
+All maintained adapters now expose the same major runtime configuration groups that exist in `@smilodon/core`, so teams can stay inside their framework adapter without dropping down to the raw custom element for common advanced behavior.
+
+### Shared advanced config groups
+
+Across the maintained adapters, you can now work with:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config` (full `Partial<GlobalSelectConfig>` passthrough)
+
+This means adapter users can configure:
+
+- horizontal and vertical chip scrolling in multi-select mode
+- drag-to-scroll chip behavior
+- chip remove icon replacement and icon-only styling
+- disabled-option hover/focus/select policies
+- dropdown placement behavior
+- scroll-to-selected behavior
+- full runtime style config for badges, options, group headers, and remove icons
+
+### Global defaults from adapter packages
+
+The web adapters re-export the shared core config helpers so application code can set defaults from the adapter package directly:
+
+- `@smilodon/react`
+- `@smilodon/vue`
+- `@smilodon/svelte`
+- `@smilodon/solid`
+- `@smilodon/vanilla`
+
+Example:
+
+```ts
+import { configureSelect } from '@smilodon/react';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+  multiSelectDisplay: {
+    mode: 'wrap',
+  },
+});
+```
+
+For React Native, prefer per-instance `config` because the native path runs inside an embedded runtime.
+
+### Example: adapter-level full config passthrough
+
+#### React
+
+```tsx
+<Select
+  items={items}
+  multiple
+  config={{
+    dropdownPlacement: { mode: 'auto' },
+    multiSelectDisplay: {
+      mode: 'horizontal',
+      maxHeight: '56px',
+      dragScroll: true,
+    },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+    },
+    selection: {
+      closeOnSelect: false,
+      allowDeselect: true,
+    },
+    styles: {
+      badgeRemoveIcon: {
+        color: '#dc2626',
+      },
+    },
+  }}
+/>
+```
+
+#### Vue
+
+```vue
+<Select
+  :items="items"
+  v-model="value"
+  multiple
+  :config="{
+    multiSelectDisplay: { mode: 'vertical', maxHeight: '120px' },
+    selection: { closeOnSelect: false },
+    styles: {
+      badgeRemoveIcon: { color: '#dc2626' }
+    }
+  }"
+/>
+```
+
+#### Vanilla
+
+```ts
+const select = createSelect({
+  items,
+  multiple: true,
+  config: {
+    multiSelectDisplay: { mode: 'horizontal', dragScroll: true },
+    selection: { closeOnSelect: false },
+  },
+});
+```
+
+#### React Native
+
+```tsx
+<Select
+  items={items}
+  multiple
+  config={{
+    multiSelectDisplay: { mode: 'horizontal', dragScroll: true },
+    selection: { closeOnSelect: false },
+  }}
+  selectStyle={{
+    '--select-badge-remove-icon-color': '#dc2626',
+  }}
+/>
+```
+
+### Shared imperative surface
+
+The web adapters also expose more of the shared imperative runtime surface, including combinations of:
+
+- `clearSearch()`
+- `updateConfig()` or adapter-equivalent runtime config methods
+- `setError()` / `clearError()`
+- `setRequired()`
+- `validate()`
+
+That keeps framework code closer to the shared runtime model and reduces the gap between adapter usage and direct custom-element usage.
+
 ---
 
 ## Supported packages and platforms
@@ -100,7 +248,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ### Intentionally not provided
 
-- Angular adapter support is not part of the maintained `1.6.0` package line.
+- Angular adapter support is not part of the maintained `1.9.1-debug.0` package line.
 - Legacy browser shims are not a first-class target.
 - Server-rendered HTML replacement for the interactive control is not the primary design goal; adapters focus on safe client hydration around the custom element.
 

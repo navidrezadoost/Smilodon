@@ -13,6 +13,11 @@ import type {
   LimitationState,
   TrackingSnapshot,
   SelectCapabilitiesReport,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -38,6 +43,11 @@ export interface SelectProps {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  selectionConfig?: Partial<SelectionConfig>;
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+  styles?: StyleConfig;
+  config?: Partial<GlobalSelectConfig>;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -81,6 +91,12 @@ export default class Select extends SvelteComponentTyped<SelectProps, SelectEven
   setItems(items: SelectItem[]): void;
   setGroupedItems(groups: GroupedItem[]): void;
   clear(): void;
+  clearSearch(): void;
+  updateCoreConfig(config: Partial<GlobalSelectConfig>): void;
+  setError(message: string): void;
+  clearError(): void;
+  setRequiredState(required: boolean): void;
+  validate(): boolean;
   getCapabilities(): SelectCapabilitiesReport | undefined;
   getKnownLimitations(): LimitationState[];
   getTrackingSnapshot(): TrackingSnapshot;

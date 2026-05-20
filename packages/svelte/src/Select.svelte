@@ -43,6 +43,11 @@
     ClassMap,
     DiagnosticEventDetail,
     LimitationPolicyMap,
+    GlobalSelectConfig,
+    SelectionConfig,
+    MultiSelectDisplayConfig,
+    ScrollToSelectedConfig,
+    StyleConfig,
   } from '@smilodon/core';
 
   // Props
@@ -60,6 +65,11 @@
   export let pageSize: number = 50;
   export let virtualized: boolean = true;
   export let maxSelections: number | undefined = undefined;
+  export let selectionConfig: Partial<SelectionConfig> | undefined = undefined;
+  export let multiSelectDisplay: Partial<MultiSelectDisplayConfig> | undefined = undefined;
+  export let scrollToSelected: Partial<ScrollToSelectedConfig> | undefined = undefined;
+  export let styles: StyleConfig | undefined = undefined;
+  export let config: Partial<GlobalSelectConfig> | undefined = undefined;
   export let removeButtonIcon: string | undefined = undefined;
   export let disabledOptionBehavior: { selectable?: boolean; hoverable?: boolean; focusable?: boolean } | undefined = undefined;
   export let showSelectedIndicator: boolean = true;
@@ -174,17 +184,27 @@
       placeholder,
       enabled: !disabled,
       direction,
+      dropdownPlacement: {
+        mode: placement,
+      },
       selection: {
+        ...selectionConfig,
         mode: multiple ? 'multi' : 'single',
         maxSelections,
         removeButtonIcon,
         disabledOptionBehavior,
         showSelectedIndicator,
       },
+      multiSelectDisplay,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize,
       },
+      scrollToSelected: {
+        enabled: true,
+        ...scrollToSelected,
+      },
+      styles,
       clearControl: {
         enabled: clearable,
         clearSelection: clearSelectionOnClear,
@@ -205,6 +225,9 @@
         autoMitigateRuntimeModeSwitch,
       },
     });
+    if (config) {
+      (selectRef as any).updateConfig?.(config);
+    }
   }
 
   onMount(async () => {
@@ -389,6 +412,30 @@
     const newValue = multiple ? [] : '';
     value = newValue as any;
     dispatch('change', { value: newValue as any, selectedItems: [] });
+  }
+
+  export function clearSearch() {
+    (selectRef as any)?.clearSearch?.();
+  }
+
+  export function updateCoreConfig(nextConfig: Partial<GlobalSelectConfig>) {
+    (selectRef as any)?.updateConfig?.(nextConfig);
+  }
+
+  export function setError(message: string) {
+    (selectRef as any)?.setError?.(message);
+  }
+
+  export function clearError() {
+    (selectRef as any)?.clearError?.();
+  }
+
+  export function setRequiredState(isRequired: boolean) {
+    (selectRef as any)?.setRequired?.(isRequired);
+  }
+
+  export function validate() {
+    return (selectRef as any)?.validate?.() ?? true;
   }
 
   export function getCapabilities() {

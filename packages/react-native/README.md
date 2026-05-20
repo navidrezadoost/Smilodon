@@ -127,6 +127,92 @@ Example:
 />
 ```
 
+## Core config parity
+
+The React Native adapter accepts the same major runtime behavior groups as the shared core through adapter props and the full `config` prop.
+
+### Supported advanced config props
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+These are merged into the bridge payload on native and forwarded through `updateConfig()` on React Native Web.
+
+### Example: multi-select chip layout and icon styling
+
+```tsx
+<Select
+	items={items}
+	value={value}
+	onChange={setValue}
+	multiple
+	searchable
+	multiSelectDisplay={{
+		mode: 'horizontal',
+		maxHeight: '56px',
+		overflowX: 'auto',
+		overflowY: 'hidden',
+		dragScroll: true,
+	}}
+	selectionConfig={{
+		closeOnSelect: false,
+		toggleOnTriggerClick: true,
+	}}
+	styles={{
+		badgeRemoveIcon: {
+			color: '#dc2626',
+			transform: 'scale(1.1)',
+		},
+	}}
+	removeButtonIcon="−"
+	selectStyle={{
+		'--select-badge-bg': '#eff6ff',
+		'--select-badge-remove-icon-font-size': '14px',
+	}}
+/>
+```
+
+### Example: full `config` prop
+
+```tsx
+<Select
+	items={items}
+	multiple
+	config={{
+		dropdownPlacement: { mode: 'auto' },
+		scrollToSelected: {
+			enabled: true,
+			multiSelectTarget: 'last',
+		},
+		multiSelectDisplay: {
+			mode: 'vertical',
+			maxHeight: '120px',
+		},
+		selection: {
+			allowDeselect: true,
+			closeOnSelect: false,
+		},
+		styles: {
+			badge: {
+				background: '#eff6ff',
+				border: '1px solid #bfdbfe',
+				color: '#1d4ed8',
+			},
+			badgeRemoveIcon: {
+				color: '#1d4ed8',
+			},
+		},
+	}}
+/>
+```
+
+### Global defaults note
+
+For React Native, prefer per-instance `config` and convenience props. The native implementation runs inside its own embedded runtime, so app-level `configureSelect()` globals are not the recommended integration point here.
+
 ### Native layout control
 
 - `collapsedHeight`
@@ -154,9 +240,11 @@ The component exposes a `ref` handle with these methods:
 - `open()`
 - `close()`
 - `clear()`
+- `clearSearch()`
 - `setItems()`
 - `setGroupedItems()`
 - `setValue()`
+- `updateConfig()`
 
 ```tsx
 import { useRef } from 'react'
@@ -168,8 +256,11 @@ const ref = useRef<SelectHandle>(null)
 <>
 	<Select ref={ref} items={items} />
 	<Button title="Open" onPress={() => ref.current?.open()} />
+	<Button title="Clear Search" onPress={() => ref.current?.clearSearch()} />
 </>
 ```
+
+React Native Web additionally benefits from the underlying DOM runtime, so web builds also inherit the same config parity behavior as the other web adapters.
 
 ## Events
 

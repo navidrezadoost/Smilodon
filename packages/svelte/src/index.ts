@@ -19,13 +19,29 @@ export type {
   SearchEventDetail,
   ChangeEventDetail,
   LoadMoreEventDetail,
+  ErrorEventDetail,
   GroupedItem,
   DiagnosticEventDetail,
   LimitationPolicyMap,
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
+  ClearControlConfig,
+  ExpandableConfig,
+  InfiniteScrollConfig,
+  LoadMoreConfig,
+  BusyBucketConfig,
+  ServerSideConfig,
+  TrackingConfig,
+  LimitationsConfig,
 } from '@smilodon/core';
+
+export { configureSelect, resetSelectConfig, selectConfig } from '@smilodon/core';
 
 // Export component-specific types
 export type { SelectItem, SelectProps, SelectEvents } from './Select.svelte.d.ts';

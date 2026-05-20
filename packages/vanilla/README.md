@@ -61,6 +61,135 @@ const select = createSelect({
 - `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
 - `showSelectedIndicator` hides or shows the selected side indicator without custom pseudo-element overrides
 
+### Core config parity and global defaults
+
+The Vanilla helpers now expose both adapter-style convenience options and the full shared core config shape.
+
+#### Convenience options on `createSelect()` / `initSelect()`
+
+Use these when you want advanced core features without writing the whole `updateConfig()` object yourself:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+```typescript
+import { createSelect } from '@smilodon/vanilla';
+
+const select = createSelect({
+  items: [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'Solid' },
+  ],
+  value: ['react', 'solid'],
+  multiple: true,
+  searchable: true,
+  multiSelectDisplay: {
+    mode: 'horizontal',
+    maxHeight: '56px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    dragScroll: true,
+  },
+  selectionConfig: {
+    closeOnSelect: false,
+    toggleOnTriggerClick: true,
+  },
+  styles: {
+    badgeRemoveIcon: {
+      color: '#dc2626',
+      transform: 'scale(1.1)',
+    },
+  },
+  removeButtonIcon: '−',
+});
+```
+
+#### Full `config` passthrough
+
+```typescript
+const select = createSelect({
+  items,
+  multiple: true,
+  config: {
+    dropdownPlacement: { mode: 'auto' },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+    },
+    multiSelectDisplay: {
+      mode: 'vertical',
+      maxHeight: '120px',
+    },
+    selection: {
+      allowDeselect: true,
+      closeOnSelect: false,
+    },
+    styles: {
+      badge: {
+        background: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#1d4ed8',
+      },
+      badgeRemoveIcon: {
+        color: '#1d4ed8',
+      },
+    },
+  },
+});
+```
+
+#### Global defaults from `@smilodon/vanilla`
+
+```typescript
+import { configureSelect, createSelect } from '@smilodon/vanilla';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+});
+
+const select = createSelect({ items });
+```
+
+#### Expanded helper API
+
+In addition to `open()`, `close()`, `clear()`, `setItems()`, and `setGroupedItems()`, the Vanilla helper layer now exposes:
+
+- `clearSearch(element)`
+- `getSelectedItems(element)`
+- `updateConfig(element, config)`
+- `setError(element, message)`
+- `clearError(element)`
+- `setRequired(element, required)`
+- `validate(element)`
+
+```typescript
+import {
+  clearSearch,
+  updateConfig,
+  setError,
+  validate,
+} from '@smilodon/vanilla';
+
+clearSearch(select);
+updateConfig(select, { selection: { showSelectedIndicator: false } });
+setError(select, 'Please choose at least one option');
+console.log(validate(select));
+```
+
 ### Using the Web Component Directly
 
 ```html

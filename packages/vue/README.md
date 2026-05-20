@@ -204,6 +204,157 @@ The Vue adapter now exposes the same option-surface controls as the React adapte
 - `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
 - `showSelectedIndicator` hides or shows the selected side indicator without custom pseudo-element overrides
 
+## Core config parity and global defaults
+
+The Vue adapter now accepts the shared core config model directly, so Vue consumers can use either adapter-friendly props or the complete `GlobalSelectConfig` shape.
+
+### Convenience props
+
+Use these props when you want the most common advanced core features with Vue-friendly prop names:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref<Array<string | number>>(['react', 'solid']);
+const items = [
+  { value: 'react', label: 'React' },
+  { value: 'vue', label: 'Vue' },
+  { value: 'svelte', label: 'Svelte' },
+  { value: 'solid', label: 'Solid' },
+];
+</script>
+
+<template>
+  <Select
+    v-model="value"
+    :items="items"
+    multiple
+    searchable
+    :multi-select-display="{
+      mode: 'horizontal',
+      maxHeight: '56px',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      dragScroll: true,
+    }"
+    :selection-config="{
+      closeOnSelect: false,
+      toggleOnTriggerClick: true,
+    }"
+    :styles="{
+      badgeRemoveIcon: {
+        color: '#dc2626',
+        transform: 'scale(1.1)',
+      },
+    }"
+    remove-button-icon="−"
+    placeholder="Select frameworks"
+  />
+</template>
+```
+
+### Full `config` passthrough
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref<Array<string | number>>([]);
+</script>
+
+<template>
+  <Select
+    v-model="value"
+    :items="items"
+    multiple
+    :config="{
+      dropdownPlacement: { mode: 'auto' },
+      scrollToSelected: {
+        enabled: true,
+        multiSelectTarget: 'last',
+      },
+      multiSelectDisplay: {
+        mode: 'vertical',
+        maxHeight: '120px',
+      },
+      selection: {
+        allowDeselect: true,
+        closeOnSelect: false,
+      },
+      styles: {
+        badge: {
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          color: '#1d4ed8',
+        },
+        badgeRemoveIcon: {
+          color: '#1d4ed8',
+        },
+      },
+    }"
+  />
+</template>
+```
+
+### Global defaults from `@smilodon/vue`
+
+The Vue adapter re-exports `configureSelect()`, `resetSelectConfig()`, and `selectConfig`.
+
+```ts
+import { configureSelect } from '@smilodon/vue';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+  multiSelectDisplay: {
+    mode: 'wrap',
+  },
+});
+```
+
+### Template ref methods
+
+The exposed Vue instance now includes additional core-style helpers alongside diagnostics methods.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const selectRef = ref<InstanceType<typeof Select> | null>(null);
+
+function applyRuntimeChanges() {
+  selectRef.value?.clearSearch();
+  selectRef.value?.updateConfig({ selection: { showSelectedIndicator: false } });
+  selectRef.value?.setError('Please review this field');
+  console.log(selectRef.value?.getSelectedValues());
+  console.log(selectRef.value?.validate());
+}
+</script>
+
+<template>
+  <Select ref="selectRef" :items="items" required searchable />
+  <button @click="applyRuntimeChanges">Run runtime actions</button>
+</template>
+```
+
 ## Examples
 
 ### Basic Single Select

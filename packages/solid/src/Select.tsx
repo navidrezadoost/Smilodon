@@ -14,6 +14,11 @@ import type {
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
 } from '@smilodon/core'
 
 export interface SelectItem {
@@ -35,6 +40,11 @@ type EnhancedSelectElement = HTMLElement & {
   updateConfig?: (config: unknown) => void
   open?: () => void
   close?: () => void
+  clearSearch?: () => void
+  setError?: (message: string) => void
+  clearError?: () => void
+  setRequired?: (required: boolean) => void
+  validate?: () => boolean
   optionRenderer?: ((item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement) | undefined
   groupHeaderRenderer?: ((group: GroupedItem, index: number) => HTMLElement) | undefined
   classMap?: ClassMap | undefined
@@ -54,6 +64,12 @@ export interface SelectHandle {
   setItems: (items: SelectItem[]) => void
   setGroupedItems: (groups: GroupedItem[]) => void
   clear: () => void
+  clearSearch: () => void
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void
+  setError: (message: string) => void
+  clearError: () => void
+  setRequired: (required: boolean) => void
+  validate: () => boolean
   getCapabilities: () => SelectCapabilitiesReport | undefined
   getKnownLimitations: () => LimitationState[]
   getTrackingSnapshot: () => TrackingSnapshot
@@ -77,6 +93,11 @@ export interface SelectProps {
   pageSize?: number
   virtualized?: boolean
   maxSelections?: number
+  selectionConfig?: Partial<SelectionConfig>
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
+  scrollToSelected?: Partial<ScrollToSelectedConfig>
+  styles?: StyleConfig
+  config?: Partial<GlobalSelectConfig>
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -161,6 +182,11 @@ export default function Select(rawProps: SelectProps) {
 
   const toArrayValue = (value: SelectValue | undefined) =>
     value === undefined ? [] : Array.isArray(value) ? value : [value]
+
+  const resolvePlacementMode = () => {
+    const placement = rawProps.placement ?? props.placement
+    return placement === 'auto' ? 'auto' : placement === 'top' ? 'top' : 'bottom'
+  }
 
   const cleanupCustomRendererCache = () => {
     for (const entry of customRendererCache.values()) {
@@ -343,18 +369,28 @@ export default function Select(rawProps: SelectProps) {
         placeholder: rawProps.placeholder,
         enabled: !(rawProps.disabled ?? props.disabled),
         virtualize: rawProps.virtualized ?? props.virtualized,
+        dropdownPlacement: {
+          mode: resolvePlacementMode(),
+        },
         direction: rawProps.direction,
         selection: {
+          ...(rawProps.selectionConfig ?? {}),
           mode: (rawProps.multiple ?? props.multiple) ? 'multi' : 'single',
           maxSelections: rawProps.maxSelections,
           removeButtonIcon: rawProps.removeButtonIcon,
             disabledOptionBehavior: rawProps.disabledOptionBehavior,
             showSelectedIndicator: rawProps.showSelectedIndicator ?? props.showSelectedIndicator,
         },
+        multiSelectDisplay: rawProps.multiSelectDisplay,
         infiniteScroll: {
           enabled: rawProps.infiniteScroll ?? props.infiniteScroll,
           pageSize: rawProps.pageSize ?? props.pageSize,
         },
+        scrollToSelected: {
+          enabled: true,
+          ...(rawProps.scrollToSelected ?? {}),
+        },
+        styles: rawProps.styles,
         expandable: {
           enabled: rawProps.expandable,
         },
@@ -379,6 +415,9 @@ export default function Select(rawProps: SelectProps) {
             rawProps.autoMitigateRuntimeModeSwitch ?? props.autoMitigateRuntimeModeSwitch,
         },
       })
+      if (rawProps.config) {
+        el.updateConfig?.(rawProps.config)
+      }
     })
   })
 
@@ -483,6 +522,12 @@ export default function Select(rawProps: SelectProps) {
       }
       rawProps.onChange?.((rawProps.multiple ?? props.multiple) ? [] : '', [])
     },
+    clearSearch: () => selectRef?.clearSearch?.(),
+    updateConfig: (config) => selectRef?.updateConfig?.(config),
+    setError: (message) => selectRef?.setError?.(message),
+    clearError: () => selectRef?.clearError?.(),
+    setRequired: (required) => selectRef?.setRequired?.(required),
+    validate: () => selectRef?.validate?.() ?? true,
     getCapabilities: () => selectRef?.getCapabilities?.(),
     getKnownLimitations: () => selectRef?.getKnownLimitations?.() ?? [],
     getTrackingSnapshot: () => selectRef?.getTrackingSnapshot?.() ?? { events: [], styles: [], limitations: [] },

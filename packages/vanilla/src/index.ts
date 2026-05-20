@@ -5,6 +5,15 @@
  * the Smilodon Select web component in vanilla JavaScript applications.
  */
 
+import type {
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
+} from '@smilodon/core';
+export { configureSelect, resetSelectConfig, selectConfig } from '@smilodon/core';
+
 /**
  * Select item interface
  */
@@ -44,6 +53,12 @@ function applyConfig(select: any, options: {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  placement?: 'bottom' | 'top' | 'auto';
+  selectionConfig?: Partial<SelectionConfig>;
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+  styles?: StyleConfig;
+  config?: Partial<GlobalSelectConfig>;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -72,17 +87,27 @@ function applyConfig(select: any, options: {
     enabled: !(options.disabled ?? false),
     virtualize: options.virtualized ?? false,
     direction: options.direction,
+    dropdownPlacement: {
+      mode: options.placement ?? 'auto',
+    },
     selection: {
+      ...(options.selectionConfig ?? {}),
       mode: options.multiple ? 'multi' : 'single',
       maxSelections: options.maxSelections,
       removeButtonIcon: options.removeButtonIcon,
       disabledOptionBehavior: options.disabledOptionBehavior,
       showSelectedIndicator: options.showSelectedIndicator,
     },
+    multiSelectDisplay: options.multiSelectDisplay,
     infiniteScroll: {
       enabled: options.infiniteScroll ?? false,
       pageSize: options.pageSize,
     },
+    scrollToSelected: {
+      enabled: true,
+      ...(options.scrollToSelected ?? {}),
+    },
+    styles: options.styles,
     clearControl: {
       enabled: options.clearable === true,
       clearSelection: options.clearSelectionOnClear ?? true,
@@ -103,6 +128,10 @@ function applyConfig(select: any, options: {
       autoMitigateRuntimeModeSwitch: options.autoMitigateRuntimeModeSwitch ?? true,
     },
   });
+
+  if (options.config) {
+    select.updateConfig?.(options.config);
+  }
 }
 
 /**
@@ -122,6 +151,11 @@ export function createSelect(options: {
   pageSize?: number;
   virtualized?: boolean;
   maxSelections?: number;
+  selectionConfig?: Partial<SelectionConfig>;
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+  styles?: StyleConfig;
+  config?: Partial<GlobalSelectConfig>;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -281,6 +315,11 @@ export function initSelect(
     pageSize?: number;
     virtualized?: boolean;
     maxSelections?: number;
+    selectionConfig?: Partial<SelectionConfig>;
+    multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+    scrollToSelected?: Partial<ScrollToSelectedConfig>;
+    styles?: StyleConfig;
+    config?: Partial<GlobalSelectConfig>;
     clearable?: boolean;
     clearSelectionOnClear?: boolean;
     clearSearchOnClear?: boolean;
@@ -339,7 +378,15 @@ export function setValue(
  */
 export function clear(element: HTMLElement): void {
   const select = element as any;
-  select.setSelectedValues?.([]);
+  select.clear?.() ?? select.setSelectedValues?.([]);
+}
+
+/**
+ * Clear the current search query
+ */
+export function clearSearch(element: HTMLElement): void {
+  const select = element as any;
+  select.clearSearch?.();
 }
 
 /**
@@ -372,6 +419,36 @@ export function setItems(element: HTMLElement, items: SelectItem[]): void {
 export function setGroupedItems(element: HTMLElement, groups: GroupedItem[]): void {
   const select = element as any;
   select.setGroupedItems?.(groups);
+}
+
+export function getSelectedItems(element: HTMLElement): any[] {
+  const select = element as any;
+  return select.getSelectedItems?.() || [];
+}
+
+export function updateConfig(element: HTMLElement, config: Partial<GlobalSelectConfig>): void {
+  const select = element as any;
+  select.updateConfig?.(config);
+}
+
+export function setError(element: HTMLElement, message: string): void {
+  const select = element as any;
+  select.setError?.(message);
+}
+
+export function clearError(element: HTMLElement): void {
+  const select = element as any;
+  select.clearError?.();
+}
+
+export function setRequired(element: HTMLElement, required: boolean): void {
+  const select = element as any;
+  select.setRequired?.(required);
+}
+
+export function validate(element: HTMLElement): boolean {
+  const select = element as any;
+  return select.validate?.() ?? true;
 }
 
 export function getCapabilities(element: HTMLElement): any {
@@ -408,9 +485,23 @@ export type {
   ChangeEventDetail,
   SearchEventDetail,
   LoadMoreEventDetail,
+  ErrorEventDetail,
   DiagnosticEventDetail,
   LimitationPolicyMap,
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
+  ClearControlConfig,
+  ExpandableConfig,
+  InfiniteScrollConfig,
+  LoadMoreConfig,
+  BusyBucketConfig,
+  ServerSideConfig,
+  TrackingConfig,
+  LimitationsConfig,
 } from '@smilodon/core';

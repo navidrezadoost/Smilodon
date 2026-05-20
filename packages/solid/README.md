@@ -127,6 +127,115 @@ If you already have grouped data, pass `groupedItems` and optionally render head
 - `disabledOptionBehavior` controls whether dimmed options can still be hovered, focused, or selected
 - `showSelectedIndicator` hides or shows the selected side indicator without custom pseudo-element rules
 
+## Core config parity and global defaults
+
+The Solid adapter now exposes the shared core configuration model through both convenience props and a full `config` prop.
+
+### Convenience props
+
+Use these adapter props for the most common advanced core features:
+
+- `selectionConfig`
+- `multiSelectDisplay`
+- `scrollToSelected`
+- `styles`
+- `config`
+
+```tsx
+import { Select } from '@smilodon/solid'
+import { createSignal } from 'solid-js'
+
+function HorizontalChipExample() {
+  const [value, setValue] = createSignal<Array<string | number>>(['react', 'solid'])
+
+  return (
+    <Select
+      items={[
+        { value: 'react', label: 'React' },
+        { value: 'vue', label: 'Vue' },
+        { value: 'svelte', label: 'Svelte' },
+        { value: 'solid', label: 'Solid' },
+      ]}
+      value={value()}
+      onChange={(next) => setValue(next as Array<string | number>)}
+      multiple
+      searchable
+      multiSelectDisplay={{
+        mode: 'horizontal',
+        maxHeight: '56px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        dragScroll: true,
+      }}
+      selectionConfig={{
+        closeOnSelect: false,
+        toggleOnTriggerClick: true,
+      }}
+      styles={{
+        badgeRemoveIcon: {
+          color: '#dc2626',
+          transform: 'scale(1.1)',
+        },
+      }}
+      removeButtonIcon="−"
+    />
+  )
+}
+```
+
+### Full `config` passthrough
+
+```tsx
+<Select
+  items={items}
+  multiple
+  config={{
+    dropdownPlacement: { mode: 'auto' },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+    },
+    multiSelectDisplay: {
+      mode: 'vertical',
+      maxHeight: '120px',
+    },
+    selection: {
+      allowDeselect: true,
+      closeOnSelect: false,
+    },
+    styles: {
+      badge: {
+        background: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#1d4ed8',
+      },
+      badgeRemoveIcon: {
+        color: '#1d4ed8',
+      },
+    },
+  }}
+/>
+```
+
+### Global defaults from `@smilodon/solid`
+
+```tsx
+import { configureSelect } from '@smilodon/solid'
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+})
+```
+
 ## Renderers
 
 ### `customRenderer`
@@ -189,11 +298,37 @@ Available handle methods include:
 - `setItems()`
 - `setGroupedItems()`
 - `clear()`
+- `clearSearch()`
+- `updateConfig()`
+- `setError()`
+- `clearError()`
+- `setRequired()`
+- `validate()`
 - `getCapabilities()`
 - `getKnownLimitations()`
 - `getTrackingSnapshot()`
 - `clearTracking()`
 - `setLimitationPolicies()`
+
+Example:
+
+```tsx
+let api
+
+<Select
+  items={items}
+  ref={(handle) => {
+    api = handle
+  }}
+/>
+
+<button onClick={() => api?.clearSearch()}>Clear Search</button>
+<button onClick={() => api?.updateConfig({ selection: { showSelectedIndicator: false } })}>
+  Hide Indicator
+</button>
+<button onClick={() => api?.setError('Selection required')}>Set Error</button>
+<button onClick={() => console.log(api?.validate())}>Validate</button>
+```
 
 ## Diagnostics and limitation policies
 

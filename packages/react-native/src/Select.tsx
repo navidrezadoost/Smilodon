@@ -15,6 +15,13 @@ import {
 } from 'react-native'
 import { WebView, type WebViewMessageEvent } from 'react-native-webview'
 import coreBundle from './generated/coreBundle.js'
+import type {
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
+} from '@smilodon/core'
 
 export interface SelectItem {
   value: string | number
@@ -59,9 +66,11 @@ export interface SelectHandle {
   open: () => void
   close: () => void
   clear: () => void
+  clearSearch: () => void
   setItems: (items: SelectItem[]) => void
   setGroupedItems: (groups: GroupedItem[]) => void
   setValue: (value: SelectValue | undefined) => void
+  updateConfig: (config: Partial<GlobalSelectConfig>) => void
 }
 
 export interface SelectProps {
@@ -77,6 +86,11 @@ export interface SelectProps {
   pageSize?: number
   virtualized?: boolean
   maxSelections?: number
+  selectionConfig?: Partial<SelectionConfig>
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
+  scrollToSelected?: Partial<ScrollToSelectedConfig>
+  styles?: StyleConfig
+  config?: Partial<GlobalSelectConfig>
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -222,6 +236,9 @@ function createHtml(collapsedHeight: number) {
           },
           clear() {
             el.setSelectedValues([]);
+          },
+          clearSearch() {
+            el.clearSearch && el.clearSearch();
           }
         };
 
@@ -287,6 +304,11 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     pageSize = 50,
     virtualized = true,
     maxSelections,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    styles: stylesConfig,
+    config: coreConfig,
     removeButtonIcon,
     disabledOptionBehavior,
     showSelectedIndicator = true,
@@ -339,17 +361,27 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
       enabled: !disabled,
       virtualize: virtualized,
       direction,
+      dropdownPlacement: {
+        mode: 'auto',
+      },
       selection: {
+        ...(selectionConfig ?? {}),
         mode: multiple ? 'multi' : 'single',
         maxSelections,
         removeButtonIcon,
         disabledOptionBehavior,
         showSelectedIndicator,
       },
+      multiSelectDisplay,
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize,
       },
+      scrollToSelected: {
+        enabled: true,
+        ...(scrollToSelected ?? {}),
+      },
+      styles: stylesConfig,
       expandable: {
         enabled: expandable,
       },
@@ -372,6 +404,7 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
         policies: limitationPolicies,
         autoMitigateRuntimeModeSwitch,
       },
+      ...(coreConfig ?? {}),
     },
   }), [
     items,
@@ -382,6 +415,11 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     placeholder,
     disabled,
     virtualized,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    stylesConfig,
+    coreConfig,
     multiple,
     maxSelections,
     removeButtonIcon,
@@ -431,6 +469,9 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     clear: () => {
       webViewRef.current?.injectJavaScript('window.__smilodonNativeBridge && window.__smilodonNativeBridge.clear(); true;')
     },
+    clearSearch: () => {
+      webViewRef.current?.injectJavaScript('window.__smilodonNativeBridge && window.__smilodonNativeBridge.clearSearch && window.__smilodonNativeBridge.clearSearch(); true;')
+    },
     setItems: (nextItems) => {
       syncToWebView({ ...bridgePayload, items: nextItems, groupedItems: undefined })
     },
@@ -439,6 +480,9 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
     },
     setValue: (nextValue) => {
       syncToWebView({ ...bridgePayload, value: toArrayValue(nextValue) })
+    },
+    updateConfig: (nextConfig) => {
+      syncToWebView({ ...bridgePayload, config: { ...bridgePayload.config, ...nextConfig } })
     },
   }), [bridgePayload, syncToWebView])
 

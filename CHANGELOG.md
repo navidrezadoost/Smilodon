@@ -17,6 +17,18 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.9.1-debug.0] - 2026-05-20
+
+### Added
+- **Full adapter parity for shared core config:** React, Vue, Svelte, Solid, Vanilla, and React Native now expose the major shared core configuration groups directly through their adapter APIs, including `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, and full `config` passthrough support.
+- **Expanded adapter runtime methods:** Web adapters and React Native now expose additional imperative methods where supported, including `clearSearch()`, runtime config updates, validation/error helpers, and selected-value accessors.
+- **Adapter-level global config helpers:** The maintained web adapters now re-export the shared config helpers so applications can use `configureSelect()`, `resetSelectConfig()`, and `selectConfig` without dropping down to `@smilodon/core`.
+
+### Changed
+- **Chip customization parity:** Custom chip remove buttons and chip remove icon styling are now consistently available across the maintained adapters through `removeButtonIcon` and `styles.badgeRemoveIcon`.
+- **Documentation refresh:** Updated adapter READMEs, the root README, the docs site, and release-facing docs to document adapter parity, global defaults, chip customization, horizontal chip scrolling, and full config passthrough with detailed examples.
+- **Debug release alignment:** Aligned `@smilodon/core` and the maintained adapters on the `1.9.1-debug.0` debug release line for verification and npm publishing.
+
 ## [1.6.0] - 2026-05-19
 
 ### Added

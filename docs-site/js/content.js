@@ -211,7 +211,7 @@ export class AppComponent {}
       <h2>CDN Usage</h2>
       <p>For quick prototyping, you can use the CDN:</p>
       <pre><code class="language-html">&lt;script type="module"&gt;
-  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.6.0/+esm';
+  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1-debug.0/+esm';
 &lt;/script&gt;</code></pre>
     </div>
     
@@ -2985,6 +2985,139 @@ export function SearchUsers() {
         <li>analytics or logging hooks where needed</li>
       </ul>
     </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The React adapter now exposes the same major runtime configuration groups as the shared core runtime. You can stay inside <code>@smilodon/react</code> for advanced behavior instead of dropping down to the raw custom element.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code> (full <code>Partial&lt;GlobalSelectConfig&gt;</code> passthrough)</li>
+      </ul>
+      <pre><code class="language-tsx">import { Select } from '@smilodon/react';
+import { useState } from 'react';
+
+export default function ConfigParityExample() {
+  const [value, setValue] = useState(['react', 'solid']);
+
+  return (
+    &lt;Select
+      items={[
+        { value: 'react', label: 'React' },
+        { value: 'vue', label: 'Vue' },
+        { value: 'svelte', label: 'Svelte' },
+        { value: 'solid', label: 'Solid' },
+      ]}
+      value={value}
+      onChange={(next) =&gt; setValue(next as Array&lt;string | number&gt;)}
+      multiple
+      searchable
+      multiSelectDisplay={{
+        mode: 'horizontal',
+        maxHeight: '56px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        dragScroll: true,
+      }}
+      selectionConfig={{
+        closeOnSelect: false,
+        toggleOnTriggerClick: true,
+      }}
+      styles={{
+        badgeRemoveIcon: {
+          color: '#dc2626',
+          transform: 'scale(1.1)',
+        },
+      }}
+      removeButtonIcon="−"
+      placeholder="Select frameworks"
+    /&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Full Config Passthrough</h2>
+      <pre><code class="language-tsx">&lt;Select
+  items={items}
+  multiple
+  config={{
+    dropdownPlacement: { mode: 'auto' },
+    multiSelectDisplay: {
+      mode: 'vertical',
+      maxHeight: '120px',
+    },
+    scrollToSelected: {
+      enabled: true,
+      multiSelectTarget: 'last',
+    },
+    selection: {
+      allowDeselect: true,
+      closeOnSelect: false,
+    },
+    styles: {
+      badge: {
+        background: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        color: '#1d4ed8',
+      },
+      badgeRemoveIcon: {
+        color: '#1d4ed8',
+      },
+    },
+  }}
+/&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Global Defaults from the Adapter</h2>
+      <pre><code class="language-tsx">import { configureSelect, resetSelectConfig, Select } from '@smilodon/react';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+});
+
+function App() {
+  return &lt;Select items={items} placeholder="Inherited defaults" /&gt;;
+}
+
+resetSelectConfig();</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Expanded Ref Handle</h2>
+      <p>The React adapter now exposes additional core-style runtime methods including <code>clearSearch()</code>, <code>updateConfig()</code>, <code>setError()</code>, <code>clearError()</code>, <code>setRequired()</code>, and <code>validate()</code>.</p>
+      <pre><code class="language-tsx">import { useRef } from 'react';
+import { Select, type SelectHandle } from '@smilodon/react';
+
+function RuntimeHandleExample() {
+  const ref = useRef&lt;SelectHandle&gt;(null);
+
+  return (
+    &lt;&gt;
+      &lt;button onClick={() =&gt; ref.current?.clearSearch()}&gt;Clear Search&lt;/button&gt;
+      &lt;button onClick={() =&gt; ref.current?.updateConfig({ selection: { showSelectedIndicator: false } })}&gt;
+        Hide Indicator
+      &lt;/button&gt;
+      &lt;button onClick={() =&gt; ref.current?.setError('Selection required')}&gt;Set Error&lt;/button&gt;
+      &lt;button onClick={() =&gt; console.log(ref.current?.validate())}&gt;Validate&lt;/button&gt;
+
+      &lt;Select ref={ref} items={items} required searchable /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+    </div>
   `,
 
   angular: `
@@ -3523,6 +3656,98 @@ export default {
 };
 &lt;/script&gt;</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The Vue adapter now accepts the same advanced runtime configuration groups as the shared core runtime. That includes horizontal chip scrolling, scroll-to-selected behavior, runtime style config, and full config passthrough.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code></li>
+      </ul>
+      <pre><code class="language-vue">&lt;script setup lang="ts"&gt;
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const value = ref(['react', 'solid']);
+const items = [
+  { value: 'react', label: 'React' },
+  { value: 'vue', label: 'Vue' },
+  { value: 'svelte', label: 'Svelte' },
+  { value: 'solid', label: 'Solid' },
+];
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;Select
+    v-model="value"
+    :items="items"
+    multiple
+    searchable
+    :multi-select-display="{
+      mode: 'horizontal',
+      maxHeight: '56px',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      dragScroll: true,
+    }"
+    :selection-config="{
+      closeOnSelect: false,
+      toggleOnTriggerClick: true,
+    }"
+    :styles="{
+      badgeRemoveIcon: {
+        color: '#dc2626',
+        transform: 'scale(1.1)',
+      },
+    }"
+    remove-button-icon="−"
+  /&gt;
+&lt;/template&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Global Defaults from the Adapter</h2>
+      <pre><code class="language-ts">import { configureSelect } from '@smilodon/vue';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+  selection: {
+    showSelectedIndicator: false,
+    removeButtonIcon: '×',
+  },
+});</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Template Ref Runtime Methods</h2>
+      <pre><code class="language-vue">&lt;script setup lang="ts"&gt;
+import { ref } from 'vue';
+import { Select } from '@smilodon/vue';
+
+const selectRef = ref(null);
+
+function runRuntimeActions() {
+  selectRef.value?.clearSearch();
+  selectRef.value?.updateConfig({ selection: { showSelectedIndicator: false } });
+  selectRef.value?.setError('Please review this field');
+  console.log(selectRef.value?.getSelectedValues());
+  console.log(selectRef.value?.validate());
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;Select ref="selectRef" :items="items" required searchable /&gt;
+  &lt;button @click="runRuntimeActions"&gt;Run runtime actions&lt;/button&gt;
+&lt;/template&gt;</code></pre>
+    </div>
   `,
   
   svelte: `
@@ -3862,6 +4087,83 @@ pnpm add @smilodon/core @smilodon/svelte</code></pre>
     }
   );
 &lt;/script&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The Svelte adapter now exposes the same advanced runtime configuration groups as the shared core runtime.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code></li>
+      </ul>
+      <pre><code class="language-svelte">&lt;script lang="ts"&gt;
+  import { Select } from '@smilodon/svelte';
+
+  let value = ['react', 'solid'];
+  const items = [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'Solid' },
+  ];
+&lt;/script&gt;
+
+&lt;Select
+  {items}
+  bind:value
+  multiple
+  searchable
+  multiSelectDisplay={{
+    mode: 'horizontal',
+    maxHeight: '56px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    dragScroll: true,
+  }}
+  selectionConfig={{
+    closeOnSelect: false,
+    toggleOnTriggerClick: true,
+  }}
+  styles={{
+    badgeRemoveIcon: {
+      color: '#dc2626',
+      transform: 'scale(1.1)',
+    },
+  }}
+  removeButtonIcon="−"
+/&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Global Defaults and Runtime Methods</h2>
+      <pre><code class="language-ts">import { configureSelect } from '@smilodon/svelte';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+});</code></pre>
+      <pre><code class="language-svelte">&lt;script lang="ts"&gt;
+  import { Select } from '@smilodon/svelte';
+
+  let picker;
+
+  function runRuntimeActions() {
+    picker?.clearSearch();
+    picker?.updateCoreConfig({ selection: { showSelectedIndicator: false } });
+    picker?.setError('Please review this field');
+    console.log(picker?.validate());
+  }
+&lt;/script&gt;
+
+&lt;Select bind:this={picker} {items} required searchable /&gt;
+&lt;button on:click={runRuntimeActions}&gt;Run runtime actions&lt;/button&gt;</code></pre>
     </div>
   `,
   
@@ -9598,6 +9900,78 @@ function RefExample() {
   );
 }</code></pre>
     </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The Solid adapter now exposes the same advanced runtime configuration groups as the shared core runtime.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code></li>
+      </ul>
+      <pre><code class="language-tsx">import { Select } from '@smilodon/solid'
+import { createSignal } from 'solid-js'
+
+function ConfigParityExample() {
+  const [value, setValue] = createSignal(['react', 'solid'])
+
+  return (
+    &lt;Select
+      items={[
+        { value: 'react', label: 'React' },
+        { value: 'vue', label: 'Vue' },
+        { value: 'svelte', label: 'Svelte' },
+        { value: 'solid', label: 'Solid' },
+      ]}
+      value={value()}
+      onChange={(next) =&gt; setValue(next as Array&lt;string | number&gt;)}
+      multiple
+      searchable
+      multiSelectDisplay={{
+        mode: 'horizontal',
+        maxHeight: '56px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        dragScroll: true,
+      }}
+      styles={{
+        badgeRemoveIcon: {
+          color: '#dc2626',
+        },
+      }}
+      removeButtonIcon="−"
+    /&gt;
+  )
+}</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Global Defaults and Runtime Handle</h2>
+      <pre><code class="language-ts">import { configureSelect } from '@smilodon/solid'
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+})</code></pre>
+      <pre><code class="language-tsx">let api
+
+&lt;Select
+  items={items}
+  ref={(handle) =&gt; {
+    api = handle
+  }}
+/&gt;
+
+&lt;button onClick={() =&gt; api?.clearSearch()}&gt;Clear Search&lt;/button&gt;
+&lt;button onClick={() =&gt; api?.updateConfig({ selection: { showSelectedIndicator: false } })}&gt;Hide Indicator&lt;/button&gt;
+&lt;button onClick={() =&gt; api?.setError('Selection required')}&gt;Set Error&lt;/button&gt;</code></pre>
+    </div>
   `,
   
   vanilla: `
@@ -9827,6 +10201,72 @@ form.addEventListener('submit', (event) => {
         <li>Use CSS variables first before reaching for heavy DOM customization.</li>
         <li>Test keyboard and screen-reader behavior even in non-framework apps.</li>
       </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The Vanilla helper layer now exposes both convenience options and the full shared core config shape.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code></li>
+      </ul>
+      <pre><code class="language-javascript">import { createSelect } from '@smilodon/vanilla';
+
+const select = createSelect({
+  items: [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'Solid' },
+  ],
+  value: ['react', 'solid'],
+  multiple: true,
+  searchable: true,
+  multiSelectDisplay: {
+    mode: 'horizontal',
+    maxHeight: '56px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    dragScroll: true,
+  },
+  selectionConfig: {
+    closeOnSelect: false,
+  },
+  styles: {
+    badgeRemoveIcon: {
+      color: '#dc2626',
+    },
+  },
+  removeButtonIcon: '−',
+});</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Global Defaults and Expanded Helper API</h2>
+      <pre><code class="language-javascript">import {
+  configureSelect,
+  clearSearch,
+  updateConfig,
+  setError,
+  validate,
+} from '@smilodon/vanilla';
+
+configureSelect({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+  },
+});
+
+clearSearch(select);
+updateConfig(select, { selection: { showSelectedIndicator: false } });
+setError(select, 'Please choose at least one option');
+console.log(validate(select));</code></pre>
     </div>
   `,
   
@@ -10077,6 +10517,62 @@ function AccessibleSelect() {
     <div class="doc-section">
       <h2>Cross-Platform State Strategy</h2>
       <p>If your web and React Native apps share business logic, keep a shared item mapping layer and store stable values rather than indices. That makes it much easier to keep selection behavior aligned across platforms.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Core Config Parity</h2>
+      <p>The React Native adapter accepts the same major runtime behavior groups as the shared core through adapter props and the full <code>config</code> prop.</p>
+      <ul>
+        <li><code>selectionConfig</code></li>
+        <li><code>multiSelectDisplay</code></li>
+        <li><code>scrollToSelected</code></li>
+        <li><code>styles</code></li>
+        <li><code>config</code></li>
+      </ul>
+      <pre><code class="language-tsx">&lt;Select
+  items={items}
+  value={value}
+  onChange={setValue}
+  multiple
+  searchable
+  multiSelectDisplay={{
+    mode: 'horizontal',
+    maxHeight: '56px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    dragScroll: true,
+  }}
+  selectionConfig={{
+    closeOnSelect: false,
+    toggleOnTriggerClick: true,
+  }}
+  styles={{
+    badgeRemoveIcon: {
+      color: '#dc2626',
+      transform: 'scale(1.1)',
+    },
+  }}
+  removeButtonIcon="−"
+  selectStyle={{
+    '--select-badge-bg': '#eff6ff',
+    '--select-badge-remove-icon-font-size': '14px',
+  }}
+/&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Imperative Handle Additions</h2>
+      <p>The React Native handle now includes <code>clearSearch()</code> and <code>updateConfig()</code> in addition to the existing open/close/clear/data methods.</p>
+      <pre><code class="language-tsx">const ref = useRef(null);
+
+&lt;&gt;
+  &lt;Select ref={ref} items={items} /&gt;
+  &lt;Button title="Clear Search" onPress={() =&gt; ref.current?.clearSearch()} /&gt;
+  &lt;Button
+    title="Hide Indicator"
+    onPress={() =&gt; ref.current?.updateConfig({ selection: { showSelectedIndicator: false } })}
+  /&gt;
+&lt;/&gt;</code></pre>
     </div>
   `,
   

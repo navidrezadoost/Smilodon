@@ -43,6 +43,11 @@ import type {
   RendererHelpers,
   DiagnosticEventDetail,
   LimitationPolicyMap,
+  GlobalSelectConfig,
+  SelectionConfig,
+  MultiSelectDisplayConfig,
+  ScrollToSelectedConfig,
+  StyleConfig,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -84,6 +89,16 @@ export interface SelectProps {
   virtualized?: boolean;
   /** Maximum number of selections (for multi-select) */
   maxSelections?: number;
+  /** Partial core selection config for advanced selection behavior */
+  selectionConfig?: Partial<SelectionConfig>;
+  /** Multi-select chip display behavior */
+  multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
+  /** Scroll-to-selected behavior */
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+  /** Core style configuration for internal parts */
+  styles?: StyleConfig;
+  /** Full core config passthrough for advanced runtime features */
+  config?: Partial<GlobalSelectConfig>;
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
   /** Behavior overrides for visually disabled options */
@@ -533,17 +548,27 @@ const updateConfig = () => {
       enabled: !props.disabled,
       virtualize: props.virtualized,
       direction: props.direction,
+      dropdownPlacement: {
+        mode: props.placement,
+      },
       selection: {
+        ...(props.selectionConfig ?? {}),
         mode: props.multiple ? 'multi' : 'single',
         maxSelections: props.maxSelections,
         removeButtonIcon: props.removeButtonIcon,
         disabledOptionBehavior: props.disabledOptionBehavior,
         showSelectedIndicator: props.showSelectedIndicator,
       },
+      multiSelectDisplay: props.multiSelectDisplay,
       infiniteScroll: {
         enabled: props.infiniteScroll,
         pageSize: props.pageSize,
       },
+      scrollToSelected: {
+        enabled: true,
+        ...(props.scrollToSelected ?? {}),
+      },
+      styles: props.styles,
       expandable: {
         enabled: props.expandable,
       },
@@ -569,6 +594,9 @@ const updateConfig = () => {
     };
 
     el.updateConfig(config);
+    if (props.config) {
+      el.updateConfig(props.config);
+    }
   });
 };
 
@@ -770,6 +798,38 @@ defineExpose({
     const value = props.multiple ? [] : '';
     emit('update:modelValue', value);
     emit('change', value, []);
+  },
+  /** Get selected items */
+  getSelectedItems: () => {
+    return (selectRef.value as any)?.getSelectedItems?.() || [];
+  },
+  /** Get selected values */
+  getSelectedValues: () => {
+    return (selectRef.value as any)?.getSelectedValues?.() || [];
+  },
+  /** Clear current search query */
+  clearSearch: () => {
+    (selectRef.value as any)?.clearSearch?.();
+  },
+  /** Apply partial core config at runtime */
+  updateConfig: (config: Partial<GlobalSelectConfig>) => {
+    (selectRef.value as any)?.updateConfig?.(config);
+  },
+  /** Set error state */
+  setError: (message: string) => {
+    (selectRef.value as any)?.setError?.(message);
+  },
+  /** Clear error state */
+  clearError: () => {
+    (selectRef.value as any)?.clearError?.();
+  },
+  /** Toggle required state */
+  setRequired: (required: boolean) => {
+    (selectRef.value as any)?.setRequired?.(required);
+  },
+  /** Validate the component */
+  validate: () => {
+    return (selectRef.value as any)?.validate?.() ?? true;
   },
   /** Runtime capability report */
   getCapabilities: () => {
