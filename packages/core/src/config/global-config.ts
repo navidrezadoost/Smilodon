@@ -434,25 +434,28 @@ class SelectConfigManager {
   }
 
   private deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
-    const result = { ...target };
+    const result: any = { ...target };
     
-    for (const key in source) {
+    // PERF: Avoid for...in, use Object.keys for predictable iteration
+    const keys = Object.keys(source);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
       if (Object.prototype.hasOwnProperty.call(source, key)) {
-        const sourceValue = source[key];
+        const sourceValue = (source as any)[key];
         const targetValue = result[key];
         
         if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
           result[key] = this.deepMerge(
             targetValue && typeof targetValue === 'object' ? targetValue : {},
             sourceValue
-          ) as any;
+          );
         } else {
-          result[key] = sourceValue as any;
+          result[key] = sourceValue;
         }
       }
     }
     
-    return result;
+    return result as T;
   }
 }
 

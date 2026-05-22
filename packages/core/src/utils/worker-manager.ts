@@ -100,27 +100,23 @@ export class WorkerManager {
         const start = performance.now();
         const { id, type, payload } = e.data;
         
+        // Lookup object for O(1) operation dispatch
+        const operations = {
+          'transform': handleTransform,
+          'search': handleSearch,
+          'filter': handleFilter,
+          'sort': handleSort,
+        };
+        
         try {
-          let result;
-          
-          switch (type) {
-            case 'transform':
-              result = handleTransform(payload);
-              break;
-            case 'search':
-              result = handleSearch(payload);
-              break;
-            case 'filter':
-              result = handleFilter(payload);
-              break;
-            case 'sort':
-              result = handleSort(payload);
-              break;
-            default:
-              throw new Error('Unknown operation: ' + type);
+          const handler = operations[type];
+          if (!handler) {
+            throw new Error('Unknown operation: ' + type);
           }
           
+          const result = handler(payload);
           const duration = performance.now() - start;
+          
           self.postMessage({
             id,
             success: true,
@@ -262,57 +258,70 @@ export class WorkerManager {
   }
 
   /**
+   * Operation handlers for fallback execution
+   */
+  private readonly _fallbackOperations: Record<string, <T>(payload: any) => T> = {
+    'transform': <T>(payload: any): T => {
+      const { items, transformer } = payload as TransformRequest;
+      const fn = new Function('item', 'index', `return (${transformer})(item, index)`);
+      return items.map((item, i) => fn(item, i)) as T;
+    },
+    'search': <T>(payload: any): T => {
+      const { items, query, fuzzy } = payload as SearchRequest;
+      const lowerQuery = query.toLowerCase();
+      const results: { item: any; index: number }[] = [];
+      
+      // Use for-loop instead of forEach for better performance (no closure allocation)
+      for (let index = 0; index < items.length; index++) {
+        const item = items[index];
+        
+        // PERF: Check for label/value properties first before converting entire object
+        const itemAny = item as any;
+        const itemText = itemAny?.label ?? itemAny?.value ?? item;
+        const itemStr = String(itemText).toLowerCase();
+        
+        if (fuzzy) {
+          // Simple fuzzy match - check if all query chars appear in order
+          let queryIndex = 0;
+          for (let i = 0; i < itemStr.length && queryIndex < lowerQuery.length; i++) {
+            if (itemStr[i] === lowerQuery[queryIndex]) {
+              queryIndex++;
+            }
+          }
+          if (queryIndex === lowerQuery.length) {
+            results.push({ item, index });
+          }
+        } else {
+          // Exact substring match
+          if (itemStr.includes(lowerQuery)) {
+            results.push({ item, index });
+          }
+        }
+      }
+      
+      return results as T;
+    },
+    'filter': <T>(payload: any): T => {
+      const { items, predicate } = payload as FilterRequest;
+      const fn = new Function('item', 'index', `return (${predicate})(item, index)`);
+      return items.filter((item, i) => fn(item, i)) as T;
+    },
+    'sort': <T>(payload: any): T => {
+      const { items, comparator } = payload as SortRequest;
+      const fn = new Function('a', 'b', `return (${comparator})(a, b)`) as (a: any, b: any) => number;
+      return [...items].sort(fn) as T;
+    },
+  };
+
+  /**
    * Fallback to main thread execution
    */
   private async executeFallback<T>(type: string, payload: any): Promise<T> {
-    // Simple synchronous fallback implementations
-    switch (type) {
-      case 'transform': {
-        const { items, transformer } = payload as TransformRequest;
-        const fn = new Function('item', 'index', `return (${transformer})(item, index)`);
-        return items.map((item, i) => fn(item, i)) as T;
-      }
-      case 'search': {
-        const { items, query, fuzzy } = payload as SearchRequest;
-        const lowerQuery = query.toLowerCase();
-        const results: { item: any; index: number }[] = [];
-        
-        items.forEach((item, index) => {
-          const itemStr = String(item).toLowerCase();
-          if (fuzzy) {
-            // Simple fuzzy match - check if all query chars appear in order
-            let queryIndex = 0;
-            for (let i = 0; i < itemStr.length && queryIndex < lowerQuery.length; i++) {
-              if (itemStr[i] === lowerQuery[queryIndex]) {
-                queryIndex++;
-              }
-            }
-            if (queryIndex === lowerQuery.length) {
-              results.push({ item, index });
-            }
-          } else {
-            // Exact substring match
-            if (itemStr.includes(lowerQuery)) {
-              results.push({ item, index });
-            }
-          }
-        });
-        
-        return results as T;
-      }
-      case 'filter': {
-        const { items, predicate } = payload as FilterRequest;
-        const fn = new Function('item', 'index', `return (${predicate})(item, index)`);
-        return items.filter((item, i) => fn(item, i)) as T;
-      }
-      case 'sort': {
-        const { items, comparator } = payload as SortRequest;
-        const fn = new Function('a', 'b', `return (${comparator})(a, b)`) as (a: any, b: any) => number;
-        return [...items].sort(fn) as T;
-      }
-      default:
-        throw new Error(`Unknown operation: ${type}`);
+    const handler = this._fallbackOperations[type];
+    if (!handler) {
+      throw new Error(`Unknown operation: ${type}`);
     }
+    return handler<T>(payload);
   }
 
   /**

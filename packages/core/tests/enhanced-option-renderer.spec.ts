@@ -1,4 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { EnhancedSelect } from '../src/components/enhanced-select';
+
+// Register if not already
+if (!customElements.get('enhanced-select')) {
+  customElements.define('enhanced-select', EnhancedSelect);
+}
 
 describe('EnhancedSelect optionRenderer', () => {
   let el: any;

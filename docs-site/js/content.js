@@ -404,6 +404,365 @@ export function CountryField() {
     </div>
   `,
   
+  'framework-integration': `
+    <h1>Framework Integration Guide</h1>
+    
+    <div class="doc-section">
+      <h2>Overview</h2>
+      <p>This guide covers proper setup and troubleshooting for using Smilodon with popular JavaScript frameworks. Smilodon uses Web Components (<code>enhanced-select</code>, <code>select-option</code>) which require specific configuration in some frameworks.</p>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Vue 3 + Nuxt Setup</h2>
+      
+      <h3>Why Custom Element Configuration is Required</h3>
+      <p>Vue needs to recognize Smilodon's Web Components as custom elements to avoid treating them as Vue components.</p>
+      
+      <h3>Step 1: Configure Custom Element Recognition</h3>
+      
+      <h4>For Vite-based Vue projects:</h4>
+      <pre><code class="language-ts">// vite.config.ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => 
+            tag === 'enhanced-select' || tag === 'select-option'
+        }
+      }
+    })
+  ]
+})</code></pre>
+      
+      <h4>For Nuxt 3:</h4>
+      <pre><code class="language-ts">// nuxt.config.ts
+export default defineNuxtConfig({
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => 
+        tag === 'enhanced-select' || tag === 'select-option'
+    }
+  }
+})</code></pre>
+      
+      <h3>Step 2: Ensure Early Registration (Nuxt)</h3>
+      <p>Create a client-side plugin to guarantee custom elements are registered before component mounting:</p>
+      <pre><code class="language-ts">// plugins/smilodon.client.ts
+import '@smilodon/core'
+
+export default defineNuxtPlugin(() => {
+  // Side-effect import above registers the custom elements
+  console.log('✅ Smilodon custom elements registered')
+})</code></pre>
+      
+      <div class="doc-note">
+        <h4>💡 Important Note</h4>
+        <p>In Nuxt, it is recommended to place this plugin in the <code>plugins/</code> directory. If you're encountering SSR issues, you can explicitly configure the plugin with <code>ssr: false</code> or use the extended configuration:</p>
+        <pre><code class="language-ts">// plugins/smilodon.client.ts
+export default defineNuxtPlugin({
+  name: 'smilodon',
+  parallel: true,
+  setup() {
+    import('@smilodon/core')
+  },
+  env: {
+    islands: false
+  }
+})</code></pre>
+      </div>
+      
+      <h3>Step 3: Use ClientOnly for SSR Apps</h3>
+      <p>Wrap Smilodon components in <code>&lt;ClientOnly&gt;</code> to prevent server-side rendering issues:</p>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;ClientOnly&gt;
+    &lt;Select
+      v-model="selectedValue"
+      :items="items"
+      searchable
+      clearable
+      placeholder="Choose an option"
+    /&gt;
+  &lt;/ClientOnly&gt;
+&lt;/template&gt;
+
+&lt;script setup lang="ts"&gt;
+import { ref } from 'vue'
+import { Select } from '@smilodon/vue'
+
+const selectedValue = ref('')
+const items = ref([
+  { value: '1', label: 'Option 1' },
+  { value: '2', label: 'Option 2' }
+])
+&lt;/script&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>React + Next.js Setup</h2>
+      <p>React integration is more straightforward since it doesn't require custom element compiler configuration.</p>
+      
+      <h3>App Router (Next.js 13+)</h3>
+      <h4>1. Use Client Components</h4>
+      <pre><code class="language-tsx">'use client'
+
+import { useState } from 'react'
+import { Select } from '@smilodon/react'
+
+export default function MyComponent() {
+  const [value, setValue] = useState('')
+
+  return (
+    &lt;Select
+      items={[
+        { value: 'a', label: 'Option A' },
+        { value: 'b', label: 'Option B' }
+      ]}
+      value={value}
+      onChange={(next) => setValue(next as string)}
+      searchable
+      clearable
+    /&gt;
+  )
+}</code></pre>
+      
+      <h4>2. Dynamic Import for SSR-Heavy Pages</h4>
+      <pre><code class="language-tsx">import dynamic from 'next/dynamic'
+
+const Select = dynamic(
+  () => import('@smilodon/react').then((mod) => mod.Select),
+  { ssr: false }
+)
+
+export default function Page() {
+  return &lt;Select items={items} {...props} /&gt;
+}</code></pre>
+      
+      <h3>Pages Router (Next.js 12)</h3>
+      <pre><code class="language-tsx">import dynamic from 'next/dynamic'
+
+const Select = dynamic(() => import('@smilodon/react').then(m => m.Select), {
+  ssr: false
+})</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Svelte + SvelteKit Setup</h2>
+      <h3>Configuration</h3>
+      <pre><code class="language-js">// svelte.config.js
+export default {
+  compilerOptions: {
+    customElement: true
+  },
+  kit: {
+    // ... your SvelteKit config
+  }
+}</code></pre>
+      
+      <h3>Usage</h3>
+      <pre><code class="language-svelte">&lt;script&gt;
+  import { Select } from '@smilodon/svelte'
+  
+  let value = ''
+  const items = [
+    { value: '1', label: 'Option 1' },
+    { value: '2', label: 'Option 2' }
+  ]
+&lt;/script&gt;
+
+&lt;Select bind:value {items} searchable /&gt;</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Common Issues & Solutions</h2>
+      
+      <h3>Issue: "Failed to execute 'createElement' on 'Document': The result must not have attributes"</h3>
+      <div class="doc-note doc-note-error">
+        <h4>Symptoms:</h4>
+        <ul>
+          <li>Error occurs when mounting component in Vue/Nuxt</li>
+          <li>Appears in modals, teleports, or dynamic components</li>
+          <li>Component crashes before rendering</li>
+        </ul>
+      </div>
+      <h4>Root Cause:</h4>
+      <p>Custom element constructors should NOT mutate the host element (set attributes, classes, or dataset) during construction. This violates the Web Components specification.</p>
+      <h4>Solution:</h4>
+      <p>Upgrade to <code>@smilodon/core@1.9.1</code> or later. Constructor safety has been fixed:</p>
+      <pre><code class="language-bash">npm update @smilodon/core @smilodon/vue</code></pre>
+      
+      <h3>Issue: Custom Element Not Registered</h3>
+      <div class="doc-note doc-note-error">
+        <h4>Symptoms:</h4>
+        <ul>
+          <li>"Failed to construct 'HTMLElement'" errors</li>
+          <li>Component appears as undefined</li>
+          <li>Vue warns about unknown custom element</li>
+        </ul>
+      </div>
+      <h4>Causes:</h4>
+      <ol>
+        <li>Lazy import causing registration timing issues</li>
+        <li>Missing <code>isCustomElement</code> configuration in Vue</li>
+        <li>SSR trying to render custom element</li>
+      </ol>
+      <h4>Solutions:</h4>
+      <p><strong>1. Add client plugin (Nuxt):</strong></p>
+      <pre><code class="language-ts">// plugins/smilodon.client.ts
+import '@smilodon/core'
+
+export default defineNuxtPlugin(() => {})</code></pre>
+      <p><strong>2. Configure Vue compiler:</strong></p>
+      <pre><code class="language-ts">// nuxt.config.ts or vite.config.ts
+{
+  vue: {
+    compilerOptions: {
+      isCustomElement: tag => tag.startsWith('enhanced-') || tag === 'select-option'
+    }
+  }
+}</code></pre>
+      <p><strong>3. Wrap in ClientOnly:</strong></p>
+      <pre><code class="language-vue">&lt;ClientOnly&gt;
+  &lt;Select :items="items" /&gt;
+&lt;/ClientOnly&gt;</code></pre>
+      
+      <h3>Issue: Hydration Mismatch in SSR</h3>
+      <div class="doc-note doc-note-error">
+        <h4>Symptoms:</h4>
+        <ul>
+          <li>Vue/Nuxt hydration warnings in console</li>
+          <li>Mismatch between server-rendered HTML and client-side rendering</li>
+          <li>Component appears broken or re-renders after page load</li>
+          <li>"Hydration completed but contains mismatches" warnings</li>
+        </ul>
+      </div>
+      <h4>Root Cause:</h4>
+      <p>Custom elements (Web Components) cannot be rendered on the server. When Nuxt/Vue attempts to hydrate server-rendered content containing <code>&lt;enhanced-select&gt;</code> or <code>&lt;select-option&gt;</code>, it encounters a mismatch because these elements don't exist during SSR.</p>
+      <h4>Solutions:</h4>
+      <p><strong>1. Always wrap in <code>&lt;ClientOnly&gt;</code> (Recommended):</strong></p>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;ClientOnly&gt;
+    &lt;Select :items="items" v-model="value" /&gt;
+  &lt;</ ClientOnly&gt;
+&lt;/template&gt;</code></pre>
+      <p><strong>2. Use <code>v-if</code> with client-side flag:</strong></p>
+      <pre><code class="language-vue">&lt;template&gt;
+  &lt;Select v-if="mounted" :items="items" v-model="value" /&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, onMounted } from 'vue'
+
+const mounted = ref(false)
+
+onMounted(() => {
+  mounted.value = true
+})
+&lt;/script&gt;</code></pre>
+      <p><strong>Best Practice:</strong> Always use <code>&lt;ClientOnly&gt;</code> wrapper for any component that uses Smilodon selects in SSR applications (Nuxt, Next.js with SSR, SvelteKit with SSR).</p>
+      
+      <h3>Issue: Vite Serving Stale Code</h3>
+      <div class="doc-note doc-note-warning">
+        <h4>Symptoms:</h4>
+        <ul>
+          <li>Changes not reflecting after <code>npm install</code> or patching</li>
+          <li>Old errors persisting after fixes</li>
+          <li>Inconsistent behavior between dev/prod</li>
+        </ul>
+      </div>
+      <h4>Cause:</h4>
+      <p>Vite's dependency pre-bundling caches compiled modules aggressively.</p>
+      <h4>Solutions:</h4>
+      <p><strong>1. Clear cache manually:</strong></p>
+      <pre><code class="language-bash">rm -rf node_modules/.vite
+npm run dev</code></pre>
+      <p><strong>2. Exclude from optimization (dev only):</strong></p>
+      <pre><code class="language-ts">// vite.config.ts
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@smilodon/core', '@smilodon/vue']
+  }
+})</code></pre>
+      <p><strong>3. Force rebuild:</strong></p>
+      <pre><code class="language-bash">npm run build</code></pre>
+      
+      <h3>Issue: Teleport/Modal Mounting Breaks</h3>
+      <div class="doc-note doc-note-error">
+        <h4>Symptoms:</h4>
+        <ul>
+          <li>Component works normally but breaks in modals</li>
+          <li>Errors when dynamically shown/hidden</li>
+          <li>Works on initial render, fails on subsequent mounts</li>
+        </ul>
+      </div>
+      <h4>Root Cause:</h4>
+      <p>Framework re-creates custom element DOM during teleportation, which can trigger constructor issues if host mutations happen too early.</p>
+      <h4>Solution:</h4>
+      <p>Upgrade to <code>@smilodon/core@1.9.1</code> or later which defers all host mutations to <code>connectedCallback()</code>.</p>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Performance Recommendations</h2>
+      
+      <h3>Vite Optimization</h3>
+      <p>For best development experience, consider excluding Smilodon from pre-bundling:</p>
+      <pre><code class="language-ts">// vite.config.ts
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@smilodon/core', '@smilodon/vue']
+  }
+})</code></pre>
+      
+      <h3>Bundle Size</h3>
+      <p>Smilodon is designed for tree-shaking. Import only what you need:</p>
+      <pre><code class="language-ts">// Good - tree-shakeable
+import { Select } from '@smilodon/react'
+
+// Avoid - imports entire bundle
+import * as Smilodon from '@smilodon/react'</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Testing Guidance</h2>
+      
+      <h3>Vue Test Utils</h3>
+      <pre><code class="language-ts">// vue.config.js or vitest.config.ts
+export default {
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts']
+  }
+}
+
+// tests/setup.ts
+import '@smilodon/core'</code></pre>
+      
+      <h3>React Testing Library</h3>
+      <pre><code class="language-tsx">import { render, screen } from '@testing-library/react'
+import '@smilodon/core' // Register custom elements
+
+test('renders select', () => {
+  render(&lt;Select items={items} /&gt;)
+  expect(screen.getByRole('combobox')).toBeInTheDocument()
+})</code></pre>
+    </div>
+    
+    <div class="doc-section">
+      <h2>Migration from Pre-1.9.1 Versions</h2>
+      <p>If you're experiencing constructor-related errors after upgrading from an older version:</p>
+      <ol>
+        <li>Clear all caches: <code>rm -rf node_modules/.vite .next/cache dist</code></li>
+        <li>Reinstall dependencies: <code>npm install</code></li>
+        <li>Verify version: <code>npm list @smilodon/core</code> should show <code>1.9.1</code> or later</li>
+        <li>Restart dev server</li>
+      </ol>
+    </div>
+  `,
+  
   concepts: `
     <h1>Fundamental Concepts</h1>
     

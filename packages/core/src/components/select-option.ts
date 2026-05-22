@@ -52,6 +52,7 @@ export class SelectOption extends HTMLElement {
   private _shadow: ShadowRoot;
   private _container: HTMLElement;
   private _removeButton?: HTMLButtonElement;
+  private _hasRendered = false;
 
   constructor(config: OptionConfig) {
     super();
@@ -61,10 +62,20 @@ export class SelectOption extends HTMLElement {
     this._container.className = 'option-container';
     
     this._initializeStyles();
-    this._render();
+    // NOTE: _render() moved to connectedCallback to comply with Web Components spec
+    // (cannot mutate host element attributes/classes in constructor)
     this._attachEventListeners();
     
     this._shadow.appendChild(this._container);
+  }
+
+  connectedCallback(): void {
+    // Defer initial render to connectedCallback to avoid host mutations in constructor
+    // This is required for proper framework integration (Vue/React/Angular)
+    if (!this._hasRendered) {
+      this._render();
+      this._hasRendered = true;
+    }
   }
 
   private _initializeStyles(): void {

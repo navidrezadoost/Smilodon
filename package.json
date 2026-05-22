@@ -38,6 +38,7 @@
     "lint": "eslint .",
     "size": "npm run size --workspaces --if-present",
     "perf": "npm run build:core && node scripts/perf.js",
+    "benchmark": "node scripts/benchmark.js",
     "playwright:install": "playwright install",
     "ws:version:core": "npm version patch -w @smilodon/core",
     "ws:publish:core": "npm publish --workspace @smilodon/core",
