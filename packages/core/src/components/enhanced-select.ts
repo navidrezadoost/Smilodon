@@ -188,7 +188,8 @@ export class EnhancedSelect extends HTMLElement {
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
     this._syncStyleConfigVariables();
-    this._syncDirectionConfig();
+    // NOTE: _syncDirectionConfig moved to connectedCallback to comply with Web Components spec
+    // (cannot call setAttribute on host element in constructor)
     this._assembleDOM();
     this._attachEventListeners();
     this._initializeObservers();
@@ -202,6 +203,9 @@ export class EnhancedSelect extends HTMLElement {
     // Angular's rendering seems to not apply :host styles correctly in some cases
     // Must be done in connectedCallback when element is attached to DOM
     this.style.display = 'block';
+    
+    // Sync direction attribute (must be in connectedCallback, not constructor)
+    this._syncDirectionConfig();
 
     if (this._optionRenderer) {
       this._setGlobalStylesMirroring(true);
@@ -417,16 +421,54 @@ export class EnhancedSelect extends HTMLElement {
     if (!cssText.trim()) return '';
 
     try {
-      if (typeof CSSStyleSheet !== 'undefined') {
+      if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(cssText);
         return this._serializeScopedCssRules(Array.from(sheet.cssRules));
       }
     } catch (_error) {
-      return '';
+      // CSSStyleSheet API failed, use fallback parser for test environments (JSDOM)
+      return this._scopeMirroredCssTextFallback(cssText);
     }
 
-    return '';
+    // Fallback for environments without CSSStyleSheet.replaceSync
+    return this._scopeMirroredCssTextFallback(cssText);
+  }
+
+  /**
+   * Fallback CSS parser for environments where CSSStyleSheet API is unavailable (e.g., JSDOM).
+   * Performs simple text-based CSS rule scoping.
+   */
+  private _scopeMirroredCssTextFallback(cssText: string): string {
+    if (!cssText.trim()) return '';
+    
+    const result: string[] = [];
+    
+    // Match CSS rules with a simple regex (handles basic cases for testing)
+    // This won't handle all edge cases but works for common CSS patterns
+    const ruleRegex = /([^{}]+)\{([^{}]+)\}/g;
+    let match;
+    
+    while ((match = ruleRegex.exec(cssText)) !== null) {
+      const selectorText = match[1].trim();
+      const declarations = match[2].trim();
+      
+      // Skip @-rules (media, keyframes, etc.) - would need more complex parsing
+      if (selectorText.startsWith('@')) {
+        continue;
+      }
+      
+      // Split multiple selectors and scope each one
+      const selectors = this._splitSelectorList(selectorText)
+        .map((selector) => this._scopeMirroredSelector(selector))
+        .filter(Boolean);
+      
+      if (selectors.length > 0) {
+        result.push(`${selectors.join(', ')} { ${declarations} }`);
+      }
+    }
+    
+    return result.join('\n');
   }
 
   private _serializeScopedCssRules(rules: CSSRule[]): string {
@@ -1187,7 +1229,13 @@ export class EnhancedSelect extends HTMLElement {
     const icon = document.createElement('span');
     icon.className = 'clear-control-icon';
     icon.setAttribute('part', 'clear-icon');
-    icon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    
+    // Use config icon if provided, otherwise default SVG
+    if (this._config.clearControl.icon) {
+      icon.textContent = this._config.clearControl.icon;
+    } else {
+      icon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    }
 
     button.setAttribute('aria-label', this._config.clearControl.ariaLabel || 'Clear selection and search');
     button.appendChild(icon);
@@ -1794,8 +1842,8 @@ export class EnhancedSelect extends HTMLElement {
         top: 0;
         right: 0;
         bottom: 0;
-        width: var(--select-arrow-width, 42px);
-        height: var(--select-arrow-height, auto);
+        width: var(--select-arrow-width, var(--select-arrow-size, 42px));
+        height: var(--select-arrow-height, var(--select-arrow-size, auto));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1899,8 +1947,8 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .dropdown-arrow {
-        width: var(--select-arrow-size, 18px);
-        height: var(--select-arrow-size, 18px);
+        width: var(--select-arrow-width, var(--select-arrow-size, 16px));
+        height: var(--select-arrow-height, var(--select-arrow-size, 16px));
         color: var(--select-arrow-color, var(--select-text-muted));
         transition: 
           transform var(--select-transition-smooth),
@@ -1913,7 +1961,7 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       .dropdown-arrow-container:hover .dropdown-arrow {
-        color: var(--select-arrow-hover-color, var(--select-accent));
+        color: var(--select-arrow-hover, var(--select-arrow-hover-color, #667eea));
       }
       
       .dropdown-arrow.open {
@@ -2577,7 +2625,8 @@ export class EnhancedSelect extends HTMLElement {
       :host-context([darkmode]) .group-header,
       :host-context([data-theme="dark"]) .group-header,
       :host-context([theme="dark"]) .group-header {
-        background: var(--select-group-header-bg, #1a1a2e);
+        color: var(--select-dark-group-header-color, var(--select-group-header-color, inherit));
+        background: var(--select-dark-group-header-bg, var(--select-group-header-bg, #1a1a2e));
         border-bottom: var(--select-group-header-border-bottom, 1px solid rgba(255, 255, 255, 0.08));
         box-shadow: var(--select-group-header-shadow, 0 1px 2px rgba(0, 0, 0, 0.3));
       }
@@ -3138,6 +3187,44 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
+  /**
+   * Filter items by search query (optimized hot path)
+   * Uses for-loop with hoisted invariants for better performance
+   */
+  private _filterItemsByQuery(items: any[], query: string): any[] {
+    // Early return for empty query
+    if (!query?.trim()) return items;
+    
+    // PERF: Hoist invariants outside loop
+    const lowerQuery = query.toLowerCase().trim();
+    const getLabelFn = this._config.serverSide.getLabelFromItem 
+      ?? ((item: any) => item?.label ?? item?.text ?? String(item));
+    
+    const results: any[] = [];
+    const len = items.length;
+    
+    // PERF: for-loop instead of filter (no closure allocation)
+    for (let i = 0; i < len; i++) {
+      const item = items[i];
+      if (item == null) continue;
+      
+      try {
+        const label = getLabelFn(item);
+        if (label == null) continue;
+        
+        const labelStr = String(label).toLowerCase();
+        if (labelStr.includes(lowerQuery)) {
+          results.push(item);
+        }
+      } catch (e) {
+        // Silent fail for robustness with external data
+        continue;
+      }
+    }
+    
+    return results;
+  }
+
   private _handleSearch(query: string): void {
     this._state.searchQuery = query;
     this._syncClearControlState();
@@ -3166,27 +3253,13 @@ export class EnhancedSelect extends HTMLElement {
       this._renderOptions();
     }
     
-    // Get filtered items based on search query - searches ENTIRE phrase
-    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
-    // FIX: Do not trim query to allow searching for phrases with spaces
-    const searchQuery = query.toLowerCase();
-    
-    const filteredItems = searchQuery
-      ? this._state.loadedItems.filter((item: any) => {
-          try {
-            const label = String(getLabel(item)).toLowerCase();
-            // Match the entire search phrase
-            return label.includes(searchQuery);
-          } catch (e) {
-            return false;
-          }
-        })
-      : this._state.loadedItems;
-    
+    // PERF: Use optimized filter function
+    const filteredItems = this._filterItemsByQuery(this._state.loadedItems, query);
     const count = filteredItems.length;
     
     // Announce search results for accessibility
-    if (searchQuery) {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) {
       this._announce(`${count} result${count !== 1 ? 's' : ''} found for "${query}"`);
     }
     
@@ -4254,7 +4327,12 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     if (this._clearControlIcon) {
-      this._clearControlIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      // Use config icon if provided, otherwise default SVG
+      if (this._config.clearControl.icon) {
+        this._clearControlIcon.textContent = this._config.clearControl.icon;
+      } else {
+        this._clearControlIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      }
     }
 
     this._syncStyleConfigVariables();
@@ -4282,25 +4360,28 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _mergeConfig<T extends Record<string, any>>(target: T, source: Partial<T>): T {
-    const result = { ...target };
+    const result: any = { ...target };
 
-    for (const key in source) {
+    // PERF: Avoid for...in, use Object.keys for predictable iteration
+    const keys = Object.keys(source);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
       if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
 
-      const sourceValue = source[key];
+      const sourceValue = (source as any)[key];
       const targetValue = result[key];
 
       if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
         result[key] = this._mergeConfig(
           targetValue && typeof targetValue === 'object' ? targetValue : {},
-          sourceValue as any
-        ) as any;
+          sourceValue
+        );
       } else {
-        result[key] = sourceValue as any;
+        result[key] = sourceValue;
       }
     }
 
-    return result;
+    return result as T;
   }
 
   private _handleClearControlClick(): void {

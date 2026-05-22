@@ -566,6 +566,196 @@ For deeper framework guidance, use the package-level guides:
 
 ---
 
+## Framework Integration Guide
+
+### Vue 3 + Nuxt Setup
+
+Smilodon uses custom elements (`enhanced-select`, `select-option`) that require proper configuration in Vue/Nuxt environments.
+
+#### Required Configuration
+
+**1. Configure custom element handling in Vite/Nuxt:**
+
+```ts
+// vite.config.ts or nuxt.config.ts
+export default defineConfig({
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag === 'enhanced-select' || tag === 'select-option'
+      }
+    }
+  }
+})
+```
+
+For Nuxt specifically:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'enhanced-select' || tag === 'select-option'
+    }
+  }
+})
+```
+
+**2. Register Smilodon early (before component rendering):**
+
+Create a Nuxt plugin to ensure registration happens before components mount:
+
+```ts
+// plugins/smilodon.client.ts
+import '@smilodon/core'
+
+export default defineNuxtPlugin(() => {
+  // Core registration happens via side-effect import above
+  // No additional setup needed
+})
+```
+
+> **💡 Important Note:** In Nuxt, it is recommended to place this plugin in the `plugins/` directory. If you're encountering SSR issues, you can explicitly configure the plugin with `ssr: false` or use the extended configuration:
+>
+> ```ts
+> // plugins/smilodon.client.ts
+> export default defineNuxtPlugin({
+>   name: 'smilodon',
+>   parallel: true,
+>   setup() {
+>     import('@smilodon/core')
+>   },
+>   env: {
+>     islands: false
+>   }
+> })
+> ```
+
+**3. Use `<ClientOnly>` for SSR apps:**
+
+```vue
+<template>
+  <ClientOnly>
+    <Select
+      v-model="value"
+      :items="items"
+      searchable
+    />
+  </ClientOnly>
+</template>
+```
+
+#### Common Issues & Solutions
+
+**Issue: "Failed to execute 'createElement' on 'Document'"**
+
+- **Cause**: Custom element constructor mutating host element before `connectedCallback`
+- **Solution**: Upgrade to `@smilodon/core@1.9.1` or later (constructor safety fixed)
+
+**Issue: Custom element not registered**
+
+- **Cause**: Lazy import causing timing issues
+- **Solution**: Use client plugin (shown above) to register before first component mount
+
+**Issue: Vite serving stale code after patching**
+
+- **Solution**: Clear Vite cache: `rm -rf node_modules/.vite && npm run dev`
+
+**Issue: Teleport/Modal mounting breaks component**
+
+- **Cause**: Framework re-creating custom element during teleportation
+- **Solution**: Ensure `@smilodon/core@1.9.1+` (fixed constructor safety)
+
+**Issue: Hydration Mismatch in SSR**
+
+- **Cause**: Custom elements cannot be server-rendered, causing mismatch during hydration
+- **Symptoms**: Vue/Nuxt hydration warnings, component re-renders after page load
+- **Solution**: Always wrap in `<ClientOnly>` or use `v-if` with client-side flag:
+
+```vue
+<template>
+  <Select v-if="mounted" :items="items" />
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+const mounted = ref(false)
+onMounted(() => { mounted.value = true })
+</script>
+```
+
+#### Vite Optimization Recommendations
+
+For best development experience, consider excluding Smilodon from pre-bundling:
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  optimizeDeps: {
+    exclude: ['@smilodon/core', '@smilodon/vue']
+  }
+})
+```
+
+### React + Next.js Setup
+
+React integration is simpler as it doesn't require custom element compiler configuration.
+
+**Use client components:**
+
+```tsx
+'use client'
+
+import { Select } from '@smilodon/react'
+```
+
+**For App Router SSR:**
+
+```tsx
+import dynamic from 'next/dynamic'
+
+const Select = dynamic(() => import('@smilodon/react').then(m => m.Select), {
+  ssr: false
+})
+```
+
+### Svelte + SvelteKit Setup
+
+**Configure custom element handling:**
+
+```js
+// svelte.config.js
+export default {
+  compilerOptions: {
+    customElement: true
+  },
+  kit: {
+    // ... your kit config
+  }
+}
+```
+
+**Use in components:**
+
+```svelte
+<script>
+  import { Select } from '@smilodon/svelte'
+  import { onMount } from 'svelte'
+  
+  let value = ''
+  
+  onMount(async () => {
+    // Ensure registration in browser context
+    await import('@smilodon/core')
+  })
+</script>
+
+<Select bind:value items={items} />
+```
+
+---
+
 ## Styling and customization
 
 Smilodon uses a shared styling surface so every adapter can be themed in the same way.

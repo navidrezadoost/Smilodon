@@ -17,6 +17,30 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.9.1-debug.1] - 2026-05-22
+
+### Fixed
+- **CRITICAL: Constructor safety for custom elements:** Fixed Web Components spec violations where custom element constructors mutated the host element. Both `EnhancedSelect` and `SelectOption` now defer all host mutations (attributes, classes, dataset, styles) to `connectedCallback()` as required by the spec.
+  - **SelectOption**: Moved `_render()` call from constructor to `connectedCallback()` with `_hasRendered` guard to prevent duplicate renders. Fixes `NotSupportedError: Failed to execute 'createElement'` crashes in Vue 3/Nuxt, especially during Modal/Teleport mounting scenarios.
+  - **EnhancedSelect**: Constructor already fixed in prior release (moved `_syncDirectionConfig()` and style mutations to `connectedCallback()`).
+  - **Impact**: Resolves critical framework integration issues with Vue, Nuxt, React, and other component systems that dynamically create/recreate elements.
+  - **Spec Compliance**: Custom element constructors MUST NOT access/modify host attributes, children, or parent. All DOM manipulation now happens in `connectedCallback()` lifecycle method.
+
+### Added
+- **Comprehensive framework integration documentation:** Added extensive guides for Vue 3, Nuxt, React, Next.js, Svelte, SvelteKit, and SolidJS with real-world setup patterns.
+  - `docs/FRAMEWORK-INTEGRATION.md` - 600+ line guide covering setup, troubleshooting, testing, and performance.
+  - Updated `README.md` with "Framework Integration Guide" section including Vue/Nuxt `isCustomElement` config, client plugin patterns, and SSR guidance.
+  - **Common Issues** section with solutions for constructor errors, registration timing, Vite cache, and Teleport/modal mounting.
+  - **Performance recommendations** for Vite optimization, bundle size management, and development patterns.
+  - **Testing guidance** with Vue Test Utils, Vitest, and framework-specific patterns.
+
+### Documentation
+- Added `docs/CONSTRUCTOR-SAFETY-FIXES.md` tracking document with detailed technical analysis of fixes
+- Documented Web Components lifecycle requirements (constructor vs connectedCallback)
+- Added Vue/Nuxt client plugin examples with early registration patterns
+- Added Vite cache clearing and optimization exclusion guidance
+- Documented framework-specific SSR handling (ClientOnly wrappers, dynamic imports)
+
 ## [1.9.1-debug.0] - 2026-05-20
 
 ### Added

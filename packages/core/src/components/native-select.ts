@@ -225,12 +225,15 @@ export class NativeSelectElement extends HTMLElement {
    * Returns single value for single-select, array for multi-select
    */
   getValue(): unknown | unknown[] {
-    const values = Array.from(this._selectedItems.values()).map(item => {
+    // Optimized: single-pass iteration, no intermediate arrays
+    const values: unknown[] = [];
+    for (const item of this._selectedItems.values()) {
       if (typeof item === 'object' && item !== null && 'value' in item) {
-        return (item as any).value;
+        values.push((item as any).value);
+      } else {
+        values.push(item);
       }
-      return item;
-    });
+    }
     
     return this._multi ? values : (values[0] ?? null);
   }
@@ -392,10 +395,18 @@ export class NativeSelectElement extends HTMLElement {
       multi: this._multi 
     });
     
+    // Optimized: single-pass iteration for change event data
+    const selectedItems: unknown[] = [];
+    const selectedValues: unknown[] = [];
+    for (const item of this._selectedItems.values()) {
+      selectedItems.push(item);
+      selectedValues.push((item as any)?.value ?? item);
+    }
+    
     // Emit 'change' event for better React compatibility
     this._emit('change', { 
-      selectedItems: Array.from(this._selectedItems.values()),
-      selectedValues: Array.from(this._selectedItems.values()).map(i => (i as any)?.value ?? i),
+      selectedItems,
+      selectedValues,
       selectedIndices: Array.from(this._selectedSet)
     });
     
