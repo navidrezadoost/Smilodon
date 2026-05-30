@@ -33,7 +33,7 @@
  */
 
 export { Select } from './Select';
-export type { SelectProps, SelectItem, SelectHandle } from './Select';
+export type { SelectProps, SelectComponentProps, SelectItem, SelectHandle, StyleConfig } from './Select';
 
 // Re-export useful types from core
 export type {
@@ -54,7 +54,8 @@ export type {
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
-  StyleConfig,
+  StyleConfig as CoreStyleConfig,
+  StyleObject,
   ClearControlConfig,
   ExpandableConfig,
   InfiniteScrollConfig,

@@ -229,5 +229,42 @@ describe('Select React Integration', () => {
     expect(element?.style.width).toBe('300px');
     expect(element?.style.border).toBe('2px solid red');
   });
+
+  it('should forward standard DOM attributes to the host element', () => {
+    const { container } = render(
+      <Select
+        items={testItems}
+        id="fruit-picker"
+        aria-label="Choose a fruit"
+        aria-labelledby="fruit-label"
+        title="Fruit selector"
+        data-testid="fruit-select"
+      />
+    );
+    const element = container.querySelector('enhanced-select') as HTMLElement;
+
+    expect(element?.id).toBe('fruit-picker');
+    expect(element?.getAttribute('aria-label')).toBe('Choose a fruit');
+    expect(element?.getAttribute('aria-labelledby')).toBe('fruit-label');
+    expect(element?.title).toBe('Fruit selector');
+    expect(element?.getAttribute('data-testid')).toBe('fruit-select');
+  });
+
+  it('should accept React.CSSProperties in styles config without casts', async () => {
+    const { container } = render(
+      <Select
+        items={testItems}
+        styles={{
+          option: { backgroundColor: 'rebeccapurple', color: 'white' },
+          selectedOption: { fontWeight: 700 },
+        }}
+      />
+    );
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?.updateConfig).toBeDefined();
+    });
+  });
 });
 

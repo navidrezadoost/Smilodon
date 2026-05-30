@@ -4,6 +4,10 @@ Production-ready, accessible select component for Svelte applications. Part of t
 
 ## 📖 Documentation
 
+**Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
+
+**Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
+
 **For comprehensive documentation covering all features, styling options, and advanced patterns:**
 
 👉 **[Complete Svelte Guide](./COMPLETE-GUIDE.md)** 👈

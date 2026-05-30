@@ -11,6 +11,10 @@ That split lets you keep one API surface while still using the DOM-based Smilodo
 
 ## 📖 Documentation
 
+**Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
+
+**Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
+
 **For comprehensive documentation covering installation, Expo and bare setup, native/web architecture, styling, grouped items, diagnostics, performance, and troubleshooting:**
 
 👉 **[Complete React Native Guide](./COMPLETE-GUIDE.md)** 👈

@@ -21,7 +21,7 @@ import type {
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
-  StyleConfig,
+  StyleConfig as CoreStyleConfig,
 } from '@smilodon/core';
 
 /**
@@ -36,9 +36,18 @@ export interface SelectItem {
 }
 
 /**
+ * Style configuration for internal select parts using React.CSSProperties.
+ */
+export type StyleConfig = {
+  [K in keyof CoreStyleConfig]: K extends 'classNames'
+    ? CoreStyleConfig[K]
+    : React.CSSProperties | undefined;
+};
+
+/**
  * Props for the Select component
  */
-export interface SelectProps {
+export interface SelectComponentProps {
   /** Array of items to display in the dropdown */
   items?: SelectItem[];
   
@@ -230,6 +239,13 @@ export interface SelectProps {
   onCreate?: (label: string) => void;
 }
 
+/** Standard DOM attributes forwarded to the underlying `enhanced-select` host element */
+export type SelectProps = SelectComponentProps &
+  Omit<
+    React.HTMLAttributes<HTMLElement>,
+    keyof SelectComponentProps | 'dir'
+  >;
+
 /**
  * Imperative handle for the Select component
  */
@@ -395,6 +411,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     creatable = false,
     onCreate,
     classMap,
+    groupHeaderRenderer,
+    ...hostProps
   } = props;
 
   const elementRef = useRef<any>(null);
@@ -426,14 +444,14 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   // Use refs for renderers to avoid reconstructing the wrapper function on every render
   const customRendererRef = useRef(customRenderer ?? renderItem);
   const optionRendererRef = useRef(optionRenderer);
-  const groupHeaderRendererRef = useRef(props.groupHeaderRenderer);
+  const groupHeaderRendererRef = useRef(groupHeaderRenderer);
   
   // Update ref when props change
   useEffect(() => {
     customRendererRef.current = customRenderer ?? renderItem;
     optionRendererRef.current = optionRenderer;
-    groupHeaderRendererRef.current = props.groupHeaderRenderer;
-  }, [customRenderer, renderItem, optionRenderer, props.groupHeaderRenderer]);
+    groupHeaderRendererRef.current = groupHeaderRenderer;
+  }, [customRenderer, renderItem, optionRenderer, groupHeaderRenderer]);
 
   const resolvedOptionRenderer = useMemo(() => {
     // If a direct DOM renderer is provided, use it (assumed stable or controlled by user)
@@ -472,7 +490,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   }, [!!optionRenderer, !!(customRenderer ?? renderItem)]); // Only reconstruct if presence changes
 
   const resolvedGroupHeaderRenderer = useMemo(() => {
-    if (!props.groupHeaderRenderer) return undefined;
+    if (!groupHeaderRenderer) return undefined;
 
     return (group: GroupedItem, index: number) => {
       const renderer = groupHeaderRendererRef.current;
@@ -489,7 +507,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       entry.root.render(<>{renderer(group, index)}</>);
       return entry.container;
     };
-  }, [!!props.groupHeaderRenderer]);
+  }, [!!groupHeaderRenderer]);
 
 
 
@@ -528,11 +546,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   }, [groupedItems, scheduleRootUnmount]);
 
   useEffect(() => {
-    if (props.groupHeaderRenderer) return;
+    if (groupHeaderRenderer) return;
 
     groupHeaderRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
     groupHeaderRendererCache.current.clear();
-  }, [props.groupHeaderRenderer, scheduleRootUnmount]);
+  }, [groupHeaderRenderer, scheduleRootUnmount]);
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
@@ -679,7 +697,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     } else {
       element.setItems(items);
     }
-  }, [items, groupedItems, props.groupHeaderRenderer, isElementReady]);
+  }, [items, groupedItems, groupHeaderRenderer, isElementReady]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
@@ -921,6 +939,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   return React.createElement('enhanced-select', {
     ref: elementRef,
+    ...hostProps,
     className,
     dir: direction,
     style,

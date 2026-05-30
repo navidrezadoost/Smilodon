@@ -6,6 +6,10 @@ This package gives Solid applications a native-feeling wrapper around the shared
 
 ## 📖 Documentation
 
+**Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
+
+**Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
+
 **For comprehensive documentation covering installation, setup, controlled and uncontrolled usage, renderers, performance, SSR posture, diagnostics, and troubleshooting:**
 
 👉 **[Complete SolidJS Guide](./COMPLETE-GUIDE.md)** 👈

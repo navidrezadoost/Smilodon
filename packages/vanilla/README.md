@@ -12,6 +12,14 @@ Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon
 - 📦 **Tree-Shakeable** - Import only what you need
 - 🎯 **Web Standards** - Built on native Web Components
 
+## 📖 Documentation
+
+**Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
+
+**Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
+
+👉 **[Complete Vanilla JS Guide](./COMPLETE-GUIDE.md)** 👈
+
 ## Installation
 
 ```bash

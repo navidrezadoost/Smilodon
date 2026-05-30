@@ -211,7 +211,7 @@ export class AppComponent {}
       <h2>CDN Usage</h2>
       <p>For quick prototyping, you can use the CDN:</p>
       <pre><code class="language-html">&lt;script type="module"&gt;
-  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1-debug.0/+esm';
+  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1/+esm';
 &lt;/script&gt;</code></pre>
     </div>
     
@@ -438,67 +438,57 @@ export default defineConfig({
   ]
 })</code></pre>
       
-      <h4>For Nuxt 3:</h4>
+      <h4>For Nuxt 3 / Nuxt 4 (recommended full setup):</h4>
       <pre><code class="language-ts">// nuxt.config.ts
 export default defineNuxtConfig({
   vue: {
     compilerOptions: {
-      isCustomElement: (tag) => 
-        tag === 'enhanced-select' || tag === 'select-option'
-    }
-  }
+      isCustomElement: (tag) =>
+        tag === 'enhanced-select' || tag === 'select-option',
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      // Required — Vite pre-bundling breaks custom element side-effect registration
+      exclude: ['@smilodon/core', '@smilodon/vue'],
+    },
+  },
 })</code></pre>
-      
-      <h3>Step 2: Ensure Early Registration (Nuxt)</h3>
-      <p>Create a client-side plugin to guarantee custom elements are registered before component mounting:</p>
+
+      <h4>Client plugin (required):</h4>
       <pre><code class="language-ts">// plugins/smilodon.client.ts
 import '@smilodon/core'
 
 export default defineNuxtPlugin(() => {
-  // Side-effect import above registers the custom elements
-  console.log('✅ Smilodon custom elements registered')
+  // Registers enhanced-select and select-option before any page mounts
 })</code></pre>
-      
-      <div class="doc-note">
-        <h4>💡 Important Note</h4>
-        <p>In Nuxt, it is recommended to place this plugin in the <code>plugins/</code> directory. If you're encountering SSR issues, you can explicitly configure the plugin with <code>ssr: false</code> or use the extended configuration:</p>
-        <pre><code class="language-ts">// plugins/smilodon.client.ts
-export default defineNuxtPlugin({
-  name: 'smilodon',
-  parallel: true,
-  setup() {
-    import('@smilodon/core')
-  },
-  env: {
-    islands: false
-  }
-})</code></pre>
-      </div>
-      
-      <h3>Step 3: Use ClientOnly for SSR Apps</h3>
-      <p>Wrap Smilodon components in <code>&lt;ClientOnly&gt;</code> to prevent server-side rendering issues:</p>
-      <pre><code class="language-vue">&lt;template&gt;
+
+      <h4>App wrapper component (SSR-safe pattern):</h4>
+      <pre><code class="language-vue">&lt;!-- components/AppSelect.vue --&gt;
+&lt;template&gt;
   &lt;ClientOnly&gt;
     &lt;Select
-      v-model="selectedValue"
+      v-bind="$attrs"
       :items="items"
-      searchable
-      clearable
-      placeholder="Choose an option"
+      :model-value="modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
     /&gt;
   &lt;/ClientOnly&gt;
 &lt;/template&gt;
 
 &lt;script setup lang="ts"&gt;
-import { ref } from 'vue'
 import { Select } from '@smilodon/vue'
 
-const selectedValue = ref('')
-const items = ref([
-  { value: '1', label: 'Option 1' },
-  { value: '2', label: 'Option 2' }
-])
+defineProps&lt;{ items: Array&lt;{ value: string; label: string }&gt;; modelValue?: string }&gt;()
+const emit = defineEmits&lt;{ 'update:modelValue': [value: string] }&gt;()
 &lt;/script&gt;</code></pre>
+
+      <div class="doc-note">
+        <h4>💡 Nuxt 4 migration from pre-1.9.1</h4>
+        <p>Upgrade to <code>@smilodon/core@1.9.1</code> and <code>@smilodon/vue@1.9.1</code>. Remove any <code>postinstall</code> patches to <code>node_modules/@smilodon/core/dist/*</code> — constructor lifecycle fixes are now upstream.</p>
+        <p>Use <strong>string</strong> item <code>value</code>s for predictable <code>v-model</code> (or rely on 1.9.1 loose equality for <code>"1"</code> / <code>1</code>).</p>
+        <p>Set <code>--select-dropdown-border</code> to a <strong>color only</strong> (e.g. <code>var(--color-border)</code>), not a border shorthand like <code>1px solid #ccc</code>.</p>
+      </div>
     </div>
     
     <div class="doc-section">
