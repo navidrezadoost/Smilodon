@@ -17,7 +17,9 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version `1.9.1-debug.0` is the current debug release for `@smilodon/core`.
+Version **1.9.1** is the current stable release for `@smilodon/core` and all maintained adapters.
+
+**Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
 ---
 
@@ -248,7 +250,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ### Intentionally not provided
 
-- Angular adapter support is not part of the maintained `1.9.1-debug.0` package line.
+- Angular adapter support is not part of the maintained `1.9.1` package line.
 - Legacy browser shims are not a first-class target.
 - Server-rendered HTML replacement for the interactive control is not the primary design goal; adapters focus on safe client hydration around the custom element.
 

@@ -28,7 +28,7 @@ export interface OptionConfig {
   /** Custom renderer */
   render?: (item: unknown, index: number) => HTMLElement | string;
   /** Custom style */
-  style?: Partial<CSSStyleDeclaration>;
+  style?: Record<string, string | number | undefined>;
   /** Custom class names */
   className?: string;
   /** Class map for state classes */
@@ -70,12 +70,21 @@ export class SelectOption extends HTMLElement {
   }
 
   connectedCallback(): void {
-    // Defer initial render to connectedCallback to avoid host mutations in constructor
-    // This is required for proper framework integration (Vue/React/Angular)
-    if (!this._hasRendered) {
-      this._render();
-      this._hasRendered = true;
-    }
+    this._ensureRendered();
+  }
+
+  private _ensureRendered(): void {
+    if (this._hasRendered) return;
+    this._render();
+    this._hasRendered = true;
+  }
+
+  /**
+   * Ensure option content is rendered. Called by EnhancedSelect after append
+   * when connectedCallback timing is unreliable (Vue/Nuxt, jsdom, Teleport).
+   */
+  ensureRendered(): void {
+    this._ensureRendered();
   }
 
   private _initializeStyles(): void {
@@ -594,7 +603,9 @@ export class SelectOption extends HTMLElement {
    */
   setSelected(selected: boolean): void {
     this._config.selected = selected;
-    this._render();
+    if (this._hasRendered) {
+      this._render();
+    }
   }
 
   /**
@@ -602,7 +613,9 @@ export class SelectOption extends HTMLElement {
    */
   setActive(active: boolean): void {
     this._config.active = active && (!this._config.disabled || this._getDisabledBehavior().focusable);
-    this._render();
+    if (this._hasRendered) {
+      this._render();
+    }
   }
 
   /**
@@ -610,7 +623,9 @@ export class SelectOption extends HTMLElement {
    */
   setDisabled(disabled: boolean): void {
     this._config.disabled = disabled;
-    this._render();
+    if (this._hasRendered) {
+      this._render();
+    }
   }
 }
 

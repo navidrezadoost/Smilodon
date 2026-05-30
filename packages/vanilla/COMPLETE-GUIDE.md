@@ -789,7 +789,7 @@ enhanced-select {
   --select-dropdown-max-height: 300px;
   --select-dropdown-border-radius: 4px;
   --select-dropdown-bg: white;
-  --select-dropdown-border: 1px solid #ccc;
+  --select-dropdown-border: #ccc;
   --select-dropdown-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 
   /* Options */

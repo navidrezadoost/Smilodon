@@ -213,7 +213,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-dropdown-bottom` | `calc(100% + 6px)` | layout | Dropdown offset above the shell when top placement is active. |
 | `--select-dropdown-max-height` | `320px` | size | Dropdown max height. |
 | `--select-dropdown-bg` | `var(--select-surface)` | color | Dropdown background. |
-| `--select-dropdown-border` | `var(--select-border)` | color | Dropdown border color. |
+| `--select-dropdown-border` | `var(--select-border)` | color | **Border color only** — the library applies `border: 1px solid var(--select-dropdown-border)`. Do not pass shorthand values like `1px solid #ccc`. |
 | `--select-dropdown-border-radius` | `var(--select-radius-lg)` | radius | Dropdown radius. |
 | `--select-dropdown-shadow` | `var(--select-shadow-lg)` | shadow | Dropdown shadow. |
 | `--select-dropdown-padding` | `6px` | spacing | Outer spacing between the dropdown edge and option rows when `--select-options-padding` is not set. |

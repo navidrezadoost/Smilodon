@@ -1,7 +1,7 @@
 # Constructor Safety Fixes - Bug Report Response
 
 ## Date: May 22, 2026
-## Version: 1.9.1-debug.0+
+## Version: 1.9.1+
 ## Status: ✅ FIXED
 
 ---
@@ -266,7 +266,7 @@ npm run test:unit
 - [x] All unit tests pass
 - [x] Documentation updated (README.md)
 - [x] Comprehensive guide created (FRAMEWORK-INTEGRATION.md)
-- [x] Version requirements documented (1.9.1-debug.0+)
+- [x] Version requirements documented (1.9.1+)
 - [x] Common issues documented with solutions
 - [x] Testing patterns documented
 - [x] Migration guide provided
@@ -281,7 +281,7 @@ npm run test:unit
 **For existing users experiencing constructor errors**:
 
 1. **Update package**: `npm update @smilodon/core @smilodon/vue`
-2. **Verify version**: Should be `1.9.1-debug.0` or later
+2. **Verify version**: Should be `1.9.1` or later
 3. **Follow framework guide**: See `docs/FRAMEWORK-INTEGRATION.md`
 
 **For new Vue/Nuxt users**:
@@ -401,6 +401,6 @@ npm run test:unit
 ---
 
 **Implementation Date**: May 22, 2026  
-**Version**: 1.9.1-debug.0+  
+**Version**: 1.9.1+  
 **Status**: ✅ Complete  
 **Verified By**: Automated tests + manual review

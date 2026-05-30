@@ -116,45 +116,51 @@ export interface MultiSelectDisplayConfig {
   dragScroll?: boolean;
 }
 
+/**
+ * Plain CSS style object for component part configuration.
+ * Accepts standard CSS properties and custom properties (e.g. `--select-*`).
+ */
+export type StyleObject = Record<string, string | number | undefined>;
+
 export interface StyleConfig {
   /** Container styles */
-  container?: Partial<CSSStyleDeclaration>;
+  container?: StyleObject;
   /** Dropdown styles */
-  dropdown?: Partial<CSSStyleDeclaration>;
+  dropdown?: StyleObject;
   /** Option item styles */
-  option?: Partial<CSSStyleDeclaration>;
+  option?: StyleObject;
   /** Selected option styles */
-  selectedOption?: Partial<CSSStyleDeclaration>;
+  selectedOption?: StyleObject;
   /** Disabled option styles */
-  disabledOption?: Partial<CSSStyleDeclaration>;
+  disabledOption?: StyleObject;
   /** Hover option styles */
-  hoverOption?: Partial<CSSStyleDeclaration>;
+  hoverOption?: StyleObject;
   /** Active option styles */
-  activeOption?: Partial<CSSStyleDeclaration>;
+  activeOption?: StyleObject;
   /** Selected indicator bar styles for lightweight/custom-rendered options */
-  selectedIndicator?: Partial<CSSStyleDeclaration>;
+  selectedIndicator?: StyleObject;
   /** Input field styles */
-  input?: Partial<CSSStyleDeclaration>;
+  input?: StyleObject;
   /** Multi-select badge styles */
-  badge?: Partial<CSSStyleDeclaration>;
+  badge?: StyleObject;
   /** Multi-select badge hover styles */
-  badgeHover?: Partial<CSSStyleDeclaration>;
+  badgeHover?: StyleObject;
   /** Multi-select badge active styles */
-  badgeActive?: Partial<CSSStyleDeclaration>;
+  badgeActive?: StyleObject;
   /** Multi-select badge label styles */
-  badgeLabel?: Partial<CSSStyleDeclaration>;
+  badgeLabel?: StyleObject;
   /** Multi-select badge remove button styles */
-  badgeRemove?: Partial<CSSStyleDeclaration>;
+  badgeRemove?: StyleObject;
   /** Multi-select badge remove icon styles */
-  badgeRemoveIcon?: Partial<CSSStyleDeclaration>;
+  badgeRemoveIcon?: StyleObject;
   /** Multi-select badge remove button hover styles */
-  badgeRemoveHover?: Partial<CSSStyleDeclaration>;
+  badgeRemoveHover?: StyleObject;
   /** Multi-select badge remove button active styles */
-  badgeRemoveActive?: Partial<CSSStyleDeclaration>;
+  badgeRemoveActive?: StyleObject;
   /** Group header styles */
-  groupHeader?: Partial<CSSStyleDeclaration>;
+  groupHeader?: StyleObject;
   /** Loading indicator styles */
-  loader?: Partial<CSSStyleDeclaration>;
+  loader?: StyleObject;
   /** Custom CSS class names */
   classNames?: {
     container?: string;

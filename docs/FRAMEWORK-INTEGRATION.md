@@ -44,7 +44,7 @@ export default defineConfig({
 })
 ```
 
-**For Nuxt 3:**
+**For Nuxt 3 / Nuxt 4:**
 
 ```ts
 // nuxt.config.ts
@@ -54,9 +54,17 @@ export default defineNuxtConfig({
       isCustomElement: (tag) => 
         tag === 'enhanced-select' || tag === 'select-option'
     }
+  },
+  vite: {
+    optimizeDeps: {
+      // Required — pre-bundling breaks custom element side-effect registration
+      exclude: ['@smilodon/core', '@smilodon/vue']
+    }
   }
 })
 ```
+
+> **Nuxt 4 note:** Keep `@smilodon/core` registration in a **client-only** plugin (`plugins/smilodon.client.ts`). Wrap selects in `<ClientOnly>` or use a mounted guard to avoid SSR/hydration flash. **Requires `@smilodon/core@1.9.1+`** — local `postinstall` patches to `dist/` are no longer necessary.
 
 #### 2. Ensure Early Registration (Nuxt)
 
@@ -311,7 +319,7 @@ export default function App() {
 Custom element constructors should NOT mutate the host element (set attributes, classes, or dataset) during construction. This violates the Web Components specification.
 
 **Solution:**
-Upgrade to `@smilodon/core@1.9.1-debug.0` or later. Constructor safety has been fixed:
+Upgrade to `@smilodon/core@1.9.1` or later. Constructor safety has been fixed:
 - Host mutations moved from constructor to `connectedCallback()`
 - Applies to both `enhanced-select` and `select-option` elements
 
@@ -410,7 +418,7 @@ npm run build
 Framework re-creates custom element DOM during teleportation, which can trigger constructor issues if host mutations happen too early.
 
 **Solution:**
-Upgrade to `@smilodon/core@1.9.1-debug.0+` which defers all host mutations to `connectedCallback()`.
+Upgrade to `@smilodon/core@1.9.1+` which defers all host mutations to `connectedCallback()`.
 
 ---
 
@@ -582,7 +590,7 @@ npm update @smilodon/core @smilodon/vue
 # Check versions
 npm list @smilodon/core @smilodon/vue
 
-# Expected: 1.9.1-debug.0 or later
+# Expected: 1.9.1 or later
 ```
 
 ---

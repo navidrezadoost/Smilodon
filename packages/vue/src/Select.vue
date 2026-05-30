@@ -22,6 +22,7 @@
 <template>
   <enhanced-select
     ref="selectRef"
+    v-bind="$attrs"
     :class="className"
     :dir="direction"
     :style="style"
@@ -29,7 +30,12 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({
+  inheritAttrs: false,
+});
+
 import { ref, watch, onMounted, onBeforeUnmount, computed, render, isVNode, h } from 'vue';
+import { arraysEqualByValue } from '@smilodon/core';
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -526,9 +532,7 @@ watch(
         const newValues = Array.isArray(newValue) ? newValue : [newValue];
         
         // Only update if values have actually changed
-        const hasChanged = 
-          currentSelected.length !== newValues.length ||
-          !currentSelected.every((v: any, i: number) => v === newValues[i]);
+        const hasChanged = !arraysEqualByValue(currentSelected, newValues);
         
         if (hasChanged) {
           el.setSelectedValues(newValues);

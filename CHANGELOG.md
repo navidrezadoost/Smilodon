@@ -17,6 +17,31 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-05-30
+
+Official stable release — lifecycle & framework compatibility improvements for Vue 3, Nuxt 4, React, and SSR apps. Supersedes the `1.9.1-debug.*` pre-releases.
+
+### Fixed
+- **CRITICAL: Custom element constructor safety:** `EnhancedSelect` and `SelectOption` defer host mutations to `connectedCallback()` per the Web Components spec. Fixes empty dropdowns, dead options, and `NotSupportedError` in Vue/Nuxt SPA mounting, Teleport, and Modal scenarios.
+- **Lifecycle hardening:** `EnhancedSelect` re-renders options after connect; `SelectOption.ensureRendered()` runs after append when `connectedCallback` timing is unreliable; `_syncDirectionConfig()` is guarded when disconnected.
+- **Value type coercion:** `valuesEqual()` / `arrayIncludesValue()` treat `"1"` and `1` as equal in `setSelectedValues()` and Vue `v-model` sync — fixes stuck selections when item values and model types differ.
+- **React DOM forwarding:** `@smilodon/react` `Select` forwards standard host attributes (`id`, `aria-*`, `title`, `data-*`) to `<enhanced-select>`.
+- **Vue DOM forwarding:** `@smilodon/vue` `Select` forwards fallthrough attributes via `v-bind="$attrs"`.
+- **Style typing:** `StyleConfig` slots use `StyleObject` (`Record<string, string | number | undefined>`) instead of `Partial<CSSStyleDeclaration>`; React adapter exports `React.CSSProperties`-friendly `StyleConfig`.
+
+### Added
+- **`packages/core/tests/lifecycle.spec.ts`:** Regression tests for connect lifecycle, direction sync, and loose value equality.
+- **`valuesEqual`, `arrayIncludesValue`, `arraysEqualByValue`:** Exported from `@smilodon/core`.
+
+### Documentation
+- **Nuxt 4 full example** in `docs/FRAMEWORK-INTEGRATION.md` and docs-site (custom elements + `optimizeDeps.exclude`).
+- **`--select-dropdown-border` contract:** Documented as **color-only** in `docs/STYLING-TOKENS.md`; corrected examples in adapter COMPLETE-GUIDEs.
+- **Package READMEs:** Live docs site and framework integration guide links at core and adapter levels.
+- Consolidated framework integration guidance from `1.9.1-debug.1` pre-release.
+
+### Changed
+- All maintained packages aligned on version **1.9.1** with peer dependency `@smilodon/core@^1.9.1`.
+
 ## [1.9.1-debug.1] - 2026-05-22
 
 ### Fixed

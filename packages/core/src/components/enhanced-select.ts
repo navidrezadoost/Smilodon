@@ -23,6 +23,7 @@ import type {
 } from '../types';
 import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
 import { SelectOption } from './select-option';
+import { arrayIncludesValue } from '../utils/value-equality.js';
 
 interface PageCache {
   [page: number]: unknown[];
@@ -214,6 +215,13 @@ export class EnhancedSelect extends HTMLElement {
     // Load initial data if server-side is enabled
     if (this._config.serverSide.enabled && this._config.serverSide.initialSelectedValues) {
       this._loadInitialSelectedItems();
+    }
+
+    // Re-render options after connect so SelectOption instances created while
+    // disconnected (common in Vue/Nuxt client mounting) receive connectedCallback.
+    if (this._state.loadedItems.length > 0 || this._state.groupedItems.length > 0) {
+      this._renderOptions();
+      this._updateInputDisplay();
     }
     
     // Emit open event if configured to start open
@@ -676,7 +684,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _applyStyleVariableMap(
-    styleConfig: Partial<CSSStyleDeclaration> | undefined,
+    styleConfig: Record<string, unknown> | undefined,
     variableMap: Record<string, string>,
   ): void {
     Object.entries(variableMap).forEach(([styleKey, variableName]) => {
@@ -918,6 +926,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _syncDirectionConfig(): void {
+    if (!this.isConnected) return;
     this.setAttribute('dir', this._config.direction ?? 'ltr');
   }
 
@@ -4202,7 +4211,7 @@ export class EnhancedSelect extends HTMLElement {
       this._state.selectedItems.clear();
       
       this._state.loadedItems.forEach((item, index) => {
-        if (values.includes(getValue(item)) && !this._isOptionSelectionBlocked(item)) {
+        if (arrayIncludesValue(values, getValue(item)) && !this._isOptionSelectionBlocked(item)) {
           this._state.selectedIndices.add(index);
           this._state.selectedItems.set(index, item);
         }
@@ -4345,18 +4354,25 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
 
-    this._syncDirectionConfig();
-    this._syncInputContainerMode();
-    this._syncMultiSelectDisplayConfig();
-    this._syncDropdownPlacement();
-    
-    // Re-initialize observers in case infinite scroll was enabled/disabled
-    this._initializeObservers();
+    if (this.isConnected) {
+      this._syncDirectionConfig();
+      this._syncInputContainerMode();
+      this._syncMultiSelectDisplayConfig();
+      this._syncDropdownPlacement();
+      
+      // Re-initialize observers in case infinite scroll was enabled/disabled
+      this._initializeObservers();
 
-    this._syncClearControlState();
-    this._updateInputDisplay();
-    
-    this._renderOptions();
+      this._syncClearControlState();
+      this._updateInputDisplay();
+      
+      this._renderOptions();
+    } else {
+      this._syncInputContainerMode();
+      this._syncMultiSelectDisplayConfig();
+      this._syncClearControlState();
+      this._updateInputDisplay();
+    }
   }
 
   private _mergeConfig<T extends Record<string, any>>(target: T, source: Partial<T>): T {
@@ -4761,6 +4777,10 @@ export class EnhancedSelect extends HTMLElement {
     });
 
     targetContainer.appendChild(option);
+
+    if (option instanceof SelectOption) {
+      option.ensureRendered();
+    }
   }
 
   private _normalizeCustomOptionElement(element: HTMLElement | null | undefined, meta: {

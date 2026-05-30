@@ -40,6 +40,7 @@ export { PerformanceTelemetry, getTelemetry, measureAsync, measureSync } from '.
 export { Virtualizer } from './utils/virtualizer.js';
 export { OptionRenderer } from './utils/option-renderer.js';
 export { CustomOptionPool } from './utils/custom-option-pool.js';
+export { valuesEqual, arrayIncludesValue, arraysEqualByValue } from './utils/value-equality.js';
 
 // Security & CSP utilities
 export { 
