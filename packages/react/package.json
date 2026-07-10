@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "React adapter for @smilodon/core",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,8 +23,23 @@
     "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.9.1",
+    "@smilodon/core": "^1.9.2",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
+  },
+  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
+  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

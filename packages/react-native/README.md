@@ -119,6 +119,27 @@ On web, the adapter:
 - `disabledOptionBehavior`
 - `showSelectedIndicator`
 
+### Clear control visibility
+
+`clearable` does not reserve an empty action area. The control appears only when an enabled target—a selected value or search query—can be cleared, and the input/arrow layout returns to normal afterward. The native WebView and React Native Web paths share this behavior, including multi-select and RTL layouts.
+
+```tsx
+<Select
+	items={items}
+	value={value}
+	onChange={setValue}
+	searchable
+	clearable
+	clearSelectionOnClear
+	clearSearchOnClear
+	onClear={({ clearedSelection, clearedSearch }) => {
+		console.log({ clearedSelection, clearedSearch })
+	}}
+/>
+```
+
+For an always-present disabled-when-empty action, pass `config={{ clearControl: { hideWhenEmpty: false } }}`. On web, style it with `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` tokens rather than permanent padding.
+
 Example:
 
 ```tsx

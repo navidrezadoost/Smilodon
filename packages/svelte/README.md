@@ -143,6 +143,21 @@ The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`,
 
 Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
 
+An empty clearable field reserves no clear-button space by default. The control and its coordinated input/arrow spacing appear when a selected value or enabled search query can be cleared, then disappear once both targets are empty. The same rule applies to single, multi-select, LTR, and RTL layouts.
+
+Use full config passthrough when a permanently visible disabled-when-empty action is required:
+
+```svelte
+<Select
+  {items}
+  bind:value
+  clearable
+  config={{ clearControl: { hideWhenEmpty: false } }}
+/>
+```
+
+The `clear` event reports `clearedSelection` and `clearedSearch`. Style the control through its parts and `--select-clear-*` tokens rather than permanent input padding.
+
 ## Direction and option-state controls
 
 The Svelte adapter exposes the same runtime controls as the shared core:

@@ -170,9 +170,23 @@ select.addEventListener('clear', (e) => {
 });
 ```
 
+`hideWhenEmpty` defaults to `true`. In that mode, the button and the action-area layout are hidden when neither an enabled selection nor an enabled search action has content to clear. Selecting a value or typing a searchable query reveals the control; clearing both restores the normal input padding and arrow/separator position. This behavior is the same for single select, multi-select, LTR, and RTL.
+
+Set `hideWhenEmpty: false` when the control must remain visible while empty. It will be disabled until an enabled clear target exists. The target flags are independent:
+
+| Configuration | Button becomes actionable when |
+|---|---|
+| `clearSelection: true`, `clearSearch: false` | At least one value is selected |
+| `clearSelection: false`, `clearSearch: true` | Search text is present |
+| Both `true` | Either selection or search text is present |
+
+The `clear` event reports what actually changed. Programmatic `clear()` and `clearSearch()` remain available when no visible control is desired.
+
 Style hooks:
 - Parts: `::part(clear-button)`, `::part(clear-icon)`
 - Tokens: `--select-clear-button-*`, `--select-clear-icon-*`, `--select-input-padding-with-clear`
+
+The `--select-input-padding-with-clear` token applies only while the clear control is visible; keep ordinary empty-state spacing in the normal input padding tokens.
 
 ### Properties
 

@@ -17,6 +17,30 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-07-10
+
+Patch release for clear-control layout consistency across the shared core and maintained adapters.
+
+### Fixed
+
+- **Clearable empty-state spacing ([#24](https://github.com/navidrezadoost/Smilodon/issues/24)):** A clearable select no longer keeps the clear action-area padding, separator position, or shifted arrow position when the clear button is hidden. With the default `clearControl.hideWhenEmpty: true`, an empty selection and empty search query use the normal input layout.
+- **State transitions:** Selecting a value or entering clearable search text now activates the button and its layout as one state; clearing all enabled targets removes both the button and its reserved space. The behavior applies to single select, multi-select, horizontal chip layouts, LTR, and RTL.
+- **Adapter config safety:** Core config merging now ignores optional properties forwarded as `undefined`, preserving nested defaults such as the style configuration instead of causing adapter render failures.
+
+### Documentation
+
+- Expanded the root, core, React, Vue, Svelte, Solid, Vanilla, and React Native READMEs with clear-control visibility rules, event details, always-visible configuration, styling guidance, and examples.
+- Added a dedicated docs-site Clearable guide covering core and adapter APIs, selection/search target combinations, accessibility, theming, RTL/multi-select behavior, and troubleshooting.
+
+### Tests
+
+- Added regression assertions for the empty, selected, and post-clear layout states so hidden clear controls cannot reserve action-area space again.
+- Added coverage for adapter-style config updates containing optional `undefined` values.
+
+### Changed
+
+- Aligned `@smilodon/core` and all maintained adapters on version **1.9.2**. Web adapters require `@smilodon/core@^1.9.2`; React Native rebuilds its embedded core runtime with the fix.
+
 ## [1.9.1] - 2026-05-30
 
 Official stable release — lifecycle & framework compatibility improvements for Vue 3, Nuxt 4, React, and SSR apps. Supersedes the `1.9.1-debug.*` pre-releases.
@@ -2309,4 +2333,3 @@ Copyright © 2025 Navid Rezadoost
 ---
 
 **Note**: This changelog covers the development period from August 2025 to December 7, 2025. All dates, phases, and features are documented based on actual development milestones and compliance achievements.
-

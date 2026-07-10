@@ -211,7 +211,7 @@ export class AppComponent {}
       <h2>CDN Usage</h2>
       <p>For quick prototyping, you can use the CDN:</p>
       <pre><code class="language-html">&lt;script type="module"&gt;
-  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1/+esm';
+  import { NativeSelect } from 'https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.2/+esm';
 &lt;/script&gt;</code></pre>
     </div>
     
@@ -2039,8 +2039,8 @@ requestAnimationFrame(() => {
           <tr>
             <td><code>clearable</code></td>
             <td><code>boolean</code></td>
-            <td><code>true</code></td>
-            <td>Show clear button to reset selection</td>
+            <td><code>false</code></td>
+            <td>Enable the clear action; by default it is visible only while an enabled target can be cleared</td>
           </tr>
         </tbody>
       </table>
@@ -2859,7 +2859,7 @@ select.setItems(items);</code></pre>
       <ul>
         <li><strong>Scoped mirrored styles:</strong> mirrored document styles now stay inside the options subtree instead of the full shadow root.</li>
         <li><strong>Dark variant bridging:</strong> <code>.dark</code>, <code>.dark-mode</code>, and theme attributes are mirrored into the options subtree so utility dark variants update immediately.</li>
-        <li><strong>Escaped utility selector support:</strong> Tailwind-style selectors such as <code>dark\:text-white</code> keep working when styles are mirrored.</li>
+        <li><strong>Escaped utility selector support:</strong> Tailwind-style selectors such as <code>dark&#92;:text-white</code> keep working when styles are mirrored.</li>
         <li><strong>Accessible custom renderers:</strong> custom option roots keep listbox semantics while nested focus targets are neutralized by default.</li>
         <li><strong>Stable state styling:</strong> hover, active, selected, and disabled classes remain available on the custom renderer root so framework utilities can style the actual rendered surface.</li>
       </ul>
@@ -7680,6 +7680,245 @@ function ComprehensiveSearchExample() {
 }</code></pre>
     </div>
   `,
+
+  clearable: `
+    <h1>Clearable Selection and Search</h1>
+
+    <div class="doc-section">
+      <h2>What clearable means</h2>
+      <p>The clear control resets selected values, search text, or both. It is opt-in: use an adapter's <code>clearable</code> prop or enable <code>clearControl</code> in core configuration.</p>
+      <div class="doc-note">
+        <p><strong>Layout behavior in 1.9.2:</strong> with the default <code>hideWhenEmpty: true</code>, an empty clearable field does not reserve button space. The button, input padding, separator, and arrow offset switch together only while the control is visible.</p>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>Visibility rules</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th>Relevant configuration</th>
+            <th>Default result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No selection and no search text</td>
+            <td><code>hideWhenEmpty: true</code></td>
+            <td>Button hidden; no action-area space reserved</td>
+          </tr>
+          <tr>
+            <td>One or more selected values</td>
+            <td><code>clearSelection: true</code></td>
+            <td>Button visible and enabled</td>
+          </tr>
+          <tr>
+            <td>Search text only</td>
+            <td><code>clearSearch: true</code></td>
+            <td>Button visible and enabled</td>
+          </tr>
+          <tr>
+            <td>Selection exists but selection clearing is disabled</td>
+            <td><code>clearSelection: false</code></td>
+            <td>Selection alone does not reveal the button</td>
+          </tr>
+          <tr>
+            <td>Nothing to clear</td>
+            <td><code>hideWhenEmpty: false</code></td>
+            <td>Button remains visible but disabled</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The same rules apply in single select, multi-select, horizontal chip mode, LTR, and RTL. After clearing, the normal input and arrow layout is restored automatically.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Core Web Component</h2>
+      <pre><code class="language-javascript">const select = document.querySelector('enhanced-select');
+
+select.updateConfig({
+  searchable: true,
+  clearControl: {
+    enabled: true,
+    clearSelection: true,
+    clearSearch: true,
+    hideWhenEmpty: true,
+    ariaLabel: 'Clear selection and search',
+    icon: '×'
+  }
+});
+
+select.addEventListener('clear', (event) => {
+  console.log(event.detail);
+  // { clearedSelection: boolean, clearedSearch: boolean }
+});</code></pre>
+      <p>Use <code>select.clear()</code> to clear selection programmatically and <code>select.clearSearch()</code> to clear only the query.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Framework adapters</h2>
+      <p>All maintained adapters expose the same convenience options. Attribute casing follows each framework's normal conventions.</p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Behavior</th>
+            <th>React / Solid / React Native</th>
+            <th>Vue</th>
+            <th>Svelte / Vanilla option</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Enable control</td>
+            <td><code>clearable</code></td>
+            <td><code>clearable</code></td>
+            <td><code>clearable</code></td>
+          </tr>
+          <tr>
+            <td>Clear selection</td>
+            <td><code>clearSelectionOnClear</code></td>
+            <td><code>clear-selection-on-clear</code></td>
+            <td><code>clearSelectionOnClear</code></td>
+          </tr>
+          <tr>
+            <td>Clear search</td>
+            <td><code>clearSearchOnClear</code></td>
+            <td><code>clear-search-on-clear</code></td>
+            <td><code>clearSearchOnClear</code></td>
+          </tr>
+          <tr>
+            <td>Accessible name</td>
+            <td><code>clearAriaLabel</code></td>
+            <td><code>clear-aria-label</code></td>
+            <td><code>clearAriaLabel</code></td>
+          </tr>
+          <tr>
+            <td>Custom icon</td>
+            <td><code>clearIcon</code></td>
+            <td><code>clear-icon</code></td>
+            <td><code>clearIcon</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>React example</h3>
+      <pre><code class="language-tsx">&lt;Select
+  items={items}
+  value={value}
+  onChange={setValue}
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  clearAriaLabel="Clear selection and search"
+  onClear={({ clearedSelection, clearedSearch }) =&gt; {
+    console.log({ clearedSelection, clearedSearch });
+  }}
+/&gt;</code></pre>
+
+      <h3>Vue example</h3>
+      <pre><code class="language-html">&lt;Select
+  v-model="value"
+  :items="items"
+  searchable
+  clearable
+  :clear-selection-on-clear="true"
+  :clear-search-on-clear="true"
+  clear-aria-label="Clear selection and search"
+  @clear="handleClear"
+/&gt;</code></pre>
+
+      <h3>Svelte example</h3>
+      <pre><code class="language-svelte">&lt;Select
+  {items}
+  bind:value
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  on:clear={(event) =&gt; console.log(event.detail)}
+/&gt;</code></pre>
+    </div>
+
+    <div class="doc-section">
+      <h2>Always-visible mode</h2>
+      <p>The convenience props use the recommended hide-when-empty behavior. To keep the button visible while empty, use full config passthrough:</p>
+      <pre><code class="language-tsx">&lt;Select
+  items={items}
+  clearable
+  config={{
+    clearControl: {
+      hideWhenEmpty: false
+    }
+  }}
+/&gt;</code></pre>
+      <p>The empty control is disabled, so it cannot emit a misleading clear action. Use this mode only when a fixed action-area width is part of the product design.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Styling</h2>
+      <pre><code class="language-css">enhanced-select::part(clear-button) {
+  color: #64748b;
+  border-radius: 999px;
+}
+
+enhanced-select::part(clear-button):hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+enhanced-select::part(clear-icon) {
+  width: 14px;
+  height: 14px;
+}</code></pre>
+      <p>Available tokens include <code>--select-clear-button-size</code>, <code>--select-clear-button-right</code>, <code>--select-clear-button-bg</code>, <code>--select-clear-button-color</code>, <code>--select-clear-icon-size</code>, and <code>--select-input-padding-with-clear</code>.</p>
+      <div class="doc-note">
+        <p>Do not add permanent host or input padding to make room for the clear control. The core applies clear-layout spacing only when the action is visible; permanent padding recreates empty whitespace.</p>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>Accessibility and event handling</h2>
+      <ul>
+        <li>Provide a task-specific <code>clearAriaLabel</code>, especially if only selection or only search is cleared.</li>
+        <li>The hidden control is removed from layout and marked <code>aria-hidden</code>.</li>
+        <li>The visible control is disabled when no configured target can be cleared.</li>
+        <li>Focus returns to the select input after a user activates clear.</li>
+        <li>The <code>clear</code> detail reports only targets that actually contained content.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Troubleshooting</h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Symptom</th>
+            <th>Check</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Button does not appear after selection</td>
+            <td>Confirm <code>clearable</code> and selection clearing are enabled</td>
+          </tr>
+          <tr>
+            <td>Button appears for search text</td>
+            <td>This is expected when <code>clearSearchOnClear</code> is enabled</td>
+          </tr>
+          <tr>
+            <td>Empty gap remains on 1.9.2+</td>
+            <td>Remove custom permanent padding and verify core and adapter resolve to the same release line</td>
+          </tr>
+          <tr>
+            <td>Button remains visible while empty</td>
+            <td>Check whether full config sets <code>hideWhenEmpty: false</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `,
   
   virtualization: `
     <h1>Virtualization</h1>
@@ -9121,8 +9360,8 @@ function ComprehensiveGroupedExample() {
           </tr>
           <tr>
             <td><code>clear-button</code></td>
-            <td>Clear selection button</td>
-            <td>When clearable</td>
+            <td>Clear selection/search button</td>
+            <td>When an enabled target can be cleared, or when forced visible</td>
           </tr>
           <tr>
             <td><code>arrow</code></td>

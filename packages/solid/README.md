@@ -67,6 +67,25 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
+## Clear control visibility
+
+With `clearable`, an empty field reserves no space for the clear action. The button and its input/arrow spacing appear only when a selected value or enabled search query can be cleared, then disappear after both targets are empty. This behavior covers single and multi-select as well as LTR and RTL layouts.
+
+```tsx
+<Select
+  items={items}
+  value={value()}
+  onChange={setValue}
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  onClear={(detail) => console.log(detail)}
+/>
+```
+
+To keep a disabled clear action visible while empty, pass `config={{ clearControl: { hideWhenEmpty: false } }}`. Style through `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*`; avoid permanent input padding.
+
 ## Controlled and uncontrolled modes
 
 ### Controlled

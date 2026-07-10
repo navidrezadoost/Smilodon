@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/react-native",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "React Native adapter for Smilodon",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
     "build": "node scripts/embed-core.mjs && tsc -p tsconfig.json"
   },
   "peerDependencies": {
-    "@smilodon/core": "^1.9.1",
+    "@smilodon/core": "^1.9.2",
     "react": ">=18.2.0",
     "react-native": ">=0.74.0",
     "react-native-webview": ">=13.12.0"
@@ -34,5 +34,20 @@
     "react-native": "^0.76.9",
     "react-native-webview": "^13.12.5",
     "typescript": "^5.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
+    "directory": "packages/react-native"
+  },
+  "bugs": {
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
+  },
+  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
+  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

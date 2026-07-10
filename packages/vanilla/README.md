@@ -438,6 +438,20 @@ document.body.appendChild(select);
 
 Styling hooks: `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` CSS variables.
 
+The default `hideWhenEmpty: true` behavior means an empty clearable select reserves no action-area space. A selection or enabled search query reveals the button and coordinated input/arrow layout; clearing both restores the normal layout. This applies to single, multi-select, LTR, and RTL modes.
+
+Use full config passthrough when a permanently visible disabled-when-empty action is intentional:
+
+```typescript
+const select = createSelect({
+  items,
+  clearable: true,
+  config: { clearControl: { hideWhenEmpty: false } },
+});
+```
+
+`onClear` reports `clearedSelection` and `clearedSearch`. Prefer the clear-button parts and tokens over adding permanent input padding.
+
 ### With Event Listeners
 
 ```typescript
