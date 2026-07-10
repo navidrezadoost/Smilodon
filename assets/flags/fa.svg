@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30">
+  <rect width="60" height="10" fill="#239F40"/>
+  <rect y="10" width="60" height="10" fill="#FFFFFF"/>
+  <rect y="20" width="60" height="10" fill="#DA0000"/>
+  <g transform="translate(30, 15)">
+    <path d="M0,-6 L1.8,-1.8 L6.2,-1.4 L2.4,1.8 L3.6,6 L0,3.6 L-3.6,6 L-2.4,1.8 L-6.2,-1.4 L-1.8,-1.8 Z" fill="#DA0000"/>
+    <text x="0" y="2" text-anchor="middle" font-size="8" font-weight="bold" fill="#239F40">الله اکبر</text>
+  </g>
+</svg>
