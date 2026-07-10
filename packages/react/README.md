@@ -194,6 +194,20 @@ Use the built-in clear control in the input area and style it freely:
 
 Available parts for advanced styling: `::part(clear-button)`, `::part(clear-icon)`.
 
+By default, an empty clearable select does not reserve clear-button space. The button and adjusted input/arrow layout appear after a value is selected or, when search clearing is enabled, after search text is entered. They disappear again when both targets are empty. This applies to single, multi-select, LTR, and RTL layouts.
+
+For a permanently visible disabled-when-empty control, use the full core configuration:
+
+```tsx
+<Select
+  items={items}
+  clearable
+  config={{ clearControl: { hideWhenEmpty: false } }}
+/>
+```
+
+`onClear` receives `{ clearedSelection, clearedSearch }`, so controlled state can distinguish which target changed. The core manages action-area spacing automatically; custom styles should target the exposed parts and `--select-clear-*` tokens instead of adding permanent padding.
+
 ## Examples
 
 ### Basic Single Select
@@ -1553,4 +1567,3 @@ MIT © Smilodon
 - `@smilodon/core` - Core web component
 - `@smilodon/vue` - Vue 3 adapter
 - `@smilodon/svelte` - Svelte adapter
-

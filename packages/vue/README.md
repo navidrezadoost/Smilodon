@@ -188,6 +188,21 @@ const items = [
 
 Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
 
+An empty clearable field reserves no clear-button space by default. Selecting a value—or typing search text when search clearing is enabled—reveals the button and adjusts the input, separator, and arrow as one layout. Clearing all enabled targets restores the normal layout in single, multi-select, LTR, and RTL modes.
+
+Use the full core config only when the action should remain visible but disabled while empty:
+
+```vue
+<Select
+  v-model="value"
+  :items="items"
+  clearable
+  :config="{ clearControl: { hideWhenEmpty: false } }"
+/>
+```
+
+The `clear` event detail contains `clearedSelection` and `clearedSearch`. Prefer the exposed parts and tokens for styling; permanent input padding would recreate an empty gap.
+
 ## Direction and option-state controls
 
 The Vue adapter now exposes the same option-surface controls as the React adapter:

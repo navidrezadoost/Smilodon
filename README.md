@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version **1.9.1** is the current stable release for `@smilodon/core` and all maintained adapters.
+Version **1.9.2** is the current stable release for `@smilodon/core` and all maintained adapters.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
@@ -250,7 +250,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ### Intentionally not provided
 
-- Angular adapter support is not part of the maintained `1.9.1` package line.
+- Angular adapter support is not part of the maintained `1.9.2` package line.
 - Legacy browser shims are not a first-class target.
 - Server-rendered HTML replacement for the interactive control is not the primary design goal; adapters focus on safe client hydration around the custom element.
 
@@ -565,6 +565,34 @@ For deeper framework guidance, use the package-level guides:
 - [packages/solid/README.md](./packages/solid/README.md)
 - [packages/react-native/README.md](./packages/react-native/README.md)
 - [packages/core/README.md](./packages/core/README.md)
+
+### Clearable behavior (`1.9.2`)
+
+Set `clearable` on an adapter, or `clearControl.enabled` on the core element, to add the clear action. By default, the clear button and its action-area spacing are present only when there is something the configured action can clear:
+
+- a selected value when `clearSelectionOnClear` is enabled;
+- typed search text when `clearSearchOnClear` is enabled;
+- either state in single- and multi-select mode, including RTL layouts.
+
+After the value and search text are empty, the button is hidden and the input, separator, and arrow return to their normal layout. This avoids an empty gap in an untouched clearable field. Use `config={{ clearControl: { hideWhenEmpty: false } }}` (framework syntax varies) only when a permanently visible, disabled-when-empty action is intentional.
+
+```tsx
+<Select
+  items={items}
+  value={value}
+  onChange={setValue}
+  searchable
+  clearable
+  clearSelectionOnClear
+  clearSearchOnClear
+  clearAriaLabel="Clear selection and search"
+  onClear={({ clearedSelection, clearedSearch }) => {
+    console.log({ clearedSelection, clearedSearch })
+  }}
+/>
+```
+
+The clear control can be themed with `::part(clear-button)`, `::part(clear-icon)`, and the `--select-clear-*` tokens. Do not add permanent input padding for the button; the core runtime manages that space according to visibility.
 
 ---
 

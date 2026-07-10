@@ -4387,6 +4387,10 @@ export class EnhancedSelect extends HTMLElement {
       const sourceValue = (source as any)[key];
       const targetValue = result[key];
 
+      // Optional adapter props are commonly forwarded as undefined. Preserve
+      // the existing/default config in that case instead of erasing a section.
+      if (sourceValue === undefined) continue;
+
       if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
         result[key] = this._mergeConfig(
           targetValue && typeof targetValue === 'object' ? targetValue : {},
@@ -4440,8 +4444,9 @@ export class EnhancedSelect extends HTMLElement {
     const hideWhenEmpty = this._config.clearControl.hideWhenEmpty !== false;
     const visible = enabled && (!hideWhenEmpty || hasSomethingToClear);
 
-    this._inputContainer.classList.toggle('has-clear-control', enabled);
-    this._arrowContainer.classList.toggle('with-clear-control', enabled);
+    // Reserve the action area only while the clear control is actually visible.
+    this._inputContainer.classList.toggle('has-clear-control', visible);
+    this._arrowContainer.classList.toggle('with-clear-control', visible);
     this._clearControl.hidden = !visible;
     this._clearControl.disabled = !hasSomethingToClear;
     this._clearControl.setAttribute('aria-hidden', String(!visible));

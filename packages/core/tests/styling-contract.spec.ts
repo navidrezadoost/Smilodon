@@ -351,14 +351,23 @@ describe('EnhancedSelect Styling Contract', () => {
             { value: '1', label: 'One' },
             { value: '2', label: 'Two' },
         ]);
-        await (el as any).setSelectedValues(['1']);
 
         const clearButton = el.shadowRoot!.querySelector('[part="clear-button"]') as HTMLButtonElement;
         const clearIcon = el.shadowRoot!.querySelector('[part="clear-icon"]') as HTMLElement;
+        const inputContainer = el.shadowRoot!.querySelector('.input-container') as HTMLElement;
+        const arrowContainer = el.shadowRoot!.querySelector('.dropdown-arrow-container') as HTMLElement;
 
         expect(clearButton).toBeTruthy();
         expect(clearIcon).toBeTruthy();
+        expect(clearButton.hidden).toBe(true);
+        expect(inputContainer.classList.contains('has-clear-control')).toBe(false);
+        expect(arrowContainer.classList.contains('with-clear-control')).toBe(false);
+
+        await (el as any).setSelectedValues(['1']);
+
         expect(clearButton.hidden).toBe(false);
+        expect(inputContainer.classList.contains('has-clear-control')).toBe(true);
+        expect(arrowContainer.classList.contains('with-clear-control')).toBe(true);
         expect(clearButton.getAttribute('aria-label')).toBe('Clear values');
         expect(clearIcon.textContent).toBe('✕');
 
@@ -370,10 +379,27 @@ describe('EnhancedSelect Styling Contract', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
 
         expect((el as any).getSelectedValues()).toEqual([]);
+        expect(clearButton.hidden).toBe(true);
+        expect(inputContainer.classList.contains('has-clear-control')).toBe(false);
+        expect(arrowContainer.classList.contains('with-clear-control')).toBe(false);
         expect(clearSpy).toHaveBeenCalled();
         expect(clearSpy.mock.calls[0][0].detail).toEqual({
             clearedSelection: true,
             clearedSearch: false,
         });
+    });
+
+    it('preserves default style config when adapters forward undefined options', () => {
+        expect(() => {
+            (el as any).updateConfig({
+                styles: undefined,
+                clearControl: {
+                    enabled: undefined,
+                },
+            });
+        }).not.toThrow();
+
+        expect((el as any)._config.styles).toBeTruthy();
+        expect((el as any)._config.clearControl.enabled).toBe(false);
     });
 });
