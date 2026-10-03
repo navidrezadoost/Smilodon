@@ -315,7 +315,7 @@ describe('EnhancedSelect Styling Contract', () => {
 
         await new Promise(resolve => setTimeout(resolve, 10));
 
-        const matchingFetches = fetchMock.mock.calls.filter(([url]) => String(url) === link.href);
+        const matchingFetches = (fetchMock.mock.calls as unknown as Array<[unknown]>).filter(([url]) => String(url) === link.href);
         expect(matchingFetches).toHaveLength(1);
 
         second.remove();
@@ -372,7 +372,7 @@ describe('EnhancedSelect Styling Contract', () => {
             await new Promise(resolve => setTimeout(resolve, 10));
 
             const stylesheetFetchCount = () =>
-                fetchMock.mock.calls.filter(([url]) => String(url).startsWith(urlPrefix)).length;
+                (fetchMock.mock.calls as unknown as Array<[unknown]>).filter(([url]) => String(url).startsWith(urlPrefix)).length;
             const initialFetches = stylesheetFetchCount();
             const initialMirrors = mirrorSpy.mock.calls.length;
 
