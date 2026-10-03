@@ -92,6 +92,11 @@ export class DOMPool {
     if (poolNode) {
       poolNode.inUse = false;
       poolNode.lastUsed = performance.now();
+
+      if (this.pool.length > this.maxSize) {
+        this.removePoolNode(poolNode);
+        return;
+      }
       
       // Aggressive cleanup
       this.reset(poolNode.node);
@@ -102,7 +107,7 @@ export class DOMPool {
    * Evict least recently used node
    * Complexity: O(n)
    */
-  private evictLRU(): void {
+  private evictLRU(): boolean {
     // Find LRU node that's not in use
     let lruIndex = -1;
     let oldestTime = Infinity;
@@ -116,12 +121,21 @@ export class DOMPool {
     }
 
     if (lruIndex >= 0) {
-      const evicted = this.pool.splice(lruIndex, 1)[0];
-      // Full cleanup before GC
-      this.deepCleanup(evicted.node);
+      this.removePoolNode(this.pool[lruIndex]);
       
       if (this.telemetry) this.evictions++;
+      return true;
     }
+
+    return false;
+  }
+
+  private removePoolNode(poolNode: PoolNode): void {
+    const index = this.pool.indexOf(poolNode);
+    if (index < 0) return;
+
+    const [removed] = this.pool.splice(index, 1);
+    this.deepCleanup(removed.node);
   }
 
   /**
@@ -179,7 +193,7 @@ export class DOMPool {
     this.maxSize = size;
     // Evict excess nodes
     while (this.pool.length > this.maxSize) {
-      this.evictLRU();
+      if (!this.evictLRU()) break;
     }
   }
 

@@ -17,7 +17,7 @@ interface PooledComponent {
  * Manages a pool of reusable custom option component instances
  */
 export class CustomOptionPool {
-  private _pool: Map<string, PooledComponent[]> = new Map();
+  private _pool: Map<CustomOptionFactory, PooledComponent[]> = new Map();
   private _maxPoolSize: number;
   private _activeComponents: Map<number, CustomOptionContract> = new Map();
   
@@ -42,33 +42,20 @@ export class CustomOptionPool {
     context: CustomOptionContext,
     container: HTMLElement
   ): CustomOptionContract {
-    const factoryKey = this._getFactoryKey(factory);
+    this.release(index);
     
     // Try to find an available component in the pool
-    const pooled = this._findAvailableComponent(factoryKey);
+    const pooled = this._findAvailableComponent(factory);
     
     let component: CustomOptionContract;
     
     if (pooled) {
       // Reuse pooled component
       component = pooled.instance;
-      pooled.inUse = true;
-      pooled.lastUsedIndex = index;
     } else {
       // Create new component
       try {
         component = factory(item, index);
-        
-        // Add to pool if under limit
-        const pool = this._pool.get(factoryKey) || [];
-        if (pool.length < this._maxPoolSize) {
-          pool.push({
-            instance: component,
-            inUse: true,
-            lastUsedIndex: index
-          });
-          this._pool.set(factoryKey, pool);
-        }
       } catch (error) {
         console.error(`[CustomOptionPool] Failed to create component:`, error);
         throw error;
@@ -78,8 +65,22 @@ export class CustomOptionPool {
     // Mount the component
     try {
       component.mountOption(container, context);
+      if (pooled) {
+        pooled.inUse = true;
+        pooled.lastUsedIndex = index;
+      } else {
+        this._addToPool(factory, component, index);
+      }
       this._activeComponents.set(index, component);
     } catch (error) {
+      if (pooled) {
+        pooled.inUse = false;
+      }
+      try {
+        component.unmountOption();
+      } catch {
+        // ignore cleanup failures after a mount failure
+      }
       console.error(`[CustomOptionPool] Failed to mount component at index ${index}:`, error);
       throw error;
     }
@@ -188,18 +189,48 @@ export class CustomOptionPool {
   /**
    * Find an available component in the pool
    */
-  private _findAvailableComponent(factoryKey: string): PooledComponent | undefined {
-    const pool = this._pool.get(factoryKey);
+  private _findAvailableComponent(factory: CustomOptionFactory): PooledComponent | undefined {
+    const pool = this._pool.get(factory);
     if (!pool) return undefined;
     
     return pool.find(p => !p.inUse);
   }
-  
-  /**
-   * Generate a unique key for a factory function
-   */
-  private _getFactoryKey(factory: CustomOptionFactory): string {
-    // Use function name or create a symbol
-    return factory.name || `factory_${factory.toString().slice(0, 50)}`;
+
+  private _addToPool(factory: CustomOptionFactory, component: CustomOptionContract, index: number): void {
+    while (this._getTotalPooled() >= this._maxPoolSize) {
+      if (!this._evictAvailableComponent()) return;
+    }
+
+    const pool = this._pool.get(factory) || [];
+    pool.push({
+      instance: component,
+      inUse: true,
+      lastUsedIndex: index
+    });
+    this._pool.set(factory, pool);
+  }
+
+  private _evictAvailableComponent(): boolean {
+    for (const [factory, pool] of this._pool.entries()) {
+      const index = pool.findIndex(p => !p.inUse);
+      if (index < 0) continue;
+
+      pool.splice(index, 1);
+
+      if (pool.length === 0) {
+        this._pool.delete(factory);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  private _getTotalPooled(): number {
+    let total = 0;
+    for (const pool of this._pool.values()) {
+      total += pool.length;
+    }
+    return total;
   }
 }

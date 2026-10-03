@@ -21,6 +21,8 @@ export class Virtualizer {
   private itemGetter: ItemGetter;
   private fenwick?: FenwickTree;
   private activeNodes = new Map<number, HTMLElement>(); // index -> node mapping
+  private destroyed = false;
+  private recycleRafId = 0;
 
   constructor(container: HTMLElement, itemsLength: number, itemGetter: ItemGetter, options: VirtualizerOptions) {
     this.container = container;
@@ -120,6 +122,8 @@ export class Virtualizer {
   }
 
   render(startIndex: number, endIndex: number, updateNode: (node: HTMLElement, item: unknown, index: number) => void) {
+    if (this.destroyed) return;
+
     const frag = document.createDocumentFragment();
     const activeIndices = new Set<number>();
     
@@ -130,7 +134,11 @@ export class Virtualizer {
       activeIndices.add(i);
       
       // Measure on appear (deferred)
-      queueMicrotask(() => this.measureOnAppear(node, i));
+      queueMicrotask(() => {
+        if (!this.destroyed) {
+          this.measureOnAppear(node, i);
+        }
+      });
     }
     
     // Translate container by cumulative offset of startIndex
@@ -139,10 +147,20 @@ export class Virtualizer {
     this.container.replaceChildren(frag);
     
     // Recycle nodes not in use
-    requestAnimationFrame(() => this.releaseExcess(activeIndices));
+    if (this.recycleRafId) {
+      cancelAnimationFrame(this.recycleRafId);
+    }
+    this.recycleRafId = requestAnimationFrame(() => {
+      this.recycleRafId = 0;
+      if (!this.destroyed) {
+        this.releaseExcess(activeIndices);
+      }
+    });
   }
 
   measureOnAppear(node: HTMLElement, index: number) {
+    if (this.destroyed || index >= this.itemsLength) return;
+
     const h = node.offsetHeight;
     const prev = this.measuredHeights.get(index);
     const threshold = this.options.measurementThreshold ?? 5;
@@ -175,6 +193,18 @@ export class Virtualizer {
    */
   setItemsLength(newLength: number): void {
     this.itemsLength = newLength;
+
+    for (const index of Array.from(this.measuredHeights.keys())) {
+      if (index >= newLength) {
+        this.measuredHeights.delete(index);
+      }
+    }
+
+    for (const index of Array.from(this.activeNodes.keys())) {
+      if (index >= newLength) {
+        this.releaseNode(index);
+      }
+    }
     
     if (this.fenwick) {
       this.fenwick.resize(newLength);
@@ -193,6 +223,11 @@ export class Virtualizer {
    * Cleanup resources
    */
   destroy(): void {
+    this.destroyed = true;
+    if (this.recycleRafId) {
+      cancelAnimationFrame(this.recycleRafId);
+      this.recycleRafId = 0;
+    }
     this.pool.clear();
     this.activeNodes.clear();
     this.measuredHeights.clear();

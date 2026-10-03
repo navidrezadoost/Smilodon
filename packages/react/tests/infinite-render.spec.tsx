@@ -2,9 +2,98 @@ import React, { useState, useEffect } from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Select } from '../src/index';
-import type { SelectItem } from '../src/index';
+import type { GroupedItem, SelectItem } from '../src/index';
 
 describe('Infinite Loop Protection', () => {
+  it('should not rewrite renderer and classMap properties on unrelated rerenders', async () => {
+    const optionRenderer = vi.fn((item: SelectItem) => {
+      const div = document.createElement('div');
+      div.textContent = item.label;
+      return div;
+    });
+    const groupHeaderRenderer = vi.fn((group: GroupedItem) => <div>{group.label}</div>);
+    const classMap = {
+      selected: 'custom-selected',
+      active: 'custom-active',
+    };
+    const groupedItems: GroupedItem[] = [
+      {
+        label: 'Group A',
+        options: [{ value: '1', label: 'Item 1' }],
+      },
+    ];
+
+    const { container, rerender } = render(
+      <Select
+        groupedItems={groupedItems}
+        optionRenderer={optionRenderer}
+        groupHeaderRenderer={groupHeaderRenderer}
+        classMap={{ ...classMap }}
+        placeholder="First placeholder"
+      />
+    );
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element.optionRenderer).toBeTruthy();
+      expect(element.groupHeaderRenderer).toBeTruthy();
+      expect(element.classMap).toEqual(classMap);
+    });
+
+    const assignments = {
+      optionRenderer: 0,
+      groupHeaderRenderer: 0,
+      classMap: 0,
+    };
+    let currentOptionRenderer = element.optionRenderer;
+    let currentGroupHeaderRenderer = element.groupHeaderRenderer;
+    let currentClassMap = element.classMap;
+
+    Object.defineProperty(element, 'optionRenderer', {
+      configurable: true,
+      get: () => currentOptionRenderer,
+      set: (next) => {
+        assignments.optionRenderer += 1;
+        currentOptionRenderer = next;
+      },
+    });
+    Object.defineProperty(element, 'groupHeaderRenderer', {
+      configurable: true,
+      get: () => currentGroupHeaderRenderer,
+      set: (next) => {
+        assignments.groupHeaderRenderer += 1;
+        currentGroupHeaderRenderer = next;
+      },
+    });
+    Object.defineProperty(element, 'classMap', {
+      configurable: true,
+      get: () => currentClassMap,
+      set: (next) => {
+        assignments.classMap += 1;
+        currentClassMap = next;
+      },
+    });
+
+    await act(async () => {
+      rerender(
+        <Select
+          groupedItems={groupedItems}
+          optionRenderer={optionRenderer}
+          groupHeaderRenderer={groupHeaderRenderer}
+          classMap={{ ...classMap }}
+          placeholder="Second placeholder"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(assignments).toEqual({
+      optionRenderer: 0,
+      groupHeaderRenderer: 0,
+      classMap: 0,
+    });
+  });
+
   it('should not cause infinite re-renders with inline optionRenderer', async () => {
     const renderSpy = vi.fn();
     

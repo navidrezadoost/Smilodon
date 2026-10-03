@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState, useMemo } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import React, {
+  useEffect,
+  useRef,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+  useState,
+  useMemo,
+} from "react";
+import { createRoot, type Root } from "react-dom/client";
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -22,7 +30,7 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig as CoreStyleConfig,
-} from '@smilodon/core';
+} from "@smilodon/core";
 
 /**
  * Item type for the select component
@@ -39,7 +47,7 @@ export interface SelectItem {
  * Style configuration for internal select parts using React.CSSProperties.
  */
 export type StyleConfig = {
-  [K in keyof CoreStyleConfig]: K extends 'classNames'
+  [K in keyof CoreStyleConfig]: K extends "classNames"
     ? CoreStyleConfig[K]
     : React.CSSProperties | undefined;
 };
@@ -50,52 +58,52 @@ export type StyleConfig = {
 export interface SelectComponentProps {
   /** Array of items to display in the dropdown */
   items?: SelectItem[];
-  
+
   /** Grouped items (alternative to flat items array) */
   groupedItems?: GroupedItem[];
-  
+
   /** Customize group header rendering when groupedItems are used */
   groupHeaderRenderer?: (group: GroupedItem, index: number) => React.ReactNode;
-  
+
   /** Currently selected value(s) */
   value?: string | number | Array<string | number>;
-  
+
   /** Default value(s) for uncontrolled mode */
   defaultValue?: string | number | Array<string | number>;
-  
+
   /** Enable multi-select mode */
   multiple?: boolean;
-  
+
   /** Enable search/filter functionality */
   searchable?: boolean;
-  
+
   /** Placeholder text */
   placeholder?: string;
-  
+
   /** Disable the select */
   disabled?: boolean;
-  
+
   /** Required field */
   required?: boolean;
-  
+
   /** Error state */
   error?: boolean;
-  
+
   /** Error message to display */
   errorMessage?: string;
-  
+
   /** Enable infinite scroll */
   infiniteScroll?: boolean;
-  
+
   /** Page size for infinite scroll */
   pageSize?: number;
-  
+
   /** Enable virtual scrolling for large lists */
   virtualized?: boolean;
-  
+
   /** Estimated height of each item (for virtualization) */
   estimatedItemHeight?: number;
-  
+
   /** Maximum number of selections (for multiple mode) */
   maxSelections?: number;
 
@@ -129,12 +137,18 @@ export interface SelectComponentProps {
 
   /** Allow repeated clicks on the trigger to toggle the dropdown open and closed */
   toggleOnTriggerClick?: boolean;
-  
+
   /** Dropdown placement */
-  placement?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+  placement?:
+    | "top"
+    | "bottom"
+    | "top-start"
+    | "top-end"
+    | "bottom-start"
+    | "bottom-end";
 
   /** Text and layout direction */
-  direction?: 'ltr' | 'rtl';
+  direction?: "ltr" | "rtl";
 
   /** Enable clear control button inside input */
   clearable?: boolean;
@@ -150,13 +164,13 @@ export interface SelectComponentProps {
 
   /** Icon text for clear control */
   clearIcon?: string;
-  
+
   /** Custom CSS class name */
   className?: string;
-  
+
   /** Inline styles */
   style?: React.CSSProperties;
-  
+
   /** Custom item renderer */
   renderItem?: (item: SelectItem, index: number) => React.ReactNode;
 
@@ -164,11 +178,15 @@ export interface SelectComponentProps {
   customRenderer?: (item: SelectItem, index: number) => React.ReactNode;
 
   /** Custom option renderer (DOM). Returns an HTMLElement for full control. */
-  optionRenderer?: (item: SelectItem, index: number, helpers: RendererHelpers) => HTMLElement;
-  
+  optionRenderer?: (
+    item: SelectItem,
+    index: number,
+    helpers: RendererHelpers,
+  ) => HTMLElement;
+
   /** Custom selected value renderer */
   renderValue?: (selectedItems: SelectItem[]) => React.ReactNode;
-  
+
   /**
    * Class map for overriding internal state classes.
    * Useful for Tailwind or other utility-first CSS frameworks.
@@ -182,25 +200,31 @@ export interface SelectComponentProps {
 
   // Event Handlers
   /** Called when selection changes */
-  onChange?: (value: string | number | Array<string | number>, items: SelectItem[]) => void;
-  
+  onChange?: (
+    value: string | number | Array<string | number>,
+    items: SelectItem[],
+  ) => void;
+
   /** Called when an item is selected */
   onSelect?: (item: SelectItem, index: number) => void;
-  
+
   /** Called when dropdown opens */
   onOpen?: () => void;
-  
+
   /** Called when dropdown closes */
   onClose?: () => void;
-  
+
   /** Called when search query changes */
   onSearch?: (query: string, results?: SelectItem[], count?: number) => void;
-  
+
   /** Called when more items are needed (infinite scroll) */
   onLoadMore?: (page: number) => void | Promise<void>;
 
   /** Called when clear control is used */
-  onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void;
+  onClear?: (detail: {
+    clearedSelection: boolean;
+    clearedSearch: boolean;
+  }) => void;
 
   /** Called when diagnostic tracking is emitted */
   onDiagnostic?: (detail: DiagnosticEventDetail) => void;
@@ -228,23 +252,20 @@ export interface SelectComponentProps {
 
   /** Automatically mitigate single/multi runtime switching */
   autoMitigateRuntimeModeSwitch?: boolean;
-  
+
   /** Loading state for async operations */
   loading?: boolean;
-  
+
   /** Enable creatable mode (allow creating new options) */
   creatable?: boolean;
-  
+
   /** Called when a new option is created */
   onCreate?: (label: string) => void;
 }
 
 /** Standard DOM attributes forwarded to the underlying `enhanced-select` host element */
 export type SelectProps = SelectComponentProps &
-  Omit<
-    React.HTMLAttributes<HTMLElement>,
-    keyof SelectComponentProps | 'dir'
-  >;
+  Omit<React.HTMLAttributes<HTMLElement>, keyof SelectComponentProps | "dir">;
 
 /**
  * Imperative handle for the Select component
@@ -252,25 +273,25 @@ export type SelectProps = SelectComponentProps &
 export interface SelectHandle {
   /** Focus the select input */
   focus: () => void;
-  
+
   /** Open the dropdown */
   open: () => void;
-  
+
   /** Close the dropdown */
   close: () => void;
-  
+
   /** Get currently selected items */
   getSelectedItems: () => SelectItem[];
-  
+
   /** Get currently selected values */
   getSelectedValues: () => Array<string | number>;
-  
+
   /** Programmatically set items */
   setItems: (items: SelectItem[]) => void;
-  
+
   /** Programmatically set grouped items */
   setGroupedItems: (groups: GroupedItem[]) => void;
-  
+
   /** Clear the selection */
   clear: () => void;
 
@@ -302,7 +323,7 @@ export interface SelectHandle {
   getTrackingSnapshot: () => TrackingSnapshot;
 
   /** Clear tracking logs */
-  clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => void;
+  clearTracking: (source?: "event" | "style" | "limitation" | "all") => void;
 
   /** Update limitation policies */
   setLimitationPolicies: (policies: LimitationPolicyMap) => void;
@@ -310,7 +331,7 @@ export interface SelectHandle {
 
 /**
  * Smilodon Select Component for React
- * 
+ *
  * A production-ready, accessible select component with advanced features:
  * - Single and multi-select modes
  * - Searchable with client or server-side filtering
@@ -319,7 +340,7 @@ export interface SelectHandle {
  * - Custom rendering
  * - Full keyboard navigation
  * - WCAG 2.1 AAA compliant
- * 
+ *
  * @example
  * ```tsx
  * // Simple usage
@@ -331,7 +352,7 @@ export interface SelectHandle {
  *   value="apple"
  *   onChange={(value) => console.log(value)}
  * />
- * 
+ *
  * // Multi-select with search
  * <Select
  *   items={items}
@@ -340,7 +361,7 @@ export interface SelectHandle {
  *   value={selectedValues}
  *   onChange={(values) => setSelectedValues(values)}
  * />
- * 
+ *
  * // With grouped items
  * <Select
  *   groupedItems={[
@@ -359,7 +380,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     defaultValue,
     multiple = false,
     searchable = false,
-    placeholder = 'Select an option...',
+    placeholder = "Select an option...",
     disabled = false,
     required = false,
     error = false,
@@ -378,7 +399,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     disabledOptionBehavior,
     showSelectedIndicator = true,
     toggleOnTriggerClick = true,
-    placement = 'bottom-start',
+    placement = "bottom-start",
     direction,
     clearable = false,
     clearSelectionOnClear = true,
@@ -390,7 +411,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     renderItem,
     customRenderer,
     renderValue,
-  optionRenderer,
+    optionRenderer,
     onChange,
     onSelect,
     onOpen,
@@ -416,24 +437,60 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   } = props;
 
   const elementRef = useRef<any>(null);
-    const resolvedDropdownPlacement = useMemo<'top' | 'bottom'>(() => {
-      if (placement?.startsWith('top')) return 'top';
-      return 'bottom';
-    }, [placement]);
+  const resolvedDropdownPlacement = useMemo<"top" | "bottom">(() => {
+    if (placement?.startsWith("top")) return "top";
+    return "bottom";
+  }, [placement]);
 
   const [isControlled] = useState(value !== undefined);
   const [internalValue, setInternalValue] = useState(defaultValue);
   const hasAppliedInitialValueRef = useRef(false);
-  const reactRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
-  const groupHeaderRendererCache = useRef(new Map<number, { container: HTMLElement; root: Root }>());
+  const reactRendererCache = useRef(
+    new Map<number, { container: HTMLElement; root: Root }>(),
+  );
+  const groupHeaderRendererCache = useRef(
+    new Map<number, { container: HTMLElement; root: Root }>(),
+  );
 
-  const areValuesEqual = useCallback((nextValues: Array<string | number>, currentValues: Array<string | number>) => {
-    if (nextValues.length !== currentValues.length) return false;
-    return nextValues.every((value, index) => value === currentValues[index]);
-  }, []);
+  const areValuesEqual = useCallback(
+    (
+      nextValues: Array<string | number>,
+      currentValues: Array<string | number>,
+    ) => {
+      if (nextValues.length !== currentValues.length) return false;
+      return nextValues.every((value, index) => value === currentValues[index]);
+    },
+    [],
+  );
+
+  const setElementPropertyIfChanged = useCallback(
+    <T,>(element: Record<string, T>, property: string, value: T) => {
+      if (element[property] !== value) {
+        element[property] = value;
+      }
+    },
+    [],
+  );
+
+  const areClassMapsEqual = useCallback(
+    (
+      left?: SelectComponentProps["classMap"],
+      right?: SelectComponentProps["classMap"],
+    ) => {
+      if (left === right) return true;
+      if (!left || !right) return false;
+
+      const leftKeys = Object.keys(left);
+      const rightKeys = Object.keys(right);
+      if (leftKeys.length !== rightKeys.length) return false;
+
+      return leftKeys.every((key) => left[key] === right[key]);
+    },
+    [],
+  );
 
   const scheduleRootUnmount = useCallback((root: Root) => {
-    if (typeof queueMicrotask === 'function') {
+    if (typeof queueMicrotask === "function") {
       queueMicrotask(() => root.unmount());
       return;
     }
@@ -445,7 +502,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   const customRendererRef = useRef(customRenderer ?? renderItem);
   const optionRendererRef = useRef(optionRenderer);
   const groupHeaderRendererRef = useRef(groupHeaderRenderer);
-  
+
   // Update ref when props change
   useEffect(() => {
     customRendererRef.current = customRenderer ?? renderItem;
@@ -457,26 +514,29 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     // If a direct DOM renderer is provided, use it (assumed stable or controlled by user)
     // Wait, if optionRenderer is provided as inline function, it changes every render.
     // We should wrap it too IF it is provided.
-    
+
     if (!!optionRenderer) {
       return (item: SelectItem, index: number, helpers: RendererHelpers) => {
-         return optionRendererRef.current?.(item, index, helpers) || document.createElement('div');
+        return (
+          optionRendererRef.current?.(item, index, helpers) ||
+          document.createElement("div")
+        );
       };
     }
-    
+
     // We only want to reconstruct the wrapper if the existence of a renderer changes,
     // NOT if the identity of the function changes (to avoid infinite loops with inline functions).
     const hasReactRenderer = !!(customRenderer ?? renderItem);
-    
+
     if (!hasReactRenderer) return undefined;
 
     return (item: SelectItem, index: number, _helpers: RendererHelpers) => {
       const renderer = customRendererRef.current;
-      if (!renderer) return document.createElement('div'); 
+      if (!renderer) return document.createElement("div");
 
       let entry = reactRendererCache.current.get(index);
       if (!entry) {
-        const container = document.createElement('div');
+        const container = document.createElement("div");
         // Note: createRoot should be reused.
         const root = createRoot(container);
         entry = { container, root };
@@ -494,11 +554,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     return (group: GroupedItem, index: number) => {
       const renderer = groupHeaderRendererRef.current;
-      if (!renderer) return document.createElement('div');
+      if (!renderer) return document.createElement("div");
 
       let entry = groupHeaderRendererCache.current.get(index);
       if (!entry) {
-        const container = document.createElement('div');
+        const container = document.createElement("div");
         const root = createRoot(container);
         entry = { container, root };
         groupHeaderRendererCache.current.set(index, entry);
@@ -509,14 +569,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
   }, [!!groupHeaderRenderer]);
 
-
-
-
   useEffect(() => {
     return () => {
-      reactRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+      reactRendererCache.current.forEach(({ root }) =>
+        scheduleRootUnmount(root),
+      );
       reactRendererCache.current.clear();
-      groupHeaderRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+      groupHeaderRendererCache.current.forEach(({ root }) =>
+        scheduleRootUnmount(root),
+      );
       groupHeaderRendererCache.current.clear();
     };
   }, [scheduleRootUnmount]);
@@ -548,21 +609,67 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   useEffect(() => {
     if (groupHeaderRenderer) return;
 
-    groupHeaderRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+    groupHeaderRendererCache.current.forEach(({ root }) =>
+      scheduleRootUnmount(root),
+    );
     groupHeaderRendererCache.current.clear();
   }, [groupHeaderRenderer, scheduleRootUnmount]);
+
+  useEffect(() => {
+    const frameworkRendererActive =
+      !optionRenderer && Boolean(customRenderer ?? renderItem);
+    if (frameworkRendererActive) return;
+
+    reactRendererCache.current.forEach(({ root }) => scheduleRootUnmount(root));
+    reactRendererCache.current.clear();
+  }, [!!optionRenderer, !!(customRenderer ?? renderItem), scheduleRootUnmount]);
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (customElements.get('enhanced-select')) {
+    const element = elementRef.current;
+    if (!element || !isElementReady) return;
+
+    setElementPropertyIfChanged(
+      element,
+      "optionRenderer",
+      resolvedOptionRenderer,
+    );
+  }, [isElementReady, resolvedOptionRenderer, setElementPropertyIfChanged]);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || !isElementReady) return;
+
+    setElementPropertyIfChanged(
+      element,
+      "groupHeaderRenderer",
+      resolvedGroupHeaderRenderer,
+    );
+  }, [
+    isElementReady,
+    resolvedGroupHeaderRenderer,
+    setElementPropertyIfChanged,
+  ]);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || !isElementReady) return;
+
+    if (!areClassMapsEqual(element.classMap, classMap)) {
+      element.classMap = classMap;
+    }
+  }, [isElementReady, classMap, areClassMapsEqual]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (customElements.get("enhanced-select")) {
         setIsElementReady(true);
       } else {
-        import('@smilodon/core').then((module) => {
-          if (!customElements.get('enhanced-select')) {
-            customElements.define('enhanced-select', module.EnhancedSelect);
+        import("@smilodon/core").then((module) => {
+          if (!customElements.get("enhanced-select")) {
+            customElements.define("enhanced-select", module.EnhancedSelect);
           }
           setIsElementReady(true);
         });
@@ -577,7 +684,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     // Wait for the element to be fully upgraded
     if (!element.setItems) {
-      console.warn('Enhanced select element not fully initialized yet');
+      console.warn("Enhanced select element not fully initialized yet");
       return;
     }
 
@@ -587,9 +694,6 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     } else if (items.length > 0) {
       element.setItems(items);
     }
-
-    element.optionRenderer = resolvedOptionRenderer;
-    element.groupHeaderRenderer = resolvedGroupHeaderRenderer;
 
     // Configure component
     const config = {
@@ -603,7 +707,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       },
       selection: {
         ...selectionConfig,
-        mode: multiple ? 'multi' : 'single',
+        mode: multiple ? "multi" : "single",
         maxSelections: maxSelections,
         removeButtonIcon,
         disabledOptionBehavior,
@@ -648,16 +752,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.updateConfig(coreConfig);
     }
 
-    // Set classMap if provided
-    if (classMap) {
-      element.classMap = classMap;
-    } else {
-      element.classMap = undefined;
-    }
-
     // Set initial uncontrolled value only once
-    if (!isControlled && !hasAppliedInitialValueRef.current && internalValue !== undefined) {
-      const values = Array.isArray(internalValue) ? internalValue : [internalValue];
+    if (
+      !isControlled &&
+      !hasAppliedInitialValueRef.current &&
+      internalValue !== undefined
+    ) {
+      const values = Array.isArray(internalValue)
+        ? internalValue
+        : [internalValue];
       const currentValues = element.getSelectedValues?.() || [];
       if (!areValuesEqual(values, currentValues)) {
         element.setSelectedValues(values);
@@ -667,7 +770,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     // Set error state
     if (error) {
-      element.setError(errorMessage || 'Invalid selection');
+      element.setError(errorMessage || "Invalid selection");
     } else {
       element.clearError();
     }
@@ -676,7 +779,51 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (required) {
       element.setRequired(true);
     }
-  }, [isElementReady, items, groupedItems, searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, selectionConfig, multiSelectDisplay, scrollToSelected, stylesConfig, coreConfig, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, creatable, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, resolvedDropdownPlacement, error, errorMessage, required, internalValue, isControlled, resolvedOptionRenderer, resolvedGroupHeaderRenderer, areValuesEqual]);
+  }, [
+    isElementReady,
+    items,
+    groupedItems,
+    searchable,
+    placeholder,
+    virtualized,
+    estimatedItemHeight,
+    disabled,
+    multiple,
+    maxSelections,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    stylesConfig,
+    coreConfig,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator,
+    toggleOnTriggerClick,
+    infiniteScroll,
+    pageSize,
+    creatable,
+    clearable,
+    clearSelectionOnClear,
+    clearSearchOnClear,
+    clearAriaLabel,
+    clearIcon,
+    trackingEnabled,
+    trackEvents,
+    trackStyling,
+    trackLimitations,
+    emitDiagnostics,
+    trackingMaxEntries,
+    limitationPolicies,
+    autoMitigateRuntimeModeSwitch,
+    direction,
+    resolvedDropdownPlacement,
+    error,
+    errorMessage,
+    required,
+    internalValue,
+    isControlled,
+    areValuesEqual,
+  ]);
 
   // Update items when they change
   useEffect(() => {
@@ -684,26 +831,40 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (!element || !isElementReady || !element.setItems) return;
     if (groupedItems) {
       element.setGroupedItems(groupedItems);
-    } else if (items && items.length && (items as any)[0] && (items as any)[0].group !== undefined) {
+    } else if (
+      items &&
+      items.length &&
+      (items as any)[0] &&
+      (items as any)[0].group !== undefined
+    ) {
       // Auto-convert flat items with `group` property into groupedItems
       const map = new Map<string, SelectItem[]>();
       (items as SelectItem[]).forEach((it) => {
-        const g = (it as any).group ?? 'Ungrouped';
+        const g = (it as any).group ?? "Ungrouped";
         if (!map.has(g)) map.set(g, []);
         map.get(g)!.push(it);
       });
-      const groups = Array.from(map.entries()).map(([label, options]) => ({ label, options }));
+      const groups = Array.from(map.entries()).map(([label, options]) => ({
+        label,
+        options,
+      }));
       element.setGroupedItems(groups as GroupedItem[]);
     } else {
       element.setItems(items);
     }
-  }, [items, groupedItems, groupHeaderRenderer, isElementReady]);
+  }, [items, groupedItems, isElementReady]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isControlled || !isElementReady || !element.setSelectedValues) return;
-    
+    if (
+      !element ||
+      !isControlled ||
+      !isElementReady ||
+      !element.setSelectedValues
+    )
+      return;
+
     if (value !== undefined) {
       const values = Array.isArray(value) ? value : [value];
       const currentValues = element.getSelectedValues?.() || [];
@@ -729,7 +890,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       },
       selection: {
         ...selectionConfig,
-        mode: multiple ? 'multi' : 'single',
+        mode: multiple ? "multi" : "single",
         maxSelections: maxSelections,
         removeButtonIcon,
         disabledOptionBehavior,
@@ -772,7 +933,42 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (coreConfig) {
       element.updateConfig(coreConfig);
     }
-  }, [searchable, placeholder, virtualized, estimatedItemHeight, disabled, multiple, maxSelections, selectionConfig, multiSelectDisplay, scrollToSelected, stylesConfig, coreConfig, removeButtonIcon, disabledOptionBehavior, showSelectedIndicator, toggleOnTriggerClick, infiniteScroll, pageSize, clearable, clearSelectionOnClear, clearSearchOnClear, clearAriaLabel, clearIcon, trackingEnabled, trackEvents, trackStyling, trackLimitations, emitDiagnostics, trackingMaxEntries, limitationPolicies, autoMitigateRuntimeModeSwitch, direction, resolvedDropdownPlacement, isElementReady]);
+  }, [
+    searchable,
+    placeholder,
+    virtualized,
+    estimatedItemHeight,
+    disabled,
+    multiple,
+    maxSelections,
+    selectionConfig,
+    multiSelectDisplay,
+    scrollToSelected,
+    stylesConfig,
+    coreConfig,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator,
+    toggleOnTriggerClick,
+    infiniteScroll,
+    pageSize,
+    clearable,
+    clearSelectionOnClear,
+    clearSearchOnClear,
+    clearAriaLabel,
+    clearIcon,
+    trackingEnabled,
+    trackEvents,
+    trackStyling,
+    trackLimitations,
+    emitDiagnostics,
+    trackingMaxEntries,
+    limitationPolicies,
+    autoMitigateRuntimeModeSwitch,
+    direction,
+    resolvedDropdownPlacement,
+    isElementReady,
+  ]);
 
   // Update error state
   useEffect(() => {
@@ -780,7 +976,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (!element || !isElementReady) return;
 
     if (error) {
-      if (element.setError) element.setError(errorMessage || 'Invalid selection');
+      if (element.setError)
+        element.setError(errorMessage || "Invalid selection");
     } else {
       if (element.clearError) element.clearError();
     }
@@ -805,11 +1002,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     const handleChange = (e: CustomEvent<ChangeEventDetail>) => {
       const { selectedItems, selectedValues } = e.detail;
-      
+
       // Cast selectedValues to proper type
       const values = selectedValues as (string | number)[];
-      const nextSingleValue: string | number = values.length > 0 ? values[0] : '';
-      
+      const nextSingleValue: string | number =
+        values.length > 0 ? values[0] : "";
+
       // Update internal value in uncontrolled mode
       if (!isControlled) {
         setInternalValue(multiple ? values : nextSingleValue);
@@ -851,26 +1049,37 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       onDiagnostic?.(e.detail);
     };
 
-    element.addEventListener('select', handleSelect);
-    element.addEventListener('change', handleChange);
-    element.addEventListener('open', handleOpen);
-    element.addEventListener('close', handleClose);
-    element.addEventListener('search', handleSearch);
-    element.addEventListener('loadMore', handleLoadMore);
-    element.addEventListener('clear', handleClear);
-    element.addEventListener('diagnostic', handleDiagnostic);
+    element.addEventListener("select", handleSelect);
+    element.addEventListener("change", handleChange);
+    element.addEventListener("open", handleOpen);
+    element.addEventListener("close", handleClose);
+    element.addEventListener("search", handleSearch);
+    element.addEventListener("loadMore", handleLoadMore);
+    element.addEventListener("clear", handleClear);
+    element.addEventListener("diagnostic", handleDiagnostic);
 
     return () => {
-      element.removeEventListener('select', handleSelect);
-      element.removeEventListener('change', handleChange);
-      element.removeEventListener('open', handleOpen);
-      element.removeEventListener('close', handleClose);
-      element.removeEventListener('search', handleSearch);
-      element.removeEventListener('loadMore', handleLoadMore);
-      element.removeEventListener('clear', handleClear);
-      element.removeEventListener('diagnostic', handleDiagnostic);
+      element.removeEventListener("select", handleSelect);
+      element.removeEventListener("change", handleChange);
+      element.removeEventListener("open", handleOpen);
+      element.removeEventListener("close", handleClose);
+      element.removeEventListener("search", handleSearch);
+      element.removeEventListener("loadMore", handleLoadMore);
+      element.removeEventListener("clear", handleClear);
+      element.removeEventListener("diagnostic", handleDiagnostic);
     };
-  }, [onSelect, onChange, onOpen, onClose, onSearch, onLoadMore, onClear, onDiagnostic, isControlled, multiple]);
+  }, [
+    onSelect,
+    onChange,
+    onOpen,
+    onClose,
+    onSearch,
+    onLoadMore,
+    onClear,
+    onDiagnostic,
+    isControlled,
+    multiple,
+  ]);
 
   // Expose imperative handle
   useImperativeHandle(ref, () => ({
@@ -900,7 +1109,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       if (!isControlled) {
         setInternalValue(multiple ? [] : undefined);
       }
-      onChange?.(multiple ? [] : '', []);
+      onChange?.(multiple ? [] : "", []);
     },
     clearSearch: () => {
       elementRef.current?.clearSearch?.();
@@ -927,9 +1136,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       return elementRef.current?.getKnownLimitations?.() || [];
     },
     getTrackingSnapshot: () => {
-      return elementRef.current?.getTrackingSnapshot?.() || { events: [], styles: [], limitations: [] };
+      return (
+        elementRef.current?.getTrackingSnapshot?.() || {
+          events: [],
+          styles: [],
+          limitations: [],
+        }
+      );
     },
-    clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => {
+    clearTracking: (source?: "event" | "style" | "limitation" | "all") => {
       elementRef.current?.clearTracking?.(source);
     },
     setLimitationPolicies: (policies: LimitationPolicyMap) => {
@@ -937,7 +1152,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     },
   }));
 
-  return React.createElement('enhanced-select', {
+  return React.createElement("enhanced-select", {
     ref: elementRef,
     ...hostProps,
     className,
@@ -946,4 +1161,4 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   });
 });
 
-Select.displayName = 'Select';
+Select.displayName = "Select";

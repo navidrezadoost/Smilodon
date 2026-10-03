@@ -175,7 +175,7 @@ export default function Select(rawProps: SelectProps) {
   const [internalValue, setInternalValue] = createSignal<SelectValue | undefined>(props.defaultValue)
   const [resolvedOptionRenderer, setResolvedOptionRenderer] = createSignal<SelectProps['optionRenderer'] | ((item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement) | undefined>()
   const customRendererCache = new Map<number, { container: HTMLDivElement; dispose?: () => void }>()
-  const groupHeaderDisposers = new Set<() => void>()
+  const groupHeaderRoots = new Map<number, { container: HTMLDivElement; dispose: () => void }>()
 
   const isControlled = () => rawProps.value !== undefined
   const currentValue = () => (isControlled() ? rawProps.value : internalValue())
@@ -197,8 +197,11 @@ export default function Select(rawProps: SelectProps) {
   }
 
   const cleanupGroupHeaderRenderers = () => {
-    for (const dispose of groupHeaderDisposers) dispose()
-    groupHeaderDisposers.clear()
+    for (const entry of groupHeaderRoots.values()) {
+      entry.dispose()
+      entry.container.remove()
+    }
+    groupHeaderRoots.clear()
   }
 
   const safeCall = (fn: (el: EnhancedSelectElement) => void) => {
@@ -243,6 +246,7 @@ export default function Select(rawProps: SelectProps) {
       [() => !!rawProps.optionRenderer, () => !!rawProps.customRenderer],
       ([hasOptionRenderer, hasCustomRenderer]: [boolean, boolean]) => {
         if (hasOptionRenderer) {
+          cleanupCustomRendererCache()
           setResolvedOptionRenderer(() => (item: SelectItem, index: number, helpers?: RendererHelpers) =>
             rawProps.optionRenderer?.(item, index, helpers as RendererHelpers) ?? document.createElement('div')
           )
@@ -307,6 +311,18 @@ export default function Select(rawProps: SelectProps) {
   })
 
   createEffect(() => {
+    const totalGroups = rawProps.groupedItems?.length ?? 0
+
+    for (const [index, entry] of groupHeaderRoots.entries()) {
+      if (index >= totalGroups) {
+        entry.dispose()
+        entry.container.remove()
+        groupHeaderRoots.delete(index)
+      }
+    }
+  })
+
+  createEffect(() => {
     if (!isElementReady()) return
     safeCall((el) => syncItems(el))
   })
@@ -324,9 +340,13 @@ export default function Select(rawProps: SelectProps) {
       }
 
       el.groupHeaderRenderer = (group: GroupedItem, index: number) => {
+        const previous = groupHeaderRoots.get(index)
+        previous?.dispose()
+        previous?.container.remove()
+
         const container = document.createElement('div')
         const dispose = render(() => renderer(group, index), container)
-        groupHeaderDisposers.add(dispose)
+        groupHeaderRoots.set(index, { container, dispose })
         return container
       }
     })

@@ -276,6 +276,144 @@ describe('EnhancedSelect Styling Contract', () => {
         globalStyle.remove();
     });
 
+    it('dedupes stylesheet fetches across repeated mirroring-sensitive setter updates', async () => {
+        const href = `https://example.test/smilodon-dedupe-${Math.random().toString(36).slice(2)}.css`;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+
+        const originalFetch = globalThis.fetch;
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            text: async () => '.deduped-option { color: rgb(0, 0, 255); }',
+        }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const renderer = (item: any) => {
+            const div = document.createElement('div');
+            div.className = 'deduped-option';
+            div.textContent = item?.label ?? '';
+            return div;
+        };
+        const groupHeaderRenderer = (group: any) => {
+            const div = document.createElement('div');
+            div.textContent = group?.label ?? '';
+            return div;
+        };
+
+        el.optionRenderer = renderer;
+        el.optionRenderer = renderer;
+        el.classMap = { selected: 'deduped-selected' };
+        el.classMap = { selected: 'deduped-selected' };
+        el.groupHeaderRenderer = groupHeaderRenderer;
+        el.groupHeaderRenderer = groupHeaderRenderer;
+
+        const second = document.createElement('enhanced-select') as EnhancedSelect;
+        document.body.appendChild(second);
+        second.optionRenderer = renderer;
+
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const matchingFetches = fetchMock.mock.calls.filter(([url]) => String(url) === link.href);
+        expect(matchingFetches).toHaveLength(1);
+
+        second.remove();
+        link.remove();
+        if (originalFetch) {
+            vi.stubGlobal('fetch', originalFetch);
+        } else {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('does not refetch or remirror document stylesheets across renderer and classMap churn', async () => {
+        const urlPrefix = `https://example.test/smilodon-churn-${Math.random().toString(36).slice(2)}`;
+        const links: HTMLLinkElement[] = [];
+        for (let index = 0; index < 3; index += 1) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = `${urlPrefix}-${index}.css`;
+            document.head.appendChild(link);
+            links.push(link);
+        }
+
+        const originalFetch = globalThis.fetch;
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            text: async () => '.churn-option { color: rgb(20, 40, 60); }',
+        }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const mirrorSpy = vi.spyOn(EnhancedSelect.prototype as any, '_mirrorDocumentStylesIntoShadow');
+        let selects: EnhancedSelect[] = [];
+
+        try {
+            selects = Array.from({ length: 10 }, (_, index) => {
+                const select = index === 0 ? el : document.createElement('enhanced-select') as EnhancedSelect;
+                if (index !== 0) {
+                    document.body.appendChild(select);
+                }
+                select.optionRenderer = (item: any) => {
+                    const div = document.createElement('div');
+                    div.className = 'churn-option';
+                    div.textContent = item?.label ?? '';
+                    return div;
+                };
+                select.groupHeaderRenderer = (group: any) => {
+                    const div = document.createElement('div');
+                    div.textContent = group?.label ?? '';
+                    return div;
+                };
+                select.classMap = { selected: 'churn-selected-initial' };
+                return select;
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const stylesheetFetchCount = () =>
+                fetchMock.mock.calls.filter(([url]) => String(url).startsWith(urlPrefix)).length;
+            const initialFetches = stylesheetFetchCount();
+            const initialMirrors = mirrorSpy.mock.calls.length;
+
+            expect(initialFetches).toBe(3);
+
+            for (let iteration = 0; iteration < 50; iteration += 1) {
+                selects.forEach((select) => {
+                    select.optionRenderer = (item: any) => {
+                        const div = document.createElement('div');
+                        div.className = `churn-option churn-option-${iteration}`;
+                        div.textContent = item?.label ?? '';
+                        return div;
+                    };
+                    select.groupHeaderRenderer = (group: any) => {
+                        const div = document.createElement('div');
+                        div.textContent = `${group?.label ?? ''}-${iteration}`;
+                        return div;
+                    };
+                    select.classMap = {
+                        selected: `churn-selected-${iteration}`,
+                        active: `churn-active-${iteration}`,
+                    };
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            expect(stylesheetFetchCount()).toBe(initialFetches);
+            expect(mirrorSpy.mock.calls.length).toBe(initialMirrors);
+        } finally {
+            selects.slice(1).forEach((select) => select.remove());
+            links.forEach((link) => link.remove());
+            mirrorSpy.mockRestore();
+            if (originalFetch) {
+                vi.stubGlobal('fetch', originalFetch);
+            } else {
+                vi.unstubAllGlobals();
+            }
+        }
+    });
+
     // Note: This test documents legacy CSS variable aliases for backwards compatibility.
     // Some aliases may not be fully implemented as the component has evolved.
     // The component functions correctly with current variable names.

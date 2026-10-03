@@ -162,6 +162,7 @@ EnhancedSelect (Web Component)
 ### EnhancedSelect Component
 
 **Responsibilities:**
+
 - Render dropdown container
 - Manage open/close state
 - Handle keyboard navigation
@@ -170,10 +171,11 @@ EnhancedSelect (Web Component)
 - Manage accessibility attributes
 
 **Key Properties:**
+
 ```typescript
 interface EnhancedSelectConfig {
   selection: {
-    mode: 'single' | 'multi';
+    mode: "single" | "multi";
     maxSelections?: number;
     allowDeselect?: boolean;
     closeOnSelect?: boolean;
@@ -202,6 +204,7 @@ interface EnhancedSelectConfig {
 ```
 
 **State Management:**
+
 ```typescript
 class EnhancedSelect extends HTMLElement {
   // State
@@ -209,19 +212,19 @@ class EnhancedSelect extends HTMLElement {
   private selectedIndices: Set<number> = new Set();
   private activeIndex: number = -1;
   private isOpen: boolean = false;
-  private searchQuery: string = '';
-  
+  private searchQuery: string = "";
+
   // Computed state
   get selectedValues(): (string | number)[] {
     return Array.from(this.selectedIndices)
-      .map(i => this.items[i]?.value)
-      .filter(v => v !== undefined);
+      .map((i) => this.items[i]?.value)
+      .filter((v) => v !== undefined);
   }
-  
+
   get selectedItems(): SelectItem[] {
     return Array.from(this.selectedIndices)
-      .map(i => this.items[i])
-      .filter(item => item !== undefined);
+      .map((i) => this.items[i])
+      .filter((item) => item !== undefined);
   }
 }
 ```
@@ -229,12 +232,14 @@ class EnhancedSelect extends HTMLElement {
 ### SelectOption Component
 
 **Responsibilities:**
+
 - Render individual option
 - Handle click interactions
 - Manage selected state
 - Render custom templates
 
 **Design Pattern:** High cohesion, low coupling
+
 - Each option is independent
 - Communicates via custom events
 - No direct parent manipulation
@@ -243,23 +248,25 @@ class EnhancedSelect extends HTMLElement {
 class SelectOption extends HTMLElement {
   private shadow: ShadowRoot;
   private selected: boolean = false;
-  
+
   connectedCallback() {
     this.render();
     this.attachListeners();
   }
-  
+
   private handleClick() {
     // Emit event, don't modify parent directly
-    this.dispatchEvent(new CustomEvent('option-select', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        value: this.value,
-        label: this.label,
-        selected: !this.selected
-      }
-    }));
+    this.dispatchEvent(
+      new CustomEvent("option-select", {
+        bubbles: true,
+        composed: true,
+        detail: {
+          value: this.value,
+          label: this.label,
+          selected: !this.selected,
+        },
+      }),
+    );
   }
 }
 ```
@@ -267,38 +274,37 @@ class SelectOption extends HTMLElement {
 ### Virtual Scroller
 
 **Responsibilities:**
+
 - Calculate visible range
 - Update viewport position
 - Manage spacers for scroll position
 - Reuse DOM nodes efficiently
 
 **Implementation:**
+
 ```typescript
 class VirtualScroller {
   private itemHeight: number;
   private buffer: number;
   private viewportHeight: number;
-  
+
   calculateVisibleRange(scrollTop: number): Range {
-    const startIndex = Math.max(0, 
-      Math.floor(scrollTop / this.itemHeight) - this.buffer
+    const startIndex = Math.max(
+      0,
+      Math.floor(scrollTop / this.itemHeight) - this.buffer,
     );
-    
-    const visibleCount = Math.ceil(
-      this.viewportHeight / this.itemHeight
-    );
-    
+
+    const visibleCount = Math.ceil(this.viewportHeight / this.itemHeight);
+
     const endIndex = startIndex + visibleCount + this.buffer * 2;
-    
+
     return { startIndex, endIndex };
   }
-  
+
   updateSpacers(range: Range, totalItems: number) {
-    this.topSpacer.style.height = 
-      `${range.startIndex * this.itemHeight}px`;
-    
-    this.bottomSpacer.style.height = 
-      `${(totalItems - range.endIndex) * this.itemHeight}px`;
+    this.topSpacer.style.height = `${range.startIndex * this.itemHeight}px`;
+
+    this.bottomSpacer.style.height = `${(totalItems - range.endIndex) * this.itemHeight}px`;
   }
 }
 ```
@@ -312,46 +318,49 @@ class VirtualScroller {
 **Purpose:** Efficient range sum queries for selection tracking
 
 **Time Complexity:**
+
 - Update: O(log n)
 - Query: O(log n)
 - Space: O(n)
 
 **Use Cases:**
+
 - "How many items selected in range [a, b]?"
 - "Select/deselect items efficiently"
 - "Find kth selected item"
 
 **Implementation:**
+
 ```typescript
 class FenwickTree {
   private tree: number[];
   private size: number;
-  
+
   constructor(size: number) {
     this.size = size;
     this.tree = new Array(size + 1).fill(0);
   }
-  
+
   // Update value at index (O(log n))
   update(index: number, delta: number): void {
     index++; // 1-indexed
     while (index <= this.size) {
       this.tree[index] += delta;
-      index += index & (-index); // Add last set bit
+      index += index & -index; // Add last set bit
     }
   }
-  
+
   // Prefix sum from 0 to index (O(log n))
   prefixSum(index: number): number {
     index++; // 1-indexed
     let sum = 0;
     while (index > 0) {
       sum += this.tree[index];
-      index -= index & (-index); // Remove last set bit
+      index -= index & -index; // Remove last set bit
     }
     return sum;
   }
-  
+
   // Range sum from left to right (O(log n))
   rangeSum(left: number, right: number): number {
     if (left > 0) {
@@ -363,22 +372,23 @@ class FenwickTree {
 ```
 
 **Application in Selection:**
+
 ```typescript
 class SelectionManager {
   private fenwick: FenwickTree;
-  
+
   // O(log n) - Check if item is selected
   isSelected(index: number): boolean {
     return this.fenwick.rangeSum(index, index) === 1;
   }
-  
+
   // O(log n) - Toggle selection
   toggleSelection(index: number): void {
     const isCurrentlySelected = this.isSelected(index);
     const delta = isCurrentlySelected ? -1 : 1;
     this.fenwick.update(index, delta);
   }
-  
+
   // O(log n) - Count selected in range
   countSelected(start: number, end: number): number {
     return this.fenwick.rangeSum(start, end);
@@ -391,6 +401,7 @@ class SelectionManager {
 **Purpose:** Render only visible items for performance
 
 **Algorithm:**
+
 ```typescript
 function virtualScroll(params: {
   items: any[];
@@ -400,31 +411,29 @@ function virtualScroll(params: {
   buffer: number;
 }): RenderResult {
   const { items, scrollTop, viewportHeight, itemHeight, buffer } = params;
-  
+
   // Calculate visible range
-  const startIndex = Math.max(0,
-    Math.floor(scrollTop / itemHeight) - buffer
-  );
-  
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - buffer);
+
   const visibleCount = Math.ceil(viewportHeight / itemHeight);
   const endIndex = Math.min(
     items.length,
-    startIndex + visibleCount + buffer * 2
+    startIndex + visibleCount + buffer * 2,
   );
-  
+
   // Get visible items
   const visibleItems = items.slice(startIndex, endIndex);
-  
+
   // Calculate spacer heights
   const topSpacerHeight = startIndex * itemHeight;
   const bottomSpacerHeight = (items.length - endIndex) * itemHeight;
-  
+
   return {
     visibleItems,
     topSpacerHeight,
     bottomSpacerHeight,
     startIndex,
-    endIndex
+    endIndex,
   };
 }
 ```
@@ -434,18 +443,18 @@ function virtualScroll(params: {
 ```typescript
 class DynamicVirtualScroller {
   private heights: FenwickTree; // Stores cumulative heights
-  
+
   // O(log n) - Get scroll position for item index
   getScrollPosition(index: number): number {
     return this.heights.prefixSum(index - 1);
   }
-  
+
   // O(log n) - Find visible range
   findVisibleRange(scrollTop: number, viewportHeight: number): Range {
     // Binary search using Fenwick tree
     let startIndex = this.binarySearchByHeight(scrollTop);
     let endIndex = this.binarySearchByHeight(scrollTop + viewportHeight);
-    
+
     return { startIndex, endIndex };
   }
 }
@@ -456,18 +465,19 @@ class DynamicVirtualScroller {
 **Purpose:** Reduce expensive operations (search, filtering)
 
 **Implementation:**
+
 ```typescript
 function debounce<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: number | null = null;
-  
-  return function(...args: Parameters<T>) {
+
+  return function (...args: Parameters<T>) {
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       fn(...args);
       timeoutId = null;
@@ -486,41 +496,40 @@ const debouncedSearch = debounce((query: string) => {
 **Purpose:** Reuse DOM nodes to reduce GC pressure
 
 **Implementation:**
+
 ```typescript
 class DOMPool<T extends HTMLElement> {
   private pool: T[] = [];
   private create: () => T;
-  
+
   constructor(createFn: () => T) {
     this.create = createFn;
   }
-  
+
   acquire(): T {
     return this.pool.pop() || this.create();
   }
-  
+
   release(element: T): void {
     // Clean element
-    element.textContent = '';
-    element.className = '';
-    
+    element.textContent = "";
+    element.className = "";
+
     // Return to pool
     this.pool.push(element);
   }
-  
+
   clear(): void {
     this.pool = [];
   }
 }
 
 // Usage
-const optionPool = new DOMPool(() => 
-  document.createElement('div')
-);
+const optionPool = new DOMPool(() => document.createElement("div"));
 
 // Acquire from pool
 const option = optionPool.acquire();
-option.textContent = 'Item';
+option.textContent = "Item";
 
 // Release back to pool
 optionPool.release(option);
@@ -607,11 +616,13 @@ User Action → Event Handler → State Update → Render → DOM Update
 ### Performance Optimizations
 
 #### 1. Virtual Scrolling
+
 - **Constant DOM nodes**: Only render visible items (~10-30 items)
 - **O(1) render**: Independent of total dataset size
 - **Smooth scrolling**: 60 FPS maintained
 
 #### 2. RequestAnimationFrame
+
 ```typescript
 function smoothUpdate(callback: () => void) {
   requestAnimationFrame(() => {
@@ -628,37 +639,39 @@ handleScroll() {
 ```
 
 #### 3. Web Workers
+
 ```typescript
 // Main thread
 const worker = new WorkerManager();
 
-worker.execute('sortItems', items).then(sorted => {
+worker.execute("sortItems", items).then((sorted) => {
   this.setItems(sorted);
 });
 
 // Worker thread
-self.addEventListener('message', (e) => {
-  if (e.data.type === 'sortItems') {
-    const sorted = e.data.payload.sort((a, b) => 
-      a.label.localeCompare(b.label)
+self.addEventListener("message", (e) => {
+  if (e.data.type === "sortItems") {
+    const sorted = e.data.payload.sort((a, b) =>
+      a.label.localeCompare(b.label),
     );
-    self.postMessage({ type: 'result', payload: sorted });
+    self.postMessage({ type: "result", payload: sorted });
   }
 });
 ```
 
 #### 4. Memoization
+
 ```typescript
 const memoize = <T extends (...args: any[]) => any>(fn: T) => {
   const cache = new Map<string, ReturnType<T>>();
-  
+
   return (...args: Parameters<T>): ReturnType<T> => {
     const key = JSON.stringify(args);
-    
+
     if (cache.has(key)) {
       return cache.get(key)!;
     }
-    
+
     const result = fn(...args);
     cache.set(key, result);
     return result;
@@ -676,7 +689,7 @@ const getOptionHeight = memoize((index: number) => {
 **Benchmarks (Intel i7-11700K @ 3.6GHz, 32GB RAM):**
 
 | Dataset | Initial Render | Memory | FPS | Selection |
-|---------|----------------|--------|-----|-----------|
+| ------- | -------------- | ------ | --- | --------- |
 | 100     | 8ms            | 2 MB   | 60  | 4ms       |
 | 1,000   | 18ms           | 4 MB   | 60  | 6ms       |
 | 10,000  | 47ms           | 8 MB   | 60  | 8ms       |
@@ -684,6 +697,7 @@ const getOptionHeight = memoize((index: number) => {
 | 1M      | 187ms          | 18 MB  | 59  | 16ms      |
 
 **Key Insights:**
+
 - Linear memory scaling
 - Constant rendering time (virtual scrolling)
 - Selection time grows logarithmically (Fenwick Tree)
@@ -698,6 +712,7 @@ const getOptionHeight = memoize((index: number) => {
 See [THREAT-MODEL.md](./docs/compliance/THREAT-MODEL.md) for complete threat analysis.
 
 **Key Threats:**
+
 1. **XSS (Cross-Site Scripting)** - User content injection
 2. **CSP Violations** - Inline scripts, eval()
 3. **DOM Clobbering** - Malicious HTML attributes
@@ -706,11 +721,12 @@ See [THREAT-MODEL.md](./docs/compliance/THREAT-MODEL.md) for complete threat ana
 ### Security Layers
 
 #### 1. Content Security Policy
+
 ```typescript
 // No eval, no Function constructor
 // ❌ Never do this
-const fn = new Function('return 1 + 1');
-const result = eval('1 + 1');
+const fn = new Function("return 1 + 1");
+const result = eval("1 + 1");
 
 // ✅ Always use safe alternatives
 const fn = () => 1 + 1;
@@ -718,39 +734,41 @@ const result = fn();
 ```
 
 #### 2. Input Sanitization
+
 ```typescript
 function sanitizeString(input: string): string {
   return input
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
 }
 
 // Optional DOMPurify integration
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 function sanitizeHTML(html: string): string {
   return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong'],
-    ALLOWED_ATTR: []
+    ALLOWED_TAGS: ["b", "i", "em", "strong"],
+    ALLOWED_ATTR: [],
   });
 }
 ```
 
 #### 3. Shadow DOM Isolation
+
 ```typescript
 // Styles cannot leak
 class EnhancedSelect extends HTMLElement {
   private shadow: ShadowRoot;
-  
+
   constructor() {
     super();
-    this.shadow = this.attachShadow({ mode: 'open' });
-    
+    this.shadow = this.attachShadow({ mode: "open" });
+
     // Styles are scoped to shadow root
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `/* Isolated styles */`;
     this.shadow.appendChild(style);
   }
@@ -758,26 +776,27 @@ class EnhancedSelect extends HTMLElement {
 ```
 
 #### 4. Validation Layer
+
 ```typescript
 const validateItem = (item: unknown): SelectItem => {
-  if (!item || typeof item !== 'object') {
-    throw new TypeError('Item must be an object');
+  if (!item || typeof item !== "object") {
+    throw new TypeError("Item must be an object");
   }
-  
+
   const { value, label } = item as any;
-  
+
   if (value === undefined || value === null) {
-    throw new Error('Item value is required');
+    throw new Error("Item value is required");
   }
-  
-  if (typeof label !== 'string') {
-    throw new TypeError('Item label must be a string');
+
+  if (typeof label !== "string") {
+    throw new TypeError("Item label must be a string");
   }
-  
+
   return {
     value,
     label: sanitizeString(label),
-    disabled: Boolean((item as any).disabled)
+    disabled: Boolean((item as any).disabled),
   };
 };
 ```
@@ -825,23 +844,29 @@ See [TESTING-ARCHITECTURE.md](./docs/TESTING-ARCHITECTURE.md) for complete testi
 
 ```
 npm registry
-├── @smilodon/core@1.9.1 (6.6 KB gzipped core runtime)
-├── @smilodon/react@1.9.1 (framework adapter)
-├── @smilodon/vue@1.9.1 (framework adapter)
-├── @smilodon/svelte@1.9.1 (framework adapter)
-├── @smilodon/solid@1.9.1 (framework adapter)
-├── @smilodon/react-native@1.9.1 (native bridge + web fallback)
-└── @smilodon/vanilla@1.9.1 (DOM helper layer)
+├── @smilodon/core@1.9.3 (6.6 KB gzipped core runtime)
+├── @smilodon/react@1.9.3 (framework adapter)
+├── @smilodon/vue@1.9.3 (framework adapter)
+├── @smilodon/svelte@1.9.3 (framework adapter)
+├── @smilodon/solid@1.9.3 (framework adapter)
+├── @smilodon/react-native@1.9.3 (native bridge + web fallback)
+└── @smilodon/vanilla@1.9.3 (DOM helper layer)
 ```
 
 ### CDN Strategy
 
 ```html
 <!-- Core component -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.1/dist/index.js"></script>
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.3/dist/index.js"
+></script>
 
 <!-- Framework wrappers -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.9.1/dist/index.js"></script>
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.9.3/dist/index.js"
+></script>
 ```
 
 ### Build Pipeline
@@ -871,7 +896,7 @@ npm publish
 name: Release
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
 jobs:
   test:
@@ -883,7 +908,7 @@ jobs:
       - Run E2E tests
       - Run contract tests
       - Generate coverage report
-  
+
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -891,7 +916,7 @@ jobs:
       - Build all packages
       - Verify bundle sizes
       - Run security audit
-  
+
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -915,6 +940,6 @@ jobs:
 
 ---
 
-**Last Updated**: May 16, 2026
-**Version**: 1.9.1
+**Last Updated**: October 3, 2026
+**Version**: 1.9.3
 **Maintainer**: Navid Rezadoost
