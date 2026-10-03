@@ -1,12 +1,22 @@
-import type { NativeSelectOptions, SelectEventName, SelectEventsDetailMap, RendererHelpers } from '../types';
-import { createRendererHelpers, OptionRenderer, OptionTemplate, renderTemplate } from '../renderers/contracts';
-import { Virtualizer } from '../utils/virtualizer';
-import { OptionRenderer as UnifiedOptionRenderer } from '../utils/option-renderer';
-import type { OptionRendererConfig } from '../utils/option-renderer';
+import type {
+  NativeSelectOptions,
+  SelectEventName,
+  SelectEventsDetailMap,
+  RendererHelpers,
+} from "../types";
+import {
+  createRendererHelpers,
+  OptionRenderer,
+  OptionTemplate,
+  renderTemplate,
+} from "../renderers/contracts";
+import { Virtualizer } from "../utils/virtualizer";
+import { OptionRenderer as UnifiedOptionRenderer } from "../utils/option-renderer";
+import type { OptionRendererConfig } from "../utils/option-renderer";
 
 export class NativeSelectElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['placement', 'strategy', 'portal'];
+    return ["placement", "strategy", "portal"];
   }
 
   private _options: NativeSelectOptions = {};
@@ -16,36 +26,42 @@ export class NativeSelectElement extends HTMLElement {
   private _helpers: RendererHelpers;
   private _virtualizer?: Virtualizer;
   private _unifiedRenderer?: UnifiedOptionRenderer;
-  
+
   // Multi-select & interaction state
   private _selectedSet = new Set<number>(); // indices
   private _selectedItems = new Map<number, unknown>(); // index -> item
   private _activeIndex = -1;
   private _multi = false;
-  private _typeBuffer = '';
+  private _typeBuffer = "";
   private _typeTimeout?: number;
+  private _announceTimeout?: number;
   private _liveRegion?: HTMLElement;
 
   constructor() {
     super();
-    this._shadow = this.attachShadow({ mode: 'open' });
-    this._listRoot = document.createElement('div');
-    this._listRoot.setAttribute('role', 'listbox');
-    this._listRoot.setAttribute('tabindex', '0');
+    this._shadow = this.attachShadow({ mode: "open" });
+    this._listRoot = document.createElement("div");
+    this._listRoot.setAttribute("role", "listbox");
+    this._listRoot.setAttribute("tabindex", "0");
     this._shadow.appendChild(this._listRoot);
 
     // Live region for screen reader announcements
-    this._liveRegion = document.createElement('div');
-    this._liveRegion.setAttribute('role', 'status');
-    this._liveRegion.setAttribute('aria-live', 'polite');
-    this._liveRegion.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;';
+    this._liveRegion = document.createElement("div");
+    this._liveRegion.setAttribute("role", "status");
+    this._liveRegion.setAttribute("aria-live", "polite");
+    this._liveRegion.style.cssText =
+      "position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;";
     this._shadow.appendChild(this._liveRegion);
 
-    this._helpers = createRendererHelpers((item, index) => this._onSelect(item, index));
-    
+    this._helpers = createRendererHelpers((item, index) =>
+      this._onSelect(item, index),
+    );
+
     // Delegated click
-    this._listRoot.addEventListener('click', (e) => {
-      const el = (e.target as HTMLElement).closest('[data-selectable]') as HTMLElement | null;
+    this._listRoot.addEventListener("click", (e) => {
+      const el = (e.target as HTMLElement).closest(
+        "[data-selectable]",
+      ) as HTMLElement | null;
       if (!el) return;
       const idx = Number(el.dataset.index);
       const item = this._items[idx];
@@ -53,33 +69,39 @@ export class NativeSelectElement extends HTMLElement {
     });
 
     // Keyboard navigation
-    this._listRoot.addEventListener('keydown', (e) => this._onKeydown(e));
+    this._listRoot.addEventListener("keydown", (e) => this._onKeydown(e));
   }
 
   connectedCallback() {
     // Initialize ARIA roles and open event
-    this._listRoot.setAttribute('role', 'listbox');
-    this._listRoot.setAttribute('aria-label', 'Options list');
-    if (this._multi) this._listRoot.setAttribute('aria-multiselectable', 'true');
+    this._listRoot.setAttribute("role", "listbox");
+    this._listRoot.setAttribute("aria-label", "Options list");
+    if (this._multi)
+      this._listRoot.setAttribute("aria-multiselectable", "true");
     this._initializeOptionRenderer();
-    this._emit('open', {});
+    this._emit("open", {});
   }
 
   disconnectedCallback() {
-    this._emit('close', {});
+    this._emit("close", {});
     // Cleanup unified renderer
     if (this._unifiedRenderer) {
       this._unifiedRenderer.unmountAll();
     }
+    this._virtualizer?.destroy();
+    this._virtualizer = undefined;
     // Cleanup: remove listeners if any were added outside constructor
     if (this._typeTimeout) window.clearTimeout(this._typeTimeout);
+    if (this._announceTimeout) window.clearTimeout(this._announceTimeout);
   }
 
   private _initializeOptionRenderer(): void {
+    this._unifiedRenderer?.unmountAll();
+
     const getValue = (item: unknown) => (item as any)?.value ?? item;
     const getLabel = (item: unknown) => (item as any)?.label ?? String(item);
     const getDisabled = (item: unknown) => (item as any)?.disabled ?? false;
-    
+
     const rendererConfig: OptionRendererConfig = {
       enableRecycling: true,
       maxPoolSize: 100,
@@ -92,35 +114,46 @@ export class NativeSelectElement extends HTMLElement {
       },
       onCustomEvent: (index: number, eventName: string, data: unknown) => {
         // Emit custom events from option components
-        this.dispatchEvent(new CustomEvent('option:custom-event', {
-          detail: { index, eventName, data },
-          bubbles: true,
-          composed: true
-        }));
+        this.dispatchEvent(
+          new CustomEvent("option:custom-event", {
+            detail: { index, eventName, data },
+            bubbles: true,
+            composed: true,
+          }),
+        );
       },
       onError: (index: number, error: Error) => {
         console.error(`[NativeSelect] Error in option ${index}:`, error);
-        this.dispatchEvent(new CustomEvent('option:mount-error', {
-          detail: { index, error },
-          bubbles: true,
-          composed: true
-        }));
-      }
+        this.dispatchEvent(
+          new CustomEvent("option:mount-error", {
+            detail: { index, error },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      },
     };
-    
+
     this._unifiedRenderer = new UnifiedOptionRenderer(rendererConfig);
   }
 
-  attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
+  attributeChangedCallback(
+    name: string,
+    _oldValue: string | null,
+    newValue: string | null,
+  ) {
     switch (name) {
-      case 'placement':
-        this._options.placement = (newValue ?? undefined) as NativeSelectOptions['placement'];
+      case "placement":
+        this._options.placement = (newValue ??
+          undefined) as NativeSelectOptions["placement"];
         break;
-      case 'strategy':
-        this._options.strategy = (newValue ?? undefined) as NativeSelectOptions['strategy'];
+      case "strategy":
+        this._options.strategy = (newValue ??
+          undefined) as NativeSelectOptions["strategy"];
         break;
-      case 'portal':
-        this._options.portal = newValue === 'true' ? true : newValue === 'false' ? false : undefined;
+      case "portal":
+        this._options.portal =
+          newValue === "true" ? true : newValue === "false" ? false : undefined;
         break;
     }
   }
@@ -128,11 +161,12 @@ export class NativeSelectElement extends HTMLElement {
   set items(items: unknown[]) {
     this._items = items ?? [];
     // initialize virtualizer with estimated height (default 48) and buffer
+    this._virtualizer?.destroy();
     this._virtualizer = new Virtualizer(
       this._listRoot,
       this._items.length,
       (i) => this._items[i],
-      { estimatedItemHeight: 48, buffer: 5 }
+      { estimatedItemHeight: 48, buffer: 5 },
     );
     this.render();
   }
@@ -144,9 +178,9 @@ export class NativeSelectElement extends HTMLElement {
   set multi(value: boolean) {
     this._multi = value;
     if (value) {
-      this._listRoot.setAttribute('aria-multiselectable', 'true');
+      this._listRoot.setAttribute("aria-multiselectable", "true");
     } else {
-      this._listRoot.removeAttribute('aria-multiselectable');
+      this._listRoot.removeAttribute("aria-multiselectable");
     }
   }
 
@@ -189,7 +223,7 @@ export class NativeSelectElement extends HTMLElement {
    * For multi-select: adds to selection if not already selected
    */
   setValue(value: unknown): void {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === "") {
       // Clear selection
       this._selectedSet.clear();
       this._selectedItems.clear();
@@ -199,8 +233,8 @@ export class NativeSelectElement extends HTMLElement {
     }
 
     // Find item by value
-    const index = this._items.findIndex(item => {
-      if (typeof item === 'object' && item !== null && 'value' in item) {
+    const index = this._items.findIndex((item) => {
+      if (typeof item === "object" && item !== null && "value" in item) {
         return (item as any).value === value;
       }
       return item === value;
@@ -228,13 +262,13 @@ export class NativeSelectElement extends HTMLElement {
     // Optimized: single-pass iteration, no intermediate arrays
     const values: unknown[] = [];
     for (const item of this._selectedItems.values()) {
-      if (typeof item === 'object' && item !== null && 'value' in item) {
+      if (typeof item === "object" && item !== null && "value" in item) {
         values.push((item as any).value);
       } else {
         values.push(item);
       }
     }
-    
+
     return this._multi ? values : (values[0] ?? null);
   }
 
@@ -242,50 +276,57 @@ export class NativeSelectElement extends HTMLElement {
     const { optionTemplate, optionRenderer } = this._options;
     const viewportHeight = this.getBoundingClientRect().height || 300;
     const scrollTop = this.scrollTop || 0;
-    
+
     // Update aria-activedescendant
     if (this._activeIndex >= 0) {
-      this._listRoot.setAttribute('aria-activedescendant', `option-${this._activeIndex}`);
+      this._listRoot.setAttribute(
+        "aria-activedescendant",
+        `option-${this._activeIndex}`,
+      );
     } else {
-      this._listRoot.removeAttribute('aria-activedescendant');
+      this._listRoot.removeAttribute("aria-activedescendant");
     }
 
     // Check if any items have custom components
-    const hasCustomComponents = this._items.some(item => 
-      typeof item === 'object' && 
-      item !== null && 
-      Object.prototype.hasOwnProperty.call(item, 'optionComponent') &&
-      typeof (item as any).optionComponent === 'function'
+    const hasCustomComponents = this._items.some(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        Object.prototype.hasOwnProperty.call(item, "optionComponent") &&
+        typeof (item as any).optionComponent === "function",
     );
 
     // Use unified renderer if we have custom components
     if (hasCustomComponents && this._unifiedRenderer) {
       this._listRoot.replaceChildren(); // Clear existing content
       const frag = document.createDocumentFragment();
-      
+
       for (let i = 0; i < this._items.length; i++) {
         const item = this._items[i];
         const isSelected = this._selectedSet.has(i);
         const isFocused = this._activeIndex === i;
-        
+
         const optionElement = this._unifiedRenderer.render(
           item,
           i,
           isSelected,
           isFocused,
-          `native-${this.getAttribute('id') || 'default'}`
+          `native-${this.getAttribute("id") || "default"}`,
         );
-        
+
         frag.appendChild(optionElement);
       }
-      
+
       this._listRoot.appendChild(frag);
       return;
     }
 
     // Fall back to original rendering logic for lightweight options
     if (this._virtualizer) {
-      const { startIndex, endIndex } = this._virtualizer.computeWindow(scrollTop, viewportHeight);
+      const { startIndex, endIndex } = this._virtualizer.computeWindow(
+        scrollTop,
+        viewportHeight,
+      );
       this._virtualizer.render(startIndex, endIndex, (node, item, i) => {
         this._applyOptionAttrs(node, i);
         if (optionRenderer) {
@@ -293,15 +334,16 @@ export class NativeSelectElement extends HTMLElement {
           // replace node contents
           node.replaceChildren(el);
         } else if (optionTemplate) {
-          const wrapper = document.createElement('div');
+          const wrapper = document.createElement("div");
           wrapper.innerHTML = optionTemplate(item, i);
           const el = wrapper.firstElementChild as HTMLElement | null;
           node.replaceChildren(el ?? document.createTextNode(String(item)));
         } else {
           // Handle {label, value} objects or primitives
-          const displayText = (typeof item === 'object' && item !== null && 'label' in item)
-            ? String((item as any).label)
-            : String(item);
+          const displayText =
+            typeof item === "object" && item !== null && "label" in item
+              ? String((item as any).label)
+              : String(item);
           node.textContent = displayText;
         }
       });
@@ -312,9 +354,9 @@ export class NativeSelectElement extends HTMLElement {
       const item = this._items[i];
       if (optionRenderer) {
         const el = optionRenderer(item, i, this._helpers);
-        if (!el.hasAttribute('data-selectable')) {
-          el.setAttribute('data-selectable', '');
-          el.setAttribute('data-index', String(i));
+        if (!el.hasAttribute("data-selectable")) {
+          el.setAttribute("data-selectable", "");
+          el.setAttribute("data-index", String(i));
         }
         this._applyOptionAttrs(el, i);
         frag.appendChild(el);
@@ -325,14 +367,15 @@ export class NativeSelectElement extends HTMLElement {
         this._applyAriaToAll();
         return; // rendering complete
       } else {
-        const el = document.createElement('div');
+        const el = document.createElement("div");
         // Handle {label, value} objects or primitives
-        const displayText = (typeof item === 'object' && item !== null && 'label' in item)
-          ? String((item as any).label)
-          : String(item);
+        const displayText =
+          typeof item === "object" && item !== null && "label" in item
+            ? String((item as any).label)
+            : String(item);
         el.textContent = displayText;
-        el.setAttribute('data-selectable', '');
-        el.setAttribute('data-index', String(i));
+        el.setAttribute("data-selectable", "");
+        el.setAttribute("data-index", String(i));
         this._applyOptionAttrs(el, i);
         frag.appendChild(el);
       }
@@ -341,12 +384,12 @@ export class NativeSelectElement extends HTMLElement {
   }
 
   private _applyOptionAttrs(node: HTMLElement, index: number) {
-    node.setAttribute('role', 'option');
+    node.setAttribute("role", "option");
     node.id = `option-${index}`;
     if (this._selectedSet.has(index)) {
-      node.setAttribute('aria-selected', 'true');
+      node.setAttribute("aria-selected", "true");
     } else {
-      node.setAttribute('aria-selected', 'false');
+      node.setAttribute("aria-selected", "false");
     }
   }
 
@@ -358,7 +401,10 @@ export class NativeSelectElement extends HTMLElement {
     }
   }
 
-  private _emit<K extends SelectEventName>(name: K, detail: SelectEventsDetailMap[K]) {
+  private _emit<K extends SelectEventName>(
+    name: K,
+    detail: SelectEventsDetailMap[K],
+  ) {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
   }
 
@@ -380,21 +426,21 @@ export class NativeSelectElement extends HTMLElement {
     }
     this._activeIndex = index;
     this.render();
-    
+
     // Emit with all required fields
     const selected = this._selectedSet.has(index);
     const value = (item as any)?.value ?? item;
     const label = (item as any)?.label ?? String(item);
-    
-    this._emit('select', { 
-      item, 
-      index, 
+
+    this._emit("select", {
+      item,
+      index,
       value,
       label,
       selected,
-      multi: this._multi 
+      multi: this._multi,
     });
-    
+
     // Optimized: single-pass iteration for change event data
     const selectedItems: unknown[] = [];
     const selectedValues: unknown[] = [];
@@ -402,54 +448,54 @@ export class NativeSelectElement extends HTMLElement {
       selectedItems.push(item);
       selectedValues.push((item as any)?.value ?? item);
     }
-    
+
     // Emit 'change' event for better React compatibility
-    this._emit('change', { 
+    this._emit("change", {
       selectedItems,
       selectedValues,
-      selectedIndices: Array.from(this._selectedSet)
+      selectedIndices: Array.from(this._selectedSet),
     });
-    
+
     this._announce(`Selected ${label}`);
   }
 
   private _onKeydown(e: KeyboardEvent) {
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         this._moveActive(1);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         this._moveActive(-1);
         break;
-      case 'Home':
+      case "Home":
         e.preventDefault();
         this._setActive(0);
         break;
-      case 'End':
+      case "End":
         e.preventDefault();
         this._setActive(this._items.length - 1);
         break;
-      case 'PageDown':
+      case "PageDown":
         e.preventDefault();
         this._moveActive(10);
         break;
-      case 'PageUp':
+      case "PageUp":
         e.preventDefault();
         this._moveActive(-10);
         break;
-      case 'Enter':
-      case ' ':
+      case "Enter":
+      case " ":
         e.preventDefault();
         if (this._activeIndex >= 0) {
           const item = this._items[this._activeIndex];
           this._onSelect(item, this._activeIndex);
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
-        this._emit('close', {});
+        this._emit("close", {});
         break;
       default:
         // Type-ahead buffer
@@ -461,7 +507,10 @@ export class NativeSelectElement extends HTMLElement {
   }
 
   private _moveActive(delta: number) {
-    const next = Math.max(0, Math.min(this._items.length - 1, this._activeIndex + delta));
+    const next = Math.max(
+      0,
+      Math.min(this._items.length - 1, this._activeIndex + delta),
+    );
     this._setActive(next);
   }
 
@@ -474,18 +523,20 @@ export class NativeSelectElement extends HTMLElement {
 
   private _scrollToActive() {
     const el = this._shadow.getElementById(`option-${this._activeIndex}`);
-    el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   private _onType(char: string) {
     if (this._typeTimeout) window.clearTimeout(this._typeTimeout);
     this._typeBuffer += char.toLowerCase();
     this._typeTimeout = window.setTimeout(() => {
-      this._typeBuffer = '';
+      this._typeBuffer = "";
     }, 400);
-    
+
     // Find first matching item
-    const match = this._items.findIndex((item) => String(item).toLowerCase().startsWith(this._typeBuffer));
+    const match = this._items.findIndex((item) =>
+      String(item).toLowerCase().startsWith(this._typeBuffer),
+    );
     if (match >= 0) {
       this._setActive(match);
     }
@@ -494,8 +545,10 @@ export class NativeSelectElement extends HTMLElement {
   private _announce(msg: string) {
     if (this._liveRegion) {
       this._liveRegion.textContent = msg;
-      setTimeout(() => {
-        if (this._liveRegion) this._liveRegion.textContent = '';
+      if (this._announceTimeout) window.clearTimeout(this._announceTimeout);
+      this._announceTimeout = window.setTimeout(() => {
+        this._announceTimeout = undefined;
+        if (this._liveRegion) this._liveRegion.textContent = "";
       }, 1000);
     }
   }
@@ -506,4 +559,6 @@ export class NativeSelectElement extends HTMLElement {
   }
 }
 
-customElements.define('smilodon-select', NativeSelectElement);
+if (!customElements.get("smilodon-select")) {
+  customElements.define("smilodon-select", NativeSelectElement);
+}

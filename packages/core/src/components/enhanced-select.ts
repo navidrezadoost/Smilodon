@@ -52,6 +52,11 @@ export class EnhancedSelect extends HTMLElement {
   /** live set of all connected instances; used to auto-close siblings */
   private static _instances: Set<EnhancedSelect> = new Set();
   private static readonly _MIRRORED_STYLES_SCOPE_CLASS = 'smilodon-mirrored-styles-scope';
+  private static readonly _MIRRORED_STYLESHEET_CACHE_LIMIT = 32;
+  private static readonly _mirroredStylesheetTextCache = new Map<string, {
+    promise: Promise<string | null>;
+    lastUsed: number;
+  }>();
 
   private _config: GlobalSelectConfig;
   private _shadow: ShadowRoot;
@@ -92,6 +97,10 @@ export class EnhancedSelect extends HTMLElement {
   private _globalStylesContainer: HTMLElement | null = null;
   private _themeContextObserver: MutationObserver | null = null;
   private _globalStylesSyncToken = 0;
+  private _connectionController?: AbortController;
+  private _asyncGeneration = 0;
+  private _lifecycleTimers = new Set<number>();
+  private _lifecycleRafs = new Set<number>();
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
   private _suppressBlurClose = false;
   private _renderCycleId = 0;
@@ -111,11 +120,51 @@ export class EnhancedSelect extends HTMLElement {
     hadMarker: boolean;
   }> = [];
 
+  private _onDocumentPointerDown = (e: PointerEvent): void => {
+    const path = (e.composedPath && e.composedPath()) || [];
+    let clickedInside = false;
+
+    for (const node of path as any[]) {
+      if (node === this || node === this._container) {
+        clickedInside = true;
+        break;
+      }
+
+      if (node instanceof Node) {
+        try {
+          if (this._shadow && this._shadow.contains(node as Node)) {
+            clickedInside = true;
+            break;
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      if (node instanceof Element) {
+        try {
+          if (node.matches('[data-sm-selectable], [data-selectable], [data-sm-state], .input-container, .select-container, .dropdown-arrow-container, .clear-control-button')) {
+            clickedInside = true;
+            break;
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+    }
+
+    if (!clickedInside) {
+      this._handleClose();
+    }
+  };
+
   get classMap(): ClassMap | undefined {
     return this._classMap;
   }
 
   set classMap(map: ClassMap | undefined) {
+    if (this._areClassMapsEqual(this._classMap, map)) return;
+
     this._classMap = map;
     this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map || this._groupHeaderRenderer));
     this._track('style', 'classMapChanged', {
@@ -137,6 +186,8 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   set groupHeaderRenderer(renderer: import('../types').GroupHeaderRenderer | undefined) {
+    if (this._groupHeaderRenderer === renderer) return;
+
     this._groupHeaderRenderer = renderer;
     this._setGlobalStylesMirroring(Boolean(this._optionRenderer || this._classMap || renderer));
     this._track('style', 'groupHeaderRendererChanged', { enabled: Boolean(renderer) });
@@ -199,6 +250,11 @@ export class EnhancedSelect extends HTMLElement {
   connectedCallback(): void {
     // register instance
     EnhancedSelect._instances.add(this);
+    this._connectionController?.abort();
+    this._connectionController = new AbortController();
+    document.addEventListener('pointerdown', this._onDocumentPointerDown, {
+      signal: this._connectionController.signal,
+    });
 
     // WORKAROUND: Force display style on host element for Angular compatibility
     // Angular's rendering seems to not apply :host styles correctly in some cases
@@ -208,7 +264,7 @@ export class EnhancedSelect extends HTMLElement {
     // Sync direction attribute (must be in connectedCallback, not constructor)
     this._syncDirectionConfig();
 
-    if (this._optionRenderer) {
+    if (this._optionRenderer || this._classMap || this._groupHeaderRenderer) {
       this._setGlobalStylesMirroring(true);
     }
     
@@ -233,6 +289,10 @@ export class EnhancedSelect extends HTMLElement {
   disconnectedCallback(): void {
     // unregister instance
     EnhancedSelect._instances.delete(this);
+    this._connectionController?.abort();
+    this._connectionController = undefined;
+    this._asyncGeneration += 1;
+    this._clearLifecycleTasks();
 
     // Cleanup observers
     this._resizeObserver?.disconnect();
@@ -254,8 +314,8 @@ export class EnhancedSelect extends HTMLElement {
 
   private _setGlobalStylesMirroring(enabled: boolean): void {
     if (this._mirrorGlobalStylesForCustomOptions === enabled) {
-      if (enabled) {
-        this._mirrorDocumentStylesIntoShadow();
+      if (enabled && this.isConnected && !this._globalStylesObserver) {
+        this._setupGlobalStylesMirroring();
       }
       return;
     }
@@ -268,6 +328,38 @@ export class EnhancedSelect extends HTMLElement {
     } else {
       this._teardownGlobalStylesMirroring();
     }
+  }
+
+  private _setLifecycleTimeout(callback: () => void, delay = 0): number {
+    const id = window.setTimeout(() => {
+      this._lifecycleTimers.delete(id);
+      if (!this.isConnected) return;
+      callback();
+    }, delay);
+    this._lifecycleTimers.add(id);
+    return id;
+  }
+
+  private _requestLifecycleFrame(callback: () => void): number {
+    const id = requestAnimationFrame(() => {
+      this._lifecycleRafs.delete(id);
+      if (!this.isConnected) return;
+      callback();
+    });
+    this._lifecycleRafs.add(id);
+    return id;
+  }
+
+  private _clearLifecycleTasks(): void {
+    for (const id of this._lifecycleTimers) {
+      clearTimeout(id);
+    }
+    this._lifecycleTimers.clear();
+
+    for (const id of this._lifecycleRafs) {
+      cancelAnimationFrame(id);
+    }
+    this._lifecycleRafs.clear();
   }
 
   private _setupGlobalStylesMirroring(): void {
@@ -396,23 +488,68 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     if (node instanceof HTMLLinkElement && node.href) {
-      try {
-        const response = await fetch(node.href, {
-          credentials: node.crossOrigin === 'use-credentials' ? 'include' : 'same-origin',
-          mode: 'cors',
-        });
-        if (!response.ok) {
-          return null;
-        }
+      const credentials: RequestCredentials = node.crossOrigin === 'use-credentials' ? 'include' : 'same-origin';
+      const cacheKey = `${node.href}|${credentials}`;
+      let cacheEntry = EnhancedSelect._mirroredStylesheetTextCache.get(cacheKey);
 
-        const cssText = await response.text();
-        return this._buildScopedStyleElement(cssText, String(index));
-      } catch (_error) {
+      if (!cacheEntry) {
+        cacheEntry = {
+          promise: fetch(node.href, {
+            credentials,
+            mode: 'cors',
+          })
+            .then((response) => {
+              if (!response.ok) return null;
+              return response.text();
+            })
+            .catch(() => null),
+          lastUsed: Date.now(),
+        };
+
+        EnhancedSelect._mirroredStylesheetTextCache.set(cacheKey, cacheEntry);
+        EnhancedSelect._pruneMirroredStylesheetTextCache();
+      } else {
+        cacheEntry.lastUsed = Date.now();
+      }
+
+      const cssText = await cacheEntry.promise;
+      if (cssText === null) {
+        EnhancedSelect._mirroredStylesheetTextCache.delete(cacheKey);
         return null;
       }
+
+      return this._buildScopedStyleElement(cssText, String(index));
     }
 
     return null;
+  }
+
+  private static _pruneMirroredStylesheetTextCache(): void {
+    while (EnhancedSelect._mirroredStylesheetTextCache.size > EnhancedSelect._MIRRORED_STYLESHEET_CACHE_LIMIT) {
+      let lruKey: string | undefined;
+      let oldest = Infinity;
+
+      for (const [key, entry] of EnhancedSelect._mirroredStylesheetTextCache.entries()) {
+        if (entry.lastUsed < oldest) {
+          oldest = entry.lastUsed;
+          lruKey = key;
+        }
+      }
+
+      if (!lruKey) return;
+      EnhancedSelect._mirroredStylesheetTextCache.delete(lruKey);
+    }
+  }
+
+  private _areClassMapsEqual(left: ClassMap | undefined, right: ClassMap | undefined): boolean {
+    if (left === right) return true;
+    if (!left || !right) return false;
+
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    if (leftKeys.length !== rightKeys.length) return false;
+
+    return leftKeys.every((key) => left[key] === right[key]);
   }
 
   private _buildScopedStyleElement(cssText: string, id: string): HTMLStyleElement | null {
@@ -711,6 +848,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _syncStyleConfigVariables(): void {
     const styles = this._config.styles;
+    if (!styles) return;
 
     this._applyStyleVariableMap(styles.option, {
       background: '--select-option-bg',
@@ -2841,7 +2979,7 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       // Delay to allow option click/focus transitions
-      setTimeout(() => {
+      this._setLifecycleTimeout(() => {
         if (this._suppressBlurClose) {
           // another pointerdown inside options is in progress; keep open
           return;
@@ -2869,7 +3007,7 @@ export class EnhancedSelect extends HTMLElement {
     // sufficient.
     this._optionsContainer.addEventListener('pointerdown', () => {
       this._suppressBlurClose = true;
-      setTimeout(() => {
+      this._setLifecycleTimeout(() => {
         this._suppressBlurClose = false;
       }, 150); // Increased timeout to ensure click finishes before blur checks
     });
@@ -2909,44 +3047,6 @@ export class EnhancedSelect extends HTMLElement {
     // Keyboard navigation
     this._input.addEventListener('keydown', (e) => this._handleKeydown(e));
     
-    // Click outside to close — robust detection across shadow DOM and custom renderers
-    document.addEventListener('pointerdown', (e) => {
-      const path = (e.composedPath && e.composedPath()) || [];
-      let clickedInside = false;
-
-      for (const node of path as any[]) {
-        if (node === this || node === this._container) {
-          clickedInside = true;
-          break;
-        }
-
-        if (node instanceof Node) {
-          try {
-            if (this._shadow && this._shadow.contains(node as Node)) {
-              clickedInside = true;
-              break;
-            }
-          } catch (err) {
-            // ignore
-          }
-        }
-
-        if (node instanceof Element) {
-          try {
-            if (node.matches('[data-sm-selectable], [data-selectable], [data-sm-state], .input-container, .select-container, .dropdown-arrow-container, .clear-control-button')) {
-              clickedInside = true;
-              break;
-            }
-          } catch (err) {
-            // ignore
-          }
-        }
-      }
-
-      if (!clickedInside) {
-        this._handleClose();
-      }
-    });
   }
 
   private _initializeObservers(): void {
@@ -2979,11 +3079,13 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     this._setBusy(true);
+    const generation = ++this._asyncGeneration;
     
     try {
       const items = await this._config.serverSide.fetchSelectedItems(
         this._config.serverSide.initialSelectedValues
       );
+      if (generation !== this._asyncGeneration || !this.isConnected) return;
       
       // Add to state
       items.forEach((item, index) => {
@@ -2993,9 +3095,12 @@ export class EnhancedSelect extends HTMLElement {
       
       this._updateInputDisplay();
     } catch (error) {
+      if (generation !== this._asyncGeneration || !this.isConnected) return;
       this._handleError(error as Error);
     } finally {
-      this._setBusy(false);
+      if (generation === this._asyncGeneration && this.isConnected) {
+        this._setBusy(false);
+      }
     }
   }
 
@@ -3033,9 +3138,9 @@ export class EnhancedSelect extends HTMLElement {
     // Scroll to selected if configured
     if (this._config.scrollToSelected.enabled) {
       // Use requestAnimationFrame for better timing after render
-      requestAnimationFrame(() => {
+      this._requestLifecycleFrame(() => {
         // Double RAF to ensure layout is complete
-        requestAnimationFrame(() => {
+        this._requestLifecycleFrame(() => {
           this._scrollToSelected();
         });
       });
@@ -3160,6 +3265,9 @@ export class EnhancedSelect extends HTMLElement {
   private _perfMeasure(name: string, start: string, end: string): void {
     if (!this._isPerfEnabled()) return;
     performance.measure(name, start, end);
+    performance.clearMarks(start);
+    performance.clearMarks(end);
+    performance.clearMeasures(name);
   }
 
   private _markOpenStart(): void {
@@ -3278,7 +3386,7 @@ export class EnhancedSelect extends HTMLElement {
       this._state.lastNotifiedResultCount = count;
       
       // Use setTimeout to avoid synchronous state updates during render
-      setTimeout(() => {
+      this._setLifecycleTimeout(() => {
         this._emit('search', { query, results: filteredItems, count });
         this._config.callbacks.onSearch?.(query);
       }, 0);
@@ -3584,7 +3692,7 @@ export class EnhancedSelect extends HTMLElement {
   private _announce(message: string): void {
     if (this._liveRegion) {
       this._liveRegion.textContent = message;
-      setTimeout(() => {
+      this._setLifecycleTimeout(() => {
         if (this._liveRegion) this._liveRegion.textContent = '';
       }, 1000);
     }
@@ -3808,7 +3916,7 @@ export class EnhancedSelect extends HTMLElement {
     this._optionsContainer.style.opacity = '0';
     this._optionsContainer.style.transition = 'opacity 0.15s ease-out';
     
-    setTimeout(() => {
+    this._setLifecycleTimeout(() => {
       this._renderOptions();
       // Fade back in
       this._optionsContainer.style.opacity = '1';
@@ -4109,8 +4217,10 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   set optionRenderer(renderer: OptionRendererFn | undefined) {
+    if (this._optionRenderer === renderer) return;
+
     this._optionRenderer = renderer;
-    this._setGlobalStylesMirroring(Boolean(renderer || this._classMap));
+    this._setGlobalStylesMirroring(Boolean(renderer || this._classMap || this._groupHeaderRenderer));
     this._track('style', 'optionRendererChanged', { enabled: Boolean(renderer) });
     this._renderOptions();
   }
@@ -4148,7 +4258,7 @@ export class EnhancedSelect extends HTMLElement {
       this._dropdown.scrollTop = targetScrollTop;
       
       // Ensure it sticks after layout
-      requestAnimationFrame(() => {
+      this._requestLifecycleFrame(() => {
         if (this._dropdown) {
           this._dropdown.scrollTop = targetScrollTop;
         }
@@ -4230,9 +4340,11 @@ export class EnhancedSelect extends HTMLElement {
     if (!this._config.serverSide.fetchSelectedItems) return;
     
     this._setBusy(true);
+    const generation = ++this._asyncGeneration;
     
     try {
       const items = await this._config.serverSide.fetchSelectedItems(values);
+      if (generation !== this._asyncGeneration || !this.isConnected) return;
       
       this._state.selectedIndices.clear();
       this._state.selectedItems.clear();
@@ -4252,9 +4364,12 @@ export class EnhancedSelect extends HTMLElement {
         this._scrollToSelected();
       }
     } catch (error) {
+      if (generation !== this._asyncGeneration || !this.isConnected) return;
       this._handleError(error as Error);
     } finally {
-      this._setBusy(false);
+      if (generation === this._asyncGeneration && this.isConnected) {
+        this._setBusy(false);
+      }
     }
   }
 
@@ -4385,6 +4500,8 @@ export class EnhancedSelect extends HTMLElement {
       if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
 
       const sourceValue = (source as any)[key];
+      if (sourceValue === undefined) continue;
+
       const targetValue = result[key];
 
       // Optional adapter props are commonly forwarded as undefined. Preserve
@@ -4641,7 +4758,7 @@ export class EnhancedSelect extends HTMLElement {
             this._optionsContainer.appendChild(fragment);
 
             if (cursor < filteredIndices.length) {
-              requestAnimationFrame(renderChunk);
+              this._requestLifecycleFrame(renderChunk);
             } else {
               if (renderCycleId !== this._renderCycleId) return;
 
@@ -4736,17 +4853,17 @@ export class EnhancedSelect extends HTMLElement {
       showRemoveButton: this._config.selection.mode === 'multi' && this._config.selection.showRemoveButton,
       removeButtonIcon: this._config.selection.removeButtonIcon,
       classMap: this.classMap,
-      className: this._config.styles.classNames?.option,
+      className: this._config.styles?.classNames?.option,
     });
 
-    if (this._config.styles.classNames?.option) {
+    if (this._config.styles?.classNames?.option) {
       option.classList.add(...this._config.styles.classNames.option.split(' ').filter(Boolean));
     }
     option.setAttribute('dir', this._config.direction ?? 'ltr');
-    if (isSelected && this._config.styles.classNames?.selectedOption) {
+    if (isSelected && this._config.styles?.classNames?.selectedOption) {
       option.classList.add(...this._config.styles.classNames.selectedOption.split(' ').filter(Boolean));
     }
-    if (this._state.activeIndex === index && this._config.styles.classNames?.activeOption) {
+    if (this._state.activeIndex === index && this._config.styles?.classNames?.activeOption) {
       option.classList.add(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
     }
     if (isDisabled && this._config.styles.classNames?.disabledOption) {

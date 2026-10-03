@@ -15,15 +15,45 @@ export interface FetchResult<T> {
 
 export class TTLCache<T> {
   private store = new Map<string, { ts: number; ttl: number; items: T[] }>();
-  constructor(private defaultTTL = 30000) {}
+  constructor(private defaultTTL = 30000, private maxEntries = 100) {}
   get(key: string): T[] | null {
     const v = this.store.get(key);
     if (!v) return null;
-    if (Date.now() - v.ts > v.ttl) return null;
+    if (Date.now() - v.ts > v.ttl) {
+      this.store.delete(key);
+      return null;
+    }
     return v.items;
   }
   set(key: string, items: T[], ttl?: number) {
+    this.pruneExpired();
     this.store.set(key, { ts: Date.now(), ttl: ttl ?? this.defaultTTL, items });
+    this.pruneToMaxEntries();
+  }
+  clear(): void {
+    this.store.clear();
+  }
+  private pruneExpired(): void {
+    const now = Date.now();
+    for (const [key, value] of this.store.entries()) {
+      if (now - value.ts > value.ttl) {
+        this.store.delete(key);
+      }
+    }
+  }
+  private pruneToMaxEntries(): void {
+    while (this.store.size > this.maxEntries) {
+      let oldestKey: string | undefined;
+      let oldestTs = Infinity;
+      for (const [key, value] of this.store.entries()) {
+        if (value.ts < oldestTs) {
+          oldestTs = value.ts;
+          oldestKey = key;
+        }
+      }
+      if (!oldestKey) return;
+      this.store.delete(oldestKey);
+    }
   }
 }
 
@@ -48,7 +78,7 @@ export class RemoteSource<T = unknown> {
   private cfg: RemoteConfig;
   private cache: TTLCache<T>;
   private controller: AbortController | null = null;
-  private pageMap = new Map<number, T[]>();
+  private pageMap = new Map<string, T[]>();
 
   constructor(cfg: RemoteConfig) {
     this.cfg = cfg;
@@ -87,12 +117,19 @@ export class RemoteSource<T = unknown> {
     const json = await resp.json();
     const transform = this.cfg.transformer ?? ((r: unknown) => (r as any).items ?? (r as any));
     const items = await transform(json);
-    this.pageMap.set(page, items as T[]);
+    this.pageMap.set(this.key(query, page), items as T[]);
     this.cache.set(this.key(query, page), items as T[], this.cfg.cacheTTL);
   }
 
-  getPage(page: number): T[] | null {
-    return this.pageMap.get(page) ?? null;
+  getPage(page: number, query = ''): T[] | null {
+    return this.pageMap.get(this.key(query, page)) ?? null;
+  }
+
+  destroy(): void {
+    this.controller?.abort();
+    this.controller = null;
+    this.cache.clear();
+    this.pageMap.clear();
   }
 }
 

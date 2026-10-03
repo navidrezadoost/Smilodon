@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version **1.9.2** is the current stable release for `@smilodon/core` and all maintained adapters.
+Version **1.9.3** is the current stable release for `@smilodon/core` and all maintained adapters.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
@@ -109,7 +109,7 @@ The web adapters re-export the shared core config helpers so application code ca
 Example:
 
 ```ts
-import { configureSelect } from '@smilodon/react';
+import { configureSelect } from "@smilodon/react";
 
 configureSelect({
   searchable: true,
@@ -120,10 +120,10 @@ configureSelect({
   },
   selection: {
     showSelectedIndicator: false,
-    removeButtonIcon: '×',
+    removeButtonIcon: "×",
   },
   multiSelectDisplay: {
-    mode: 'wrap',
+    mode: "wrap",
   },
 });
 ```
@@ -139,15 +139,15 @@ For React Native, prefer per-instance `config` because the native path runs insi
   items={items}
   multiple
   config={{
-    dropdownPlacement: { mode: 'auto' },
+    dropdownPlacement: { mode: "auto" },
     multiSelectDisplay: {
-      mode: 'horizontal',
-      maxHeight: '56px',
+      mode: "horizontal",
+      maxHeight: "56px",
       dragScroll: true,
     },
     scrollToSelected: {
       enabled: true,
-      multiSelectTarget: 'last',
+      multiSelectTarget: "last",
     },
     selection: {
       closeOnSelect: false,
@@ -155,7 +155,7 @@ For React Native, prefer per-instance `config` because the native path runs insi
     },
     styles: {
       badgeRemoveIcon: {
-        color: '#dc2626',
+        color: "#dc2626",
       },
     },
   }}
@@ -173,8 +173,8 @@ For React Native, prefer per-instance `config` because the native path runs insi
     multiSelectDisplay: { mode: 'vertical', maxHeight: '120px' },
     selection: { closeOnSelect: false },
     styles: {
-      badgeRemoveIcon: { color: '#dc2626' }
-    }
+      badgeRemoveIcon: { color: '#dc2626' },
+    },
   }"
 />
 ```
@@ -186,7 +186,7 @@ const select = createSelect({
   items,
   multiple: true,
   config: {
-    multiSelectDisplay: { mode: 'horizontal', dragScroll: true },
+    multiSelectDisplay: { mode: "horizontal", dragScroll: true },
     selection: { closeOnSelect: false },
   },
 });
@@ -199,11 +199,11 @@ const select = createSelect({
   items={items}
   multiple
   config={{
-    multiSelectDisplay: { mode: 'horizontal', dragScroll: true },
+    multiSelectDisplay: { mode: "horizontal", dragScroll: true },
     selection: { closeOnSelect: false },
   }}
   selectStyle={{
-    '--select-badge-remove-icon-color': '#dc2626',
+    "--select-badge-remove-icon-color": "#dc2626",
   }}
 />
 ```
@@ -226,27 +226,27 @@ That keeps framework code closer to the shared runtime model and reduces the gap
 
 Smilodon is not a single framework package. It is a system made of one runtime plus adapters.
 
-| Package | Purpose | Primary targets | Status |
-| --- | --- | --- | --- |
-| `@smilodon/core` | Base custom element runtime (`enhanced-select`) | Browser apps, design systems, direct DOM usage | Primary runtime |
-| `@smilodon/react` | React wrapper around the core element | React, Next.js client components | Maintained |
-| `@smilodon/vue` | Vue 3 wrapper | Vue 3, Nuxt | Maintained |
-| `@smilodon/svelte` | Svelte wrapper | Svelte, SvelteKit | Maintained |
-| `@smilodon/solid` | SolidJS wrapper | SolidJS apps | Maintained |
-| `@smilodon/vanilla` | Helper utilities for direct DOM setup | Vanilla JS / TS | Maintained |
-| `@smilodon/react-native` | React Native adapter with native/web split | React Native, React Native Web | Maintained |
+| Package                  | Purpose                                         | Primary targets                                | Status          |
+| ------------------------ | ----------------------------------------------- | ---------------------------------------------- | --------------- |
+| `@smilodon/core`         | Base custom element runtime (`enhanced-select`) | Browser apps, design systems, direct DOM usage | Primary runtime |
+| `@smilodon/react`        | React wrapper around the core element           | React, Next.js client components               | Maintained      |
+| `@smilodon/vue`          | Vue 3 wrapper                                   | Vue 3, Nuxt                                    | Maintained      |
+| `@smilodon/svelte`       | Svelte wrapper                                  | Svelte, SvelteKit                              | Maintained      |
+| `@smilodon/solid`        | SolidJS wrapper                                 | SolidJS apps                                   | Maintained      |
+| `@smilodon/vanilla`      | Helper utilities for direct DOM setup           | Vanilla JS / TS                                | Maintained      |
+| `@smilodon/react-native` | React Native adapter with native/web split      | React Native, React Native Web                 | Maintained      |
 
 ### Support summary by platform
 
-| Platform | Delivery model | SSR / hydration posture | Styling model | Diagnostics support |
-| --- | --- | --- | --- | --- |
-| Web Components | Native custom element | Browser-first | CSS variables + `::part()` | Full |
-| React | Component wrapper | Client-rendered, Next.js App Router compatible | Shared token surface | Full |
-| Vue 3 | Component wrapper | Nuxt-compatible with custom-element compiler config | Shared token surface | Full |
-| Svelte | Component wrapper | SvelteKit-safe when mounted in browser lifecycle | Shared token surface | Full |
-| SolidJS | Component wrapper | Browser/client usage with safe upgrade handling | Shared token surface | Full |
-| Vanilla JS | Helper API + custom element | Browser-first | Shared token surface | Full |
-| React Native | WebView bridge on native, direct element on web | Native/mobile oriented | CSS tokens via bridged style map | Full |
+| Platform       | Delivery model                                  | SSR / hydration posture                             | Styling model                    | Diagnostics support |
+| -------------- | ----------------------------------------------- | --------------------------------------------------- | -------------------------------- | ------------------- |
+| Web Components | Native custom element                           | Browser-first                                       | CSS variables + `::part()`       | Full                |
+| React          | Component wrapper                               | Client-rendered, Next.js App Router compatible      | Shared token surface             | Full                |
+| Vue 3          | Component wrapper                               | Nuxt-compatible with custom-element compiler config | Shared token surface             | Full                |
+| Svelte         | Component wrapper                               | SvelteKit-safe when mounted in browser lifecycle    | Shared token surface             | Full                |
+| SolidJS        | Component wrapper                               | Browser/client usage with safe upgrade handling     | Shared token surface             | Full                |
+| Vanilla JS     | Helper API + custom element                     | Browser-first                                       | Shared token surface             | Full                |
+| React Native   | WebView bridge on native, direct element on web | Native/mobile oriented                              | CSS tokens via bridged style map | Full                |
 
 ### Intentionally not provided
 
@@ -260,17 +260,17 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 All maintained adapters are designed to expose the same core behavior set wherever the host platform makes that practical.
 
-| Capability area | Details |
-| --- | --- |
-| Selection | Single, multi, clearable selections, chip rendering, selection limits |
-| Search | Local search, debounced remote search hooks, search event emission |
-| Data scale | Virtualization for very large lists, incremental rendering, large-list stress handling |
-| Rendering | Plain text, templated output, DOM renderers, framework renderers |
-| Grouping | Flat items or grouped sections |
-| Accessibility | ARIA listbox semantics, keyboard navigation, screen-reader announcements, touch targets |
-| Diagnostics | `diagnostic` events, tracking buckets, capability reports |
-| Runtime control | `open()`, `close()`, `clear()`, `setItems()`, `setGroupedItems()`, limitation policies |
-| Styling | Shared CSS custom properties, parts, dark mode hooks, high-contrast and reduced-motion hooks |
+| Capability area | Details                                                                                      |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Selection       | Single, multi, clearable selections, chip rendering, selection limits                        |
+| Search          | Local search, debounced remote search hooks, search event emission                           |
+| Data scale      | Virtualization for very large lists, incremental rendering, large-list stress handling       |
+| Rendering       | Plain text, templated output, DOM renderers, framework renderers                             |
+| Grouping        | Flat items or grouped sections                                                               |
+| Accessibility   | ARIA listbox semantics, keyboard navigation, screen-reader announcements, touch targets      |
+| Diagnostics     | `diagnostic` events, tracking buckets, capability reports                                    |
+| Runtime control | `open()`, `close()`, `clear()`, `setItems()`, `setGroupedItems()`, limitation policies       |
+| Styling         | Shared CSS custom properties, parts, dark mode hooks, high-contrast and reduced-motion hooks |
 
 Representative use cases:
 
@@ -298,12 +298,12 @@ Smilodon is designed around keeping work proportional to what the user can actua
 The performance docs and benchmarks are structured around these operating targets.
 
 | Dataset size | Typical render target | Typical memory target | Scroll target |
-| --- | --- | --- | --- |
-| 100 | `<10 ms` | ~2 MB | 60 FPS |
-| 1,000 | `<20 ms` | ~4 MB | 60 FPS |
-| 10,000 | `<50 ms` | ~8 MB | 60 FPS |
-| 100,000 | `<100 ms` | ~12 MB | 60 FPS |
-| 1,000,000 | `<200 ms` | ~18 MB | 57–60 FPS |
+| ------------ | --------------------- | --------------------- | ------------- |
+| 100          | `<10 ms`              | ~2 MB                 | 60 FPS        |
+| 1,000        | `<20 ms`              | ~4 MB                 | 60 FPS        |
+| 10,000       | `<50 ms`              | ~8 MB                 | 60 FPS        |
+| 100,000      | `<100 ms`             | ~12 MB                | 60 FPS        |
+| 1,000,000    | `<200 ms`             | ~18 MB                | 57–60 FPS     |
 
 ### Why performance is consistent across adapters
 
@@ -326,15 +326,15 @@ Smilodon targets modern environments first.
 
 Tier 1 browser support is documented around the modern evergreen baseline:
 
-| Browser family | Minimum baseline |
-| --- | --- |
-| Chrome | 90+ |
-| Edge | 90+ |
-| Firefox | 88+ |
-| Safari | 14.1+ |
-| iOS Safari | 14.5+ |
-| Android Chrome | 90+ |
-| Samsung Internet | 14+ |
+| Browser family   | Minimum baseline |
+| ---------------- | ---------------- |
+| Chrome           | 90+              |
+| Edge             | 90+              |
+| Firefox          | 88+              |
+| Safari           | 14.1+            |
+| iOS Safari       | 14.5+            |
+| Android Chrome   | 90+              |
+| Samsung Internet | 14+              |
 
 Best-effort support exists for some older browsers, but the maintained baseline assumes modern support for:
 
@@ -355,12 +355,12 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 
 ### Framework compatibility
 
-| Adapter | Expected host compatibility |
-| --- | --- |
-| React | React `>=16.8.0`, React DOM `>=16.8.0` |
-| Vue | Vue `^3.0.0` |
-| Svelte | Svelte `>=3`, `>=4`, or `>=5` |
-| SolidJS | SolidJS `^1.9.0` |
+| Adapter      | Expected host compatibility                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| React        | React `>=16.8.0`, React DOM `>=16.8.0`                                      |
+| Vue          | Vue `^3.0.0`                                                                |
+| Svelte       | Svelte `>=3`, `>=4`, or `>=5`                                               |
+| SolidJS      | SolidJS `^1.9.0`                                                            |
 | React Native | React `>=18.2.0`, React Native `>=0.74.0`, `react-native-webview >=13.12.0` |
 
 ### Compatibility notes by integration style
@@ -375,11 +375,11 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 
 Frameworks without a first-party Smilodon adapter can still integrate through the shared Web Component runtime in `@smilodon/core`.
 
-| Build tool | Recommended path | Notes |
-| --- | --- | --- |
-| Vite | Import `@smilodon/core` in the browser entry and render `<enhanced-select>` | Best default for browser-first apps and lightweight custom-element integration |
-| Webpack 5 | Import `@smilodon/core` in the client bootstrap and keep the element client-rendered | Good fit for custom enterprise stacks and older framework ecosystems |
-| Turbopack | Register `@smilodon/core` from a client boundary and mount the element only on the client | Best for Next.js/Turbopack-style app shells or custom React-adjacent stacks |
+| Build tool | Recommended path                                                                          | Notes                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Vite       | Import `@smilodon/core` in the browser entry and render `<enhanced-select>`               | Best default for browser-first apps and lightweight custom-element integration |
+| Webpack 5  | Import `@smilodon/core` in the client bootstrap and keep the element client-rendered      | Good fit for custom enterprise stacks and older framework ecosystems           |
+| Turbopack  | Register `@smilodon/core` from a client boundary and mount the element only on the client | Best for Next.js/Turbopack-style app shells or custom React-adjacent stacks    |
 
 Full build-tool guidance lives in [docs/BUILD-TOOL-INTEGRATION.md](./docs/BUILD-TOOL-INTEGRATION.md).
 
@@ -421,16 +421,16 @@ npm install @smilodon/react-native react-native-webview
 ```html
 <enhanced-select id="people"></enhanced-select>
 <script type="module">
-  import '@smilodon/core';
+  import "@smilodon/core";
 
-  const select = document.getElementById('people');
+  const select = document.getElementById("people");
   select.setItems([
-    { value: 'ada', label: 'Ada Lovelace' },
-    { value: 'grace', label: 'Grace Hopper' },
+    { value: "ada", label: "Ada Lovelace" },
+    { value: "grace", label: "Grace Hopper" },
   ]);
   select.updateConfig({
     searchable: true,
-    selection: { mode: 'single' },
+    selection: { mode: "single" },
   });
 </script>
 ```
@@ -438,19 +438,19 @@ npm install @smilodon/react-native react-native-webview
 ### React / Next.js client component
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Select } from '@smilodon/react';
+import { useState } from "react";
+import { Select } from "@smilodon/react";
 
 export default function Example() {
-  const [value, setValue] = useState<string | number>('');
+  const [value, setValue] = useState<string | number>("");
 
   return (
     <Select
       items={[
-        { value: 'react', label: 'React' },
-        { value: 'vue', label: 'Vue' },
+        { value: "react", label: "React" },
+        { value: "vue", label: "Vue" },
       ]}
       value={value}
       onChange={(next) => setValue(next as string)}
@@ -466,10 +466,10 @@ export default function Example() {
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Select } from '@smilodon/vue'
+import { ref } from "vue";
+import { Select } from "@smilodon/vue";
 
-const value = ref<string | number>('')
+const value = ref<string | number>("");
 </script>
 
 <template>
@@ -477,7 +477,7 @@ const value = ref<string | number>('')
     v-model="value"
     :items="[
       { value: 'vue', label: 'Vue' },
-      { value: 'nuxt', label: 'Nuxt' }
+      { value: 'nuxt', label: 'Nuxt' },
     ]"
     searchable
     clearable
@@ -510,42 +510,42 @@ const value = ref<string | number>('')
 ### SolidJS
 
 ```tsx
-import { createSignal } from 'solid-js'
-import { Select } from '@smilodon/solid'
+import { createSignal } from "solid-js";
+import { Select } from "@smilodon/solid";
 
 export default function Example() {
-  const [value, setValue] = createSignal<string | number>('')
+  const [value, setValue] = createSignal<string | number>("");
 
   return (
     <Select
       items={[
-        { value: 'solid', label: 'SolidJS' },
-        { value: 'qwik', label: 'Qwik' },
+        { value: "solid", label: "SolidJS" },
+        { value: "qwik", label: "Qwik" },
       ]}
       value={value()}
       onChange={(next) => setValue(next as string)}
       searchable
     />
-  )
+  );
 }
 ```
 
 ### React Native
 
 ```tsx
-import { useState } from 'react'
-import { View } from 'react-native'
-import { Select } from '@smilodon/react-native'
+import { useState } from "react";
+import { View } from "react-native";
+import { Select } from "@smilodon/react-native";
 
 export default function ExampleScreen() {
-  const [value, setValue] = useState<string | number>('')
+  const [value, setValue] = useState<string | number>("");
 
   return (
     <View style={{ padding: 16 }}>
       <Select
         items={[
-          { value: 'ios', label: 'iOS' },
-          { value: 'android', label: 'Android' },
+          { value: "ios", label: "iOS" },
+          { value: "android", label: "Android" },
         ]}
         value={value}
         onChange={(next) => setValue(next as string)}
@@ -553,7 +553,7 @@ export default function ExampleScreen() {
         clearable
       />
     </View>
-  )
+  );
 }
 ```
 
@@ -612,11 +612,12 @@ export default defineConfig({
   vue: {
     template: {
       compilerOptions: {
-        isCustomElement: (tag) => tag === 'enhanced-select' || tag === 'select-option'
-      }
-    }
-  }
-})
+        isCustomElement: (tag) =>
+          tag === "enhanced-select" || tag === "select-option",
+      },
+    },
+  },
+});
 ```
 
 For Nuxt specifically:
@@ -626,10 +627,11 @@ For Nuxt specifically:
 export default defineNuxtConfig({
   vue: {
     compilerOptions: {
-      isCustomElement: (tag) => tag === 'enhanced-select' || tag === 'select-option'
-    }
-  }
-})
+      isCustomElement: (tag) =>
+        tag === "enhanced-select" || tag === "select-option",
+    },
+  },
+});
 ```
 
 **2. Register Smilodon early (before component rendering):**
@@ -638,12 +640,12 @@ Create a Nuxt plugin to ensure registration happens before components mount:
 
 ```ts
 // plugins/smilodon.client.ts
-import '@smilodon/core'
+import "@smilodon/core";
 
 export default defineNuxtPlugin(() => {
   // Core registration happens via side-effect import above
   // No additional setup needed
-})
+});
 ```
 
 > **💡 Important Note:** In Nuxt, it is recommended to place this plugin in the `plugins/` directory. If you're encountering SSR issues, you can explicitly configure the plugin with `ssr: false` or use the extended configuration:
@@ -651,15 +653,15 @@ export default defineNuxtPlugin(() => {
 > ```ts
 > // plugins/smilodon.client.ts
 > export default defineNuxtPlugin({
->   name: 'smilodon',
+>   name: "smilodon",
 >   parallel: true,
 >   setup() {
->     import('@smilodon/core')
+>     import("@smilodon/core");
 >   },
 >   env: {
->     islands: false
->   }
-> })
+>     islands: false,
+>   },
+> });
 > ```
 
 **3. Use `<ClientOnly>` for SSR apps:**
@@ -667,11 +669,7 @@ export default defineNuxtPlugin(() => {
 ```vue
 <template>
   <ClientOnly>
-    <Select
-      v-model="value"
-      :items="items"
-      searchable
-    />
+    <Select v-model="value" :items="items" searchable />
   </ClientOnly>
 </template>
 ```
@@ -709,9 +707,11 @@ export default defineNuxtPlugin(() => {
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-const mounted = ref(false)
-onMounted(() => { mounted.value = true })
+import { ref, onMounted } from "vue";
+const mounted = ref(false);
+onMounted(() => {
+  mounted.value = true;
+});
 </script>
 ```
 
@@ -723,9 +723,9 @@ For best development experience, consider excluding Smilodon from pre-bundling:
 // vite.config.ts
 export default defineConfig({
   optimizeDeps: {
-    exclude: ['@smilodon/core', '@smilodon/vue']
-  }
-})
+    exclude: ["@smilodon/core", "@smilodon/vue"],
+  },
+});
 ```
 
 ### React + Next.js Setup
@@ -735,19 +735,19 @@ React integration is simpler as it doesn't require custom element compiler confi
 **Use client components:**
 
 ```tsx
-'use client'
+"use client";
 
-import { Select } from '@smilodon/react'
+import { Select } from "@smilodon/react";
 ```
 
 **For App Router SSR:**
 
 ```tsx
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic";
 
-const Select = dynamic(() => import('@smilodon/react').then(m => m.Select), {
-  ssr: false
-})
+const Select = dynamic(() => import("@smilodon/react").then((m) => m.Select), {
+  ssr: false,
+});
 ```
 
 ### Svelte + SvelteKit Setup
@@ -758,12 +758,12 @@ const Select = dynamic(() => import('@smilodon/react').then(m => m.Select), {
 // svelte.config.js
 export default {
   compilerOptions: {
-    customElement: true
+    customElement: true,
   },
   kit: {
     // ... your kit config
-  }
-}
+  },
+};
 ```
 
 **Use in components:**
@@ -772,9 +772,9 @@ export default {
 <script>
   import { Select } from '@smilodon/svelte'
   import { onMount } from 'svelte'
-  
+
   let value = ''
-  
+
   onMount(async () => {
     // Ensure registration in browser context
     await import('@smilodon/core')
@@ -819,7 +819,7 @@ Global:
 
 ```ts
 configureSelect({
-  direction: 'rtl',
+  direction: "rtl",
 });
 ```
 
@@ -827,23 +827,23 @@ Per instance:
 
 ```ts
 select.updateConfig({
-  direction: 'rtl',
+  direction: "rtl",
 });
 ```
 
 ### Styling support summary
 
-| Need | Smilodon support |
-| --- | --- |
-| Design-system tokens | Shared CSS variables |
-| Cross-framework theming | Same token surface in every adapter |
-| Tailwind / utility CSS | `classMap`, host classes, CSS variables, `::part()`, custom renderers |
-| Bootstrap / traditional CSS | Host selectors, CSS variables, `::part()`, framework layout classes |
-| Material UI / CSS-in-JS | Host `className` / `style`, theme-driven CSS variables, `GlobalStyles`, `sx`, `::part()` |
-| Dark mode | Shared dark theme remapping |
-| Reduced motion | Dedicated motion tokens and media-query handling |
-| High contrast | Dedicated accessibility tokens |
-| Custom option UI | DOM renderers and framework renderers |
+| Need                        | Smilodon support                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| Design-system tokens        | Shared CSS variables                                                                     |
+| Cross-framework theming     | Same token surface in every adapter                                                      |
+| Tailwind / utility CSS      | `classMap`, host classes, CSS variables, `::part()`, custom renderers                    |
+| Bootstrap / traditional CSS | Host selectors, CSS variables, `::part()`, framework layout classes                      |
+| Material UI / CSS-in-JS     | Host `className` / `style`, theme-driven CSS variables, `GlobalStyles`, `sx`, `::part()` |
+| Dark mode                   | Shared dark theme remapping                                                              |
+| Reduced motion              | Dedicated motion tokens and media-query handling                                         |
+| High contrast               | Dedicated accessibility tokens                                                           |
+| Custom option UI            | DOM renderers and framework renderers                                                    |
 
 ### CSS framework compatibility
 
@@ -907,10 +907,10 @@ select.updateConfig({
   },
   styles: {
     selectedIndicator: {
-      width: '4px',
-      background: '#2563eb',
-      right: '0',
-      left: 'auto',
+      width: "4px",
+      background: "#2563eb",
+      right: "0",
+      left: "auto",
     },
   },
 });
@@ -1034,19 +1034,19 @@ Testing docs:
 
 ### Repository structure
 
-| Path | Purpose |
-| --- | --- |
-| `packages/core` | Shared runtime and custom element |
-| `packages/react` | React adapter |
-| `packages/vue` | Vue adapter |
-| `packages/svelte` | Svelte adapter |
-| `packages/solid` | SolidJS adapter |
-| `packages/vanilla` | Vanilla helper layer |
-| `packages/react-native` | React Native adapter |
-| `docs` | Deep-dive documentation |
-| `tests` | Contract and end-to-end test support |
-| `playground` | Maintained interactive demo workspace |
-| `scripts` | Performance and verification utilities |
+| Path                    | Purpose                                |
+| ----------------------- | -------------------------------------- |
+| `packages/core`         | Shared runtime and custom element      |
+| `packages/react`        | React adapter                          |
+| `packages/vue`          | Vue adapter                            |
+| `packages/svelte`       | Svelte adapter                         |
+| `packages/solid`        | SolidJS adapter                        |
+| `packages/vanilla`      | Vanilla helper layer                   |
+| `packages/react-native` | React Native adapter                   |
+| `docs`                  | Deep-dive documentation                |
+| `tests`                 | Contract and end-to-end test support   |
+| `playground`            | Maintained interactive demo workspace  |
+| `scripts`               | Performance and verification utilities |
 
 ### Recommended reading order
 

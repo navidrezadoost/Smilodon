@@ -58,6 +58,8 @@ export class OptionRenderer {
     const value = this._config.getValue(item);
     const label = this._config.getLabel(item);
     const isDisabled = this._config.getDisabled ? this._config.getDisabled(item) : false;
+
+    this.unmount(index);
     
     // Determine if this is a custom component or lightweight option
     const hasCustomComponent = extendedItem.optionComponent && typeof extendedItem.optionComponent === 'function';

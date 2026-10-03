@@ -34,11 +34,8 @@ export class PerformanceTelemetry {
   private rafId: number = 0;
   private measuring = false;
   private observer: PerformanceObserver | null = null;
-  private workTimes: number[] = [];
-
-  constructor() {
-    this.setupObserver();
-  }
+  private workTotal = 0;
+  private workCount = 0;
 
   /**
    * Setup PerformanceObserver for long tasks
@@ -48,12 +45,15 @@ export class PerformanceTelemetry {
 
     try {
       this.observer = new PerformanceObserver((list) => {
+        if (!this.measuring) return;
+
         for (const entry of list.getEntries()) {
           if (entry.entryType === 'longtask' && entry.duration > 50) {
             this.longTasks++;
           }
           if (entry.entryType === 'measure') {
-            this.workTimes.push(entry.duration);
+            this.workTotal += entry.duration;
+            this.workCount += 1;
           }
         }
       });
@@ -78,9 +78,11 @@ export class PerformanceTelemetry {
     
     this.measuring = true;
     this.frameTimes = [];
-    this.workTimes = [];
+    this.workTotal = 0;
+    this.workCount = 0;
     this.longTasks = 0;
     this.lastFrameTime = performance.now();
+    this.setupObserver();
     
     this.measureFrame();
   }
@@ -93,6 +95,10 @@ export class PerformanceTelemetry {
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
       this.rafId = 0;
+    }
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
     }
   }
 
@@ -127,11 +133,18 @@ export class PerformanceTelemetry {
    * Mark end of work and measure duration
    */
   markEnd(label: string): number {
-    performance.mark(`${label}-end`);
-    performance.measure(label, `${label}-start`, `${label}-end`);
-    
-    const measure = performance.getEntriesByName(label, 'measure')[0];
-    return measure ? measure.duration : 0;
+    const startMark = `${label}-start`;
+    const endMark = `${label}-end`;
+
+    performance.mark(endMark);
+    const measure = performance.measure(label, startMark, endMark);
+    const duration = measure ? measure.duration : 0;
+
+    performance.clearMarks(startMark);
+    performance.clearMarks(endMark);
+    performance.clearMeasures(label);
+
+    return duration;
   }
 
   /**
@@ -147,8 +160,8 @@ export class PerformanceTelemetry {
     const longFrames = this.frameTimes.filter(t => t > 16.67).length;
     const droppedFrames = this.frameTimes.filter(t => t > 33.33).length; // > 2 frames
     
-    const avgMainThreadWork = this.workTimes.length > 0
-      ? this.workTimes.reduce((a, b) => a + b, 0) / this.workTimes.length
+    const avgMainThreadWork = this.workCount > 0
+      ? this.workTotal / this.workCount
       : 0;
 
     const metrics: PerformanceMetrics = {
@@ -219,7 +232,8 @@ export class PerformanceTelemetry {
    */
   reset(): void {
     this.frameTimes = [];
-    this.workTimes = [];
+    this.workTotal = 0;
+    this.workCount = 0;
     this.longTasks = 0;
   }
 

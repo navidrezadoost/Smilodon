@@ -81,4 +81,39 @@ describe('custom element lifecycle (Vue/Nuxt compatibility)', () => {
 
     document.body.removeChild(select);
   });
+
+  it('scopes document pointer listeners to active connections', () => {
+    const originalAddEventListener = document.addEventListener.bind(document);
+    let activePointerListeners = 0;
+
+    document.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions | boolean) => {
+      if (type === 'pointerdown') {
+        activePointerListeners += 1;
+        const signal = typeof options === 'object' ? options.signal : undefined;
+        signal?.addEventListener('abort', () => {
+          activePointerListeners -= 1;
+        }, { once: true });
+      }
+
+      return originalAddEventListener(type, listener, options);
+    }) as typeof document.addEventListener;
+
+    try {
+      const neverConnected = new EnhancedSelect();
+      expect(activePointerListeners).toBe(0);
+
+      const select = document.createElement('enhanced-select') as EnhancedSelect;
+      for (let i = 0; i < 100; i += 1) {
+        document.body.appendChild(select);
+        expect(activePointerListeners).toBe(1);
+        document.body.removeChild(select);
+        expect(activePointerListeners).toBe(0);
+      }
+
+      neverConnected.remove();
+      expect(activePointerListeners).toBe(0);
+    } finally {
+      document.addEventListener = originalAddEventListener as typeof document.addEventListener;
+    }
+  });
 });

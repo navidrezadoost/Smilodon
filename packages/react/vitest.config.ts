@@ -1,19 +1,28 @@
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+import { defineConfig } from "vitest/config";
+import { resolve } from "path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@smilodon/core": resolve(__dirname, "../core/src/index.ts"),
+    },
+  },
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
     setupFiles: [
-      resolve(__dirname, '../core/tests/setup.ts'),
-      resolve(__dirname, './tests/setup.ts'),
+      resolve(__dirname, "../core/tests/setup.ts"),
+      resolve(__dirname, "./tests/setup.ts"),
     ],
-    include: ['packages/react/tests/**/*.spec.tsx'],
+    include: ["packages/react/tests/**/*.spec.tsx"],
     onConsoleLog(log) {
       if (
-        log.includes('An update to Root inside a test was not wrapped in act(...)') ||
-        log.includes('Attempted to synchronously unmount a root while React was already rendering')
+        log.includes(
+          "An update to Root inside a test was not wrapped in act(...)",
+        ) ||
+        log.includes(
+          "Attempted to synchronously unmount a root while React was already rendering",
+        )
       ) {
         return false;
       }
