@@ -1,9 +1,9 @@
 # Phase 2 - Stable Identity & Selection Model
 
-Status: **Phase 2A accepted; Phase 2B pure-engine slice implemented and verified.**
-Engine exports remain experimental, as documented in Phase 1. Runtime integration
-and the `EnhancedSelect` migration remain Phase 2C/2D work. Existing partial
-runtime work in the working tree is not evidence that those stages are complete.
+Status: **Phase 2C accepted and committed; Phase 2D.1 selection authority flip in progress.**
+Engine exports remain experimental, as documented in Phase 1. Phase 2D.1 changes
+selection ownership inside `EnhancedSelect`; active-key authority and adapter
+migration remain out of scope.
 
 ## 1. Problem
 
@@ -521,8 +521,9 @@ It selects Cherry through the public value API, reorders items, moves active
 identity with ArrowDown, filters out that active option, and verifies that
 selection survives while `aria-activedescendant` clears.
 
-The Phase 2D authority flip remains forbidden until this gate is accepted and
-the unrelated dirty worktree paths have been separately reconciled.
+At the time of this Phase 2C.3 report, the Phase 2D authority flip was blocked
+pending gate acceptance and worktree reconciliation. The Phase 2C checkpoint
+was subsequently accepted and committed before Phase 2D.1 began.
 
 ### Phase 2C.3 Verification (2026-10-12)
 
@@ -538,9 +539,47 @@ the unrelated dirty worktree paths have been separately reconciled.
 | `git diff --check` | Passed after removing the eight trailing spaces in `variables.css`. |
 
 The tracked diff snapshot is `/tmp/smilodon-phase2c3-before.patch`; as with
-`git diff`, it excludes untracked paths. The worktree still contains broad
+`git diff`, it excludes untracked paths. The worktree contained broad
 modified/deleted documentation and workflow files, modified adapter sources,
-the already-modified generated React Native core bundle, Phase 2 engine/platform
-files, and untracked `publish.sh`. These were present at stage entry and were
-preserved. They must be separately reconciled before Phase 2D; this verification
-does not claim a clean worktree or authority flip.
+the generated React Native core bundle, Phase 2 engine/platform files, and
+untracked `publish.sh`. These were preserved outside the Phase 2C checkpoint.
+Phase 2D.1 began on a separate branch and kept its source edits within the
+approved authority-flip scope; unrelated dirty paths remain outside this stage.
+
+## Phase 2D.1 — Selection Authority Flip
+
+Status: **Complete.**
+
+Scope is limited to selection authority in `EnhancedSelect`. The engine's
+`selectedKeys` is the source of truth for selection mutations. The
+`_syncLegacySelectionFromEngine` helper projects keys that have current registry
+records into `selectedIndices` and `selectedItems`; selected keys absent from the
+registry remain selected in the engine and retain a cached record for value APIs
+and change events. Active navigation continues to use legacy `activeIndex` and
+the engine's `activeKey` remains a shadow.
+
+This stage flips option selection, range/select-all replacement, removal, clear,
+programmatic value updates, required/config reconciliation, and item registry
+replacement. Existing Phase 2C parity coverage remains, with parity now meaning
+that the registered legacy projection agrees with engine selection. The new
+`enhanced-select-authority.spec.ts` verifies engine-first dispatch, derived
+snapshots, detached selection retention, duplicate-key handling, and compatible
+`change.detail.selectedValues` behavior.
+
+### Phase 2D.1 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused selection parity and authority suites | 29 passed. |
+| Full unit suite | 308 passed, one skipped. |
+| `npm run lint` | Passed with six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |
+
+The selection mutation audit leaves legacy snapshot assignment only in
+`_syncLegacySelectionFromEngine`; no selection path directly mutates the
+compatibility `selectedIndices` or `selectedItems` collections. Active-key
+ownership remains in shadow mode, and no adapter source was changed for this
+stage.

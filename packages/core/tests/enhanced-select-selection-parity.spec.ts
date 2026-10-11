@@ -167,7 +167,7 @@ describe('EnhancedSelect selection shadow parity', () => {
     await select.setSelectedValues(['REMOTE']);
 
     expect(engineSelectedKeys(select)).toEqual(['remote']);
-    expect((select as any)._state.selectedIndices).toEqual(new Set([-1]));
+    expect((select as any)._state.selectedIndices).toEqual(new Set());
     expect(select.getSelectedValues()).toEqual(['REMOTE']);
   });
 
@@ -184,7 +184,7 @@ describe('EnhancedSelect selection shadow parity', () => {
     await (select as any)._loadInitialSelectedItems();
 
     expect(engineSelectedKeys(select)).toEqual(['initial-remote']);
-    expect((select as any)._state.selectedIndices).toEqual(new Set([-1]));
+    expect((select as any)._state.selectedIndices).toEqual(new Set());
     expect(select.getSelectedValues()).toEqual(['INITIAL']);
   });
 

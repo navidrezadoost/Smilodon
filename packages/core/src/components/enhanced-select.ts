@@ -87,8 +87,8 @@ export class EnhancedSelect extends HTMLElement {
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
-  // Identity metadata for legacy-selected items, never a second selection store.
-  private _legacySelectionKeys = new Map<number, { key: SelectKey; item: unknown }>();
+  // Records keep detached engine selections resolvable for value APIs and events.
+  private _selectedRecordsByKey = new Map<SelectKey, ItemRecord<unknown, SelectKey>>();
   private _registryItemsRef: unknown[] = [];
   private _pageCache: PageCache = {};
   private _resizeObserver?: ResizeObserver;
@@ -926,7 +926,6 @@ export class EnhancedSelect extends HTMLElement {
   private _syncEngineSelectionConfig(): void {
     const required = Boolean(this._input?.hasAttribute('required'));
     const disabledKeys = this._getBlockedDisabledKeys();
-    if (this._state) this._rebaseLegacySelection(this._getSelectedEntries());
     this._engine.dispatch({
       type: 'SELECTION_CONFIG_CHANGED',
       multiple: this._config.selection.mode === 'multi',
@@ -936,6 +935,7 @@ export class EnhancedSelect extends HTMLElement {
       disabledKeys,
     });
     if (this._state) {
+      this._syncLegacySelectionFromEngine();
       this._mirrorLegacyActive('programmatic', 'selection config');
       this._assertSelectionParity('selection config');
     }
@@ -946,14 +946,12 @@ export class EnhancedSelect extends HTMLElement {
     const registry = createItemRegistry(items, this._itemAdapter, {
       duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
     });
-    const selected = this._getSelectedEntries();
     const activeKey = this._itemRegistry.indexToKey.get(this._state.activeIndex);
     const anchorKey = this._rangeAnchorIndex === null ? undefined : this._itemRegistry.indexToKey.get(this._rangeAnchorIndex);
     this._itemRegistry = registry;
     this._state.loadedItems = items;
     this._registryItemsRef = items;
     const disabledKeys = this._getBlockedDisabledKeys();
-    this._rebaseLegacySelection(selected);
     this._state.activeIndex = activeKey === undefined ? -1 : registry.keyToIndex.get(activeKey) ?? -1;
     this._rangeAnchorIndex = anchorKey === undefined ? null : registry.keyToIndex.get(anchorKey) ?? null;
     if (this._state.activeIndex >= 0 && !this._isLegacyFocusable(items[this._state.activeIndex])) {
@@ -964,6 +962,7 @@ export class EnhancedSelect extends HTMLElement {
       keys: registry.records.map((record) => record.key),
       disabledKeys,
     });
+    this._syncLegacySelectionFromEngine();
     this._syncEngineSelectionConfig();
     this._assertSelectionParity('items registered');
   }
@@ -978,6 +977,7 @@ export class EnhancedSelect extends HTMLElement {
       return;
     }
 
+    this._syncLegacySelectionFromEngine();
     this._assertSelectionParity('registry read');
     this._assertActiveParity('registry read');
   }
@@ -990,54 +990,48 @@ export class EnhancedSelect extends HTMLElement {
   private _getSelectedEntries(): LegacySelectedEntry[] {
     const entries: LegacySelectedEntry[] = [];
     if (!this._state) return entries;
-    for (const index of this._state.selectedIndices) {
-      if (!this._state.selectedItems.has(index)) continue;
-      const item = this._state.selectedItems.get(index);
-      const captured = this._legacySelectionKeys.get(index);
-      const key = captured && Object.is(captured.item, item)
-        ? captured.key
-        : this._itemAdapter.getKey(item, index);
-      entries.push({ key, index, item });
+    for (const key of this._engine.state.selectedKeys) {
+      const record = this._itemRegistry.keyToRecord.get(key) ?? this._selectedRecordsByKey.get(key);
+      if (record) entries.push({ key, index: record.index, item: record.item });
     }
     return entries;
   }
 
-  private _rebaseLegacySelection(entries: readonly LegacySelectedEntry[]): void {
+  private _syncLegacySelectionFromEngine(): void {
     const selectedIndices = new Set<number>();
     const selectedItems = new Map<number, unknown>();
-    const captured = new Map<number, { key: SelectKey; item: unknown }>();
-    const seen = new Set<SelectKey>();
-    let detachedIndex = -1;
-    for (const entry of entries) {
-      if (seen.has(entry.key)) continue;
-      const record = this._itemRegistry.keyToRecord.get(entry.key);
-      const item = record ? record.item : entry.item;
-      if (this._isOptionSelectionBlocked(item)) continue;
-      const index = record ? record.index : detachedIndex--;
-      seen.add(entry.key);
-      selectedIndices.add(index);
-      selectedItems.set(index, item);
-      captured.set(index, { key: entry.key, item });
-      const limit = this._config.selection.maxSelections ?? 0;
-      if (this._config.selection.mode === 'single' || (limit > 0 && selectedIndices.size >= limit)) break;
+    const selectedKeys = this._engine.state.selectedKeys;
+
+    for (const key of [...this._selectedRecordsByKey.keys()]) {
+      if (!selectedKeys.has(key)) this._selectedRecordsByKey.delete(key);
     }
+
+    for (const key of selectedKeys) {
+      const record = this._itemRegistry.keyToRecord.get(key);
+      if (record) this._selectedRecordsByKey.set(key, record);
+      if (!record) continue;
+      selectedIndices.add(record.index);
+      selectedItems.set(record.index, record.item);
+    }
+
     this._state.selectedIndices = selectedIndices;
     this._state.selectedItems = selectedItems;
-    this._legacySelectionKeys = captured;
   }
 
-  private _legacySelectedKeysSnapshot(): Set<SelectKey> {
-    return new Set(this._getSelectedEntries().map((entry) => entry.key));
+  private _projectedSelectedKeysSnapshot(): Set<SelectKey> {
+    return new Set([...this._state.selectedIndices]
+      .map((index) => this._itemRegistry.indexToKey.get(index))
+      .filter((key): key is SelectKey => key !== undefined));
   }
 
   private _assertSelectionParity(context: string): void {
     if (!this._isPhase2DevRuntime()) return;
-    const legacyKeys = this._legacySelectedKeysSnapshot();
+    const legacyKeys = this._projectedSelectedKeysSnapshot();
     const engineKeys = this._engine.state.selectedKeys;
     if (
       this._state.selectedItems.size !== this._state.selectedIndices.size
       || [...this._state.selectedIndices].some((index) => !this._state.selectedItems.has(index))
-      || legacyKeys.size !== engineKeys.size
+      || [...engineKeys].some((key) => this._itemRegistry.keyToRecord.has(key) && !legacyKeys.has(key))
       || [...legacyKeys].some((key) => !engineKeys.has(key))
     ) {
       throw new Error(`[Smilodon Phase2] Selection parity failed in ${context}: legacy=${JSON.stringify([...legacyKeys])}, engine=${JSON.stringify([...engineKeys])}`);
@@ -1068,20 +1062,33 @@ export class EnhancedSelect extends HTMLElement {
     this._assertActiveParity(context);
   }
 
-  private _mirrorLegacySelection(event: SelectEvent, context: string): void {
-    this._legacySelectionKeys = new Map(this._getSelectedEntries().map(({ index, key, item }) => [index, { key, item }]));
-    // Selection/active effects are diagnostic only in 2C; the legacy paths render and emit.
+  private _dispatchSelection(event: SelectEvent, context: string): void {
     this._engine.dispatch(event);
+    this._syncLegacySelectionFromEngine();
     this._assertSelectionParity(context);
   }
 
-  private _replaceLegacySelection(entries: readonly LegacySelectedEntry[], reason: SelectionReason, context: string): void {
-    const previous = this._getSelectedEntries();
-    this._rebaseLegacySelection(entries);
-    if (this._input.hasAttribute('required') && this._state.selectedIndices.size === 0 && previous.length > 0) {
-      this._rebaseLegacySelection(previous);
+  /** Compatibility alias for existing internal tests; dispatches to engine authority. */
+  private _mirrorLegacySelection(event: SelectEvent, context: string): void {
+    this._dispatchSelection(event, context);
+  }
+
+  private _requestSelectionReplacement(entries: readonly LegacySelectedEntry[], reason: SelectionReason, context: string): void {
+    for (const entry of entries) {
+      const record = this._itemRegistry.keyToRecord.get(entry.key) ?? this._selectedRecordsByKey.get(entry.key);
+      this._selectedRecordsByKey.set(entry.key, record ?? {
+        key: entry.key,
+        item: entry.item,
+        index: entry.index,
+        label: this._getItemLabel(entry.item),
+        value: this._getItemValue(entry.item),
+        disabled: Boolean((entry.item as { disabled?: boolean } | null)?.disabled),
+        groupKey: (entry.item as { group?: unknown } | null)?.group == null
+          ? null
+          : String((entry.item as { group?: unknown }).group),
+      });
     }
-    this._mirrorLegacySelection({ type: 'REPLACE_SELECTION_REQUEST', keys: [...this._legacySelectedKeysSnapshot()], reason }, context);
+    this._dispatchSelection({ type: 'REPLACE_SELECTION_REQUEST', keys: entries.map(({ key }) => key), reason }, context);
   }
 
   private _registerShadowItems(indices: readonly number[]): void {
@@ -3365,7 +3372,7 @@ export class EnhancedSelect extends HTMLElement {
       const fetchedRegistry = createItemRegistry(items, this._itemAdapter, {
         duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
       });
-      this._replaceLegacySelection(fetchedRegistry.records, 'external-value-sync', 'initial selected items');
+      this._requestSelectionReplacement(fetchedRegistry.records, 'external-value-sync', 'initial selected items');
       
       this._updateInputDisplay();
     } catch (error) {
@@ -3918,7 +3925,7 @@ export class EnhancedSelect extends HTMLElement {
       const record = this._getRecordByIndex(optionIndex);
       if (record && !this._isOptionSelectionBlocked(record.item)) entries.push(record);
     });
-    this._replaceLegacySelection(entries, 'keyboard', 'select all');
+    this._requestSelectionReplacement(entries, 'keyboard', 'select all');
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
@@ -3929,7 +3936,10 @@ export class EnhancedSelect extends HTMLElement {
     if (this._config.selection.mode !== 'multi') return;
     this._ensureRegistryCurrent();
     const [min, max] = start < end ? [start, end] : [end, start];
-    const entries = opts?.clear ? [] : this._getSelectedEntries();
+    const selectedEntries = this._getSelectedEntries();
+    const entries = opts?.clear
+      ? selectedEntries.filter((entry) => !this._itemRegistry.keyToRecord.has(entry.key))
+      : selectedEntries;
     for (let i = min; i <= max; i += 1) {
       const record = this._getRecordByIndex(i);
       const optionEl = this._getOptionElementByIndex(i);
@@ -3937,7 +3947,7 @@ export class EnhancedSelect extends HTMLElement {
       if (!record || this._isOptionSelectionBlocked(record.item)) continue;
       entries.push(record);
     }
-    this._replaceLegacySelection(entries, opts?.reason ?? 'keyboard', 'select range');
+    this._requestSelectionReplacement(entries, opts?.reason ?? 'keyboard', 'select range');
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
@@ -3978,9 +3988,8 @@ export class EnhancedSelect extends HTMLElement {
     if (this._isOptionSelectionBlocked(item)) {
       return;
     }
-    const isCurrentlySelected = this._state.selectedIndices.has(index);
+    const isCurrentlySelected = this._engine.state.selectedKeys.has(record.key);
     const reason = opts?.reason ?? 'pointer';
-    const required = this._input.hasAttribute('required');
 
     // Keep active/focus styling aligned with the most recently interacted option.
     // Without this, a previously selected item may retain active classes/styles
@@ -3988,18 +3997,8 @@ export class EnhancedSelect extends HTMLElement {
     if (this._isLegacyFocusable(item)) this._state.activeIndex = index;
     this._mirrorLegacyActive(reason === 'keyboard' ? 'keyboard' : 'pointer', 'option selection');
     if (this._config.selection.mode === 'single') {
-      // Single select: clear previous and select new
-      const wasSelected = this._state.selectedIndices.has(index);
-      this._state.selectedIndices.clear();
-      this._state.selectedItems.clear();
-      
-      if (!wasSelected || !this._config.selection.allowDeselect || required) {
-        // Select this option
-        this._state.selectedIndices.add(index);
-        this._state.selectedItems.set(index, item);
-      }
-      this._mirrorLegacySelection({
-        type: wasSelected && this._config.selection.allowDeselect ? 'TOGGLE_KEY_REQUEST' : 'SELECT_KEY_REQUEST',
+      this._dispatchSelection({
+        type: isCurrentlySelected && this._config.selection.allowDeselect ? 'TOGGLE_KEY_REQUEST' : 'SELECT_KEY_REQUEST',
         key: record.key,
         reason,
       }, 'single option selection');
@@ -4023,25 +4022,13 @@ export class EnhancedSelect extends HTMLElement {
 
       // Multi select with toggle
       const maxSelections = this._config.selection.maxSelections || 0;
-      
-      if (isCurrentlySelected) {
-        // Deselect (toggle off)
-        if (!required || this._state.selectedIndices.size > 1) {
-          this._state.selectedIndices.delete(index);
-          this._state.selectedItems.delete(index);
-        }
-      } else {
-        // Select (toggle on)
-        if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
-          this._announce(`Maximum ${maxSelections} selections allowed`);
-          this._renderOptions();
-          return; // Max selections reached
-        }
-        
-        this._state.selectedIndices.add(index);
-        this._state.selectedItems.set(index, item);
+
+      if (!isCurrentlySelected && maxSelections > 0 && this._engine.state.selectedKeys.size >= maxSelections) {
+        this._announce(`Maximum ${maxSelections} selections allowed`);
+        this._renderOptions();
+        return;
       }
-      this._mirrorLegacySelection({ type: 'TOGGLE_KEY_REQUEST', key: record.key, reason }, 'multi option selection');
+      this._dispatchSelection({ type: 'TOGGLE_KEY_REQUEST', key: record.key, reason }, 'multi option selection');
       
       // Re-render to update styles (safer than trying to find the element in filtered list)
       this._renderOptions();
@@ -4072,16 +4059,18 @@ export class EnhancedSelect extends HTMLElement {
     });
   }
 
-  private _handleOptionRemove(index: number): void {
+  private _handleOptionRemove(index: number, key?: SelectKey): void {
     this._ensureRegistryCurrent();
-    const entry = this._getSelectedEntries().find((selected) => selected.index === index);
-    if (!entry || (this._input.hasAttribute('required') && this._state.selectedIndices.size <= 1)) return;
-    const item = this._state.selectedItems.get(index);
-    const option = this._getOptionElementByIndex(index);
+    const entry = this._getSelectedEntries().find((selected) => key === undefined
+      ? selected.index === index
+      : selected.key === key);
+    if (!entry) return;
+    const item = entry.item;
+    const option = this._itemRegistry.keyToRecord.has(entry.key)
+      ? this._getOptionElementByIndex(entry.index)
+      : null;
 
-    this._state.selectedIndices.delete(index);
-    this._state.selectedItems.delete(index);
-    this._mirrorLegacySelection({ type: 'DESELECT_KEY_REQUEST', key: entry.key, reason: 'pointer' }, 'remove selected item');
+    this._dispatchSelection({ type: 'DESELECT_KEY_REQUEST', key: entry.key, reason: 'pointer' }, 'remove selected item');
 
     if (option && 'setSelected' in option && typeof (option as SelectOption).setSelected === 'function') {
       (option as SelectOption).setSelected(false);
@@ -4108,11 +4097,12 @@ export class EnhancedSelect extends HTMLElement {
     const config = option && 'getConfig' in option && typeof (option as SelectOption).getConfig === 'function'
       ? (option as SelectOption).getConfig()
       : undefined;
-    this._emit('remove', { item: config?.item ?? item, index });
+    this._emit('remove', { item: config?.item ?? item, index: entry.index });
   }
 
   private _updateInputDisplay(): void {
-    const selectedItems = Array.from(this._state.selectedItems.values());
+    const selectedEntries = this._getSelectedEntries();
+    const selectedItems = selectedEntries.map(({ item }) => item);
     const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
     
     if (selectedItems.length === 0) {
@@ -4133,8 +4123,7 @@ export class EnhancedSelect extends HTMLElement {
       existingBadges.forEach(badge => badge.remove());
       
       // Create badges for each selected item
-      const selectedEntries = Array.from(this._state.selectedItems.entries());
-      selectedEntries.forEach(([index, item]) => {
+      selectedEntries.forEach(({ key, index, item }) => {
         const badge = document.createElement('span');
         badge.className = 'selection-badge';
         if (this._config.styles.classNames?.badge) {
@@ -4181,7 +4170,7 @@ export class EnhancedSelect extends HTMLElement {
           removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            this._handleOptionRemove(index);
+            this._handleOptionRemove(index, key);
           });
 
           badge.appendChild(removeBtn);
@@ -4484,10 +4473,11 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _emitChange(): void {
-    const selectedItems = Array.from(this._state.selectedItems.values());
+    const selectedEntries = this._getSelectedEntries();
+    const selectedItems = selectedEntries.map(({ item }) => item);
     const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
     const selectedValues = selectedItems.map(getValue);
-    const selectedIndices = Array.from(this._state.selectedIndices).filter((index) => index >= 0);
+    const selectedIndices = selectedEntries.map(({ index }) => index).filter((index) => index >= 0);
 
     this._emit('change', { selectedItems, selectedValues, selectedIndices });
     this._config.callbacks.onChange?.(selectedItems, selectedValues);
@@ -4623,7 +4613,7 @@ export class EnhancedSelect extends HTMLElement {
 
       const selected = this._itemRegistry.records
         .filter((record) => arrayIncludesValue(values, record.value) && !this._isOptionSelectionBlocked(record.item));
-      this._replaceLegacySelection(selected, 'external-value-sync', 'setSelectedValues');
+      this._requestSelectionReplacement(selected, 'external-value-sync', 'setSelectedValues');
       
       this._renderOptions();
       this._updateInputDisplay();
@@ -4647,7 +4637,7 @@ export class EnhancedSelect extends HTMLElement {
       const fetchedRegistry = createItemRegistry(items, this._itemAdapter, {
         duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
       });
-      this._replaceLegacySelection(fetchedRegistry.records, 'external-value-sync', 'fetched selected items');
+      this._requestSelectionReplacement(fetchedRegistry.records, 'external-value-sync', 'fetched selected items');
       
       this._renderOptions();
       this._updateInputDisplay();
@@ -4672,11 +4662,7 @@ export class EnhancedSelect extends HTMLElement {
    */
   clear(): void {
     this._ensureRegistryCurrent();
-    if (!this._input.hasAttribute('required')) {
-      this._state.selectedIndices.clear();
-      this._state.selectedItems.clear();
-    }
-    this._mirrorLegacySelection({ type: 'CLEAR_SELECTION_REQUEST', reason: 'programmatic' }, 'clear');
+    this._dispatchSelection({ type: 'CLEAR_SELECTION_REQUEST', reason: 'programmatic' }, 'clear');
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
