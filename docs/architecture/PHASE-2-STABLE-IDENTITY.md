@@ -619,3 +619,47 @@ The active-index mutation audit leaves assignment only in
 `_syncLegacyActiveFromEngine`. All remaining `activeIndex` reads are projection,
 rendering, ARIA, or compatibility styling; navigation and activation use the
 engine key. No adapter source was changed for this stage.
+
+## Phase 2D.3 — Compatibility Snapshot Cleanup
+
+Status: **Complete.**
+
+`selectedIndices`, `selectedItems`, and `activeIndex` are compatibility
+projections. Engine `selectedKeys` and `activeKey` own selection and active
+identity. The component derives the index and item snapshots from the current
+registry for rendering and legacy-facing behavior; no public mutation path
+reads those snapshots as selection or navigation authority.
+
+`_selectedRecordsByKey` is the selected-record cache. For a selected key in the
+registry, its current record replaces the cached record. If the key is removed
+from the registry while still selected in the engine, the last known record
+remains available to `getSelectedItems()`, `getSelectedValues()`, change event
+details, and the displayed selected label. Deselecting or clearing the key
+removes the cache entry. Re-registering the same key refreshes the cache from
+the replacement item.
+
+The development invariant checks are named `_assertSelectionProjection` and
+`_assertActiveProjection`. `_mirrorLegacySelection` and
+`_mirrorLegacyActive` remain deprecated private test setup shims because older
+renderer and styling tests call them; production component paths dispatch
+engine events and then derive compatibility snapshots.
+
+The new `enhanced-select-compatibility-projection.spec.ts` verifies selection
+and active projections, detached and replacement record cache behavior,
+backward-compatible change details, engine-first `setSelectedValues()`, clear,
+and recovery from deliberately corrupted compatibility snapshots. Core does
+not implement a separate form-associated value channel; the visible input
+label and public value/event APIs resolve selected records from engine keys,
+the registry, and the cache.
+
+### Phase 2D.3 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused selection, active, and compatibility projection suites | 64 passed. |
+| Full unit suite | 326 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |

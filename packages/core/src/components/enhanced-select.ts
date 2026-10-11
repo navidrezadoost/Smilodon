@@ -42,8 +42,11 @@ interface SelectState {
   isSearching: boolean;
   currentPage: number;
   totalPages: number;
+  /** Compatibility projection of engine selectedKeys for rendering and legacy APIs. */
   selectedIndices: Set<number>;
+  /** Registered selected records projected from engine selectedKeys. */
   selectedItems: Map<number, unknown>;
+  /** Compatibility projection of engine activeKey through the current item registry. */
   activeIndex: number;
   searchQuery: string;
   loadedItems: unknown[];
@@ -87,7 +90,8 @@ export class EnhancedSelect extends HTMLElement {
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
-  // Records keep detached engine selections resolvable for value APIs and events.
+  // Engine selectedKeys owns identity. The registry resolves current records;
+  // this cache keeps the last known record available while a selected key is detached.
   private _selectedRecordsByKey = new Map<SelectKey, ItemRecord<unknown, SelectKey>>();
   private _registryItemsRef: unknown[] = [];
   private _pageCache: PageCache = {};
@@ -937,8 +941,8 @@ export class EnhancedSelect extends HTMLElement {
     if (this._state) {
       this._syncLegacySelectionFromEngine();
       this._syncLegacyActiveFromEngine();
-      this._assertSelectionParity('selection config');
-      this._assertActiveParity('selection config');
+      this._assertSelectionProjection('selection config');
+      this._assertActiveProjection('selection config');
     }
   }
 
@@ -966,7 +970,7 @@ export class EnhancedSelect extends HTMLElement {
     }
     this._syncLegacySelectionFromEngine();
     this._syncEngineSelectionConfig();
-    this._assertSelectionParity('items registered');
+    this._assertSelectionProjection('items registered');
   }
 
   private _ensureRegistryCurrent(): void {
@@ -981,8 +985,8 @@ export class EnhancedSelect extends HTMLElement {
 
     this._syncLegacySelectionFromEngine();
     this._syncLegacyActiveFromEngine();
-    this._assertSelectionParity('registry read');
-    this._assertActiveParity('registry read');
+    this._assertSelectionProjection('registry read');
+    this._assertActiveProjection('registry read');
   }
 
   private _getRecordByIndex(index: number): ItemRecord<unknown, SelectKey> | null {
@@ -1027,7 +1031,7 @@ export class EnhancedSelect extends HTMLElement {
       .filter((key): key is SelectKey => key !== undefined));
   }
 
-  private _assertSelectionParity(context: string): void {
+  private _assertSelectionProjection(context: string): void {
     if (!this._isPhase2DevRuntime()) return;
     const legacyKeys = this._projectedSelectedKeysSnapshot();
     const engineKeys = this._engine.state.selectedKeys;
@@ -1037,7 +1041,7 @@ export class EnhancedSelect extends HTMLElement {
       || [...engineKeys].some((key) => this._itemRegistry.keyToRecord.has(key) && !legacyKeys.has(key))
       || [...legacyKeys].some((key) => !engineKeys.has(key))
     ) {
-      throw new Error(`[Smilodon Phase2] Selection parity failed in ${context}: legacy=${JSON.stringify([...legacyKeys])}, engine=${JSON.stringify([...engineKeys])}`);
+      throw new Error(`[Smilodon Phase2] Selection projection failed in ${context}: compatibility=${JSON.stringify([...legacyKeys])}, engine=${JSON.stringify([...engineKeys])}`);
     }
   }
 
@@ -1055,12 +1059,12 @@ export class EnhancedSelect extends HTMLElement {
     this._syncLegacyActiveAria();
   }
 
-  private _assertActiveParity(context: string): void {
+  private _assertActiveProjection(context: string): void {
     if (!this._isPhase2DevRuntime()) return;
     const legacyKey = this._projectedActiveKeySnapshot();
     const engineKey = this._engine.state.activeKey;
     if (legacyKey !== engineKey && !Object.is(legacyKey, engineKey)) {
-      throw new Error(`[Smilodon Phase2] Active parity failed in ${context}: legacy=${String(legacyKey)}, engine=${String(engineKey)}`);
+      throw new Error(`[Smilodon Phase2] Active projection failed in ${context}: compatibility=${String(legacyKey)}, engine=${String(engineKey)}`);
     }
   }
 
@@ -1068,7 +1072,7 @@ export class EnhancedSelect extends HTMLElement {
     const effects = this._engine.dispatch({ type: 'ACTIVE_KEY_CHANGED', key, reason });
     this._runEngineEffects(effects);
     this._syncLegacyActiveFromEngine();
-    this._assertActiveParity(context);
+    this._assertActiveProjection(context);
   }
 
   private _clearDisabledEngineActive(context: string): void {
@@ -1077,11 +1081,11 @@ export class EnhancedSelect extends HTMLElement {
       this._dispatchActiveKey(null, 'programmatic', context);
     } else {
       this._syncLegacyActiveFromEngine();
-      this._assertActiveParity(context);
+      this._assertActiveProjection(context);
     }
   }
 
-  /** Compatibility shim for existing internal test setup; production paths dispatch by key. */
+  /** @deprecated Test-only setup shim retained for existing renderer tests; production paths dispatch by key. */
   private _mirrorLegacyActive(reason: ActiveReason, context: string): void {
     this._dispatchActiveKey(this._projectedActiveKeySnapshot(), reason, context);
   }
@@ -1089,10 +1093,10 @@ export class EnhancedSelect extends HTMLElement {
   private _dispatchSelection(event: SelectEvent, context: string): void {
     this._engine.dispatch(event);
     this._syncLegacySelectionFromEngine();
-    this._assertSelectionParity(context);
+    this._assertSelectionProjection(context);
   }
 
-  /** Compatibility alias for existing internal tests; dispatches to engine authority. */
+  /** @deprecated Test-only setup shim retained for existing styling tests; dispatches to engine authority. */
   private _mirrorLegacySelection(event: SelectEvent, context: string): void {
     this._dispatchSelection(event, context);
   }
@@ -1119,7 +1123,7 @@ export class EnhancedSelect extends HTMLElement {
     const keys = indices.map((index) => this._itemRegistry.indexToKey.get(index)).filter((key): key is SelectKey => key !== undefined);
     this._engine.dispatch({ type: 'ITEMS_REGISTERED', keys, disabledKeys: this._getBlockedDisabledKeys() });
     this._clearDisabledEngineActive('visible items');
-    this._assertSelectionParity('visible items');
+    this._assertSelectionProjection('visible items');
   }
 
   private _syncLegacyActiveAria(): void {
