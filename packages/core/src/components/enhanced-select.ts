@@ -936,8 +936,9 @@ export class EnhancedSelect extends HTMLElement {
     });
     if (this._state) {
       this._syncLegacySelectionFromEngine();
-      this._mirrorLegacyActive('programmatic', 'selection config');
+      this._syncLegacyActiveFromEngine();
       this._assertSelectionParity('selection config');
+      this._assertActiveParity('selection config');
     }
   }
 
@@ -946,22 +947,23 @@ export class EnhancedSelect extends HTMLElement {
     const registry = createItemRegistry(items, this._itemAdapter, {
       duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
     });
-    const activeKey = this._itemRegistry.indexToKey.get(this._state.activeIndex);
+    const activeKey = this._engine.state.activeKey;
     const anchorKey = this._rangeAnchorIndex === null ? undefined : this._itemRegistry.indexToKey.get(this._rangeAnchorIndex);
     this._itemRegistry = registry;
     this._state.loadedItems = items;
     this._registryItemsRef = items;
     const disabledKeys = this._getBlockedDisabledKeys();
-    this._state.activeIndex = activeKey === undefined ? -1 : registry.keyToIndex.get(activeKey) ?? -1;
     this._rangeAnchorIndex = anchorKey === undefined ? null : registry.keyToIndex.get(anchorKey) ?? null;
-    if (this._state.activeIndex >= 0 && !this._isLegacyFocusable(items[this._state.activeIndex])) {
-      this._state.activeIndex = -1;
-    }
     this._engine.dispatch({
       type: 'ITEMS_REGISTERED',
       keys: registry.records.map((record) => record.key),
       disabledKeys,
     });
+    if (activeKey !== null && registry.keyToRecord.get(activeKey)?.disabled) {
+      this._dispatchActiveKey(null, 'programmatic', 'items registered with disabled active key');
+    } else {
+      this._syncLegacyActiveFromEngine();
+    }
     this._syncLegacySelectionFromEngine();
     this._syncEngineSelectionConfig();
     this._assertSelectionParity('items registered');
@@ -978,6 +980,7 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     this._syncLegacySelectionFromEngine();
+    this._syncLegacyActiveFromEngine();
     this._assertSelectionParity('registry read');
     this._assertActiveParity('registry read');
   }
@@ -1038,28 +1041,49 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  private _isLegacyFocusable(item: unknown): boolean {
-    return !(item as { disabled?: boolean } | null)?.disabled || this._getDisabledOptionBehavior().focusable;
+  private _projectedActiveKeySnapshot(): SelectKey | null {
+    return this._state.activeIndex < 0
+      ? null
+      : this._itemRegistry.indexToKey.get(this._state.activeIndex) ?? null;
   }
 
-  private _legacyActiveKeySnapshot(): SelectKey | null {
-    const record = this._getRecordByIndex(this._state.activeIndex);
-    // The legacy opt-in for focusing visually disabled rows remains UI-only.
-    return record && !record.disabled ? record.key : null;
+  private _syncLegacyActiveFromEngine(): void {
+    const activeKey = this._engine.state.activeKey;
+    this._state.activeIndex = activeKey === null
+      ? -1
+      : this._itemRegistry.keyToIndex.get(activeKey) ?? -1;
+    this._syncLegacyActiveAria();
   }
 
   private _assertActiveParity(context: string): void {
     if (!this._isPhase2DevRuntime()) return;
-    const legacyKey = this._legacyActiveKeySnapshot();
+    const legacyKey = this._projectedActiveKeySnapshot();
     const engineKey = this._engine.state.activeKey;
     if (legacyKey !== engineKey && !Object.is(legacyKey, engineKey)) {
       throw new Error(`[Smilodon Phase2] Active parity failed in ${context}: legacy=${String(legacyKey)}, engine=${String(engineKey)}`);
     }
   }
 
-  private _mirrorLegacyActive(reason: ActiveReason, context: string): void {
-    this._engine.dispatch({ type: 'ACTIVE_KEY_CHANGED', key: this._legacyActiveKeySnapshot(), reason });
+  private _dispatchActiveKey(key: SelectKey | null, reason: ActiveReason, context: string): void {
+    const effects = this._engine.dispatch({ type: 'ACTIVE_KEY_CHANGED', key, reason });
+    this._runEngineEffects(effects);
+    this._syncLegacyActiveFromEngine();
     this._assertActiveParity(context);
+  }
+
+  private _clearDisabledEngineActive(context: string): void {
+    const activeKey = this._engine.state.activeKey;
+    if (activeKey !== null && this._itemRegistry.keyToRecord.get(activeKey)?.disabled) {
+      this._dispatchActiveKey(null, 'programmatic', context);
+    } else {
+      this._syncLegacyActiveFromEngine();
+      this._assertActiveParity(context);
+    }
+  }
+
+  /** Compatibility shim for existing internal test setup; production paths dispatch by key. */
+  private _mirrorLegacyActive(reason: ActiveReason, context: string): void {
+    this._dispatchActiveKey(this._projectedActiveKeySnapshot(), reason, context);
   }
 
   private _dispatchSelection(event: SelectEvent, context: string): void {
@@ -1092,10 +1116,9 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _registerShadowItems(indices: readonly number[]): void {
-    if (!indices.includes(this._state.activeIndex)) this._state.activeIndex = -1;
     const keys = indices.map((index) => this._itemRegistry.indexToKey.get(index)).filter((key): key is SelectKey => key !== undefined);
     this._engine.dispatch({ type: 'ITEMS_REGISTERED', keys, disabledKeys: this._getBlockedDisabledKeys() });
-    this._mirrorLegacyActive(this._state.searchQuery ? 'search' : 'programmatic', 'visible items');
+    this._clearDisabledEngineActive('visible items');
     this._assertSelectionParity('visible items');
   }
 
@@ -3757,8 +3780,12 @@ export class EnhancedSelect extends HTMLElement {
         e.preventDefault();
         if (!this._state.isOpen) {
           this._handleOpen();
-        } else if (this._state.activeIndex >= 0) {
-          this._selectOption(this._state.activeIndex, { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey, reason: 'keyboard' });
+        } else {
+          const activeKey = this._engine.state.activeKey;
+          const currentIndex = activeKey === null ? -1 : this._itemRegistry.keyToIndex.get(activeKey) ?? -1;
+          if (currentIndex >= 0) {
+            this._selectOption(currentIndex, { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey, reason: 'keyboard' });
+          }
         }
         break;
       case 'Escape':
@@ -3790,7 +3817,9 @@ export class EnhancedSelect extends HTMLElement {
     const selectableIndices = this._getSelectableOptionIndices();
     if (selectableIndices.length === 0) return;
 
-    const currentPosition = selectableIndices.indexOf(this._state.activeIndex);
+    const activeKey = this._engine.state.activeKey;
+    const currentIndex = activeKey === null ? -1 : this._itemRegistry.keyToIndex.get(activeKey) ?? -1;
+    const currentPosition = selectableIndices.indexOf(currentIndex);
     const basePosition = currentPosition >= 0
       ? currentPosition
       : delta >= 0
@@ -3801,7 +3830,7 @@ export class EnhancedSelect extends HTMLElement {
     this._setActive(next);
 
     if (this._config.selection.mode === 'multi' && opts?.shiftKey) {
-      const anchor = this._rangeAnchorIndex ?? this._state.activeIndex;
+      const anchor = this._rangeAnchorIndex ?? currentIndex;
       const anchorIndex = anchor >= 0 ? anchor : next;
       if (this._rangeAnchorIndex === null) {
         this._rangeAnchorIndex = anchorIndex;
@@ -3814,13 +3843,17 @@ export class EnhancedSelect extends HTMLElement {
     this._ensureRegistryCurrent();
     const record = this._getRecordByIndex(index);
     const option = this._getOptionElementByIndex(index);
-    if (!record || !this._isLegacyFocusable(record.item) || !option || (option.getAttribute('aria-disabled') === 'true' && !option.classList.contains('smilodon-option--disabled-focusable'))) {
+    if (!record || record.disabled || !option || option.getAttribute('aria-disabled') === 'true') {
       return;
     }
 
+    const previousIndex = this._state.activeIndex;
+    this._dispatchActiveKey(record.key, reason, 'set active');
+    if (this._state.activeIndex !== index) return;
+
     // Clear previous active state
-    if (this._state.activeIndex >= 0) {
-      const prevOption = this._getOptionElementByIndex(this._state.activeIndex);
+    if (previousIndex >= 0 && previousIndex !== index) {
+      const prevOption = this._getOptionElementByIndex(previousIndex);
       if (prevOption) {
         // Check if it's a custom SelectOption or a lightweight DOM element
         if ('setActive' in prevOption && typeof (prevOption as any).setActive === 'function') {
@@ -3831,9 +3864,6 @@ export class EnhancedSelect extends HTMLElement {
         }
       }
     }
-    
-    this._state.activeIndex = index;
-    this._mirrorLegacyActive(reason, 'set active');
     
     // Set new active state
     if (option) {
@@ -3868,7 +3898,7 @@ export class EnhancedSelect extends HTMLElement {
     // Only return elements with data-index or data-sm-selectable attributes
     return Array.from(this._optionsContainer.children).filter((child) => {
       return (child.hasAttribute('data-index') || child.hasAttribute('data-sm-selectable'))
-        && (child.getAttribute('aria-disabled') !== 'true' || child.classList.contains('smilodon-option--disabled-focusable'));
+        && child.getAttribute('aria-disabled') !== 'true';
     }) as HTMLElement[];
   }
 
@@ -3958,9 +3988,7 @@ export class EnhancedSelect extends HTMLElement {
     const selectableIndices = this._getSelectableOptionIndices();
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
     if (selectableIndices.length === 0 || (this._config.selection.mode === 'multi' && selected.length === 0)) {
-      this._state.activeIndex = -1;
-      this._mirrorLegacyActive('open', 'initial active option');
-      this._input.removeAttribute('aria-activedescendant');
+      this._dispatchActiveKey(null, 'open', 'initial active option');
       return;
     }
     const target = selected.find((index) => selectableIndices.includes(index)) ?? selectableIndices[0];
@@ -3994,8 +4022,9 @@ export class EnhancedSelect extends HTMLElement {
     // Keep active/focus styling aligned with the most recently interacted option.
     // Without this, a previously selected item may retain active classes/styles
     // after selecting a different option.
-    if (this._isLegacyFocusable(item)) this._state.activeIndex = index;
-    this._mirrorLegacyActive(reason === 'keyboard' ? 'keyboard' : 'pointer', 'option selection');
+    if (!record.disabled) {
+      this._dispatchActiveKey(record.key, reason === 'keyboard' ? 'keyboard' : 'pointer', 'option selection');
+    }
     if (this._config.selection.mode === 'single') {
       this._dispatchSelection({
         type: isCurrentlySelected && this._config.selection.allowDeselect ? 'TOGGLE_KEY_REQUEST' : 'SELECT_KEY_REQUEST',
