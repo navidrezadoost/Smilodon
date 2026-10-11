@@ -1,9 +1,9 @@
 # Phase 2 - Stable Identity & Selection Model
 
-Status: **Phase 2C accepted and committed; Phase 2D.1 selection authority flip in progress.**
-Engine exports remain experimental, as documented in Phase 1. Phase 2D.1 changes
-selection ownership inside `EnhancedSelect`; active-key authority and adapter
-migration remain out of scope.
+Status: **Phase 2C accepted and committed; Phase 2D.1 and 2D.2 authority flips complete.**
+Engine exports remain experimental, as documented in Phase 1. The Phase 2D.1
+selection flip and Phase 2D.2 active-key flip are complete inside
+`EnhancedSelect`; adapter migration remains out of scope.
 
 ## 1. Problem
 
@@ -583,3 +583,39 @@ The selection mutation audit leaves legacy snapshot assignment only in
 compatibility `selectedIndices` or `selectedItems` collections. Active-key
 ownership remains in shadow mode, and no adapter source was changed for this
 stage.
+
+## Phase 2D.2 — ActiveKey Authority Flip
+
+Status: **Complete.**
+
+The engine's `activeKey` is now the source of truth for navigation and
+activation. `_syncLegacyActiveFromEngine` derives the compatibility
+`activeIndex` through the current registry and synchronizes
+`aria-activedescendant`. Arrow navigation resolves its current position from
+`activeKey`; Enter resolves the selected option from that key. Open, Home/End,
+type-ahead, renderer focus, scroll-to-selected, selection activation, filter
+registration, item replacement, and disabled/config reconciliation dispatch or
+reconcile engine active state before projecting the legacy index. Disabled
+options cannot become the engine active key.
+
+The existing `enhanced-select-active-parity.spec.ts` remains. The new
+`enhanced-select-active-authority.spec.ts` covers engine-first ArrowUp/ArrowDown,
+disabled prevention, filter and replacement behavior, ARIA projection,
+selection activation, and navigation after deliberate legacy-index corruption.
+
+### Phase 2D.2 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused active parity, active authority, and selection authority suites | 37 passed. |
+| Full unit suite | 318 passed, one skipped. |
+| `npm run lint` | Passed with six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |
+
+The active-index mutation audit leaves assignment only in
+`_syncLegacyActiveFromEngine`. All remaining `activeIndex` reads are projection,
+rendering, ARIA, or compatibility styling; navigation and activation use the
+engine key. No adapter source was changed for this stage.
