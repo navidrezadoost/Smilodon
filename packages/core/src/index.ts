@@ -29,10 +29,15 @@ export type {
   CustomOptionEvents
 } from './types/custom-option.js';
 export * from './renderers/contracts.js';
+export * from './engine/index.js';
+export * from './platform/web/index.js';
 export * from './components/native-select.js';
 export * from './components/enhanced-select.js';
 export * from './components/select-option.js';
 export * from './config/global-config.js';
+// Preserve the existing configuration type while exposing the engine policy separately.
+export type { SelectionConfig } from './config/global-config.js';
+export type { SelectionConfig as EngineSelectionConfig } from './engine/selection-policy.js';
 export { FenwickTree } from './utils/fenwick-tree.js';
 export { DOMPool } from './utils/dom-pool.js';
 export { WorkerManager, getWorkerManager } from './utils/worker-manager.js';
@@ -74,4 +79,3 @@ export {
 } from './utils/csp-styles.js';
 
 export type { HTMLSanitizer, EnvironmentCapabilities } from './utils/security.js';
-
