@@ -125,6 +125,13 @@ describe('EnhancedSelect optionRenderer', () => {
     (el as any)._state.selectedIndices = new Set([0]);
     (el as any)._state.selectedItems = new Map([[0, items[0]]]);
     (el as any)._state.activeIndex = 0;
+    const firstKey = (el as any)._itemAdapter.getKey(items[0], 0);
+    (el as any)._mirrorLegacySelection({
+      type: 'REPLACE_SELECTION_REQUEST',
+      keys: [firstKey],
+      reason: 'programmatic',
+    }, 'option renderer test setup');
+    (el as any)._mirrorLegacyActive('programmatic', 'option renderer test setup');
     (el as any)._renderOptions();
 
     const second = el.shadowRoot?.querySelector('[data-index="1"]') as HTMLElement | null;

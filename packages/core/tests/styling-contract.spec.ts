@@ -16,6 +16,18 @@ describe('EnhancedSelect Styling Contract', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
     });
 
+    const seedSelectedIndex = (index: number, item: unknown) => {
+        const state = (el as any)._state;
+        state.selectedIndices = new Set([index]);
+        state.selectedItems = new Map([[index, item]]);
+        const key = (el as any)._itemAdapter.getKey(item, index);
+        (el as any)._mirrorLegacySelection({
+            type: 'REPLACE_SELECTION_REQUEST',
+            keys: [key],
+            reason: 'programmatic',
+        }, 'styling test setup');
+    };
+
     afterEach(() => {
         el.remove();
     });
@@ -86,7 +98,7 @@ describe('EnhancedSelect Styling Contract', () => {
         
         const item = { value: 'val1', label: 'Item 1' };
         (el as any)._state.loadedItems = [item];
-        (el as any)._state.selectedIndices.add(0); // Pre-select
+        seedSelectedIndex(0, item);
         
         (el as any)._renderOptions();
         
@@ -153,6 +165,19 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(header.textContent).toBe('grp:Group1');
     });
 
+    it('auto-renders group headers for flat items with group properties', async () => {
+        el.setItems([
+            { value: 'apple', label: 'Apple', group: 'Fruits' },
+            { value: 'banana', label: 'Banana', group: 'Fruits' },
+            { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+        ]);
+        (el as any)._renderOptions();
+
+        const headers = Array.from(el.shadowRoot!.querySelectorAll('[part="group-header"]'));
+        expect(headers.map(header => header.textContent)).toEqual(['Fruits', 'Vegetables']);
+        expect((el as any)._state.loadedItems).toHaveLength(3);
+    });
+
     it('Dark mode variables apply to group header', async () => {
         el.setGroupedItems([{ label: 'G2', options: ['a'] }]);
         el.setAttribute('class', 'dark-mode');
@@ -196,7 +221,7 @@ describe('EnhancedSelect Styling Contract', () => {
         
         const item = { value: 'val1', label: 'Item 1' };
         (el as any)._state.loadedItems = [item];
-        (el as any)._state.selectedIndices.add(0);
+        seedSelectedIndex(0, item);
         
         (el as any)._renderOptions();
         
@@ -222,7 +247,7 @@ describe('EnhancedSelect Styling Contract', () => {
 
         const item = { value: 'val1', label: 'Item 1' };
         (el as any)._state.loadedItems = [item];
-        (el as any)._state.selectedIndices.add(0);
+        seedSelectedIndex(0, item);
         (el as any)._renderOptions();
 
         el.classMap = {

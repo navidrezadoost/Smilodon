@@ -3,7 +3,7 @@
  * Implements all advanced features: infinite scroll, load more, busy state, 
  * server-side selection, and full customization
  * 
- * ✨ Redesigned with formal elegance, refined microinteractions, and polished UX
+ * Redesigned with formal elegance, refined microinteractions, and polished UX
  */
 
 import type { GlobalSelectConfig } from '../config/global-config';
@@ -22,6 +22,13 @@ import type {
   TrackingEntry,
 } from '../types';
 import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
+import type { CloseReason, SelectKey } from '../engine/contracts.js';
+import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapter.js';
+import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
+import type { SelectionReason, ActiveReason } from '../engine/selection-policy.js';
+import type { SelectEvent } from '../engine/select-events.js';
+import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
+import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
 import { SelectOption } from './select-option';
 import { arrayIncludesValue } from '../utils/value-equality.js';
 
@@ -30,7 +37,7 @@ interface PageCache {
 }
 
 interface SelectState {
-  isOpen: boolean;
+  readonly isOpen: boolean;
   isBusy: boolean;
   isSearching: boolean;
   currentPage: number;
@@ -46,6 +53,12 @@ interface SelectState {
   lastNotifiedQuery: string | null;
   lastNotifiedResultCount: number;
   isExpanded: boolean;
+}
+
+interface LegacySelectedEntry {
+  key: SelectKey;
+  index: number;
+  item: unknown;
 }
 
 export class EnhancedSelect extends HTMLElement {
@@ -70,6 +83,13 @@ export class EnhancedSelect extends HTMLElement {
   private _busyBucket?: HTMLElement;
   private _liveRegion?: HTMLElement;
   private _state: SelectState;
+  private _engine: SelectEngineBridge = new SelectEngineBridge();
+  private _effectRunner = new DefaultSelectEffectRunner();
+  private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
+  private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
+  // Identity metadata for legacy-selected items, never a second selection store.
+  private _legacySelectionKeys = new Map<number, { key: SelectKey; item: unknown }>();
+  private _registryItemsRef: unknown[] = [];
   private _pageCache: PageCache = {};
   private _resizeObserver?: ResizeObserver;
   private _intersectionObserver?: IntersectionObserver;
@@ -154,7 +174,7 @@ export class EnhancedSelect extends HTMLElement {
     }
 
     if (!clickedInside) {
-      this._handleClose();
+      this._handleClose('outside-pointer');
     }
   };
 
@@ -205,10 +225,15 @@ export class EnhancedSelect extends HTMLElement {
     
     // Merge global config with component-level config
     this._config = selectConfig.getConfig() as GlobalSelectConfig;
+    this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: !this._config.enabled });
+    this._syncEngineSelectionConfig();
     
     // Initialize state
+    const host = this;
     this._state = {
-      isOpen: false,
+      get isOpen() {
+        return host._engine.state.popup === 'open';
+      },
       isBusy: false,
       isSearching: false,
       currentPage: this._config.infiniteScroll.initialPage || 1,
@@ -250,6 +275,8 @@ export class EnhancedSelect extends HTMLElement {
   connectedCallback(): void {
     // register instance
     EnhancedSelect._instances.add(this);
+    this._runEngineEffects(this._engine.dispatch({ type: 'CONNECT' }));
+    this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: !this._config.enabled }));
     this._connectionController?.abort();
     this._connectionController = new AbortController();
     document.addEventListener('pointerdown', this._onDocumentPointerDown, {
@@ -289,6 +316,10 @@ export class EnhancedSelect extends HTMLElement {
   disconnectedCallback(): void {
     // unregister instance
     EnhancedSelect._instances.delete(this);
+    if (this._state.isOpen) {
+      this._handleClose('disconnect');
+    }
+    this._runEngineEffects(this._engine.dispatch({ type: 'DISCONNECT' }));
     this._connectionController?.abort();
     this._connectionController = undefined;
     this._asyncGeneration += 1;
@@ -844,6 +875,227 @@ export class EnhancedSelect extends HTMLElement {
 
   private _isOptionSelectionBlocked(item: unknown): boolean {
     return Boolean((item as any)?.disabled) && !this._isDisabledOptionSelectable(item);
+  }
+
+  private _isPhase2DevRuntime(): boolean {
+    const env = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV;
+    return env !== 'production';
+  }
+
+  private _getDuplicateKeyPolicy(): DuplicateKeyPolicy {
+    return this._isPhase2DevRuntime() ? 'throw' : 'warn';
+  }
+
+  private _warnPhase2(message: string): void {
+    if (this._isPhase2DevRuntime() && typeof console !== 'undefined') {
+      console.warn(message);
+    }
+  }
+
+  private _getItemValue(item: unknown): unknown {
+    return this._config.serverSide.getValueFromItem?.(item) ?? (item as any)?.value ?? item;
+  }
+
+  private _getItemLabel(item: unknown): string {
+    return this._config.serverSide.getLabelFromItem?.(item) ?? (item as any)?.label ?? String(item);
+  }
+
+  private _createEngineItemAdapter(): ItemAdapter<unknown, SelectKey> {
+    return createDefaultItemAdapter({
+      getValue: (item) => this._getItemValue(item),
+      getLabel: (item) => this._getItemLabel(item),
+      isDisabled: (item) => Boolean((item as any)?.disabled),
+      getGroupKey: (item) => {
+        const group = (item as { group?: unknown } | null)?.group;
+        return group == null ? null : String(group);
+      },
+      onIndexFallback: (message) => this._warnPhase2(message),
+    });
+  }
+
+  private _getBlockedDisabledKeys(): SelectKey[] {
+    const keys = this._itemRegistry.records
+      .filter((record) => record.disabled && this._isOptionSelectionBlocked(record.item))
+      .map((record) => record.key);
+    for (const entry of this._getSelectedEntries()) {
+      if (this._isOptionSelectionBlocked(entry.item)) keys.push(entry.key);
+    }
+    return keys;
+  }
+
+  private _syncEngineSelectionConfig(): void {
+    const required = Boolean(this._input?.hasAttribute('required'));
+    const disabledKeys = this._getBlockedDisabledKeys();
+    if (this._state) this._rebaseLegacySelection(this._getSelectedEntries());
+    this._engine.dispatch({
+      type: 'SELECTION_CONFIG_CHANGED',
+      multiple: this._config.selection.mode === 'multi',
+      required,
+      allowDeselect: this._config.selection.allowDeselect === true,
+      maxSelections: this._config.selection.maxSelections ?? 0,
+      disabledKeys,
+    });
+    if (this._state) {
+      this._mirrorLegacyActive('programmatic', 'selection config');
+      this._assertSelectionParity('selection config');
+    }
+  }
+
+  private _rebuildItemRegistry(items: unknown[] = this._state.loadedItems): void {
+    // Build first so duplicate-key rejection leaves the previous runtime intact.
+    const registry = createItemRegistry(items, this._itemAdapter, {
+      duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
+    });
+    const selected = this._getSelectedEntries();
+    const activeKey = this._itemRegistry.indexToKey.get(this._state.activeIndex);
+    const anchorKey = this._rangeAnchorIndex === null ? undefined : this._itemRegistry.indexToKey.get(this._rangeAnchorIndex);
+    this._itemRegistry = registry;
+    this._state.loadedItems = items;
+    this._registryItemsRef = items;
+    const disabledKeys = this._getBlockedDisabledKeys();
+    this._rebaseLegacySelection(selected);
+    this._state.activeIndex = activeKey === undefined ? -1 : registry.keyToIndex.get(activeKey) ?? -1;
+    this._rangeAnchorIndex = anchorKey === undefined ? null : registry.keyToIndex.get(anchorKey) ?? null;
+    if (this._state.activeIndex >= 0 && !this._isLegacyFocusable(items[this._state.activeIndex])) {
+      this._state.activeIndex = -1;
+    }
+    this._engine.dispatch({
+      type: 'ITEMS_REGISTERED',
+      keys: registry.records.map((record) => record.key),
+      disabledKeys,
+    });
+    this._syncEngineSelectionConfig();
+    this._assertSelectionParity('items registered');
+  }
+
+  private _ensureRegistryCurrent(): void {
+    if (
+      this._registryItemsRef !== this._state.loadedItems
+      || this._itemRegistry.records.length !== this._state.loadedItems.length
+      || this._itemRegistry.records.some((record, index) => record.item !== this._state.loadedItems[index])
+    ) {
+      this._rebuildItemRegistry();
+      return;
+    }
+
+    this._assertSelectionParity('registry read');
+    this._assertActiveParity('registry read');
+  }
+
+  private _getRecordByIndex(index: number): ItemRecord<unknown, SelectKey> | null {
+    const key = this._itemRegistry.indexToKey.get(index);
+    return key === undefined ? null : this._itemRegistry.keyToRecord.get(key) ?? null;
+  }
+
+  private _getSelectedEntries(): LegacySelectedEntry[] {
+    const entries: LegacySelectedEntry[] = [];
+    if (!this._state) return entries;
+    for (const index of this._state.selectedIndices) {
+      if (!this._state.selectedItems.has(index)) continue;
+      const item = this._state.selectedItems.get(index);
+      const captured = this._legacySelectionKeys.get(index);
+      const key = captured && Object.is(captured.item, item)
+        ? captured.key
+        : this._itemAdapter.getKey(item, index);
+      entries.push({ key, index, item });
+    }
+    return entries;
+  }
+
+  private _rebaseLegacySelection(entries: readonly LegacySelectedEntry[]): void {
+    const selectedIndices = new Set<number>();
+    const selectedItems = new Map<number, unknown>();
+    const captured = new Map<number, { key: SelectKey; item: unknown }>();
+    const seen = new Set<SelectKey>();
+    let detachedIndex = -1;
+    for (const entry of entries) {
+      if (seen.has(entry.key)) continue;
+      const record = this._itemRegistry.keyToRecord.get(entry.key);
+      const item = record ? record.item : entry.item;
+      if (this._isOptionSelectionBlocked(item)) continue;
+      const index = record ? record.index : detachedIndex--;
+      seen.add(entry.key);
+      selectedIndices.add(index);
+      selectedItems.set(index, item);
+      captured.set(index, { key: entry.key, item });
+      const limit = this._config.selection.maxSelections ?? 0;
+      if (this._config.selection.mode === 'single' || (limit > 0 && selectedIndices.size >= limit)) break;
+    }
+    this._state.selectedIndices = selectedIndices;
+    this._state.selectedItems = selectedItems;
+    this._legacySelectionKeys = captured;
+  }
+
+  private _legacySelectedKeysSnapshot(): Set<SelectKey> {
+    return new Set(this._getSelectedEntries().map((entry) => entry.key));
+  }
+
+  private _assertSelectionParity(context: string): void {
+    if (!this._isPhase2DevRuntime()) return;
+    const legacyKeys = this._legacySelectedKeysSnapshot();
+    const engineKeys = this._engine.state.selectedKeys;
+    if (
+      this._state.selectedItems.size !== this._state.selectedIndices.size
+      || [...this._state.selectedIndices].some((index) => !this._state.selectedItems.has(index))
+      || legacyKeys.size !== engineKeys.size
+      || [...legacyKeys].some((key) => !engineKeys.has(key))
+    ) {
+      throw new Error(`[Smilodon Phase2] Selection parity failed in ${context}: legacy=${JSON.stringify([...legacyKeys])}, engine=${JSON.stringify([...engineKeys])}`);
+    }
+  }
+
+  private _isLegacyFocusable(item: unknown): boolean {
+    return !(item as { disabled?: boolean } | null)?.disabled || this._getDisabledOptionBehavior().focusable;
+  }
+
+  private _legacyActiveKeySnapshot(): SelectKey | null {
+    const record = this._getRecordByIndex(this._state.activeIndex);
+    // The legacy opt-in for focusing visually disabled rows remains UI-only.
+    return record && !record.disabled ? record.key : null;
+  }
+
+  private _assertActiveParity(context: string): void {
+    if (!this._isPhase2DevRuntime()) return;
+    const legacyKey = this._legacyActiveKeySnapshot();
+    const engineKey = this._engine.state.activeKey;
+    if (legacyKey !== engineKey && !Object.is(legacyKey, engineKey)) {
+      throw new Error(`[Smilodon Phase2] Active parity failed in ${context}: legacy=${String(legacyKey)}, engine=${String(engineKey)}`);
+    }
+  }
+
+  private _mirrorLegacyActive(reason: ActiveReason, context: string): void {
+    this._engine.dispatch({ type: 'ACTIVE_KEY_CHANGED', key: this._legacyActiveKeySnapshot(), reason });
+    this._assertActiveParity(context);
+  }
+
+  private _mirrorLegacySelection(event: SelectEvent, context: string): void {
+    this._legacySelectionKeys = new Map(this._getSelectedEntries().map(({ index, key, item }) => [index, { key, item }]));
+    // Selection/active effects are diagnostic only in 2C; the legacy paths render and emit.
+    this._engine.dispatch(event);
+    this._assertSelectionParity(context);
+  }
+
+  private _replaceLegacySelection(entries: readonly LegacySelectedEntry[], reason: SelectionReason, context: string): void {
+    const previous = this._getSelectedEntries();
+    this._rebaseLegacySelection(entries);
+    if (this._input.hasAttribute('required') && this._state.selectedIndices.size === 0 && previous.length > 0) {
+      this._rebaseLegacySelection(previous);
+    }
+    this._mirrorLegacySelection({ type: 'REPLACE_SELECTION_REQUEST', keys: [...this._legacySelectedKeysSnapshot()], reason }, context);
+  }
+
+  private _registerShadowItems(indices: readonly number[]): void {
+    if (!indices.includes(this._state.activeIndex)) this._state.activeIndex = -1;
+    const keys = indices.map((index) => this._itemRegistry.indexToKey.get(index)).filter((key): key is SelectKey => key !== undefined);
+    this._engine.dispatch({ type: 'ITEMS_REGISTERED', keys, disabledKeys: this._getBlockedDisabledKeys() });
+    this._mirrorLegacyActive(this._state.searchQuery ? 'search' : 'programmatic', 'visible items');
+    this._assertSelectionParity('visible items');
+  }
+
+  private _syncLegacyActiveAria(): void {
+    const option = this._state.isOpen ? this._getOptionElementByIndex(this._state.activeIndex) : null;
+    if (option?.id) this._input.setAttribute('aria-activedescendant', option.id);
+    else this._input.removeAttribute('aria-activedescendant');
   }
 
   private _syncStyleConfigVariables(): void {
@@ -2271,7 +2523,7 @@ export class EnhancedSelect extends HTMLElement {
         margin: var(--select-group-header-margin, 0 calc(var(--select-options-padding, 6px) * -1));
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, var(--select-text-muted));
-        background: var(--select-group-header-bg, #ffffff);
+        background: var(--select-group-header-bg, #f3f4f6);
         text-align: var(--select-group-header-text-align, left);
         font-size: var(--select-group-header-font-size, 0.7333em);
         text-transform: var(--select-group-header-text-transform, uppercase);
@@ -2778,6 +3030,25 @@ export class EnhancedSelect extends HTMLElement {
         box-shadow: var(--select-group-header-shadow, 0 1px 2px rgba(0, 0, 0, 0.3));
       }
 
+      :host(.dark-mode) .group-header,
+      :host([dark-mode]) .group-header,
+      :host([darkmode]) .group-header,
+      :host([data-theme="dark"]) .group-header,
+      :host([theme="dark"]) .group-header {
+        color: var(--select-dark-group-header-color, var(--select-group-header-dark-color, #9ca3af));
+        background: var(--select-dark-group-header-bg, var(--select-group-header-dark-bg, #1a1a2e));
+        border-bottom: var(--select-group-header-border-bottom, 1px solid rgba(255, 255, 255, 0.08));
+        box-shadow: var(--select-group-header-shadow, 0 1px 2px rgba(0, 0, 0, 0.3));
+      }
+
+      :host(.dark-mode) .group-header:not(:first-child),
+      :host([dark-mode]) .group-header:not(:first-child),
+      :host([darkmode]) .group-header:not(:first-child),
+      :host([data-theme="dark"]) .group-header:not(:first-child),
+      :host([theme="dark"]) .group-header:not(:first-child) {
+        border-top-color: var(--select-border);
+      }
+
       :host(.dark-mode) .option.selected::before,
       :host([dark-mode]) .option.selected::before,
       :host([darkmode]) .option.selected::before,
@@ -2965,7 +3236,10 @@ export class EnhancedSelect extends HTMLElement {
     });
     
     // Input focus/blur
-    this._input.addEventListener('focus', () => this._handleOpen());
+    this._input.addEventListener('focus', () => {
+      this._runEngineEffects(this._engine.dispatch({ type: 'FOCUS_GAINED' }));
+      this._handleOpen();
+    });
     // When the input loses focus we normally close the dropdown, but
     // clicking an option will blur the input before the option's click
     // handler executes. To avoid the blur timer closing the dropdown
@@ -2973,6 +3247,7 @@ export class EnhancedSelect extends HTMLElement {
     // interacting with the options container. The close callback checks this
     // flag and skips closing if the user is about to click an option.
     this._input.addEventListener('blur', (e) => {
+      this._runEngineEffects(this._engine.dispatch({ type: 'FOCUS_LOST' }));
       const related = (e as FocusEvent).relatedTarget as Node | null;
       if (related && (this._shadow.contains(related) || this._container.contains(related))) {
         return;
@@ -2990,7 +3265,7 @@ export class EnhancedSelect extends HTMLElement {
           return;
         }
 
-        this._handleClose();
+        this._handleClose('blur');
       }, 150);
     });
     
@@ -3086,12 +3361,11 @@ export class EnhancedSelect extends HTMLElement {
         this._config.serverSide.initialSelectedValues
       );
       if (generation !== this._asyncGeneration || !this.isConnected) return;
-      
-      // Add to state
-      items.forEach((item, index) => {
-        this._state.selectedItems.set(index, item);
-        this._state.selectedIndices.add(index);
+
+      const fetchedRegistry = createItemRegistry(items, this._itemAdapter, {
+        duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
       });
+      this._replaceLegacySelection(fetchedRegistry.records, 'external-value-sync', 'initial selected items');
       
       this._updateInputDisplay();
     } catch (error) {
@@ -3104,22 +3378,43 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
+  private _runEngineEffects(effects: ReturnType<SelectEngineBridge['dispatch']>): void {
+    this._effectRunner.run(effects, {
+      focusTrigger: () => {
+        this._input?.focus();
+      },
+      syncAria: () => {
+        this._syncPopupAria();
+      },
+    });
+  }
+
+  private _syncPopupAria(): void {
+    if (!this._input) return;
+
+    this._input.setAttribute('aria-expanded', String(this._state.isOpen));
+    if (!this._state.isOpen) {
+      this._input.removeAttribute('aria-activedescendant');
+    }
+  }
+
   private _handleOpen(): void {
-    if (!this._config.enabled || this._state.isOpen) return;
+    if (!this._config.enabled) {
+      this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: true }));
+      return;
+    }
+    if (this._state.isOpen) return;
 
     // close any other open selects before proceeding
     EnhancedSelect._instances.forEach(inst => {
       if (inst !== this) inst._handleClose();
     });
 
-    // Always focus the input when opening so callers (arrow click,
-    // programmatic `open()`, etc.) get the keyboard cursor.  This was a
-    // frequent source of confusion in #14 where people opened the dropdown
-    // but the text field never received focus.
-    this._input.focus();
+    const effects = this._engine.dispatch({ type: 'OPEN_REQUEST' });
+    if (!effects.some((effect) => effect.type === 'POPUP_OPENED')) return;
+    this._runEngineEffects(effects);
 
     this._markOpenStart();
-    this._state.isOpen = true;
     this.setAttribute('data-open', 'true');
     this._liftStackingAncestors();
     this._dropdown.style.display = 'block';
@@ -3147,10 +3442,10 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  private _handleClose(): void {
-    if (!this._state.isOpen) return;
+  private _handleClose(reason: CloseReason = 'programmatic'): void {
+    const effects = this._engine.dispatch({ type: 'CLOSE_REQUEST', reason });
+    if (!effects.some((effect) => effect.type === 'POPUP_CLOSED')) return;
 
-    this._state.isOpen = false;
     this.removeAttribute('data-open');
     this._restoreLiftedAncestors();
     this._dropdown.style.display = 'none';
@@ -3158,6 +3453,7 @@ export class EnhancedSelect extends HTMLElement {
     this._input.setAttribute('aria-expanded', 'false');
     this._input.removeAttribute('aria-activedescendant');
     this._updateArrowRotation();
+    this._runEngineEffects(effects);
     
     this._emit('close', {});
     this._config.callbacks.onClose?.();
@@ -3455,12 +3751,12 @@ export class EnhancedSelect extends HTMLElement {
         if (!this._state.isOpen) {
           this._handleOpen();
         } else if (this._state.activeIndex >= 0) {
-          this._selectOption(this._state.activeIndex, { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey });
+          this._selectOption(this._state.activeIndex, { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey, reason: 'keyboard' });
         }
         break;
       case 'Escape':
         e.preventDefault();
-        this._handleClose();
+        this._handleClose('escape');
         break;
       case 'Tab':
         if (this._state.isOpen) {
@@ -3507,9 +3803,11 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  private _setActive(index: number): void {
+  private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {
+    this._ensureRegistryCurrent();
+    const record = this._getRecordByIndex(index);
     const option = this._getOptionElementByIndex(index);
-    if (!option || (option.getAttribute('aria-disabled') === 'true' && !option.classList.contains('smilodon-option--disabled-focusable'))) {
+    if (!record || !this._isLegacyFocusable(record.item) || !option || (option.getAttribute('aria-disabled') === 'true' && !option.classList.contains('smilodon-option--disabled-focusable'))) {
       return;
     }
 
@@ -3522,12 +3820,13 @@ export class EnhancedSelect extends HTMLElement {
           (prevOption as SelectOption).setActive(false);
         } else {
           // Lightweight option - remove active class
-          prevOption.classList.remove('smilodon-option--active');
+          prevOption.classList.remove('active', 'smilodon-option--active');
         }
       }
     }
     
     this._state.activeIndex = index;
+    this._mirrorLegacyActive(reason, 'set active');
     
     // Set new active state
     if (option) {
@@ -3536,7 +3835,7 @@ export class EnhancedSelect extends HTMLElement {
         (option as SelectOption).setActive(true);
       } else {
         // Lightweight option - add active class
-        option.classList.add('smilodon-option--active');
+        option.classList.add('active', 'smilodon-option--active');
       }
       
       if (typeof option.scrollIntoView === 'function') {
@@ -3549,8 +3848,7 @@ export class EnhancedSelect extends HTMLElement {
       this._announce(`Item ${index + 1} of ${total}`);
       
       // Update aria-activedescendant using the actual option id when available
-      const optionId = option.id || `${this._uniqueId}-option-${index}`;
-      this._input.setAttribute('aria-activedescendant', optionId);
+      this._syncLegacyActiveAria();
     }
   }
 
@@ -3605,71 +3903,41 @@ export class EnhancedSelect extends HTMLElement {
     );
     
     if (matchIndex >= 0) {
-      this._setActive(matchIndex);
+      this._setActive(matchIndex, 'search');
     }
   }
 
   private _selectAll(): void {
     if (this._config.selection.mode !== 'multi') return;
-    
+    this._ensureRegistryCurrent();
     const options = this._getSelectableOptions();
-    const maxSelections = this._config.selection.maxSelections || 0;
-    
+    const entries = this._getSelectedEntries();
     options.forEach((option) => {
       const optionIndex = Number(option.getAttribute('data-sm-index') ?? option.getAttribute('data-index'));
       if (!Number.isFinite(optionIndex)) return;
-
-      if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
-        return;
-      }
-      
-      if (!this._state.selectedIndices.has(optionIndex)) {
-        // Check if it's a custom SelectOption or a lightweight DOM element
-        if ('getConfig' in option && typeof (option as any).getConfig === 'function') {
-          const config = (option as SelectOption).getConfig();
-          if (this._isOptionSelectionBlocked(config.item)) return;
-          this._state.selectedIndices.add(optionIndex);
-          this._state.selectedItems.set(optionIndex, config.item);
-          (option as SelectOption).setSelected(true);
-        } else {
-          // Lightweight option - get item from data attribute or state
-          const item = this._state.loadedItems[optionIndex];
-          if (item && !this._isOptionSelectionBlocked(item)) {
-            this._state.selectedIndices.add(optionIndex);
-            this._state.selectedItems.set(optionIndex, item);
-            (option as HTMLElement).classList.add('smilodon-option--selected');
-            (option as HTMLElement).setAttribute('aria-selected', 'true');
-          }
-        }
-      }
+      const record = this._getRecordByIndex(optionIndex);
+      if (record && !this._isOptionSelectionBlocked(record.item)) entries.push(record);
     });
-    
+    this._replaceLegacySelection(entries, 'keyboard', 'select all');
+    this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
     this._announce(`Selected all ${options.length} items`);
   }
 
-  private _selectRange(start: number, end: number, opts?: { clear?: boolean }): void {
+  private _selectRange(start: number, end: number, opts?: { clear?: boolean; reason?: SelectionReason }): void {
     if (this._config.selection.mode !== 'multi') return;
-    const maxSelections = this._config.selection.maxSelections || 0;
+    this._ensureRegistryCurrent();
     const [min, max] = start < end ? [start, end] : [end, start];
-
-    if (opts?.clear) {
-      this._state.selectedIndices.clear();
-      this._state.selectedItems.clear();
-    }
-
+    const entries = opts?.clear ? [] : this._getSelectedEntries();
     for (let i = min; i <= max; i += 1) {
-      if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) break;
-      const item = this._state.loadedItems[i];
+      const record = this._getRecordByIndex(i);
       const optionEl = this._getOptionElementByIndex(i);
       if (optionEl?.getAttribute('aria-disabled') === 'true' && !optionEl.classList.contains('smilodon-option--disabled-selectable')) continue;
-      if (!item) continue;
-      if (this._isOptionSelectionBlocked(item)) continue;
-      this._state.selectedIndices.add(i);
-      this._state.selectedItems.set(i, item);
+      if (!record || this._isOptionSelectionBlocked(record.item)) continue;
+      entries.push(record);
     }
-
+    this._replaceLegacySelection(entries, opts?.reason ?? 'keyboard', 'select range');
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
@@ -3678,15 +3946,15 @@ export class EnhancedSelect extends HTMLElement {
 
   private _setInitialActiveOption(): void {
     const selectableIndices = this._getSelectableOptionIndices();
-    if (selectableIndices.length === 0) return;
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
-    if (this._config.selection.mode === 'multi' && selected.length === 0) {
+    if (selectableIndices.length === 0 || (this._config.selection.mode === 'multi' && selected.length === 0)) {
       this._state.activeIndex = -1;
+      this._mirrorLegacyActive('open', 'initial active option');
       this._input.removeAttribute('aria-activedescendant');
       return;
     }
     const target = selected.find((index) => selectableIndices.includes(index)) ?? selectableIndices[0];
-    this._setActive(target);
+    this._setActive(target, 'open');
   }
 
   private _announce(message: string): void {
@@ -3698,43 +3966,49 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  private _selectOption(index: number, opts?: { shiftKey?: boolean; toggleKey?: boolean }): void {
+  private _selectOption(index: number, opts?: { shiftKey?: boolean; toggleKey?: boolean; reason?: SelectionReason }): void {
     // FIX: Do not rely on this._optionsContainer.children[index] because filtering changes the children
     // Instead, use the index to update state directly
 
-    const item = this._state.loadedItems[index];
-    if (!item) {
-      return;
-    }
+    this._ensureRegistryCurrent();
+    const record = this._getRecordByIndex(index);
+    if (!record) return;
+    index = record.index;
+    const item = record.item;
     if (this._isOptionSelectionBlocked(item)) {
       return;
     }
     const isCurrentlySelected = this._state.selectedIndices.has(index);
+    const reason = opts?.reason ?? 'pointer';
+    const required = this._input.hasAttribute('required');
 
     // Keep active/focus styling aligned with the most recently interacted option.
     // Without this, a previously selected item may retain active classes/styles
     // after selecting a different option.
-    this._state.activeIndex = index;
-    
-    
-    
+    if (this._isLegacyFocusable(item)) this._state.activeIndex = index;
+    this._mirrorLegacyActive(reason === 'keyboard' ? 'keyboard' : 'pointer', 'option selection');
     if (this._config.selection.mode === 'single') {
       // Single select: clear previous and select new
       const wasSelected = this._state.selectedIndices.has(index);
       this._state.selectedIndices.clear();
       this._state.selectedItems.clear();
       
-      if (!wasSelected || !this._config.selection.allowDeselect) {
+      if (!wasSelected || !this._config.selection.allowDeselect || required) {
         // Select this option
         this._state.selectedIndices.add(index);
         this._state.selectedItems.set(index, item);
       }
+      this._mirrorLegacySelection({
+        type: wasSelected && this._config.selection.allowDeselect ? 'TOGGLE_KEY_REQUEST' : 'SELECT_KEY_REQUEST',
+        key: record.key,
+        reason,
+      }, 'single option selection');
       
       // Re-render to update all option styles
       this._renderOptions();
       
       if (this._config.selection.closeOnSelect) {
-        this._handleClose();
+        this._handleClose('selection');
       }
     } else {
       const toggleKey = Boolean(opts?.toggleKey);
@@ -3742,7 +4016,7 @@ export class EnhancedSelect extends HTMLElement {
 
       if (shiftKey) {
         const anchor = this._rangeAnchorIndex ?? index;
-        this._selectRange(anchor, index, { clear: !toggleKey });
+        this._selectRange(anchor, index, { clear: !toggleKey, reason });
         this._rangeAnchorIndex = anchor;
         return;
       }
@@ -3752,18 +4026,22 @@ export class EnhancedSelect extends HTMLElement {
       
       if (isCurrentlySelected) {
         // Deselect (toggle off)
-        this._state.selectedIndices.delete(index);
-        this._state.selectedItems.delete(index);
+        if (!required || this._state.selectedIndices.size > 1) {
+          this._state.selectedIndices.delete(index);
+          this._state.selectedItems.delete(index);
+        }
       } else {
         // Select (toggle on)
         if (maxSelections > 0 && this._state.selectedIndices.size >= maxSelections) {
           this._announce(`Maximum ${maxSelections} selections allowed`);
+          this._renderOptions();
           return; // Max selections reached
         }
         
         this._state.selectedIndices.add(index);
         this._state.selectedItems.set(index, item);
       }
+      this._mirrorLegacySelection({ type: 'TOGGLE_KEY_REQUEST', key: record.key, reason }, 'multi option selection');
       
       // Re-render to update styles (safer than trying to find the element in filtered list)
       this._renderOptions();
@@ -3795,11 +4073,15 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _handleOptionRemove(index: number): void {
+    this._ensureRegistryCurrent();
+    const entry = this._getSelectedEntries().find((selected) => selected.index === index);
+    if (!entry || (this._input.hasAttribute('required') && this._state.selectedIndices.size <= 1)) return;
     const item = this._state.selectedItems.get(index);
     const option = this._getOptionElementByIndex(index);
 
     this._state.selectedIndices.delete(index);
     this._state.selectedItems.delete(index);
+    this._mirrorLegacySelection({ type: 'DESELECT_KEY_REQUEST', key: entry.key, reason: 'pointer' }, 'remove selected item');
 
     if (option && 'setSelected' in option && typeof (option as SelectOption).setSelected === 'function') {
       (option as SelectOption).setSelected(false);
@@ -3928,7 +4210,8 @@ export class EnhancedSelect extends HTMLElement {
     if (this._state.selectedIndices.size === 0) return;
     
     const target = this._config.scrollToSelected.multiSelectTarget;
-    const indices = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
+    const indices = Array.from(this._state.selectedIndices).filter((index) => index >= 0).sort((a, b) => a - b);
+    if (indices.length === 0) return;
     
     // For multi-select, find the closest selected item to the current scroll position
     let targetIndex: number;
@@ -3975,7 +4258,7 @@ export class EnhancedSelect extends HTMLElement {
       }
       
       // Also set it as active for keyboard navigation
-      this._setActive(targetIndex);
+      this._setActive(targetIndex, 'programmatic');
     }
   }
 
@@ -4204,7 +4487,7 @@ export class EnhancedSelect extends HTMLElement {
     const selectedItems = Array.from(this._state.selectedItems.values());
     const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
     const selectedValues = selectedItems.map(getValue);
-    const selectedIndices = Array.from(this._state.selectedIndices);
+    const selectedIndices = Array.from(this._state.selectedIndices).filter((index) => index >= 0);
 
     this._emit('change', { selectedItems, selectedValues, selectedIndices });
     this._config.callbacks.onChange?.(selectedItems, selectedValues);
@@ -4231,12 +4514,9 @@ export class EnhancedSelect extends HTMLElement {
   setItems(items: unknown[]): void {
     
     const previousLength = this._state.loadedItems.length;
-    this._state.loadedItems = items;
-    
-    // If grouped items exist, flatten them to items
-    if (this._state.groupedItems.length > 0) {
-      this._state.loadedItems = this._state.groupedItems.flatMap(group => group.options);
-    }
+    this._rebuildItemRegistry(items);
+    this._state.groupedItems = this._groupItemsByProperty(items);
+    if (!this._state.searchQuery) this._updateInputDisplay();
     
     const newLength = this._state.loadedItems.length;
     
@@ -4276,20 +4556,46 @@ export class EnhancedSelect extends HTMLElement {
     
   }
 
+  private _groupItemsByProperty(items: unknown[]): GroupedItem[] {
+    const hasGroupData = items.some((item, index) =>
+      this._itemAdapter.getGroupKey?.(item, index) !== null
+    );
+
+    if (!hasGroupData) {
+      return [];
+    }
+
+    const groups = new Map<string, unknown[]>();
+    items.forEach((item, index) => {
+      const rawGroup = this._itemAdapter.getGroupKey?.(item, index);
+      const label = rawGroup == null ? 'Ungrouped' : String(rawGroup);
+      const options = groups.get(label);
+      if (options) {
+        options.push(item);
+      } else {
+        groups.set(label, [item]);
+      }
+    });
+
+    return Array.from(groups.entries()).map(([label, options]) => ({ label, options }));
+  }
+
   /**
    * Set grouped items
    */
   setGroupedItems(groupedItems: GroupedItem[]): void {
+    this._rebuildItemRegistry(groupedItems.flatMap(group => group.options));
     this._state.groupedItems = groupedItems;
-    this._state.loadedItems = groupedItems.flatMap(group => group.options);
     this._renderOptions();
+    if (!this._state.searchQuery) this._updateInputDisplay();
   }
 
   /**
    * Get currently selected items
    */
   getSelectedItems(): unknown[] {
-    return Array.from(this._state.selectedItems.values());
+    this._ensureRegistryCurrent();
+    return this._getSelectedEntries().map((entry) => entry.item);
   }
 
   /**
@@ -4303,8 +4609,7 @@ export class EnhancedSelect extends HTMLElement {
    * Get currently selected values
    */
   getSelectedValues(): unknown[] {
-    const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
-    return this.getSelectedItems().map(getValue);
+    return this.getSelectedItems().map((item) => this._getItemValue(item));
   }
 
   /**
@@ -4314,18 +4619,11 @@ export class EnhancedSelect extends HTMLElement {
     if (this._config.serverSide.enabled && this._config.serverSide.fetchSelectedItems) {
       await this._loadSelectedItemsByValues(values);
     } else {
-      // Select from loaded items
-      const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
-      
-      this._state.selectedIndices.clear();
-      this._state.selectedItems.clear();
-      
-      this._state.loadedItems.forEach((item, index) => {
-        if (arrayIncludesValue(values, getValue(item)) && !this._isOptionSelectionBlocked(item)) {
-          this._state.selectedIndices.add(index);
-          this._state.selectedItems.set(index, item);
-        }
-      });
+      this._ensureRegistryCurrent();
+
+      const selected = this._itemRegistry.records
+        .filter((record) => arrayIncludesValue(values, record.value) && !this._isOptionSelectionBlocked(record.item));
+      this._replaceLegacySelection(selected, 'external-value-sync', 'setSelectedValues');
       
       this._renderOptions();
       this._updateInputDisplay();
@@ -4345,15 +4643,11 @@ export class EnhancedSelect extends HTMLElement {
     try {
       const items = await this._config.serverSide.fetchSelectedItems(values);
       if (generation !== this._asyncGeneration || !this.isConnected) return;
-      
-      this._state.selectedIndices.clear();
-      this._state.selectedItems.clear();
-      
-      items.forEach((item, index) => {
-        if (this._isOptionSelectionBlocked(item)) return;
-        this._state.selectedIndices.add(index);
-        this._state.selectedItems.set(index, item);
+
+      const fetchedRegistry = createItemRegistry(items, this._itemAdapter, {
+        duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
       });
+      this._replaceLegacySelection(fetchedRegistry.records, 'external-value-sync', 'fetched selected items');
       
       this._renderOptions();
       this._updateInputDisplay();
@@ -4377,8 +4671,12 @@ export class EnhancedSelect extends HTMLElement {
    * Clear all selections
    */
   clear(): void {
-    this._state.selectedIndices.clear();
-    this._state.selectedItems.clear();
+    this._ensureRegistryCurrent();
+    if (!this._input.hasAttribute('required')) {
+      this._state.selectedIndices.clear();
+      this._state.selectedItems.clear();
+    }
+    this._mirrorLegacySelection({ type: 'CLEAR_SELECTION_REQUEST', reason: 'programmatic' }, 'clear');
     this._renderOptions();
     this._updateInputDisplay();
     this._emitChange();
@@ -4419,7 +4717,15 @@ export class EnhancedSelect extends HTMLElement {
    */
   updateConfig(config: Partial<GlobalSelectConfig>): void {
     const previousMode = this._config.selection.mode;
+    const previousEnabled = this._config.enabled;
     this._config = this._mergeConfig(this._config, config);
+    this._rebuildItemRegistry();
+    if (previousEnabled !== this._config.enabled) {
+      if (!this._config.enabled && this._state.isOpen) {
+        this._handleClose('disabled');
+      }
+      this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: !this._config.enabled }));
+    }
 
     if (
       previousMode !== this._config.selection.mode &&
@@ -4599,6 +4905,7 @@ export class EnhancedSelect extends HTMLElement {
       this._input.removeAttribute('aria-required');
       this._input.removeAttribute('required');
     }
+    this._syncEngineSelectionConfig();
   }
 
   /**
@@ -4618,6 +4925,7 @@ export class EnhancedSelect extends HTMLElement {
    * Render options based on current state
    */
   private _renderOptions(): void {
+    this._ensureRegistryCurrent();
     this._renderCycleId += 1;
     const renderCycleId = this._renderCycleId;
     
@@ -4645,6 +4953,8 @@ export class EnhancedSelect extends HTMLElement {
     
     // Show searching state (exclusive state)
     if (this._state.isSearching) {
+      this._registerShadowItems([]);
+      this._syncLegacyActiveAria();
       const searching = document.createElement('div');
       searching.className = 'searching-state';
       searching.setAttribute('part', 'loading');
@@ -4661,6 +4971,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
+      this._registerShadowItems(this._itemRegistry.records.map((record) => record.index));
       this._state.groupedItems.forEach((group, groupIndex) => {
         let header: HTMLElement;
         if (this.groupHeaderRenderer) {
@@ -4711,6 +5022,7 @@ export class EnhancedSelect extends HTMLElement {
 
         filteredIndices.push(index);
       });
+      this._registerShadowItems(filteredIndices);
 
       if (filteredIndices.length === 0 && !this._state.isBusy) {
         const empty = document.createElement('div');
@@ -4734,7 +5046,7 @@ export class EnhancedSelect extends HTMLElement {
           let maxRenderTarget = 0;
 
           if (this._state.selectedIndices.size > 0 && this._config.scrollToSelected.enabled) {
-            const indices = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
+            const indices = Array.from(this._state.selectedIndices).filter((index) => index >= 0).sort((a, b) => a - b);
             const targetIndex = this._config.scrollToSelected.multiSelectTarget === 'first' ? indices[0] : indices[indices.length - 1];
             const filteredPos = filteredIndices.indexOf(targetIndex);
             if (filteredPos !== -1) {
@@ -4756,6 +5068,7 @@ export class EnhancedSelect extends HTMLElement {
             }
 
             this._optionsContainer.appendChild(fragment);
+            this._syncLegacyActiveAria();
 
             if (cursor < filteredIndices.length) {
               this._requestLifecycleFrame(renderChunk);
@@ -4806,6 +5119,7 @@ export class EnhancedSelect extends HTMLElement {
       this._addLoadMoreTrigger();
     }
 
+    this._syncLegacyActiveAria();
     this._finalizePerfMarks();
     
   }
