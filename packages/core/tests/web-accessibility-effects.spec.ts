@@ -106,6 +106,24 @@ describe('web accessibility effect applier', () => {
     expect(listbox.getAttribute('aria-labelledby')).toBe('label-a label-b');
   });
 
+  it('removes single-select and non-busy listbox attributes to preserve existing semantics', () => {
+    const listbox = document.createElement('div');
+    listbox.setAttribute('aria-multiselectable', 'true');
+    listbox.setAttribute('aria-busy', 'true');
+
+    applyAccessibilityEffects([{
+      type: 'SYNC_LISTBOX_ARIA',
+      role: 'listbox',
+      multiple: false,
+      busy: false,
+      labelledBy: [],
+      ariaLabel: null,
+    }], { listbox });
+
+    expect(listbox.hasAttribute('aria-multiselectable')).toBe(false);
+    expect(listbox.hasAttribute('aria-busy')).toBe(false);
+  });
+
   it('applies selected and disabled state to the option resolved by key', () => {
     const option = document.createElement('div');
     const effect: AccessibilityEffect<string> = {

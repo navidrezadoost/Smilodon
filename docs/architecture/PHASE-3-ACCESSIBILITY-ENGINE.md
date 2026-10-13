@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.3 closed; Phase 3.4.1 combobox integration implemented and verified locally.**
+Status: **Phase 3.0–3.4.1 closed; Phase 3.4.2 listbox integration implemented and verified locally.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -424,3 +424,40 @@ description attributes, and public item/value API behavior.
 The build regenerated the embedded React Native Core bundle as a side effect;
 that generated file was restored and is not part of this slice. No keyboard,
 focus, selection, adapter API, or public API behavior changed.
+
+## 17. Phase 3.4.2 Listbox ARIA Integration
+
+`EnhancedSelect._syncListboxAccessibility()` derives listbox intent from the
+engine selection configuration and supplies the existing input ID as the
+listbox label relationship. It applies only `SYNC_LISTBOX_ARIA` to the dropdown
+through the web applier. Configuration updates synchronize role,
+`aria-multiselectable`, and label state. The component's existing busy lifecycle
+is not currently mirrored into engine `dataStatus`, so the integration overlays
+the current `_state.isBusy` snapshot onto the derived accessibility state;
+`_setBusy()` then synchronizes `aria-busy` through the same listbox effect path.
+
+The applier now removes `aria-multiselectable` in single mode and `aria-busy`
+when not busy, preserving the component's existing DOM semantics. Its adapter
+regression test covers those false-state removals. Option ARIA, live-region
+announcements, focus intents, keyboard behavior, popup behavior, framework
+adapters, and public APIs are unchanged.
+
+The integration tests cover the listbox role, multi/single mode, busy/non-busy
+state, non-empty label relationship, and the existing selection/value behavior.
+All Phase 3.4.1 combobox integration tests continue to run in the same suite.
+
+### Phase 3.4.2 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 56 passed. |
+| `npm run test:unit` | 363 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| E2E | Not run; this slice changes listbox ARIA synchronization and adds unit coverage. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice. No public API,
+keyboard, focus, selection, or popup behavior changed.

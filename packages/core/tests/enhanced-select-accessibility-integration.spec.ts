@@ -16,6 +16,12 @@ function getInput(select: EnhancedSelect): HTMLInputElement {
   return input!;
 }
 
+function getListbox(select: EnhancedSelect): HTMLElement {
+  const listbox = select.shadowRoot?.querySelector<HTMLElement>('[part="listbox"]');
+  expect(listbox).toBeTruthy();
+  return listbox!;
+}
+
 describe('EnhancedSelect combobox accessibility integration', () => {
   let select: EnhancedSelect;
 
@@ -101,5 +107,44 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     await select.setSelectedValues(['BAN']);
 
     expect(select.getSelectedValues()).toEqual(['BAN']);
+  });
+
+  it('keeps the popup role as listbox', () => {
+    expect(getListbox(select).getAttribute('role')).toBe('listbox');
+  });
+
+  it('maps multi mode to aria-multiselectable=true', () => {
+    select.updateConfig({ selection: { mode: 'multi' } });
+
+    expect(getListbox(select).getAttribute('aria-multiselectable')).toBe('true');
+  });
+
+  it('removes aria-multiselectable in single mode', () => {
+    select.updateConfig({ selection: { mode: 'multi' } });
+    select.updateConfig({ selection: { mode: 'single' } });
+
+    expect(getListbox(select).hasAttribute('aria-multiselectable')).toBe(false);
+  });
+
+  it('maps busy state to aria-busy=true', () => {
+    (select as any)._setBusy(true);
+
+    expect(getListbox(select).getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('removes aria-busy when loading ends', () => {
+    (select as any)._setBusy(true);
+    (select as any)._setBusy(false);
+
+    expect(getListbox(select).hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('keeps a valid non-empty listbox label relationship without empty labels', () => {
+    const input = getInput(select);
+    const listbox = getListbox(select);
+
+    expect(listbox.getAttribute('aria-labelledby')).toBe(input.id);
+    expect(listbox.hasAttribute('aria-label')).toBe(false);
+    expect(listbox.getAttribute('aria-labelledby')).not.toBe('');
   });
 });

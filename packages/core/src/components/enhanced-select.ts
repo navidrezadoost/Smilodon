@@ -277,6 +277,7 @@ export class EnhancedSelect extends HTMLElement {
     this._attachEventListeners();
     this._initializeObservers();
     this._syncComboboxAccessibility();
+    this._syncListboxAccessibility();
   }
 
   connectedCallback(): void {
@@ -3458,6 +3459,25 @@ export class EnhancedSelect extends HTMLElement {
     });
   }
 
+  private _syncListboxAccessibility(): void {
+    if (!this._dropdown || !this._engine || !this._state) return;
+
+    const derivedState = deriveAccessibilityState(this._engine.state, {
+      label: { labelId: this._input?.id ?? null },
+    });
+    const accessibilityState = {
+      ...derivedState,
+      // The component's existing busy lifecycle is not yet mirrored to engine dataStatus.
+      busy: this._state.isBusy,
+    };
+    const effects = computeAccessibilityEffects(accessibilityState, {
+      controlsId: this._dropdown.id || null,
+      optionKeys: [],
+    }).filter((effect) => effect.type === 'SYNC_LISTBOX_ARIA');
+
+    applyAccessibilityEffects(effects, { listbox: this._dropdown });
+  }
+
   private _handleOpen(): void {
     if (!this._config.enabled) {
       this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: true }));
@@ -4340,11 +4360,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _setBusy(busy: boolean): void {
     this._state.isBusy = busy;
-    if (busy) {
-      this._dropdown.setAttribute('aria-busy', 'true');
-    } else {
-      this._dropdown.removeAttribute('aria-busy');
-    }
+    this._syncListboxAccessibility();
     
     // Trigger re-render to show/hide busy indicator
     // We use _renderOptions to handle the UI update
@@ -4808,13 +4824,7 @@ export class EnhancedSelect extends HTMLElement {
 
     this._syncStyleConfigVariables();
 
-    if (this._dropdown) {
-      if (this._config.selection.mode === 'multi') {
-        this._dropdown.setAttribute('aria-multiselectable', 'true');
-      } else {
-        this._dropdown.removeAttribute('aria-multiselectable');
-      }
-    }
+    this._syncListboxAccessibility();
 
     if (this.isConnected) {
       this._syncDirectionConfig();
