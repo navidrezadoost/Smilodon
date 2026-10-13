@@ -56,12 +56,11 @@ test.describe('Multi-Select', () => {
     await page.goto('http://localhost:5173/vanilla-demo.html');
     await page.waitForLoadState('networkidle');
     
-    // Enable multi-select mode and keep dropdown open
+    // Configure multi-select through the component API so engine policy stays in sync.
     await page.evaluate(() => {
       const select = document.querySelector('enhanced-select') as any;
       if (select) {
-        select._config.selection.mode = 'multi';
-        select._config.selection.closeOnSelect = false;
+        select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
       }
     });
   });

@@ -1085,7 +1085,10 @@ export class EnhancedSelect extends HTMLElement {
     }
   }
 
-  /** @deprecated Test-only setup shim retained for existing renderer tests; production paths dispatch by key. */
+  /**
+   * @deprecated Test/backward-compatibility shim. Production active-state authority is engine.activeKey.
+   * Kept for existing renderer tests; component mutation paths dispatch by key.
+   */
   private _mirrorLegacyActive(reason: ActiveReason, context: string): void {
     this._dispatchActiveKey(this._projectedActiveKeySnapshot(), reason, context);
   }
@@ -1096,7 +1099,10 @@ export class EnhancedSelect extends HTMLElement {
     this._assertSelectionProjection(context);
   }
 
-  /** @deprecated Test-only setup shim retained for existing styling tests; dispatches to engine authority. */
+  /**
+   * @deprecated Test/backward-compatibility shim. Production selection authority is engine.selectedKeys.
+   * Kept for existing styling tests; dispatches to engine authority.
+   */
   private _mirrorLegacySelection(event: SelectEvent, context: string): void {
     this._dispatchSelection(event, context);
   }
