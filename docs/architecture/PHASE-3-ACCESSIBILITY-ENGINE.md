@@ -1,8 +1,8 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0, 3.1, and 3.2 closed; Phase 3.3 adapter applier implemented and verified locally.**
-This document records the current accessibility surface and staged engine and
-web adapter contracts before component integration.
+Status: **Phase 3.0–3.3 closed; Phase 3.4.1 combobox integration implemented and verified locally.**
+This document records the current accessibility surface and staged engine,
+web adapter, and component integration contracts.
 
 ## 1. Current Accessibility Surface
 
@@ -383,3 +383,44 @@ helpers. Their signatures were corrected without changing runtime semantics;
 the final build passed. The applier is not exported through
 `platform/web/index.ts` because that barrel is re-exported from the package
 root and the Phase 3.3 boundary does not authorize a public API change.
+
+## 16. Phase 3.4.1 Combobox ARIA Integration
+
+`EnhancedSelect._syncComboboxAccessibility()` derives the accessibility state
+from the current engine state, computes semantic effects, and applies only the
+combobox effect to the internal input through the web applier. The caller
+provides the stable listbox ID and resolves `activeKey` to the currently
+rendered option; a closed popup or missing rendered option clears
+`aria-activedescendant`. Popup open/close engine ARIA syncs, configuration
+updates, required changes, validation changes, and active-key projection now
+reach the combobox through this boundary. Initial static role/default
+attributes remain in DOM construction and are synchronized once assembly is
+complete.
+
+This slice integrates only the combobox target. Listbox and option effects,
+announcements, and focus intents are not applied by the component. The existing
+native `required` property remains for form validation. `SelectOption`,
+framework adapters, public exports, and generated bundles are unchanged.
+Keyboard, focus, and selection behavior are unchanged; the public item and
+value APIs remain covered by the integration suite.
+
+`enhanced-select-accessibility-integration.spec.ts` covers the combobox role,
+open/close expanded state, searchable and non-searchable autocomplete values,
+required and invalid state, stable controls/listbox linkage, absent label and
+description attributes, and public item/value API behavior.
+
+### Phase 3.4.1 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 49 passed. |
+| `npm run test:unit` | 356 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| E2E | Not run; this slice changes only ARIA synchronization and adds component unit coverage. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice. No keyboard,
+focus, selection, adapter API, or public API behavior changed.
