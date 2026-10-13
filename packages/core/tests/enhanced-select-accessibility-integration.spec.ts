@@ -44,8 +44,17 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     select.remove();
   });
 
-  it('keeps the input role as combobox', () => {
-    expect(getInput(select).getAttribute('role')).toBe('combobox');
+  it('applies initial combobox and listbox semantics through the applier', () => {
+    const input = getInput(select);
+    const listbox = getListbox(select);
+
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(input.getAttribute('aria-autocomplete')).toBe('none');
+    expect(input.getAttribute('aria-controls')).toBe(listbox.id);
+    expect(listbox.getAttribute('role')).toBe('listbox');
+    expect(listbox.getAttribute('aria-labelledby')).toBe(input.id);
+    expect(listbox.hasAttribute('aria-multiselectable')).toBe(false);
   });
 
   it('updates aria-expanded through the accessibility applier when opened', () => {

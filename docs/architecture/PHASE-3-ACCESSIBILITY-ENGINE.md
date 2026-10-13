@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.4.4 closed; Phase 3.4.5 focus intent integration implemented and verified locally.**
+Status: **Phase 3.0–3.4.5 closed; Phase 3.4.6 cleanup and final accessibility regression complete.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -535,6 +535,43 @@ not change that focus model. The E2E renderer case uses a custom-rendered host,
 which the existing normalizer makes focusable with `tabindex="-1"`.
 
 ### Phase 3.4.5 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 72 passed. |
+| `npm run test:unit` | 379 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| `npx playwright test tests/e2e/accessibility-focus.spec.ts --project=chromium` | Four passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice.
+
+## 21. Phase 3.4.6 Component Cleanup and Final Accessibility Regression
+
+Removed the duplicate initial combobox and listbox ARIA writes from DOM
+construction, plus the direct `aria-controls` assignment from assembly. The
+existing post-assembly accessibility synchronization applies the same initial
+role, expanded, autocomplete, controls, label, and multiplicity values through
+the web applier. A component integration assertion verifies these initial
+values and the single-mode absence of `aria-multiselectable`.
+
+Retained direct attributes the applier does not own, including
+`aria-haspopup="listbox"` and `aria-owns`. The live-region `role="status"`
+remains structural markup. `SelectOption` continues to initialize its own role,
+selected, and disabled semantics so standalone option use remains intact; the
+integrated component still synchronizes rendered options through the applier.
+No focus, keyboard, selection, popup, public API, or framework adapter behavior
+changed.
+
+The built-in `SelectOption` host still has no `tabindex`; calling `.focus()` on
+it does not move browser focus. This pre-existing limitation remains a future
+accessibility task that requires a separately approved focus-model change. No
+`tabindex` was added in this cleanup.
+
+### Phase 3.4.6 Verification (2026-10-14)
 
 | Check | Result |
 | --- | --- |
