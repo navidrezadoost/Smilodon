@@ -22,6 +22,10 @@ function getListbox(select: EnhancedSelect): HTMLElement {
   return listbox!;
 }
 
+function getOptionByValue(select: EnhancedSelect, value: string): HTMLElement | null {
+  return select.shadowRoot?.querySelector<HTMLElement>(`[part="option"][data-value="${value}"]`) ?? null;
+}
+
 describe('EnhancedSelect combobox accessibility integration', () => {
   let select: EnhancedSelect;
 
@@ -146,5 +150,89 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     expect(listbox.getAttribute('aria-labelledby')).toBe(input.id);
     expect(listbox.hasAttribute('aria-label')).toBe(false);
     expect(listbox.getAttribute('aria-labelledby')).not.toBe('');
+  });
+
+  it('keeps normal option role=option through the web applier path', async () => {
+    select.setItems(items);
+    await select.setSelectedValues(['BAN']);
+
+    expect(getOptionByValue(select, 'BAN')?.getAttribute('role')).toBe('option');
+  });
+
+  it('applies selected state from engine keys and updates it after deselection', async () => {
+    select.setItems(items);
+    await select.setSelectedValues(['BAN']);
+    expect(getOptionByValue(select, 'BAN')?.getAttribute('aria-selected')).toBe('true');
+
+    await select.setSelectedValues([]);
+
+    expect(getOptionByValue(select, 'BAN')?.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('applies disabled state and removes it from enabled options', () => {
+    const disabledItems = [
+      { id: 'a', value: 'APL', label: 'Apple', disabled: true },
+      items[1],
+    ];
+    select.setItems(disabledItems);
+
+    expect(getOptionByValue(select, 'APL')?.getAttribute('aria-disabled')).toBe('true');
+    expect(getOptionByValue(select, 'BAN')?.hasAttribute('aria-disabled')).toBe(false);
+  });
+
+  it('keeps multi-select option ARIA aligned with selectedKeys', async () => {
+    select.updateConfig({ selection: { mode: 'multi' } });
+    select.setItems(items);
+    await select.setSelectedValues(['APL', 'BAN']);
+    const selectedKeys = (select as any)._engine.state.selectedKeys as Set<string>;
+
+    expect(selectedKeys).toEqual(new Set(['a', 'b']));
+    expect(getOptionByValue(select, 'APL')?.getAttribute('aria-selected')).toBe('true');
+    expect(getOptionByValue(select, 'BAN')?.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('preserves selected option ARIA by key after reorder', async () => {
+    select.setItems(items);
+    await select.setSelectedValues(['BAN']);
+
+    select.setItems([...items].reverse());
+
+    expect(getOptionByValue(select, 'BAN')?.getAttribute('aria-selected')).toBe('true');
+    expect(getOptionByValue(select, 'APL')?.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('retains filtered selection by key without applying ARIA to a missing option', async () => {
+    select.updateConfig({ searchable: true });
+    select.setItems(items);
+    await select.setSelectedValues(['BAN']);
+    const input = getInput(select);
+    input.value = 'Apple';
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+
+    expect((select as any)._engine.state.selectedKeys.has('b')).toBe(true);
+    expect(getOptionByValue(select, 'BAN')).toBeNull();
+    expect(getOptionByValue(select, 'APL')?.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('applies role, selected, and disabled ARIA to custom renderer hosts', async () => {
+    const rendererItems = [
+      items[0],
+      { id: 'c', value: 'DIS', label: 'Disabled', disabled: true },
+    ];
+    select.setItems(rendererItems);
+    await select.setSelectedValues(['APL']);
+    select.optionRenderer = (item: any) => {
+      const host = document.createElement('div');
+      host.setAttribute('role', 'presentation');
+      host.setAttribute('aria-selected', 'false');
+      return host;
+    };
+
+    const selected = getOptionByValue(select, 'APL');
+    const disabled = getOptionByValue(select, 'DIS');
+    expect(selected?.getAttribute('role')).toBe('option');
+    expect(selected?.getAttribute('aria-selected')).toBe('true');
+    expect(disabled?.getAttribute('role')).toBe('option');
+    expect(disabled?.getAttribute('aria-disabled')).toBe('true');
   });
 });

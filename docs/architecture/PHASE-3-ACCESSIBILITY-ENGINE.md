@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.4.1 closed; Phase 3.4.2 listbox integration implemented and verified locally.**
+Status: **Phase 3.0–3.4.2 closed; Phase 3.4.3 option integration implemented and verified locally.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -461,3 +461,44 @@ All Phase 3.4.1 combobox integration tests continue to run in the same suite.
 The build regenerated the embedded React Native Core bundle as a side effect;
 that generated file was restored and is not part of this slice. No public API,
 keyboard, focus, selection, or popup behavior changed.
+
+## 18. Phase 3.4.3 Option ARIA Integration
+
+`EnhancedSelect._syncRenderedOptionAccessibility()` derives option intent from
+the current engine state after rendered option hosts have been appended. It
+maps each rendered compatibility index through the registry to its stable key,
+computes option effects from the accessibility state, and applies only
+`SYNC_OPTION_ARIA` through the web applier. This covers built-in `SelectOption`
+hosts and custom renderer hosts. A filtered or otherwise unrendered key has no
+target and is not mutated. The option's active and selected meaning still comes
+from engine `activeKey` and `selectedKeys`; this integration does not move DOM
+focus or change visual active styling.
+
+The custom renderer normalizer no longer writes option role, selected, or
+disabled ARIA directly. The applier owns those writes after render. Enabled
+options have stale `aria-disabled` removed, matching the existing DOM
+convention. `SelectOption`'s initialization writes remain, with the rendered
+engine projection applied afterward. The component's option-removal path also
+relies on the render synchronization instead of directly resetting
+`aria-selected`. No framework adapter, public export, keyboard behavior, focus
+behavior, selection policy, or public item/value API changed.
+
+`enhanced-select-accessibility-integration.spec.ts` covers built-in option role,
+selected and disabled state, multi-selection alignment, key-safe reorder,
+filtered selection, and custom renderer option semantics. The web applier suite
+also verifies removal of stale `aria-disabled` for enabled options.
+
+### Phase 3.4.3 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 64 passed. |
+| `npm run test:unit` | 371 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| E2E | Not run; this slice changes option ARIA synchronization and adds unit coverage. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice.

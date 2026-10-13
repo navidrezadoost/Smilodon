@@ -84,7 +84,8 @@ function applyOption<TKey extends SelectKey>(
 
   option.setAttribute('role', 'option');
   setBooleanAttribute(option, 'aria-selected', effect.selected);
-  setBooleanAttribute(option, 'aria-disabled', effect.disabled);
+  if (effect.disabled) option.setAttribute('aria-disabled', 'true');
+  else option.removeAttribute('aria-disabled');
 }
 
 function applyFocusIntent<TKey extends SelectKey>(

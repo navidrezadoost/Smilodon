@@ -137,6 +137,19 @@ describe('web accessibility effect applier', () => {
     expect(option.getAttribute('aria-disabled')).toBe('true');
   });
 
+  it('removes aria-disabled for an enabled option to preserve existing semantics', () => {
+    const option = document.createElement('div');
+    option.setAttribute('aria-disabled', 'true');
+
+    applyAccessibilityEffects([{
+      type: 'SYNC_OPTION_ARIA', key: 'item-a', selected: false, disabled: false, active: false,
+    }], { getOptionByKey: () => option });
+
+    expect(option.getAttribute('role')).toBe('option');
+    expect(option.getAttribute('aria-selected')).toBe('false');
+    expect(option.hasAttribute('aria-disabled')).toBe(false);
+  });
+
   it('writes announcement intent to the live region', () => {
     const liveRegion = document.createElement('div');
 
