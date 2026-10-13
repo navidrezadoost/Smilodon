@@ -1604,10 +1604,7 @@ export class EnhancedSelect extends HTMLElement {
       Object.assign(input.style, inputStyles);
     }
     
-    input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-expanded', 'false');
     input.setAttribute('aria-haspopup', 'listbox');
-    input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
     
     return input;
   }
@@ -1624,12 +1621,6 @@ export class EnhancedSelect extends HTMLElement {
     
     if (this._config.styles.dropdown) {
       Object.assign(dropdown.style, this._config.styles.dropdown);
-    }
-    
-    dropdown.setAttribute('role', 'listbox');
-    dropdown.setAttribute('aria-labelledby', `${this._uniqueId}-input`);
-    if (this._config.selection.mode === 'multi') {
-      dropdown.setAttribute('aria-multiselectable', 'true');
     }
     
     return dropdown;
@@ -1713,7 +1704,6 @@ export class EnhancedSelect extends HTMLElement {
     // Set ARIA relationships
     const listboxId = `${this._uniqueId}-listbox`;
     this._dropdown.id = listboxId;
-    this._input.setAttribute('aria-controls', listboxId);
     this._input.setAttribute('aria-owns', listboxId);
 
     this._syncInputContainerMode();
