@@ -162,6 +162,12 @@ describe('web accessibility effect applier', () => {
     expect(liveRegion.textContent).toBe('Selection unavailable');
   });
 
+  it('treats a missing live region as a safe no-op for announcements', () => {
+    expect(() => applyAccessibilityEffects([{
+      type: 'ANNOUNCE', politeness: 'polite', message: 'No live region',
+    }], {})).not.toThrow();
+  });
+
   it('does not call focus by default', () => {
     const input = document.createElement('input');
     const focus = vi.spyOn(input, 'focus');

@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.4.2 closed; Phase 3.4.3 option integration implemented and verified locally.**
+Status: **Phase 3.0–3.4.3 closed; Phase 3.4.4 live-region integration implemented and verified locally.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -499,6 +499,43 @@ also verifies removal of stale `aria-disabled` for enabled options.
 | `npm run test:contracts` | Six passed, 44 skipped. |
 | `git diff --check` | Passed. |
 | E2E | Not run; this slice changes option ARIA synchronization and adds unit coverage. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice.
+
+## 19. Phase 3.4.4 Live-region Announcement Integration
+
+`EnhancedSelect._announce()` now turns its existing message and polite
+politeness into a semantic `ANNOUNCE` effect and passes it to the web applier.
+The applier writes `aria-live`, `aria-atomic`, and message `textContent` to the
+provided live-region target. The component still creates the region with
+`role="status"`; the applier does not change that role. The existing
+one-second clearing update also passes through an empty-message `ANNOUNCE`
+effect. Missing live-region targets remain safe no-ops in the applier.
+
+All announcement call sites retain their existing message text and timing,
+including open/close, search results, type-ahead position, selection limits,
+selection changes, and validation errors. Clear still does not add an
+announcement. Focus intents are not connected, and keyboard, search, popup,
+selection policy, framework adapters, and public APIs are unchanged.
+
+The integration suite checks the status role, message text, polite live
+setting, atomic setting, no-results search announcement, and selection/clear
+compatibility. The web applier suite checks that announcements with no live
+region do nothing safely. Existing combobox, listbox, and option integration
+assertions continue to run in the same suites.
+
+### Phase 3.4.4 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 69 passed. |
+| `npm run test:unit` | 376 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| E2E | Not run; announcement behavior is covered by unit integration tests. |
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 that generated file was restored and is not part of this slice.
