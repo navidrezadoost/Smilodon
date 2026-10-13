@@ -1,8 +1,8 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0 and 3.1 closed; Phase 3.2 implemented and verified locally.**
-This document records the current accessibility surface and the pure contract
-before any component or adapter migration.
+Status: **Phase 3.0, 3.1, and 3.2 closed; Phase 3.3 adapter applier implemented and verified locally.**
+This document records the current accessibility surface and staged engine and
+web adapter contracts before component integration.
 
 ## 1. Current Accessibility Surface
 
@@ -343,3 +343,43 @@ The contract module and its pure tests are the only engine/test additions. The
 component, option component, web platform, framework adapters, and generated
 React Native bundle are unchanged. Phase 3.1 defines intent only; no runtime
 consumer or DOM effect runner was added.
+
+## 15. Phase 3.3 Web Adapter Accessibility Effects
+
+`packages/core/src/platform/web/accessibility-effects.ts` applies semantic
+`AccessibilityEffect` values to caller-provided DOM targets. It handles
+combobox, listbox, and option ARIA attributes; resolves `activeKey` through
+`getOptionByKey` and uses the rendered option ID for
+`aria-activedescendant`; writes announcement intent to a supplied live region;
+and treats missing targets as no-ops. Missing active options or options without
+IDs clear any stale active-descendant attribute.
+
+Focus intents are inert by default. A caller must pass `{ applyFocus: true }`
+to call the resolved target's `focus()` method. The applier and its target types
+remain inside `platform/web`; they are not re-exported from the web barrel or
+package root, so this stage adds no public package API. `EnhancedSelect`,
+`SelectOption`, framework adapters, and generated bundles are not connected to
+the new applier.
+
+`web-accessibility-effects.spec.ts` covers combobox role/expanded and
+autocomplete state, controls ID cleanup, active-key-to-option-ID mapping,
+missing active option behavior, listbox and option semantics, live-region
+updates, opt-in focus, safe missing targets, and the engine/web DOM boundary.
+
+### Phase 3.3 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine decision, and web applier suites | 39 passed. |
+| `npm run test:unit` | 346 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| E2E | Not run; no component/runtime path was connected. |
+
+The first build attempt caught two generic type mismatches in private applier
+helpers. Their signatures were corrected without changing runtime semantics;
+the final build passed. The applier is not exported through
+`platform/web/index.ts` because that barrel is re-exported from the package
+root and the Phase 3.3 boundary does not authorize a public API change.
