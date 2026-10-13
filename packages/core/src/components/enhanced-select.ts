@@ -3478,6 +3478,28 @@ export class EnhancedSelect extends HTMLElement {
     applyAccessibilityEffects(effects, { listbox: this._dropdown });
   }
 
+  private _syncRenderedOptionAccessibility(): void {
+    if (!this._optionsContainer || !this._engine || !this._state) return;
+
+    const optionTargets = new Map<SelectKey, HTMLElement>();
+    this._optionsContainer.querySelectorAll<HTMLElement>('[data-index]').forEach((option) => {
+      const index = Number(option.getAttribute('data-index'));
+      if (!Number.isFinite(index)) return;
+      const key = this._itemRegistry.indexToKey.get(index);
+      if (key !== undefined) optionTargets.set(key, option);
+    });
+    if (optionTargets.size === 0) return;
+
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      controlsId: this._dropdown?.id || null,
+      optionKeys: [...optionTargets.keys()],
+    }).filter((effect) => effect.type === 'SYNC_OPTION_ARIA');
+
+    applyAccessibilityEffects(effects, {
+      getOptionByKey: (key) => optionTargets.get(key) ?? null,
+    });
+  }
+
   private _handleOpen(): void {
     if (!this._config.enabled) {
       this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: true }));
@@ -4151,7 +4173,6 @@ export class EnhancedSelect extends HTMLElement {
       (option as SelectOption).setSelected(false);
     } else if (option) {
       option.classList.remove('selected', 'sm-selected', 'smilodon-option--selected');
-      option.setAttribute('aria-selected', 'false');
 
       const stateTokens = (option.dataset.smState || '')
         .split(' ')
@@ -5118,6 +5139,7 @@ export class EnhancedSelect extends HTMLElement {
             }
 
             this._optionsContainer.appendChild(fragment);
+            this._syncRenderedOptionAccessibility();
             this._syncLegacyActiveAria();
 
             if (cursor < filteredIndices.length) {
@@ -5169,6 +5191,7 @@ export class EnhancedSelect extends HTMLElement {
       this._addLoadMoreTrigger();
     }
 
+    this._syncRenderedOptionAccessibility();
     this._syncLegacyActiveAria();
     this._finalizePerfMarks();
     
@@ -5385,16 +5408,6 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     optionEl.id = optionEl.id || meta.id;
-
-    if (!optionEl.getAttribute('role')) {
-      optionEl.setAttribute('role', 'option');
-    }
-    optionEl.setAttribute('aria-selected', String(meta.selected));
-    if (meta.disabled && !meta.disabledBehavior.selectable) {
-      optionEl.setAttribute('aria-disabled', 'true');
-    } else {
-      optionEl.removeAttribute('aria-disabled');
-    }
 
     if (!optionEl.hasAttribute('tabindex')) {
       optionEl.tabIndex = -1;
