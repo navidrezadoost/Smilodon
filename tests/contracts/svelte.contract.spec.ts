@@ -65,7 +65,8 @@ describe('Svelte Adapter Contract Tests', () => {
     });
 
     (component as any).clearTracking('event');
-    expect(((component as any).getTrackingSnapshot() ?? element.getTrackingSnapshot?.()).events).toHaveLength(0);
+    const trackingSnapshot = (component as any).getTrackingSnapshot() ?? element.getTrackingSnapshot?.();
+    expect(trackingSnapshot?.events).toHaveLength(0);
 
     (component as any).setLimitationPolicies({ runtimeModeSwitching: { mode: 'strict' } });
     const updated = (component as any)

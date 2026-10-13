@@ -86,7 +86,8 @@ describe('Vue Adapter Contract Tests', () => {
     });
 
     api.clearTracking('event');
-    expect((api.getTrackingSnapshot() ?? element.getTrackingSnapshot?.()).events).toHaveLength(0);
+    const trackingSnapshot = api.getTrackingSnapshot() ?? element.getTrackingSnapshot?.();
+    expect(trackingSnapshot?.events).toHaveLength(0);
 
     api.setLimitationPolicies({ runtimeModeSwitching: { mode: 'strict' } });
     const updated = (api.getKnownLimitations() ?? element.getKnownLimitations?.() ?? [])
