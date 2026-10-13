@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0 closed; Phase 3.1 contract implemented and verified locally.**
+Status: **Phase 3.0 and 3.1 closed; Phase 3.2 implemented and verified locally.**
 This document records the current accessibility surface and the pure contract
 before any component or adapter migration.
 
@@ -261,6 +261,51 @@ Announcements and focus effects are represented as data supplied to
 announcement or focus action. `accessibility-contract.spec.ts` checks these
 rules and verifies that the engine contract source has no `document`, `window`,
 or `HTMLElement` dependency.
+
+## 14. Phase 3.2 Engine Accessibility Decisions
+
+`deriveAccessibilityState(state, context?)` projects the current headless
+`SelectState` into the Phase 3.1 accessibility model. It derives expanded from
+popup state; multiple and required from selection configuration; active and
+selected identity from `activeKey` and `selectedKeys`; disabled option identity
+from the configured disabled-key set; and busy from `dataStatus === 'loading'`.
+No index or DOM ID is generated.
+
+The current engine does not own searchable, readonly, invalid, or labeling
+configuration. `AccessibilityStateContext` supplies those values when a caller
+needs to derive a complete snapshot. Defaults are non-searchable, writable,
+valid, and unnamed. Required and invalid values in validation details mirror
+the corresponding top-level intent values.
+
+`transition()` retains its existing effect arrays and emits its existing
+semantic popup, active-key, and selection-key effects. Callers derive the
+accessibility snapshot from the resulting engine state with
+`deriveAccessibilityState()` and can pass it to `computeAccessibilityEffects()`
+for semantic ARIA, announcement, and focus intents. This composes accessibility
+decisions with transitions without changing existing effect contracts. No web
+effect runner or component consumes these intents in this stage. The effects
+contain keys and semantic targets, not DOM references. Transition-specific
+message and focus policy is not introduced here.
+
+`select-accessibility.spec.ts` covers popup open/close, active and selected key
+changes, disabled registration, required and multiple configuration, loading
+to busy projection, key-only effects, and data-only focus/announcement intent.
+
+### Phase 3.2 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract and engine decision suites | 27 passed. |
+| `npm run test:unit` | 334 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+
+No component, option component, web platform, framework adapter, or generated
+bundle changed. Existing transition effect arrays remain compatible; the
+accessibility snapshot and semantic effects are derived from the resulting
+engine state without a DOM consumer.
 
 ### Phase 3.0 and 3.0a Verification (2026-10-13)
 

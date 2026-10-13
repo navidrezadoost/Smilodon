@@ -1,4 +1,5 @@
 import type { SelectKey } from './contracts.js';
+import type { SelectState } from './select-state.js';
 
 export type AccessibilityPopupRole = 'listbox';
 
@@ -88,6 +89,46 @@ export interface AccessibilityEffectOptions<TKey extends SelectKey = SelectKey> 
   optionKeys: readonly TKey[];
   announcements?: readonly AccessibilityAnnouncementIntent[];
   focusIntents?: readonly AccessibilityFocusIntent[];
+}
+
+export interface AccessibilityStateContext {
+  readonly?: boolean;
+  searchable?: boolean;
+  invalid?: boolean;
+  label?: AccessibilityLabelState;
+  errorMessage?: string | null;
+  errorDescriptionId?: string | null;
+}
+
+/** Projects existing engine state into accessibility semantics without DOM data. */
+export function deriveAccessibilityState<TKey extends SelectKey>(
+  state: SelectState<TKey>,
+  context: AccessibilityStateContext = {},
+): AccessibilityComboboxState<TKey> {
+  const required = state.selection.required;
+  const invalid = context.invalid ?? false;
+
+  return {
+    expanded: state.popup === 'open',
+    disabled: state.disabled,
+    readonly: context.readonly ?? false,
+    searchable: context.searchable ?? false,
+    multiple: state.selection.multiple,
+    required,
+    invalid,
+    busy: state.dataStatus === 'loading',
+    activeKey: state.activeKey,
+    selectedKeys: state.selectedKeys,
+    disabledKeys: state.selection.disabledKeys,
+    popupRole: 'listbox',
+    label: context.label ?? {},
+    validation: {
+      required,
+      invalid,
+      errorMessage: context.errorMessage ?? null,
+      errorDescriptionId: context.errorDescriptionId ?? null,
+    },
+  };
 }
 
 function uniqueIds(ids: readonly (string | null | undefined)[]): string[] {
