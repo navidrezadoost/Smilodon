@@ -3200,7 +3200,7 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       // Focus the input (do not prevent default behavior for input itself)
-      this._input.focus();
+      this._applyFocusIntent('input', 'input-container-trigger');
 
       // If we just opened the dropdown, transfer pointer capture to the
       // options container so the subsequent pointerup lands there instead of
@@ -3244,7 +3244,7 @@ export class EnhancedSelect extends HTMLElement {
         this._handleOpen();
       }
 
-      this._input.focus();
+      this._applyFocusIntent('input', 'input-container-activation');
     });
 
     this._inputContent.addEventListener('pointermove', (e) => {
@@ -3423,7 +3423,7 @@ export class EnhancedSelect extends HTMLElement {
   private _runEngineEffects(effects: ReturnType<SelectEngineBridge['dispatch']>): void {
     this._effectRunner.run(effects, {
       focusTrigger: () => {
-        this._input?.focus();
+        this._applyFocusIntent('input', 'engine-focus-trigger');
       },
       syncAria: () => {
         this._syncPopupAria();
@@ -3498,6 +3498,25 @@ export class EnhancedSelect extends HTMLElement {
     applyAccessibilityEffects(effects, {
       getOptionByKey: (key) => optionTargets.get(key) ?? null,
     });
+  }
+
+  private _applyFocusIntent(
+    target: 'input' | 'clear-button' | 'active-option' | 'none',
+    reason: string,
+    focusTarget?: HTMLElement | null,
+  ): void {
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      optionKeys: [],
+      focusIntents: [{ target, reason }],
+    }).filter((effect) => effect.type === 'FOCUS_INTENT');
+
+    applyAccessibilityEffects(effects, {
+      focusTargets: {
+        input: target === 'input' ? this._input : null,
+        clearButton: target === 'clear-button' ? this._clearControl : null,
+        getActiveOption: () => target === 'active-option' ? focusTarget ?? null : null,
+      },
+    }, { applyFocus: true });
   }
 
   private _handleOpen(): void {
@@ -3988,7 +4007,7 @@ export class EnhancedSelect extends HTMLElement {
       keyboardFocus: (index: number) => {
         this._setActive(index);
         const el = this._getOptionElementByIndex(index);
-        el?.focus?.();
+        this._applyFocusIntent('active-option', 'renderer-keyboard-focus', el);
       },
     };
   }
@@ -4933,7 +4952,7 @@ export class EnhancedSelect extends HTMLElement {
       clearedSearch: shouldClearSearch && hadSearch,
     });
 
-    this._input.focus();
+    this._applyFocusIntent('input', 'clear-control-complete');
   }
 
   private _syncClearControlState(): void {

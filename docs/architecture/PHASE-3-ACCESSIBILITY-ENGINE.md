@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.4.3 closed; Phase 3.4.4 live-region integration implemented and verified locally.**
+Status: **Phase 3.0–3.4.4 closed; Phase 3.4.5 focus intent integration implemented and verified locally.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -499,6 +499,52 @@ also verifies removal of stale `aria-disabled` for enabled options.
 | `npm run test:contracts` | Six passed, 44 skipped. |
 | `git diff --check` | Passed. |
 | E2E | Not run; this slice changes option ARIA synchronization and adds unit coverage. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+that generated file was restored and is not part of this slice.
+
+## 20. Phase 3.4.5 Focus Intent Integration
+
+`EnhancedSelect._applyFocusIntent()` creates a semantic `FOCUS_INTENT` effect,
+resolves the existing input or option target, and passes it to the web applier
+with `applyFocus: true`. The engine focus-trigger callback, input-container
+trigger/activation handlers, clear-control completion, and renderer
+`keyboardFocus` helper now use this path. Each original call site remains in
+place, including the two existing input focus calls on trigger and clear paths.
+The renderer helper still sets the active key before requesting focus on its
+indexed option. Scroll-to-active remains unchanged.
+
+The applier remains inert when `applyFocus` is false and only invokes the
+resolved target's `focus()` when explicitly enabled. The component opts in for
+these existing focus paths. No keyboard, Tab/Escape, popup, selection policy,
+active styling, framework adapter, or public API behavior was changed.
+
+The integration suite verifies trigger and clear input focus, plus that
+`keyboardFocus` requests focus on its intended option through the applier. The
+web applier suite verifies inert `applyFocus: false` and explicit focus when
+enabled. Existing combobox, listbox, option, live-region, and selection/value
+integration tests continue to run. `tests/e2e/accessibility-focus.spec.ts`
+confirms actual Chromium focus for trigger, clear, and a custom-rendered option;
+it also verifies that `aria-activedescendant` still references that option and
+that Escape and Tab still close the popup from the input.
+
+The browser probe found that the built-in `SelectOption` host has no `tabindex`,
+so invoking its `focus()` does not move browser focus to that host. The
+pre-existing helper called the same host method directly, and this stage does
+not change that focus model. The E2E renderer case uses a custom-rendered host,
+which the existing normalizer makes focusable with `tabindex="-1"`.
+
+### Phase 3.4.5 Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 72 passed. |
+| `npm run test:unit` | 379 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| `npx playwright test tests/e2e/accessibility-focus.spec.ts --project=chromium` | Four passed. |
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 that generated file was restored and is not part of this slice.
