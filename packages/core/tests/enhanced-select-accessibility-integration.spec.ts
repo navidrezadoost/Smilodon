@@ -22,6 +22,12 @@ function getListbox(select: EnhancedSelect): HTMLElement {
   return listbox!;
 }
 
+function getLiveRegion(select: EnhancedSelect): HTMLElement {
+  const liveRegion = select.shadowRoot?.querySelector<HTMLElement>('[role="status"]');
+  expect(liveRegion).toBeTruthy();
+  return liveRegion!;
+}
+
 function getOptionByValue(select: EnhancedSelect, value: string): HTMLElement | null {
   return select.shadowRoot?.querySelector<HTMLElement>(`[part="option"][data-value="${value}"]`) ?? null;
 }
@@ -115,6 +121,43 @@ describe('EnhancedSelect combobox accessibility integration', () => {
 
   it('keeps the popup role as listbox', () => {
     expect(getListbox(select).getAttribute('role')).toBe('listbox');
+  });
+
+  it('keeps the live region role as status', () => {
+    expect(getLiveRegion(select).getAttribute('role')).toBe('status');
+  });
+
+  it('routes announcement messages through the web applier with polite atomic semantics', () => {
+    const liveRegion = getLiveRegion(select);
+
+    (select as any)._announce('Announcement via effect');
+
+    expect(liveRegion.textContent).toBe('Announcement via effect');
+    expect(liveRegion.getAttribute('aria-live')).toBe('polite');
+    expect(liveRegion.getAttribute('aria-atomic')).toBe('true');
+  });
+
+  it('preserves the no-results search announcement', () => {
+    select.updateConfig({ searchable: true });
+    select.setItems(items);
+    const input = getInput(select);
+    input.value = 'Missing';
+
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+
+    expect(getLiveRegion(select).textContent).toBe('0 results found for "Missing"');
+  });
+
+  it('preserves selection announcements and does not add a clear announcement', () => {
+    select.setItems(items);
+
+    (select as any)._selectOption(0);
+
+    const liveRegion = getLiveRegion(select);
+    expect(liveRegion.textContent).toBe('Selected Apple');
+    select.clear();
+    expect(select.getSelectedValues()).toEqual([]);
+    expect(liveRegion.textContent).toBe('Selected Apple');
   });
 
   it('maps multi mode to aria-multiselectable=true', () => {

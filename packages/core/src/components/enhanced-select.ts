@@ -4064,12 +4064,21 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _announce(message: string): void {
-    if (this._liveRegion) {
-      this._liveRegion.textContent = message;
-      this._setLifecycleTimeout(() => {
-        if (this._liveRegion) this._liveRegion.textContent = '';
-      }, 1000);
-    }
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      optionKeys: [],
+      announcements: [{ politeness: 'polite', message }],
+    }).filter((effect) => effect.type === 'ANNOUNCE');
+
+    applyAccessibilityEffects(effects, { liveRegion: this._liveRegion });
+    if (!this._liveRegion) return;
+
+    this._setLifecycleTimeout(() => {
+      const clearEffects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+        optionKeys: [],
+        announcements: [{ politeness: 'polite', message: '' }],
+      }).filter((effect) => effect.type === 'ANNOUNCE');
+      applyAccessibilityEffects(clearEffects, { liveRegion: this._liveRegion });
+    }, 1000);
   }
 
   private _selectOption(index: number, opts?: { shiftKey?: boolean; toggleKey?: boolean; reason?: SelectionReason }): void {
