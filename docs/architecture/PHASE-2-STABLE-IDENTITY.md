@@ -620,6 +620,45 @@ The active-index mutation audit leaves assignment only in
 rendering, ARIA, or compatibility styling; navigation and activation use the
 engine key. No adapter source was changed for this stage.
 
+## Phase 2 Final Status
+
+Status: **Complete.**
+
+- `selectedKeys` is the authority for selection.
+- `activeKey` is the authority for active identity.
+- Legacy `selectedIndices`, `selectedItems`, and `activeIndex` are compatibility projections.
+- No adapter API was changed and no public API breaking change was introduced.
+- Detached selected keys remain resolvable through the selected-record cache.
+- The React Native embedded Core bundle was regenerated and is included in the Phase 2D.3 checkpoint.
+- `_mirrorLegacySelection` and `_mirrorLegacyActive` remain deprecated test/backward-compatibility shims; production authority paths use engine keys.
+
+The final authority audit found no direct `.add()`, `.delete()`, `.clear()`, or
+`.set()` mutation of the compatibility selection collections. The exact
+`_selectedIndices` / `_selectedItems` audit patterns and `_activeIndex` pattern
+returned no matches because the component stores these projections in
+`_state`. The concrete assignment audit found selection projection assignments
+only in `_syncLegacySelectionFromEngine` (lines 1024–1025) and active projection
+assignment only in `_syncLegacyActiveFromEngine` (line 1056). No production
+caller references either deprecated shim.
+
+### Phase 2D.4 Final Regression Gate (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Full unit suite | 326 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Targeted stable-identity E2E | Three passed across Chromium, Firefox, and WebKit. |
+| Full E2E suite (`--workers=2`) | 57 passed, 15 skipped. |
+| `git diff --check` | Passed. |
+
+The full E2E setup now configures multi-select through the public
+`updateConfig()` API rather than mutating private `_config`, so the engine
+selection policy is updated with the component config. A default four-worker
+full-suite attempt had one intermittent WebKit active-descendant timeout; the
+targeted cross-browser run and the full suite rerun with two workers passed.
+
 ## Phase 2D.3 — Compatibility Snapshot Cleanup
 
 Status: **Complete.**
