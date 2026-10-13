@@ -27,6 +27,8 @@ import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapt
 import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
 import type { SelectionReason, ActiveReason } from '../engine/selection-policy.js';
 import type { SelectEvent } from '../engine/select-events.js';
+import { computeAccessibilityEffects, deriveAccessibilityState } from '../engine/accessibility.js';
+import { applyAccessibilityEffects } from '../platform/web/accessibility-effects.js';
 import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
 import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
 import { SelectOption } from './select-option';
@@ -274,6 +276,7 @@ export class EnhancedSelect extends HTMLElement {
     this._assembleDOM();
     this._attachEventListeners();
     this._initializeObservers();
+    this._syncComboboxAccessibility();
   }
 
   connectedCallback(): void {
@@ -1133,9 +1136,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _syncLegacyActiveAria(): void {
-    const option = this._state.isOpen ? this._getOptionElementByIndex(this._state.activeIndex) : null;
-    if (option?.id) this._input.setAttribute('aria-activedescendant', option.id);
-    else this._input.removeAttribute('aria-activedescendant');
+    this._syncComboboxAccessibility();
   }
 
   private _syncStyleConfigVariables(): void {
@@ -3431,11 +3432,30 @@ export class EnhancedSelect extends HTMLElement {
 
   private _syncPopupAria(): void {
     if (!this._input) return;
+    this._syncComboboxAccessibility();
+  }
 
-    this._input.setAttribute('aria-expanded', String(this._state.isOpen));
-    if (!this._state.isOpen) {
-      this._input.removeAttribute('aria-activedescendant');
-    }
+  private _syncComboboxAccessibility(): void {
+    if (!this._input || !this._engine || !this._state) return;
+
+    const accessibilityState = deriveAccessibilityState(this._engine.state, {
+      searchable: this._config.searchable,
+      readonly: !this._config.searchable,
+      invalid: this._hasError,
+    });
+    const effects = computeAccessibilityEffects(accessibilityState, {
+      controlsId: this._dropdown?.id || null,
+      optionKeys: [],
+    }).filter((effect) => effect.type === 'SYNC_COMBOBOX_ARIA');
+
+    applyAccessibilityEffects(effects, {
+      combobox: this._input,
+      getOptionByKey: (key) => {
+        if (!this._state.isOpen) return null;
+        const index = this._itemRegistry.keyToIndex.get(key);
+        return index === undefined ? null : this._getOptionElementByIndex(index);
+      },
+    });
   }
 
   private _handleOpen(): void {
@@ -3458,7 +3478,6 @@ export class EnhancedSelect extends HTMLElement {
     this.setAttribute('data-open', 'true');
     this._liftStackingAncestors();
     this._dropdown.style.display = 'block';
-    this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
 
     // Render options when opening
@@ -3490,8 +3509,6 @@ export class EnhancedSelect extends HTMLElement {
     this._restoreLiftedAncestors();
     this._dropdown.style.display = 'none';
     this._dropdown.setAttribute('data-placement', this._resolvedDropdownPlacement);
-    this._input.setAttribute('aria-expanded', 'false');
-    this._input.removeAttribute('aria-activedescendant');
     this._updateArrowRotation();
     this._runEngineEffects(effects);
     
@@ -3506,13 +3523,12 @@ export class EnhancedSelect extends HTMLElement {
       this._liftStackingAncestors();
       this._dropdown.style.display = 'block';
       this._syncDropdownPlacement();
-      this._input.setAttribute('aria-expanded', 'true');
     } else {
       this.removeAttribute('data-open');
       this._restoreLiftedAncestors();
       this._dropdown.style.display = 'none';
-      this._input.setAttribute('aria-expanded', 'false');
     }
+    this._syncComboboxAccessibility();
   }
 
   private _liftStackingAncestors(): void {
@@ -4771,7 +4787,7 @@ export class EnhancedSelect extends HTMLElement {
     // Update input state based on new config
     if (this._input) {
       this._input.readOnly = !this._config.searchable;
-      this._input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
+      this._syncComboboxAccessibility();
       if (this._state.selectedIndices.size === 0) {
         this._input.placeholder = this._config.placeholder || 'Select an option...';
       }
@@ -4906,7 +4922,7 @@ export class EnhancedSelect extends HTMLElement {
   setError(message: string): void {
     this._hasError = true;
     this._errorMessage = message;
-    this._input.setAttribute('aria-invalid', 'true');
+    this._syncComboboxAccessibility();
     this._announce(`Error: ${message}`);
   }
 
@@ -4916,7 +4932,7 @@ export class EnhancedSelect extends HTMLElement {
   clearError(): void {
     this._hasError = false;
     this._errorMessage = '';
-    this._input.removeAttribute('aria-invalid');
+    this._syncComboboxAccessibility();
   }
 
   /**
@@ -4924,13 +4940,12 @@ export class EnhancedSelect extends HTMLElement {
    */
   setRequired(required: boolean): void {
     if (required) {
-      this._input.setAttribute('aria-required', 'true');
       this._input.setAttribute('required', '');
     } else {
-      this._input.removeAttribute('aria-required');
       this._input.removeAttribute('required');
     }
     this._syncEngineSelectionConfig();
+    this._syncComboboxAccessibility();
   }
 
   /**
