@@ -67,8 +67,10 @@ function applyListbox<TKey extends SelectKey>(
   if (!listbox) return;
 
   listbox.setAttribute('role', effect.role);
-  setBooleanAttribute(listbox, 'aria-multiselectable', effect.multiple);
-  setBooleanAttribute(listbox, 'aria-busy', effect.busy);
+  if (effect.multiple) listbox.setAttribute('aria-multiselectable', 'true');
+  else listbox.removeAttribute('aria-multiselectable');
+  if (effect.busy) listbox.setAttribute('aria-busy', 'true');
+  else listbox.removeAttribute('aria-busy');
   setIdListAttribute(listbox, 'aria-labelledby', effect.labelledBy);
   setOptionalAttribute(listbox, 'aria-label', effect.ariaLabel);
 }
