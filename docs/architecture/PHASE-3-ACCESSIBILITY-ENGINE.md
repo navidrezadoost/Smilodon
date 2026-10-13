@@ -1,8 +1,8 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0 audit and lint baseline reconciliation complete.**
-This document records the current accessibility surface before any engine or
-adapter migration.
+Status: **Phase 3.0 closed; Phase 3.1 contract implemented and verified locally.**
+This document records the current accessibility surface and the pure contract
+before any component or adapter migration.
 
 ## 1. Current Accessibility Surface
 
@@ -232,6 +232,36 @@ Phase 3.0 itself is complete when the baseline sections above are reviewed and
 the documentation-only regression gates pass. No behavior or API change is
 part of this audit.
 
+## 13. Phase 3.1 Accessibility State Contract
+
+`packages/core/src/engine/accessibility.ts` defines the pure accessibility
+state, intent, and effect contracts. The selectors accept semantic state and
+caller-provided IDs/option keys; they do not read or mutate DOM, generate IDs,
+or execute focus and announcement effects. This module is not added to the
+package root exports, so the stage does not change the public package API.
+
+`AccessibilityComboboxState` includes expanded, disabled, readonly, searchable,
+multiple, required, invalid, and busy state; the authoritative Phase 2
+`activeKey` and `selectedKeys`; disabled keys; popup role; labels/descriptions;
+and validation details. The top-level `required` and `invalid` values are the
+combobox intent inputs and should match the corresponding validation flags.
+Option state is computed by key. A disabled combobox disables its option
+intents, and a disabled option cannot be marked active.
+
+The selectors are `computeComboboxAccessibility`,
+`computeListboxAccessibility`, `computeOptionAccessibility`, and
+`computeAccessibilityEffects`. The effect union describes combobox/listbox/
+option synchronization, semantic announcements, and focus targets. The
+`controlsId`, label IDs, description IDs, and rendered option keys are inputs
+from the caller. `activeKey` stays a key in the contract; mapping it to a
+rendered option ID remains a web adapter responsibility.
+
+Announcements and focus effects are represented as data supplied to
+`computeAccessibilityEffects`. That function returns effects and performs no
+announcement or focus action. `accessibility-contract.spec.ts` checks these
+rules and verifies that the engine contract source has no `document`, `window`,
+or `HTMLElement` dependency.
+
 ### Phase 3.0 and 3.0a Verification (2026-10-13)
 
 | Check | Result |
@@ -252,3 +282,19 @@ optional tracking snapshot. No generated React Native bundle was changed by the
 build.
 
 No accessibility behavior, adapter API, or runtime behavior changed.
+
+### Phase 3.1 Contract Verification (2026-10-13)
+
+| Check | Result |
+| --- | --- |
+| Focused `accessibility-contract.spec.ts` | 15 passed. |
+| `npm run test:unit` | 322 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+
+The contract module and its pure tests are the only engine/test additions. The
+component, option component, web platform, framework adapters, and generated
+React Native bundle are unchanged. Phase 3.1 defines intent only; no runtime
+consumer or DOM effect runner was added.
