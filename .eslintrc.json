@@ -48,7 +48,8 @@
   ],
   "ignorePatterns": [
     "**/dist/**",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "docs-site/lib/**"
   ],
   "rules": {
     "no-unused-vars": ["warn"],
