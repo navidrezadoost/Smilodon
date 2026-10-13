@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnhancedSelect } from '../src/components/enhanced-select';
 
 if (!customElements.get('enhanced-select')) {
@@ -158,6 +158,52 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     select.clear();
     expect(select.getSelectedValues()).toEqual([]);
     expect(liveRegion.textContent).toBe('Selected Apple');
+  });
+
+  it('keeps focus on the input when the input container is triggered', () => {
+    const input = getInput(select);
+    const container = select.shadowRoot?.querySelector<HTMLElement>('.input-container');
+    expect(container).toBeTruthy();
+    const focus = vi.spyOn(input, 'focus');
+
+    container!.dispatchEvent(new MouseEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+    }));
+
+    expect(focus).toHaveBeenCalledTimes(2);
+    expect(select.shadowRoot?.activeElement).toBe(input);
+  });
+
+  it('returns focus to the input after clear-control activation', async () => {
+    select.updateConfig({ clearControl: { enabled: true } });
+    select.setItems(items);
+    await select.setSelectedValues(['APL']);
+    const input = getInput(select);
+    const clearButton = select.shadowRoot?.querySelector<HTMLButtonElement>('[part="clear-button"]');
+    expect(clearButton).toBeTruthy();
+    const focus = vi.spyOn(input, 'focus');
+
+    clearButton!.click();
+
+    expect(focus).toHaveBeenCalledTimes(2);
+    expect(select.shadowRoot?.activeElement).toBe(input);
+  });
+
+  it('focuses the renderer helper target through explicit focus intent', () => {
+    select.setItems(items);
+    const option = getOptionByValue(select, 'BAN');
+    const otherOption = getOptionByValue(select, 'APL');
+    expect(option).toBeTruthy();
+    const focus = vi.spyOn(option!, 'focus');
+    const otherFocus = vi.spyOn(otherOption!, 'focus');
+
+    (select as any)._buildRendererHelpers().keyboardFocus(1);
+
+    expect(focus).toHaveBeenCalledOnce();
+    expect(otherFocus).not.toHaveBeenCalled();
+    expect((select as any)._engine.state.activeKey).toBe('b');
   });
 
   it('maps multi mode to aria-multiselectable=true', () => {

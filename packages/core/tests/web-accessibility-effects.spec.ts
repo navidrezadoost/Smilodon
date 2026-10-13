@@ -168,13 +168,13 @@ describe('web accessibility effect applier', () => {
     }], {})).not.toThrow();
   });
 
-  it('does not call focus by default', () => {
+  it('keeps focus intent inert when applyFocus is false', () => {
     const input = document.createElement('input');
     const focus = vi.spyOn(input, 'focus');
 
     applyAccessibilityEffects([{
       type: 'FOCUS_INTENT', target: 'input', reason: 'requested',
-    }], { focusTargets: { input } });
+    }], { focusTargets: { input } }, { applyFocus: false });
 
     expect(focus).not.toHaveBeenCalled();
   });
