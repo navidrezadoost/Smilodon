@@ -271,9 +271,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
   });
 
-  it('renders only the requested bounded subset when the internal one-render guard is set', () => {
+  it('renders only the guarded bounded subset while legacy-full remains the default', () => {
     select.setItems(makeItems());
-    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 2 };
+    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
 
     (select as any)._renderOptions();
 
@@ -281,7 +281,20 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['b']);
     expect(Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'))
       .map((option) => option.dataset.value)).toEqual(['BAN']);
-    expect((select as any)._nextVirtualRenderWindow).toBeNull();
+    expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 1, endIndex: 2 });
+  });
+
+  it('materializes a requested key into the current guarded window', () => {
+    select.setItems(makeItems());
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+    expect((select as any)._materializeGuardedVirtualKey('c')).toBe(true);
+
+    expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 2, endIndex: 3 });
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect(select.shadowRoot!.querySelector('[data-value="CHR"]')).toBeTruthy();
   });
 
   it('preserves selection outside the mounted window and restores selected ARIA when remounted', () => {
@@ -289,7 +302,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     select.setItems(makeItems());
     clickOption(select, 0);
     const selectedBefore = engineSelectedKeys(select);
-    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 3 };
+    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 3 };
 
     (select as any)._renderOptions();
 
@@ -297,8 +310,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeNull();
     expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b', 'c']);
 
-    (select as any)._nextVirtualRenderWindow = { startIndex: 0, endIndex: 1 };
-    (select as any)._renderOptions();
+    expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
 
     expect(engineSelectedKeys(select)).toEqual(['a']);
     expect(select.shadowRoot!.querySelector('[data-value="APL"]')?.getAttribute('aria-selected')).toBe('true');
@@ -314,7 +326,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(activeKey).not.toBeNull();
     const activeIndex = (select as any)._itemRegistry.keyToIndex.get(activeKey);
 
-    (select as any)._nextVirtualRenderWindow = {
+    (select as any)._guardedVirtualWindow = {
       startIndex: activeIndex === 0 ? 1 : 0,
       endIndex: activeIndex === 0 ? 3 : 1,
     };
@@ -325,15 +337,40 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect((select as any)._virtualizationScope.mountedKeys).not.toContain(activeKey);
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
 
-    (select as any)._nextVirtualRenderWindow = {
-      startIndex: activeIndex,
-      endIndex: activeIndex + 1,
-    };
-    (select as any)._renderOptions();
+    expect((select as any)._materializeGuardedVirtualKey(activeKey)).toBe(true);
 
     const activeOption = select.shadowRoot!.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
     expect(activeOption).toBeTruthy();
     expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption!.id);
+  });
+
+  it('drops stale mounted keys and active descendant after a newer key materialization', () => {
+    select.setItems(makeItems());
+    select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
+    const activeKey = engineActiveKey(select);
+    expect(activeKey).not.toBeNull();
+    const activeIndex = (select as any)._itemRegistry.keyToIndex.get(activeKey);
+    const firstKey = activeKey === 'c' ? 'a' : 'c';
+    const latestKey = activeKey === 'a' ? 'b' : 'a';
+
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+    expect((select as any)._materializeGuardedVirtualKey(firstKey)).toBe(true);
+    expect((select as any)._materializeGuardedVirtualKey(latestKey)).toBe(true);
+
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual([latestKey]);
+    expect((select as any)._virtualizationScope.mountedKeys).not.toContain(activeKey);
+    expect(engineActiveKey(select)).toBe(activeKey);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+
+    // The materialized key has replaced the previous range, rather than
+    // leaving option targets from an earlier render in the mounted snapshot.
+    const firstIndex = (select as any)._itemRegistry.keyToIndex.get(firstKey);
+    expect(select.shadowRoot!.querySelector(`[data-index="${activeIndex}"]`)).toBeNull();
+    expect(select.shadowRoot!.querySelector(`[data-index="${firstIndex}"]`)).toBeNull();
   });
 
   it('keeps the virtual plan key-to-filtered-index mapping in current filtered order', () => {
@@ -378,7 +415,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   it('keeps grouped rendering on the existing full synchronous path', () => {
     const groupedItems = makeItems();
     select.setItems(groupedItems);
-    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 2 };
+    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
 
     select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
 
@@ -386,7 +423,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(select.shadowRoot!.querySelector('[part="group-header"]')?.textContent).toBe('Fruit');
     expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
     expect((select as any)._renderPlan.mode).toBe('legacy-full');
-    expect((select as any)._nextVirtualRenderWindow).toBeNull();
+    expect((select as any)._guardedVirtualWindow).toBeNull();
   });
 
   it('eventually renders all filtered options through the current chunked path', async () => {

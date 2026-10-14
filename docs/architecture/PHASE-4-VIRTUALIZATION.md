@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application implemented and verified locally. Legacy-full remains the default; the guard is private and one-render only.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization implemented and verified locally. Legacy-full remains the default.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1014,3 +1014,44 @@ The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. The private guarded path is exercised by
 unit integration tests; the default render mode and public configuration
 remain unchanged.
+
+## 28. Phase 4.4.6 Internal Window State and Materialization
+
+The private one-render override has been replaced with nullable
+`_guardedVirtualWindow` state. A null value preserves the existing
+`legacy-full` render path. When tests set a guarded range, flat-list rendering
+keeps that window across renders and computes the virtual plan from the current
+filtered key order. Grouped rendering clears the guarded state and continues
+to render all group options synchronously.
+
+`_materializeGuardedVirtualKey(key)` is a private helper available only while
+the guarded window is active. It resolves the key through the current render
+plan's filtered key-to-index map, moves a same-sized window to contain the key,
+and renders that window. Unknown or filtered-out keys return false without
+changing the window. Engine registration still uses all filtered candidates;
+selection and active identity remain key-based and independent of mounted
+targets. Mounted keys are refreshed from rendered option elements. Existing
+ARIA synchronization only exposes the active descendant after its option is
+mounted with an ID.
+
+`enhanced-select-virtualization-integration.spec.ts` verifies guarded key
+materialization, active-key preservation and active-descendant restoration,
+selected-key persistence and selected ARIA restoration, replacement of a
+previous window without stale mounted keys or active descendant, default
+legacy rendering, and the unchanged grouped path. No scroll listener, scroll
+mutation, Virtualizer wiring, public API, or default virtualization behavior
+was added.
+
+### Phase 4.4.6 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 92 passed. |
+| `npm run test:unit` | 460 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. The materialization state remains private
+and guarded, with no change to default or public virtualization behavior.
