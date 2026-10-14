@@ -65,4 +65,57 @@ describe('Virtualizer', () => {
     expect(stats).toHaveProperty('total');
     expect(stats).toHaveProperty('hitRate');
   });
+
+  it('scrollToIndex clamps an index below zero', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToIndex(-8)).toEqual({ index: 0, offset: 0, scrollTop: 0 });
+  });
+
+  it('scrollToIndex clamps an index above the item count', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToIndex(100)).toEqual({ index: 9, offset: 225, scrollTop: 225 });
+  });
+
+  it('returns the fixed-height offset and records the intended scroll position', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToIndex(4)).toEqual({ index: 4, offset: 100, scrollTop: 100 });
+    expect(v.getIntendedScrollTop()).toBe(100);
+  });
+
+  it('uses measured Fenwick offsets when available', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const measuredNode = document.createElement('div');
+    Object.defineProperty(measuredNode, 'offsetHeight', { configurable: true, value: 70 });
+
+    v.measureOnAppear(measuredNode, 3);
+
+    expect(v.scrollToIndex(10)).toEqual({ index: 10, offset: 430, scrollTop: 430 });
+  });
+
+  it('does not need an option DOM node to calculate a scroll target', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+    const result = v.scrollToIndex(2);
+
+    expect(result).toEqual({ index: 2, offset: 50, scrollTop: 50 });
+    expect(result).not.toHaveProperty('element');
+    expect(container.scrollTop).toBe(0);
+  });
+
+  it('ignores scroll requests after destruction', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+    v.scrollToIndex(2);
+    v.destroy();
+
+    expect(v.scrollToIndex(4)).toBeNull();
+    expect(v.getIntendedScrollTop()).toBe(50);
+  });
 });

@@ -11,6 +11,15 @@ export interface VirtualizerOptions {
   enableTelemetry?: boolean; // enable pool stats
 }
 
+export interface VirtualizerScrollResult {
+  /** Clamped target index in the current item set. */
+  index: number;
+  /** Prefix-sum offset for the target item. */
+  offset: number;
+  /** Intended container scrollTop; the caller owns applying it to the DOM. */
+  scrollTop: number;
+}
+
 export class Virtualizer {
   private container: HTMLElement;
   private itemsLength: number;
@@ -23,6 +32,7 @@ export class Virtualizer {
   private activeNodes = new Map<number, HTMLElement>(); // index -> node mapping
   private destroyed = false;
   private recycleRafId = 0;
+  private intendedScrollTop = 0;
 
   constructor(container: HTMLElement, itemsLength: number, itemGetter: ItemGetter, options: VirtualizerOptions) {
     this.container = container;
@@ -90,6 +100,27 @@ export class Virtualizer {
       total += this.measuredHeights.get(i) ?? this.averageHeight;
     }
     return total;
+  }
+
+  /**
+   * Calculates and records the intended scroll position for an item without
+   * mutating the container. The caller may apply the returned scrollTop.
+   * Returns null after destruction or when there are no items to target.
+   */
+  scrollToIndex(index: number): VirtualizerScrollResult | null {
+    if (this.destroyed || this.itemsLength <= 0) return null;
+
+    const requestedIndex = Number.isFinite(index) ? Math.trunc(index) : 0;
+    const targetIndex = Math.max(0, Math.min(this.itemsLength - 1, requestedIndex));
+    const offset = this.cumulativeOffset(targetIndex);
+    this.intendedScrollTop = offset;
+
+    return { index: targetIndex, offset, scrollTop: offset };
+  }
+
+  /** Returns the last scroll position requested through scrollToIndex(). */
+  getIntendedScrollTop(): number {
+    return this.intendedScrollTop;
   }
 
   acquireNode(index: number): HTMLElement {

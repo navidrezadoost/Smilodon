@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0 and 4.1 closed; Phase 4.2 pure window and identity contract implemented and verified locally. No component or virtualizer integration has started.**
+Status: **Phase 4.0–4.2 closed; Phase 4.3.1 Virtualizer scroll API implemented and verified locally. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -496,3 +496,38 @@ The first full unit run hit the existing 1M-item stress test's 50 ms timing
 threshold at 51.95 ms. The immediate rerun passed the complete unit suite; no
 stress-test code was changed. The build regenerated the embedded React Native
 Core bundle as a side effect, and that generated file was restored.
+
+## 16. Phase 4.3.1 Virtualizer Scroll API
+
+`Virtualizer.scrollToIndex(index)` clamps a requested index to the current item
+range and returns `{ index, offset, scrollTop }`. The offset comes from the
+existing `cumulativeOffset()` path, using measured heights and the Fenwick
+prefix sum when available. The virtualizer records the returned scroll target
+as its intended scroll position; the caller remains responsible for applying
+`scrollTop` to a DOM container. The method does not require an option node and
+does not mutate container scroll state.
+
+The method returns `null` for an empty item set or after `destroy()`, and does
+not change the recorded intended position in those cases. Existing
+`computeWindow()` behavior and all component call sites remain unchanged. No
+component integration, scroll listener, key resolver, window recomputation,
+ARIA change, or performance claim is part of this slice.
+
+`virtualizer.spec.ts` covers negative and over-range clamping, fixed-height
+offsets, measured Fenwick offsets, DOM-node independence, post-destroy no-op,
+and the existing window calculation coverage. Phase 4.2 contract tests run
+alongside it.
+
+### Phase 4.3.1 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer and virtualization contract suites | 23 passed. |
+| `npm run test:unit` | 397 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No browser tests were run and no benchmark
+claim is made.
