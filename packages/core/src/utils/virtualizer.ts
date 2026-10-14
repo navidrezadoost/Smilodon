@@ -118,6 +118,30 @@ export class Virtualizer {
     return { index: targetIndex, offset, scrollTop: offset };
   }
 
+  /**
+   * Resolves a stable key against the caller's current data identity, then
+   * delegates to scrollToIndex(). Invalid or out-of-range resolutions are
+   * rejected rather than clamped to a different item's position.
+   */
+  scrollToKey<TKey>(
+    key: TKey,
+    resolveIndex: (key: TKey) => number | null | undefined,
+  ): VirtualizerScrollResult | null {
+    if (this.destroyed || this.itemsLength <= 0) return null;
+
+    const index = resolveIndex(key);
+    if (
+      typeof index !== 'number'
+      || !Number.isInteger(index)
+      || index < 0
+      || index >= this.itemsLength
+    ) {
+      return null;
+    }
+
+    return this.scrollToIndex(index);
+  }
+
   /** Returns the last scroll position requested through scrollToIndex(). */
   getIntendedScrollTop(): number {
     return this.intendedScrollTop;

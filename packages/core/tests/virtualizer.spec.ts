@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Virtualizer } from '../src/utils/virtualizer';
 
 describe('Virtualizer', () => {
@@ -117,5 +117,72 @@ describe('Virtualizer', () => {
 
     expect(v.scrollToIndex(4)).toBeNull();
     expect(v.getIntendedScrollTop()).toBe(50);
+  });
+
+  it('scrollToKey resolves a key and returns the scroll result', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToKey('item-d', (key) => (key === 'item-d' ? 3 : null))).toEqual({
+      index: 3,
+      offset: 75,
+      scrollTop: 75,
+    });
+  });
+
+  it('scrollToKey uses the measured Fenwick offset via scrollToIndex', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const measuredNode = document.createElement('div');
+    Object.defineProperty(measuredNode, 'offsetHeight', { configurable: true, value: 70 });
+    v.measureOnAppear(measuredNode, 3);
+
+    expect(v.scrollToKey('item-k', (key) => (key === 'item-k' ? 10 : null))).toEqual({
+      index: 10,
+      offset: 430,
+      scrollTop: 430,
+    });
+  });
+
+  it('returns null when the key resolver cannot find a key', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToKey('missing', () => null)).toBeNull();
+  });
+
+  it.each([null, undefined])('returns null when the resolver returns %s', (resolvedIndex) => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToKey('item-a', () => resolvedIndex)).toBeNull();
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'returns null when the resolver returns invalid index %s',
+    (resolvedIndex) => {
+      const container = document.createElement('div');
+      const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+      expect(v.scrollToKey('item-a', () => resolvedIndex)).toBeNull();
+    },
+  );
+
+  it.each([-1, 10])('returns null rather than clamping out-of-range key index %s', (resolvedIndex) => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+
+    expect(v.scrollToKey('item-a', () => resolvedIndex)).toBeNull();
+    expect(v.getIntendedScrollTop()).toBe(0);
+  });
+
+  it('does not invoke the key resolver after destruction', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 25, buffer: 2 });
+    const resolveIndex = vi.fn(() => 3);
+    v.destroy();
+
+    expect(v.scrollToKey('item-d', resolveIndex)).toBeNull();
+    expect(resolveIndex).not.toHaveBeenCalled();
   });
 });

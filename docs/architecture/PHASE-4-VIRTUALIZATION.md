@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.2 closed; Phase 4.3.1 Virtualizer scroll API implemented and verified locally. No component integration has started.**
+Status: **Phase 4.0–4.3.1 closed; Phase 4.3.2 scroll-to-key resolver implemented and verified locally. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -531,3 +531,36 @@ alongside it.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No browser tests were run and no benchmark
 claim is made.
+
+## 17. Phase 4.3.2 Scroll-to-Key Resolver
+
+`Virtualizer.scrollToKey(key, resolveIndex)` accepts a caller-owned stable-key
+resolver and delegates valid indexes to `scrollToIndex()`. Resolved indexes
+must be finite integers within the current item range. Missing, null,
+undefined, non-finite, fractional, and out-of-range results return `null`
+without clamping to another item's index or changing the intended scroll
+position. Calls after destruction or with an empty item set return `null`
+without invoking the resolver.
+
+The resolver is supplied per call; no registry or component wiring was added.
+The API returns the same `VirtualizerScrollResult` as `scrollToIndex()` and
+does not read or mutate DOM nodes. `virtualizer.spec.ts` covers key resolution,
+measured Fenwick offsets through the shared index path, missing/invalid/out of
+range results, and destroyed-instance behavior. Existing scroll-to-index and
+virtualization-contract tests continue to run in the focused suite.
+
+### Phase 4.3.2 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer and virtualization contract suites | 34 passed. |
+| `npm run test:unit` | 408 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+No component integration, browser test, or benchmark claim is part of this
+slice.
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored.
