@@ -264,6 +264,78 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
   });
 
+  it('keeps legacy-full as the default active render mode', () => {
+    select.setItems(makeItems());
+
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+    expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+  });
+
+  it('renders only the requested bounded subset when the internal one-render guard is set', () => {
+    select.setItems(makeItems());
+    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 2 };
+
+    (select as any)._renderOptions();
+
+    expect((select as any)._renderPlan.mode).toBe('virtual-window');
+    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['b']);
+    expect(Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'))
+      .map((option) => option.dataset.value)).toEqual(['BAN']);
+    expect((select as any)._nextVirtualRenderWindow).toBeNull();
+  });
+
+  it('preserves selection outside the mounted window and restores selected ARIA when remounted', () => {
+    select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    const selectedBefore = engineSelectedKeys(select);
+    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 3 };
+
+    (select as any)._renderOptions();
+
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeNull();
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b', 'c']);
+
+    (select as any)._nextVirtualRenderWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    expect(engineSelectedKeys(select)).toEqual(['a']);
+    expect(select.shadowRoot!.querySelector('[data-value="APL"]')?.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('clears active descendant while active target is outside the window and restores it when remounted', () => {
+    select.setItems(makeItems());
+    select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
+    const activeKey = engineActiveKey(select);
+    expect(activeKey).not.toBeNull();
+    const activeIndex = (select as any)._itemRegistry.keyToIndex.get(activeKey);
+
+    (select as any)._nextVirtualRenderWindow = {
+      startIndex: activeIndex === 0 ? 1 : 0,
+      endIndex: activeIndex === 0 ? 3 : 1,
+    };
+    (select as any)._renderOptions();
+
+    expect(engineActiveKey(select)).toBe(activeKey);
+    expect((select as any)._engine.state.registeredKeys.has(activeKey)).toBe(true);
+    expect((select as any)._virtualizationScope.mountedKeys).not.toContain(activeKey);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+
+    (select as any)._nextVirtualRenderWindow = {
+      startIndex: activeIndex,
+      endIndex: activeIndex + 1,
+    };
+    (select as any)._renderOptions();
+
+    const activeOption = select.shadowRoot!.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
+    expect(activeOption).toBeTruthy();
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption!.id);
+  });
+
   it('keeps the virtual plan key-to-filtered-index mapping in current filtered order', () => {
     select.updateConfig({ searchable: true });
     const [apple, banana, cherry] = makeItems();
@@ -306,12 +378,15 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   it('keeps grouped rendering on the existing full synchronous path', () => {
     const groupedItems = makeItems();
     select.setItems(groupedItems);
+    (select as any)._nextVirtualRenderWindow = { startIndex: 1, endIndex: 2 };
 
     select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
 
     expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
     expect(select.shadowRoot!.querySelector('[part="group-header"]')?.textContent).toBe('Fruit');
     expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+    expect((select as any)._nextVirtualRenderWindow).toBeNull();
   });
 
   it('eventually renders all filtered options through the current chunked path', async () => {
