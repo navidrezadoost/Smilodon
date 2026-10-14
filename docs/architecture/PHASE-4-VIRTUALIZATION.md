@@ -1185,3 +1185,41 @@ continues to pass.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No public or default virtualization
 behavior changed.
+
+## 32. Phase 4.4.10 Guarded Virtualizer-backed Regression Gate
+
+The guarded Virtualizer-backed path was exercised across repeated window
+updates, scroll-to-key and scroll-to-index intents, current filtered ordering
+after reorder/filter, active and selected remounts, grouped fallback,
+disconnect, and superseded chunk rendering. Tests confirm that window changes
+do not mutate `selectedKeys` or `activeKey`, evicted option keys leave the
+mounted snapshot, and `aria-activedescendant` clears or returns only with the
+corresponding rendered option target. The default `legacy-full` rendering
+path and public `virtualize` configuration behavior remain unchanged. The
+guarded path installs no scroll listener.
+
+The disconnect test exposed one lifecycle gap: controller teardown cleared
+the Virtualizer and window, but the component's mounted-key snapshot retained
+the previous guarded targets. `disconnectedCallback()` now clears that
+snapshot while preserving the engine's selected and active identities. The
+component rebuilds the snapshot from actual targets on a later render.
+
+This remains guarded integration only. There is no production scroll listener
+or DOM scroll mutation, and the controller's fixed estimate is 20 px with no
+buffer. Real viewport sizing, measured-row integration, production scroll
+scheduling, and performance measurement remain future work. No public API,
+NativeSelectElement, Virtualizer API, or default behavior changed.
+
+### Phase 4.4.10 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualization, selection, active, accessibility, and Virtualizer suites | 178 passed. |
+| `npm run test:unit` | 486 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. One lifecycle fix was required: clear the
+mounted-key snapshot on disconnect after destroying the guarded controller.
