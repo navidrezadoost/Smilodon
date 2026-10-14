@@ -27,6 +27,7 @@ import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapt
 import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
 import type { SelectionReason, ActiveReason } from '../engine/selection-policy.js';
 import type { SelectEvent } from '../engine/select-events.js';
+import type { VirtualizationScope } from '../engine/virtualization.js';
 import { computeAccessibilityEffects, deriveAccessibilityState } from '../engine/accessibility.js';
 import { applyAccessibilityEffects } from '../platform/web/accessibility-effects.js';
 import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
@@ -89,6 +90,15 @@ export class EnhancedSelect extends HTMLElement {
   private _liveRegion?: HTMLElement;
   private _state: SelectState;
   private _engine: SelectEngineBridge = new SelectEngineBridge();
+  private _virtualizationScope: VirtualizationScope<SelectKey> = {
+    dataKeys: [],
+    filteredKeys: [],
+    registeredKeys: [],
+    windowKeys: [],
+    mountedKeys: [],
+    selectedKeys: new Set(),
+    activeKey: null,
+  };
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
@@ -5013,6 +5023,60 @@ export class EnhancedSelect extends HTMLElement {
   /**
    * Render options based on current state
    */
+  private _deriveVirtualizationScope(filteredIndices: readonly number[]): VirtualizationScope<SelectKey> {
+    const keyForIndex = (index: number): SelectKey | undefined => this._itemRegistry.indexToKey.get(index);
+    const filteredKeys = filteredIndices
+      .map(keyForIndex)
+      .filter((key): key is SelectKey => key !== undefined);
+    return {
+      dataKeys: this._itemRegistry.records.map((record) => record.key),
+      filteredKeys,
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      // The current chunked path schedules all filtered items for rendering;
+      // this scaffold records that target set until bounded windows are wired.
+      windowKeys: filteredKeys.slice(),
+      mountedKeys: this._getMountedVirtualizationKeys(this._optionsContainer.children),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _getMountedVirtualizationKeys(targets: ArrayLike<Element>): SelectKey[] {
+    const keyForIndex = (index: number): SelectKey | undefined => this._itemRegistry.indexToKey.get(index);
+    return Array.from(targets)
+      .filter((target): target is HTMLElement => target instanceof HTMLElement
+        && (target.hasAttribute('data-sm-selectable') || target.hasAttribute('data-selectable')))
+      .map((target) => Number(target.getAttribute('data-sm-index') ?? target.getAttribute('data-index')))
+      .filter(Number.isInteger)
+      .map(keyForIndex)
+      .filter((key): key is SelectKey => key !== undefined);
+  }
+
+  private _refreshMountedVirtualizationScope(): void {
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: this._getMountedVirtualizationKeys(this._optionsContainer.children),
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _appendMountedVirtualizationTargets(targets: ArrayLike<Element>): void {
+    const mountedKeys = this._getMountedVirtualizationKeys(targets);
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: [...new Set([...this._virtualizationScope.mountedKeys, ...mountedKeys])],
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _refreshVirtualizationScope(filteredIndices: readonly number[]): void {
+    this._virtualizationScope = this._deriveVirtualizationScope(filteredIndices);
+  }
+
   private _renderOptions(): void {
     this._ensureRegistryCurrent();
     this._renderCycleId += 1;
@@ -5025,6 +5089,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Clear options container
     this._optionsContainer.innerHTML = '';
+    let filteredIndicesForScope: number[] = [];
     
     // Ensure dropdown only contains options container (cleanup legacy direct children)
     // We need to preserve optionsContainer, so we can't just clear dropdown.innerHTML
@@ -5043,6 +5108,7 @@ export class EnhancedSelect extends HTMLElement {
     // Show searching state (exclusive state)
     if (this._state.isSearching) {
       this._registerShadowItems([]);
+      this._refreshVirtualizationScope(filteredIndicesForScope);
       this._syncLegacyActiveAria();
       const searching = document.createElement('div');
       searching.className = 'searching-state';
@@ -5060,7 +5126,9 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      this._registerShadowItems(this._itemRegistry.records.map((record) => record.index));
+      filteredIndicesForScope = this._itemRegistry.records.map((record) => record.index);
+      this._registerShadowItems(filteredIndicesForScope);
+      this._refreshVirtualizationScope(filteredIndicesForScope);
       this._state.groupedItems.forEach((group, groupIndex) => {
         let header: HTMLElement;
         if (this.groupHeaderRenderer) {
@@ -5111,7 +5179,9 @@ export class EnhancedSelect extends HTMLElement {
 
         filteredIndices.push(index);
       });
+      filteredIndicesForScope = filteredIndices;
       this._registerShadowItems(filteredIndices);
+      this._refreshVirtualizationScope(filteredIndicesForScope);
 
       if (filteredIndices.length === 0 && !this._state.isBusy) {
         const empty = document.createElement('div');
@@ -5156,7 +5226,9 @@ export class EnhancedSelect extends HTMLElement {
               this._renderSingleOption(item, itemIndex, getValue, getLabel, fragment);
             }
 
+            const renderedTargets = Array.from(fragment.children);
             this._optionsContainer.appendChild(fragment);
+            this._appendMountedVirtualizationTargets(renderedTargets);
             this._syncRenderedOptionAccessibility();
             this._syncLegacyActiveAria();
 
@@ -5184,6 +5256,7 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
     
+    this._refreshMountedVirtualizationScope();
     // Append Busy Indicator if busy
     if (this._state.isBusy && this._config.busyBucket.enabled) {
       const busyBucket = document.createElement('div');
