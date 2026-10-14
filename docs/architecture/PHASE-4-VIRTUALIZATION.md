@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization committed as fb1390c; Phase 4.4.7 guarded active/selected materialization integration implemented and verified locally. Legacy-full remains the default.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization committed as fb1390c; Phase 4.4.7 guarded active/selected materialization integration committed as f1ab7b2; Phase 4.4.8 guarded virtualization stability gate passed and documented locally. Legacy-full remains the default.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1097,3 +1097,41 @@ filter invalidation under the guard, default rendering, and grouped fallback.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. Guarded active and selected materialization
 remains private, with no default or public virtualization behavior change.
+
+## 30. Phase 4.4.8 Guarded Virtualization Stability Gate
+
+The guarded path was exercised across repeated active and selected
+materialization, filter changes, filter clearing, reorder, rendering lifecycle,
+custom renderers, and grouped fallback. The tests confirm that moving the
+window does not remove selected keys, that active identity follows its stable
+key through reorder, and that filtered active keys are cleared by the existing
+filter reconciliation. Materialized options use the current key-to-index map.
+
+Sequential materializations replace the mounted-key snapshot with the current
+window's actual targets. Active-descendant synchronization removes a reference
+when its option is evicted and restores it only after that option is mounted
+again. A chunked render superseded by a newer guarded window does not append
+old option nodes, IDs, or mounted keys. The grouped path clears guarded state
+and continues to render all group options. The default path remains
+`legacy-full` and renders every filtered option.
+
+The 4.4.8 work adds regression tests and this record; the tests did not reveal
+a runtime bug requiring a component change. No public API, `virtualize`
+default, grouped behavior, NativeSelectElement behavior, Virtualizer API, or
+benchmark claim changed. The remaining scope is that guarded windows are still
+private test/integration state; production window sizing and scroll-driven
+updates have not been connected.
+
+### Phase 4.4.8 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 100 passed. |
+| `npm run test:unit` | 468 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. The expanded integration spec now has 34
+tests. No runtime fix was required.
