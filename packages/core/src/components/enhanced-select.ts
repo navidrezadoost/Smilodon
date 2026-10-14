@@ -3947,7 +3947,11 @@ export class EnhancedSelect extends HTMLElement {
   private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {
     this._ensureRegistryCurrent();
     const record = this._getRecordByIndex(index);
-    const option = this._getOptionElementByIndex(index);
+    let option = this._getOptionElementByIndex(index);
+    if (!option && record && this._guardedVirtualWindow) {
+      this._materializeGuardedVirtualKey(record.key);
+      option = this._getOptionElementByIndex(index);
+    }
     if (!record || record.disabled || !option || option.getAttribute('aria-disabled') === 'true') {
       return;
     }
@@ -4377,7 +4381,14 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     // Find and scroll to the target option
-  const option = this._getOptionElementByIndex(targetIndex);
+    let option = this._getOptionElementByIndex(targetIndex);
+    if (!option && this._guardedVirtualWindow) {
+      const targetKey = this._itemRegistry.indexToKey.get(targetIndex);
+      if (targetKey !== undefined) {
+        this._materializeGuardedVirtualKey(targetKey);
+        option = this._getOptionElementByIndex(targetIndex);
+      }
+    }
     
     if (option) {
       // Use smooth scrolling with center alignment for better UX
