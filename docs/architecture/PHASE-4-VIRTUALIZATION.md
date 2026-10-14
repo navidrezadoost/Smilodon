@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold implemented and verified locally. Bounded rendering has not started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation implemented and verified locally. The active render plan remains legacy-full; bounded rendering has not started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -938,3 +938,40 @@ keys. Existing active/ARIA guard tests continue to pass.
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No render behavior changed.
+
+## 26. Phase 4.4.4 Virtual Render Plan Calculation
+
+`EnhancedSelect._createVirtualRenderPlan(startIndex, endIndex)` computes a
+private bounded plan from the current filtered key order. The helper selects
+the requested window keys with the pure virtualization selector, resolves
+their current loaded-item indexes through the stable key registry, and copies
+the current key-to-filtered-index mapping. It returns a `virtual-window` plan
+without assigning it to `_renderPlan`.
+
+The active plan remains `legacy-full`; `_renderOptions()` continues to consume
+that plan and its existing chunked rendering path. The helper does not create
+or connect a `Virtualizer`, install a scroll listener, mutate scroll position,
+or alter selection, active identity, ARIA, or grouped rendering. No public API
+was added.
+
+`enhanced-select-virtualization-integration.spec.ts` verifies bounded key
+selection, current filtered-order key/index mapping after reorder and filter,
+and that the active plan stays `legacy-full`. It also verifies that virtual
+plan calculation leaves selected keys, active key, and
+`aria-activedescendant` unchanged. The existing chunked-render test continues
+to verify that all filtered options eventually mount and that legacy intended
+keys equal the filtered keys.
+
+### Phase 4.4.4 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 86 passed. |
+| `npm run test:unit` | 454 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. The virtual plan remains unused by the
+renderer, so bounded rendering and component behavior are unchanged.

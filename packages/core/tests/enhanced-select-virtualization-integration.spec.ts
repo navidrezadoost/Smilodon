@@ -250,6 +250,59 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(engineSelectedKeys(select)).toEqual(selectedBefore);
   });
 
+  it('computes a bounded virtual plan without activating it for rendering', () => {
+    select.setItems(makeItems());
+    const activePlanBefore = (select as any)._renderPlan;
+
+    const virtualPlan = (select as any)._createVirtualRenderPlan(1, 3);
+
+    expect(virtualPlan.mode).toBe('virtual-window');
+    expect(virtualPlan.intendedRenderKeys).toEqual(['b', 'c']);
+    expect(virtualPlan.filteredIndices).toEqual([1, 2]);
+    expect((select as any)._renderPlan).toBe(activePlanBefore);
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps the virtual plan key-to-filtered-index mapping in current filtered order', () => {
+    select.updateConfig({ searchable: true });
+    const [apple, banana, cherry] = makeItems();
+    select.setItems([cherry, apple, banana]);
+    filterTo(select, 'a');
+    const activePlan = (select as any)._renderPlan;
+
+    const virtualPlan = (select as any)._createVirtualRenderPlan(0, 2);
+
+    expect(virtualPlan.filteredKeys).toEqual(['a', 'b']);
+    expect(virtualPlan.intendedRenderKeys).toEqual(['a', 'b']);
+    expect(virtualPlan.filteredIndices).toEqual([1, 2]);
+    expect(virtualPlan.filteredIndexByKey.get('a')).toBe(0);
+    expect(virtualPlan.filteredIndexByKey.get('b')).toBe(1);
+    expect((select as any)._renderPlan).toBe(activePlan);
+    expect(activePlan.mode).toBe('legacy-full');
+    expect(activePlan.intendedRenderKeys).toEqual(['a', 'b']);
+  });
+
+  it('does not mutate selection, active identity, or ARIA while calculating a virtual plan', () => {
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
+    const selectedBefore = engineSelectedKeys(select);
+    const activeBefore = engineActiveKey(select);
+    const activeDescendantBefore = getInput(select).getAttribute('aria-activedescendant');
+
+    const virtualPlan = (select as any)._createVirtualRenderPlan(1, 3);
+
+    expect(virtualPlan.intendedRenderKeys).toEqual(['b', 'c']);
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(engineActiveKey(select)).toBe(activeBefore);
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeDescendantBefore);
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+  });
+
   it('keeps grouped rendering on the existing full synchronous path', () => {
     const groupedItems = makeItems();
     select.setItems(groupedItems);

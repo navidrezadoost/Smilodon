@@ -27,7 +27,7 @@ import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapt
 import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
 import type { SelectionReason, ActiveReason } from '../engine/selection-policy.js';
 import type { SelectEvent } from '../engine/select-events.js';
-import type { VirtualizationScope } from '../engine/virtualization.js';
+import { computeWindowKeys, type VirtualizationScope } from '../engine/virtualization.js';
 import { computeAccessibilityEffects, deriveAccessibilityState } from '../engine/accessibility.js';
 import { applyAccessibilityEffects } from '../platform/web/accessibility-effects.js';
 import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
@@ -68,7 +68,7 @@ interface LegacySelectedEntry {
 }
 
 interface EnhancedSelectRenderPlan {
-  mode: 'legacy-full';
+  mode: 'legacy-full' | 'virtual-window';
   filteredIndices: number[];
   filteredKeys: SelectKey[];
   intendedRenderKeys: SelectKey[];
@@ -5102,6 +5102,22 @@ export class EnhancedSelect extends HTMLElement {
       filteredKeys,
       intendedRenderKeys: filteredKeys.slice(),
       filteredIndexByKey,
+    };
+  }
+
+  private _createVirtualRenderPlan(startIndex: number, endIndex: number): EnhancedSelectRenderPlan {
+    const filteredKeys = this._renderPlan.filteredKeys.slice();
+    const intendedRenderKeys = computeWindowKeys(filteredKeys, startIndex, endIndex);
+    const filteredIndices = intendedRenderKeys
+      .map((key) => this._itemRegistry.keyToIndex.get(key))
+      .filter((index): index is number => index !== undefined);
+
+    return {
+      mode: 'virtual-window',
+      filteredIndices,
+      filteredKeys,
+      intendedRenderKeys,
+      filteredIndexByKey: new Map(this._renderPlan.filteredIndexByKey),
     };
   }
 
