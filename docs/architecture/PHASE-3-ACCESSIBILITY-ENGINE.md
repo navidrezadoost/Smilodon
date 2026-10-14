@@ -1,6 +1,6 @@
 # Phase 3 — Accessibility Engine
 
-Status: **Phase 3.0–3.4.5 closed; Phase 3.4.6 cleanup and final accessibility regression complete.**
+Status: **Phase 3.0–3.5 closed; final accessibility regression passed in Chromium and Firefox. WebKit could not launch because host libraries are missing.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.
 
@@ -622,3 +622,28 @@ assertions continue to run in the same suites.
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 that generated file was restored and is not part of this slice.
+
+## 22. Phase 3.5 Final Accessibility Regression Gate
+
+The final regression reran the accessibility contract, engine, web applier, and
+component integration suites, followed by the full unit, lint, build, and
+framework contract gates. The required Chromium focus E2E passed, and the
+cross-browser run also passed in Firefox. No accessibility behavior or API
+changes were needed.
+
+### Phase 3.5 Verification (2026-10-14)
+
+| Check | Result |
+| --- | --- |
+| Focused accessibility contract, engine, web applier, and component integration suites | 72 passed. |
+| `npm run test:unit` | 379 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| `git diff --check` | Passed. |
+| Chromium focus E2E | Four passed. |
+| Cross-browser focus E2E | Chromium four passed; Firefox four passed. WebKit did not launch: host dependencies are missing (`libicu74`, `libxml2`, and `libjpeg-turbo8`). |
+
+The WebKit result is an environment launch failure, not a test assertion
+failure. The build regenerated the embedded React Native Core bundle; it was
+restored after verification.
