@@ -24,7 +24,9 @@ export class Virtualizer {
   private container: HTMLElement;
   private itemsLength: number;
   private options: VirtualizerOptions;
+  private readonly estimatedItemHeight: number;
   measuredHeights = new Map<number, number>();
+  private measuredHeightTotal = 0;
   averageHeight: number;
   private pool: DOMPool;
   private itemGetter: ItemGetter;
@@ -39,6 +41,7 @@ export class Virtualizer {
     this.itemsLength = itemsLength;
     this.itemGetter = itemGetter;
     this.options = options;
+    this.estimatedItemHeight = options.estimatedItemHeight;
     this.averageHeight = options.estimatedItemHeight;
     
     // Initialize DOM pool with LRU eviction
@@ -63,11 +66,7 @@ export class Virtualizer {
 
     // Use Fenwick tree for large lists (>5000 items)
     if (itemsLength > 5000) {
-      this.fenwick = new FenwickTree(itemsLength);
-      // Initialize with estimated heights
-      for (let i = 0; i < itemsLength; i++) {
-        this.fenwick.add(i, options.estimatedItemHeight);
-      }
+      this.fenwick = this.createFenwickTree(itemsLength);
     }
     
     this.container.style.willChange = 'transform';
@@ -247,18 +246,16 @@ export class Virtualizer {
     const threshold = this.options.measurementThreshold ?? 5;
     
     if (prev === undefined || Math.abs(prev - h) > threshold) {
-      const oldValue = prev ?? this.averageHeight;
+      const oldValue = prev ?? this.estimatedItemHeight;
       this.measuredHeights.set(index, h);
+      this.measuredHeightTotal += h - (prev ?? 0);
       
       // Update Fenwick tree with new measurement
       if (this.fenwick) {
         this.fenwick.update(index, oldValue, h);
       }
       
-      // Update running average (weighted by measured count)
-      const count = this.measuredHeights.size;
-      const total = Array.from(this.measuredHeights.values()).reduce((a, b) => a + b, 0);
-      this.averageHeight = Math.round((total / count) * 100) / 100;
+      this.updateAverageHeight();
     }
   }
 
@@ -273,13 +270,19 @@ export class Virtualizer {
    * Update items length and resize Fenwick tree if needed
    */
   setItemsLength(newLength: number): void {
+    const previousLength = this.itemsLength;
     this.itemsLength = newLength;
 
-    for (const index of Array.from(this.measuredHeights.keys())) {
+    let removedMeasurement = false;
+    for (const [index, height] of this.measuredHeights) {
       if (index >= newLength) {
+        this.measuredHeightTotal -= height;
         this.measuredHeights.delete(index);
+        removedMeasurement = true;
       }
     }
+
+    if (removedMeasurement) this.updateAverageHeight();
 
     for (const index of Array.from(this.activeNodes.keys())) {
       if (index >= newLength) {
@@ -287,16 +290,10 @@ export class Virtualizer {
       }
     }
     
-    if (this.fenwick) {
-      this.fenwick.resize(newLength);
-    } else if (newLength > 5000 && !this.fenwick) {
-      // Activate Fenwick tree when crossing threshold
-      this.fenwick = new FenwickTree(newLength);
-      
-      // Populate with existing measurements
-      for (const [index, height] of this.measuredHeights) {
-        this.fenwick.update(index, this.averageHeight, height);
-      }
+    if (this.fenwick && newLength !== previousLength) {
+      this.fenwick = this.createFenwickTree(newLength);
+    } else if (!this.fenwick && newLength > 5000) {
+      this.fenwick = this.createFenwickTree(newLength);
     }
   }
 
@@ -312,8 +309,30 @@ export class Virtualizer {
     this.pool.clear();
     this.activeNodes.clear();
     this.measuredHeights.clear();
+    this.measuredHeightTotal = 0;
+    this.averageHeight = this.estimatedItemHeight;
     if (this.fenwick) {
       this.fenwick.reset();
     }
+  }
+
+  private updateAverageHeight(): void {
+    const count = this.measuredHeights.size;
+    this.averageHeight = count > 0
+      ? Math.round((this.measuredHeightTotal / count) * 100) / 100
+      : this.estimatedItemHeight;
+  }
+
+  private createFenwickTree(size: number): FenwickTree {
+    const tree = new FenwickTree(size);
+    for (let index = 0; index < size; index++) {
+      tree.add(index, this.estimatedItemHeight);
+    }
+    for (const [index, height] of this.measuredHeights) {
+      if (index < size) {
+        tree.update(index, this.estimatedItemHeight, height);
+      }
+    }
+    return tree;
   }
 }

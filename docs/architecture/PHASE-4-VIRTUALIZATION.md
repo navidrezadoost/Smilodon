@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.2 closed; Phase 4.3.3 variable-height window lookup implemented and verified locally. No component integration has started.**
+Status: **Phase 4.0–4.3.3 closed; Phase 4.3.4 measurement lifecycle implemented and verified locally. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -587,6 +587,42 @@ scroll mutation, ARIA behavior, or performance claim was added.
 | --- | --- |
 | Focused virtualizer and virtualization contract suites | 40 passed. |
 | `npm run test:unit` | 414 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No browser tests or benchmarks were run.
+
+## 19. Phase 4.3.4 Measurement Lifecycle
+
+`Virtualizer` now tracks the total of measured heights incrementally. A first
+measurement adds its height; an accepted remeasurement replaces the prior
+contribution; and changes at or below `measurementThreshold` leave the
+aggregate unchanged. `averageHeight` is recalculated from the running total
+and measured count without materializing the map or reducing all entries. If
+all measurements are removed, it returns to the original estimated height.
+
+Fenwick updates use the original estimated item height as the baseline for
+each previously unmeasured item, independent of the changing measured average.
+When the item count changes, stale measurements are removed from both the map
+and aggregate, and an existing Fenwick tree is rebuilt from estimated heights
+plus the retained measurements. This avoids carrying prefix sums with an
+invalid tree shape across resize. `destroy()` clears the measurements and
+aggregate and resets the displayed average to its initial estimate.
+
+`virtualizer.spec.ts` covers average updates, threshold behavior, resize
+cleanup, destroy cleanup, Fenwick correctness across first measurements and
+remeasurement, and Fenwick rebuild after item-count changes. Existing
+`computeWindow`, `scrollToIndex`, and `scrollToKey` cases remain in the suite.
+No component, scroll, ARIA, or public behavior integration changed.
+
+### Phase 4.3.4 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer and virtualization contract suites | 47 passed. |
+| `npm run test:unit` | 421 passed, one skipped. |
 | `npm run lint` | Passed with zero errors and six existing warnings. |
 | `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
 | `git diff --check` | Passed. |
