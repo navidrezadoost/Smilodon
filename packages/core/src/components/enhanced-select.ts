@@ -114,6 +114,9 @@ export class EnhancedSelect extends HTMLElement {
     intendedRenderKeys: [],
     filteredIndexByKey: new Map(),
   };
+  // One-render internal override used to exercise bounded rendering before
+  // the production virtualizer integration is enabled.
+  private _nextVirtualRenderWindow: { startIndex: number; endIndex: number } | null = null;
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
@@ -5129,6 +5132,8 @@ export class EnhancedSelect extends HTMLElement {
     this._ensureRegistryCurrent();
     this._renderCycleId += 1;
     const renderCycleId = this._renderCycleId;
+    const requestedVirtualWindow = this._nextVirtualRenderWindow;
+    this._nextVirtualRenderWindow = null;
     
     // Cleanup observer
     if (this._loadMoreTrigger && this._intersectionObserver) {
@@ -5230,9 +5235,15 @@ export class EnhancedSelect extends HTMLElement {
         computedFilteredIndices.push(index);
       });
       this._renderPlan = this._createLegacyRenderPlan(computedFilteredIndices);
+      filteredIndicesForScope = this._renderPlan.filteredIndices;
+      this._registerShadowItems(filteredIndicesForScope);
+      if (requestedVirtualWindow) {
+        this._renderPlan = this._createVirtualRenderPlan(
+          requestedVirtualWindow.startIndex,
+          requestedVirtualWindow.endIndex,
+        );
+      }
       const filteredIndices = this._renderPlan.filteredIndices;
-      filteredIndicesForScope = filteredIndices;
-      this._registerShadowItems(filteredIndices);
       this._refreshVirtualizationScope(filteredIndicesForScope);
 
       if (filteredIndices.length === 0 && !this._state.isBusy) {

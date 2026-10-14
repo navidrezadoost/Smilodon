@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation implemented and verified locally. The active render plan remains legacy-full; bounded rendering has not started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application implemented and verified locally. Legacy-full remains the default; the guard is private and one-render only.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -975,3 +975,42 @@ keys equal the filtered keys.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. The virtual plan remains unused by the
 renderer, so bounded rendering and component behavior are unchanged.
+
+## 27. Phase 4.4.5 Guarded Virtual Plan Application
+
+`EnhancedSelect` now has a private one-render window override for the flat-list
+path. With no override, rendering continues to create and apply the
+`legacy-full` plan. A test-controlled override computes and applies a
+`virtual-window` plan for one render, then clears itself. The public
+`virtualize` configuration keeps its existing meaning and does not activate
+this guard. The grouped branch discards a pending override and retains its
+full synchronous rendering behavior.
+
+When the guarded window is applied, engine registration still receives every
+filtered index before the plan is narrowed. The render plan and virtualization
+scope then describe the window and the actual mounted option targets, while
+the engine retains its full filtered candidate set, selected keys, and valid
+active key. The existing accessibility synchronization removes
+`aria-activedescendant` if the active option is outside the mounted window and
+restores it when the target is rendered again. No Virtualizer, scroll listener,
+DOM scroll mutation, public API, or default behavior change was introduced.
+
+`enhanced-select-virtualization-integration.spec.ts` verifies the default
+legacy plan, guarded subset rendering, selection persistence and selected ARIA
+after remount, active-key and active-descendant behavior across window
+eviction/remount, and unchanged grouped rendering.
+
+### Phase 4.4.5 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 90 passed. |
+| `npm run test:unit` | 458 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. The private guarded path is exercised by
+unit integration tests; the default render mode and public configuration
+remain unchanged.
