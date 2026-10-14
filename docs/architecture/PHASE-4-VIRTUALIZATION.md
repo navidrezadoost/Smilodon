@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0 baseline audit documented; no virtualization implementation changes made.**
+Status: **Phase 4.0 audit committed; Phase 4.1 virtualization contract documented for review. No implementation has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -333,3 +333,113 @@ recorded. `EnhancedSelect` currently has no corresponding bounded-DOM guarantee.
 | `git diff --check` | Passed. |
 
 No runtime source, configuration, or test files were changed for this audit.
+
+## 15. Phase 4.1 Virtualization Contract
+
+This section defines the proposed ownership and identity contract before any
+virtualizer or component implementation changes. It is documentation only; it
+does not add engine types, selectors, effects, or runtime behavior.
+
+### Identity and Rendering Scopes
+
+| Scope | Contract meaning | Owner / relationship |
+| --- | --- | --- |
+| `DataKeys` | Stable, unique keys for the current loaded data generation, in source order. | Item adapter and data registry derive keys from records; duplicate source keys follow the registry duplicate-key policy. Reordering changes key-to-index mappings, not key identity. |
+| `FilteredKeys` | Ordered keys remaining after the current query/filter. | Filtering layer; subset of `DataKeys` for the current loaded local dataset. |
+| `RegisteredKeys` | Keys the engine recognizes as valid candidates for current interaction and active identity. | Engine state; not a DOM inventory. It must not be overwritten with the current viewport or mounted-target set. Disabled eligibility remains a separate policy input. |
+| `WindowKeys` | Ordered filtered keys selected for the current viewport plus overscan. | Virtualizer/window calculation. Subset of `FilteredKeys`. |
+| `MountedKeys` | Keys whose option targets currently exist in the rendered DOM and can be resolved to IDs. | Component/web adapter observation. Subset of `WindowKeys`; asynchronous rendering may make it temporarily smaller. |
+| `SelectedKeys` | Authoritative selected identities. | Engine state, independent of `WindowKeys` and `MountedKeys`; viewport eviction and filtering must not clear selection. Required, disabled, or explicit data-replacement policy may still reconcile it. |
+| `ActiveKey` | Authoritative logical active identity. | Engine state. If still valid in the filtered/registered candidate set, it may remain active while outside the current window or unmounted. If filtering invalidates it, the filter/engine policy may clear or replace it. |
+
+For the currently loaded local dataset, the subset relationships are:
+
+```text
+FilteredKeys ⊆ DataKeys
+RegisteredKeys ⊆ FilteredKeys
+WindowKeys ⊆ FilteredKeys
+MountedKeys ⊆ WindowKeys
+```
+
+`RegisteredKeys` and `MountedKeys` are deliberately distinct. Engine
+registration communicates logical key validity; DOM mounting communicates
+whether an adapter can resolve an option target. Neither `ActiveKey` nor
+`SelectedKeys` is represented by an index as its identity.
+
+### Active, Selected, and ARIA Rules
+
+- Viewport/window eviction must not dispatch a selection clear or remove a key
+  from `SelectedKeys`. A selected option receives selected-state projection
+  again when it remounts.
+- Window eviction alone must not invalidate a still-filtered, enabled
+  `ActiveKey`. Active styling and DOM references may be absent while its target
+  is unmounted.
+- The adapter sets `aria-activedescendant` only when `ActiveKey` resolves to a
+  currently mounted option target with a non-empty ID. Otherwise it removes
+  the attribute while preserving a valid engine `ActiveKey`.
+- On active-key navigation, the system requests that the key be brought into
+  the render window. The option must mount and receive its stable ID before
+  `aria-activedescendant` points to it.
+- Filtering may change the active candidate set. If the active key is no
+  longer in `FilteredKeys` / `RegisteredKeys`, a documented engine policy must
+  clear it or choose a valid replacement. That is separate from window
+  eviction.
+
+### Scrolling and Measurement Intent
+
+Scroll requests use semantic identity (`key`) where available, with an index
+request allowed only for an explicitly scoped data generation. The request
+contains no DOM node. The component/virtualizer resolves a key to the current
+index, updates the window, and reports completion only after the target can be
+rendered. The engine does not call DOM APIs or calculate pixel offsets.
+
+The virtualizer owns viewport/window and overscan calculations, item
+measurement, offset lookup, and scroll positioning. Measurements should be
+associated with stable item identity, or invalidated when content changes under
+that identity; index-only measurements must be reconciled on reorder. The
+contract must define how estimated heights are updated, how variable-height
+measurements affect the current window, and how scroll-to-selected composes
+with active navigation before implementation begins.
+
+### Reorder and Renderer Rules
+
+- Reorder preserves active and selected keys when those keys remain valid.
+  Current indexes are looked up again from the registry; an old index is never
+  treated as identity.
+- Replacing an item with the same stable key retains identity, while its label,
+  value, disabled state, group, and measurement may be refreshed from the new
+  record.
+- Renderers receive the current key and index context for each mount. Recycled
+  elements must have old IDs, ARIA state, event state, content, and index-derived
+  attributes refreshed before becoming a target for a different key.
+- Grouped and custom component renderers must either use the same bounded
+  window contract or explicitly document a supported fallback and its memory
+  limits.
+
+### Contract Decisions Deferred to Implementation Design
+
+This contract leaves the following policy choices for a reviewed 4.2 design:
+
+- Whether a scroll request for a filtered-out or not-yet-loaded key is rejected,
+  retained as pending, or resolved by an external data-loading contract.
+- Whether an item replacement with the same key invalidates its measured
+  height automatically or uses an explicit content-version input.
+- The initial active-key policy when a popup opens and the policy when a filter
+  removes the active key.
+- Exact overscan, measurement batching, scroll anchoring, and browser-specific
+  performance targets.
+
+These choices must not collapse the data, filtered, registered, window, and
+mounted scopes into one collection.
+
+### Phase 4.1 Documentation Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+No engine contract module or test file was added because this stage defines the
+contract in documentation only. No runtime source, configuration, or test file
+was changed.
