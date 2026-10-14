@@ -2,12 +2,60 @@ import { describe, it, expect, vi } from 'vitest';
 import { Virtualizer } from '../src/utils/virtualizer';
 
 describe('Virtualizer', () => {
-  it('computes window based on average height', () => {
+  it('preserves average-height window calculation without Fenwick', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 1000, (i) => i, { estimatedItemHeight: 50, buffer: 2 });
-    const { startIndex, endIndex } = v.computeWindow(250, 500);
-    expect(startIndex).toBeGreaterThanOrEqual(3); // 250/50 - 2
-    expect(endIndex).toBeGreaterThan(startIndex);
+    expect(v.computeWindow(250, 500)).toEqual({ startIndex: 3, endIndex: 17, windowSize: 15 });
+  });
+
+  it('uses Fenwick lowerBound for large variable-height windows', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 0 });
+    const shortFirstItem = document.createElement('div');
+    Object.defineProperty(shortFirstItem, 'offsetHeight', { configurable: true, value: 10 });
+    v.measureOnAppear(shortFirstItem, 0);
+
+    expect(v.computeWindow(80, 10)).toEqual({ startIndex: 2, endIndex: 2, windowSize: 1 });
+  });
+
+  it('clamps a buffered start index to zero', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 5 });
+
+    expect(v.computeWindow(0, 80).startIndex).toBe(0);
+  });
+
+  it('clamps both bounds for a negative scroll position', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 40, buffer: 0 });
+
+    expect(v.computeWindow(-100, 10)).toEqual({ startIndex: 0, endIndex: 0, windowSize: 1 });
+  });
+
+  it('clamps start and end indexes at the last item for beyond-list scroll positions', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+
+    expect(v.computeWindow(10000, 1000)).toEqual({ startIndex: 9, endIndex: 9, windowSize: 1 });
+  });
+
+  it('keeps the window size consistent with the inclusive bounds', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 1 });
+    const result = v.computeWindow(200, 80);
+
+    expect(result).toEqual({ startIndex: 4, endIndex: 7, windowSize: 4 });
+    expect(result.windowSize).toBe(result.endIndex - result.startIndex + 1);
+  });
+
+  it('shifts the computed window start when earlier measured heights change offsets', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 0 });
+    const shortFirstItem = document.createElement('div');
+    Object.defineProperty(shortFirstItem, 'offsetHeight', { configurable: true, value: 10 });
+    v.measureOnAppear(shortFirstItem, 0);
+
+    expect(v.computeWindow(80, 10).startIndex).toBe(2);
   });
 
   it('updates cumulative offset with measurements', () => {

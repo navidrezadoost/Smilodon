@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.1 closed; Phase 4.3.2 scroll-to-key resolver implemented and verified locally. No component integration has started.**
+Status: **Phase 4.0–4.3.2 closed; Phase 4.3.3 variable-height window lookup implemented and verified locally. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -564,3 +564,32 @@ slice.
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored.
+
+## 18. Phase 4.3.3 Variable-height Window Lookup
+
+`Virtualizer.computeWindow()` keeps its average-height calculation when no
+Fenwick tree is active. For Fenwick-backed lists, it uses prefix-sum
+`lowerBound()` lookup for the viewport start and end. The start lookup advances
+past an exact item boundary so the first visible index is correct; the end
+lookup preserves an inclusive end index. Buffer is then applied, and both
+bounds are clamped to the available item range. Empty lists retain a zero-size
+window, and `windowSize` remains derived from inclusive bounds.
+
+The return shape and `computeWindow()` call sites are unchanged. Tests cover
+the average-height path, measured-height shifts, Fenwick lookup, lower and
+upper clamping, window-size consistency, and existing `scrollToIndex` and
+`scrollToKey` offset behavior. No component integration, scroll listener, DOM
+scroll mutation, ARIA behavior, or performance claim was added.
+
+### Phase 4.3.3 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer and virtualization contract suites | 40 passed. |
+| `npm run test:unit` | 414 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No browser tests or benchmarks were run.
