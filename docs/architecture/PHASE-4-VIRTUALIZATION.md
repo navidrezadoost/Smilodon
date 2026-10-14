@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guard tests implemented and verified locally. No component integration has started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold implemented and verified locally. Bounded rendering has not started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -850,6 +850,49 @@ Phase 4.4 runtime integration has not started.
 | --- | --- |
 | Focused guard, selection parity, active parity, and accessibility integration suites | 73 passed. |
 | `npm run test:unit` | 441 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No runtime behavior changed.
+
+## 24. Phase 4.4.2 EnhancedSelect Virtualization State Scaffold
+
+`EnhancedSelect` now derives a private `VirtualizationScope<SelectKey>` from
+the existing item registry, engine state, filtered indexes, and option targets
+in the options container. `DataKeys` comes from all item registry records;
+`FilteredKeys` comes from the current filtered indexes; and `RegisteredKeys`
+comes from the engine's logical candidate set. `MountedKeys` is collected from
+actual selectable option hosts and their current indexes after rendering.
+
+There is no viewport virtualizer connected to `EnhancedSelect` yet. To reflect
+the existing chunked full-list behavior, the scaffold currently sets
+`WindowKeys` to the complete filtered target set. During a chunked render,
+`MountedKeys` records the currently attached subset and refreshes after each
+chunk; it becomes the full set when chunk rendering completes. This makes the
+logical, intended-render, and mounted scopes observable internally without
+changing which options are rendered or when.
+
+The scope snapshot copies selected keys and reads active identity without
+dispatching engine events or changing ARIA. It is refreshed for filtered,
+grouped, searching, synchronous, and chunked render paths. No `Virtualizer`
+import, scroll listener, DOM scroll write, public accessor, or root export was
+added.
+
+`enhanced-select-virtualization-integration.spec.ts` now covers all loaded
+`DataKeys`, search-derived `FilteredKeys`, logical `RegisteredKeys` distinct
+from mounted targets, actual `MountedKeys`, selection/active/ARIA non-mutation
+when deriving scope, and the existing all-filtered-options chunk rendering
+behavior. The prior selection, active invalidation, option ARIA, and custom
+renderer guards remain in the same focused suite set.
+
+### Phase 4.4.2 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 78 passed. |
+| `npm run test:unit` | 446 passed, one skipped. |
 | `npm run lint` | Passed with zero errors and six existing warnings. |
 | `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
 | `git diff --check` | Passed. |

@@ -147,6 +147,67 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
   });
 
+  it('derives DataKeys from every loaded item', () => {
+    select.setItems(makeItems());
+
+    expect((select as any)._virtualizationScope.dataKeys).toEqual(['a', 'b', 'c']);
+  });
+
+  it('derives filtered and registered keys from the current logical search result', () => {
+    select.updateConfig({ searchable: true });
+    select.setItems(makeItems());
+    filterTo(select, 'Banana');
+
+    const scope = (select as any)._virtualizationScope;
+    expect(scope.filteredKeys).toEqual(['b']);
+    expect(scope.registeredKeys).toEqual(['b']);
+  });
+
+  it('keeps RegisteredKeys logical while chunked rendering has only mounted part of the target set', () => {
+    const items = Array.from({ length: 360 }, (_, index) => ({
+      id: `item-${index}`,
+      value: `value-${index}`,
+      label: `Option ${index}`,
+    }));
+    select.setItems(items);
+
+    const scope = (select as any)._virtualizationScope;
+    expect(scope.registeredKeys).toHaveLength(items.length);
+    expect(scope.windowKeys).toHaveLength(items.length);
+    expect(scope.mountedKeys.length).toBeGreaterThan(0);
+    expect(scope.mountedKeys.length).toBeLessThan(items.length);
+  });
+
+  it('derives MountedKeys from actual option targets in the options container', () => {
+    select.setItems(makeItems());
+    const options = Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'));
+    const keys = (select as any)._virtualizationScope.mountedKeys;
+    expect(keys).toEqual(['a', 'b', 'c']);
+
+    options[1].remove();
+    (select as any)._refreshVirtualizationScope([0, 1, 2]);
+
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a', 'c']);
+  });
+
+  it('does not change selected, active, or ARIA state when deriving the scope', () => {
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
+    const selectedBefore = engineSelectedKeys(select);
+    const activeBefore = engineActiveKey(select);
+    const activeDescendantBefore = getInput(select).getAttribute('aria-activedescendant');
+
+    (select as any)._deriveVirtualizationScope([0, 1, 2]);
+
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(engineActiveKey(select)).toBe(activeBefore);
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeDescendantBefore);
+  });
+
   it('eventually renders all filtered options through the current chunked path', async () => {
     const items = Array.from({ length: 360 }, (_, index) => ({
       id: `item-${index}`,
