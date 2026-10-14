@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0 audit committed; Phase 4.1 virtualization contract documented for review. No implementation has started.**
+Status: **Phase 4.0 and 4.1 closed; Phase 4.2 pure window and identity contract implemented and verified locally. No component or virtualizer integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -418,7 +418,7 @@ with active navigation before implementation begins.
 
 ### Contract Decisions Deferred to Implementation Design
 
-This contract leaves the following policy choices for a reviewed 4.2 design:
+The following policy choices remain deferred to later window/virtualizer design:
 
 - Whether a scroll request for a filtered-out or not-yet-loaded key is rejected,
   retained as pending, or resolved by an external data-loading contract.
@@ -443,3 +443,56 @@ mounted scopes into one collection.
 No engine contract module or test file was added because this stage defines the
 contract in documentation only. No runtime source, configuration, or test file
 was changed.
+
+## 15. Phase 4.2 Pure Window and Identity Decisions
+
+`packages/core/src/engine/virtualization.ts` defines a DOM-free
+`VirtualizationScope<TKey>` with separate data, filtered, registered, window,
+mounted, selected, and active identities. It is not exported from the package
+root and has no component or virtualizer consumer in this stage.
+
+The pure selectors and intent constructors establish these rules:
+
+- `isSelectedKeyVisible()` means the selected key is present in
+  `FilteredKeys`; it does not require a mounted target. Filtering visibility
+  is distinct from viewport visibility, and selection persistence is handled
+  independently by `preserveSelectionAcrossWindow()`, which copies the full
+  selected-key set without pruning it.
+- `isActiveKeyMounted()` and
+  `getAriaActiveDescendantEligibility()` require the active key to be mounted.
+  The latter also requires a non-empty ID supplied by the caller. A registered
+  or window key alone cannot make an ARIA target eligible; unavailable targets
+  return no option ID while the input scope retains `activeKey` unchanged.
+- `computeWindowKeys()` returns an ordered, clamped half-open slice of filtered
+  keys. `resolveKeyIndex()` looks up the current index from the current key
+  order, so reorder does not retain an old index.
+- `createScrollToKeyIntent()` carries a stable key and no DOM reference.
+  `createScrollToIndexIntent()` requires a data-generation value so an index
+  cannot silently be reused against a different data snapshot.
+- `getVirtualizationScopeViolations()` reports violations of the subset
+  relationships without mutating or normalizing the supplied scope.
+
+`virtualization-contract.spec.ts` covers selected-key preservation through
+window/mount eviction, valid unmounted active identity, ARIA target availability,
+window and mounted subset checks, registered-versus-mounted distinction,
+reorder lookup, key and generation-scoped scroll intents, and the absence of
+browser-global references. The module remains an unused pure contract: no
+rendering, scrolling, ARIA applier, component, or public API behavior changed.
+
+### Phase 4.2 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused `virtualization-contract.spec.ts` | 12 passed. |
+| `npm run test:unit` | 391 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+No browser tests or package contract suite were run; the new module is not
+exported and no component or adapter consumes it.
+
+The first full unit run hit the existing 1M-item stress test's 50 ms timing
+threshold at 51.95 ms. The immediate rerun passed the complete unit suite; no
+stress-test code was changed. The build regenerated the embedded React Native
+Core bundle as a side effect, and that generated file was restored.
