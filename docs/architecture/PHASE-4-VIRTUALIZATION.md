@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.4 closed; Phase 4.3.5 scroll-driven window update API implemented and verified locally. No component integration has started.**
+Status: **Phase 4.0–4.3.6 closed locally; Phase 4.4 Component Integration Planning is next. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -594,40 +594,6 @@ scroll mutation, ARIA behavior, or performance claim was added.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No browser tests or benchmarks were run.
 
-## 20. Phase 4.3.5 Scroll-driven Window Update API
-
-`Virtualizer.updateWindow(scrollTop, viewportHeight)` normalizes non-finite or
-negative scroll positions to zero and non-finite or negative viewport heights
-to zero. It calls the existing window calculation, stores a defensive snapshot,
-and returns that snapshot with normalized inputs and a `changed` flag. The flag
-is true only when the start index, end index, or window size differs from the
-previous snapshot. `getCurrentWindow()` returns a copy of the last snapshot.
-
-An empty item set returns `{ startIndex: 0, endIndex: -1, windowSize: 0 }` as
-its zero-size window. A changed item count invalidates the stored snapshot so
-the next update reports a fresh window. Destroying the virtualizer clears the
-snapshot, and subsequent update requests return `null`. The API does not
-install a scroll listener, schedule rendering, or mutate DOM scroll state; the
-caller continues to own those actions.
-
-`virtualizer.spec.ts` covers initial and repeated snapshots, range change
-detection, input normalization, empty lists, destruction, and snapshot
-invalidation after resize. Existing `computeWindow`, measurement,
-`scrollToIndex`, and `scrollToKey` cases continue to pass.
-
-### Phase 4.3.5 Verification
-
-| Check | Result |
-| --- | --- |
-| Focused virtualizer and virtualization contract suites | 55 passed. |
-| `npm run test:unit` | 429 passed, one skipped. |
-| `npm run lint` | Passed with zero errors and six existing warnings. |
-| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
-| `git diff --check` | Passed. |
-
-The build regenerated the embedded React Native Core bundle as a side effect;
-the generated file was restored. No browser tests or benchmarks were run.
-
 ## 19. Phase 4.3.4 Measurement Lifecycle
 
 `Virtualizer` now tracks the total of measured heights incrementally. A first
@@ -663,3 +629,64 @@ No component, scroll, ARIA, or public behavior integration changed.
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No browser tests or benchmarks were run.
+
+## 20. Phase 4.3.5 Scroll-driven Window Update API
+
+`Virtualizer.updateWindow(scrollTop, viewportHeight)` normalizes non-finite or
+negative scroll positions to zero and non-finite or negative viewport heights
+to zero. It calls the existing window calculation, stores a defensive snapshot,
+and returns that snapshot with normalized inputs and a `changed` flag. The flag
+is true only when the start index, end index, or window size differs from the
+previous snapshot. `getCurrentWindow()` returns a copy of the last snapshot.
+
+An empty item set returns `{ startIndex: 0, endIndex: -1, windowSize: 0 }` as
+its zero-size window. A changed item count invalidates the stored snapshot so
+the next update reports a fresh window. Destroying the virtualizer clears the
+snapshot, and subsequent update requests return `null`. The API does not
+install a scroll listener, schedule rendering, or mutate DOM scroll state; the
+caller continues to own those actions.
+
+`virtualizer.spec.ts` covers initial and repeated snapshots, range change
+detection, input normalization, empty lists, destruction, and snapshot
+invalidation after resize. Existing `computeWindow`, measurement,
+`scrollToIndex`, and `scrollToKey` cases continue to pass.
+
+### Phase 4.3.5 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer and virtualization contract suites | 55 passed. |
+| `npm run test:unit` | 429 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No browser tests or benchmarks were run.
+
+## 21. Phase 4.3.6 Virtualizer API/Lifecycle Regression Gate
+
+The combined regression suite verifies the APIs and lifecycle work from
+Phases 4.3.1–4.3.5. `scrollToIndex()` results remain compatible with
+`updateWindow()`; `scrollToKey()` delegates to the index path without changing
+DOM scroll state; measured height updates produce consistent cumulative
+offsets and window lookup; and shrinking the item count removes stale
+measurements, releases pooled active nodes, and invalidates the current window
+snapshot. Destroyed instances return `null` from scroll and update APIs.
+Existing virtualization contract and memory lifecycle tests also pass.
+
+### Phase 4.3.6 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualizer, virtualization contract, and memory lifecycle suites | 70 passed. |
+| `npm run test:unit` | 434 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+No runtime fix was needed. No component integration, DOM scroll mutation,
+ARIA behavior, browser test, or benchmark claim was added. The build regenerated
+the embedded React Native Core bundle as a side effect; the generated file was
+restored. Phase 4.3 is closed locally. Phase 4.4 begins with component
+integration planning; no component implementation has started.

@@ -440,4 +440,91 @@ describe('Virtualizer', () => {
     expect(v.scrollToKey('item-d', resolveIndex)).toBeNull();
     expect(resolveIndex).not.toHaveBeenCalled();
   });
+
+  it('keeps scrollToIndex results compatible with scroll-driven window updates', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 0 });
+    const target = v.scrollToIndex(20);
+
+    expect(target).toEqual({ index: 20, offset: 200, scrollTop: 200 });
+    expect(v.updateWindow(target!.scrollTop, 10)?.window).toEqual({
+      startIndex: 20,
+      endIndex: 21,
+      windowSize: 2,
+    });
+  });
+
+  it('routes scrollToKey through scrollToIndex without mutating DOM scroll state', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 0 });
+    const scrollToIndex = vi.spyOn(v, 'scrollToIndex');
+
+    expect(v.scrollToKey('item-c', (key) => (key === 'item-c' ? 3 : null))).toEqual({
+      index: 3,
+      offset: 30,
+      scrollTop: 30,
+    });
+    expect(scrollToIndex).toHaveBeenCalledWith(3);
+    expect(container.scrollTop).toBe(0);
+  });
+
+  it('keeps measured offsets consistent across scroll targets and window lookup', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 0 });
+    const shortFirstItem = document.createElement('div');
+    Object.defineProperty(shortFirstItem, 'offsetHeight', { configurable: true, value: 10 });
+    v.measureOnAppear(shortFirstItem, 0);
+    const target = v.scrollToIndex(3);
+
+    expect(target?.offset).toBe(v.cumulativeOffset(3));
+    expect(target?.offset).toBe(90);
+    expect(v.updateWindow(target!.scrollTop, 10)?.window).toEqual({
+      startIndex: 3,
+      endIndex: 3,
+      windowSize: 1,
+    });
+  });
+
+  it('shrinks measurements, active nodes, and current window safely', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, {
+      estimatedItemHeight: 40,
+      buffer: 1,
+      enableTelemetry: true,
+    });
+    const retained = document.createElement('div');
+    const removed = document.createElement('div');
+    Object.defineProperty(retained, 'offsetHeight', { configurable: true, value: 20 });
+    Object.defineProperty(removed, 'offsetHeight', { configurable: true, value: 80 });
+    v.measureOnAppear(retained, 1);
+    v.measureOnAppear(removed, 8);
+    v.updateWindow(0, 20);
+    v.acquireNode(8);
+    expect(v.getPoolStats().inUse).toBe(1);
+
+    v.setItemsLength(5);
+
+    expect(v.measuredHeights.size).toBe(1);
+    expect(v.measuredHeights.has(8)).toBe(false);
+    expect(v.averageHeight).toBe(20);
+    expect(v.getPoolStats().inUse).toBe(0);
+    expect(v.getCurrentWindow()).toBeNull();
+    expect(v.updateWindow(0, 20)?.changed).toBe(true);
+  });
+
+  it('makes scroll and update APIs no-op after destroy', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 20, buffer: 1 });
+    v.updateWindow(20, 10);
+    v.scrollToIndex(3);
+    const resolver = vi.fn(() => 2);
+    v.destroy();
+
+    expect(v.scrollToIndex(4)).toBeNull();
+    expect(v.scrollToKey('item-c', resolver)).toBeNull();
+    expect(resolver).not.toHaveBeenCalled();
+    expect(v.updateWindow(30, 10)).toBeNull();
+    expect(v.getCurrentWindow()).toBeNull();
+    expect(v.getIntendedScrollTop()).toBe(60);
+  });
 });
