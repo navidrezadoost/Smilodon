@@ -366,6 +366,10 @@ export class EnhancedSelect extends HTMLElement {
     this._asyncGeneration += 1;
     this._clearLifecycleTasks();
     this._destroyGuardedVirtualizer();
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: [],
+    };
 
     // Cleanup observers
     this._resizeObserver?.disconnect();

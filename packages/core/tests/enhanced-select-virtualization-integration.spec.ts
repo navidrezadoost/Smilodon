@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SelectKey } from '../src/engine/contracts';
 import { EnhancedSelect } from '../src/components/enhanced-select';
 
@@ -766,5 +766,151 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     const plan = (select as any)._renderPlan;
     expect(plan.intendedRenderKeys).toEqual(plan.filteredKeys);
     expect((select as any)._virtualizationScope.mountedKeys).toEqual(plan.intendedRenderKeys);
+  });
+
+  describe('guarded Virtualizer-backed regression gate', () => {
+    it('keeps selectedKeys stable across repeated guarded updateWindow calls', () => {
+      select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+      select.setItems(makeItems());
+      clickOption(select, 0);
+      const selectedBefore = engineSelectedKeys(select);
+      setGuardedWindow(select, 0, 2);
+      setGuardedWindow(select, 1, 3);
+      setGuardedWindow(select, 0, 1);
+      (select as any)._renderOptions();
+
+      expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    });
+
+    it('keeps activeKey stable across repeated guarded updateWindow calls', () => {
+      select.setItems(makeItems());
+      select.open();
+      (select as any)._setActive(2);
+      const activeBefore = engineActiveKey(select);
+      setGuardedWindow(select, 0, 1);
+      setGuardedWindow(select, 1, 2);
+      setGuardedWindow(select, 0, 2);
+      (select as any)._renderOptions();
+
+      expect(engineActiveKey(select)).toBe(activeBefore);
+      expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('resolves scrollToKey against the reordered key index instead of its prior index', () => {
+      const [apple, banana, cherry] = makeItems();
+      select.setItems([apple, banana, cherry]);
+      setGuardedWindow(select, 0, 1);
+      (select as any)._renderOptions();
+
+      select.setItems([cherry, apple, banana]);
+      expect((select as any)._renderPlan.filteredIndexByKey.get('a')).toBe(1);
+      expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 1, endIndex: 1 });
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+      expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeTruthy();
+    });
+
+    it('uses the current filtered index generation for scrollToIndex materialization', () => {
+      select.updateConfig({ searchable: true });
+      select.setItems(makeItems());
+      setGuardedWindow(select, 0, 2);
+      (select as any)._renderOptions();
+      filterTo(select, 'Cherry');
+
+      expect((select as any)._renderPlan.filteredKeys).toEqual(['c']);
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 0, endIndex: 0 });
+      const result = (select as any)._guardedVirtualizer.scrollToIndex(0);
+      expect((select as any)._applyGuardedScrollResult(result)).toBe(true);
+      (select as any)._renderOptions();
+
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+      expect(select.shadowRoot!.querySelector('[data-value="CHR"]')).toBeTruthy();
+    });
+
+    it('clears mounted keys and active descendant when the window evicts the active option', () => {
+      select.setItems(makeItems());
+      select.open();
+      (select as any)._setActive(0);
+      setGuardedWindow(select, 2, 3);
+      (select as any)._renderOptions();
+
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+      expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+      expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+      const option = select.shadowRoot!.querySelector<HTMLElement>('[data-value="APL"]');
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+      expect(getInput(select).getAttribute('aria-activedescendant')).toBe(option!.id);
+    });
+
+    it('restores selected ARIA after scroll-to-selected remounts the selected key', () => {
+      select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+      select.setItems(makeItems());
+      clickOption(select, 0);
+      setGuardedWindow(select, 2, 3);
+      (select as any)._renderOptions();
+
+      expect(engineSelectedKeys(select)).toEqual(['a']);
+      expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeNull();
+      (select as any)._scrollToSelected();
+
+      expect(engineSelectedKeys(select)).toEqual(['a']);
+      expect(select.shadowRoot!.querySelector('[data-value="APL"]')?.getAttribute('aria-selected')).toBe('true');
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+    });
+
+    it('destroys and clears guarded controller state on disconnect', () => {
+      select.setItems(makeItems());
+      setGuardedWindow(select, 0, 1);
+      (select as any)._renderOptions();
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+
+      select.remove();
+
+      expect((select as any)._guardedVirtualizer).toBeNull();
+      expect((select as any)._guardedVirtualWindow).toBeNull();
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual([]);
+    });
+
+    it('does not leave stale option IDs after a guarded render supersedes materialization', async () => {
+      const items = Array.from({ length: 400 }, (_, index) => ({
+        id: `item-${index}`,
+        value: `value-${index}`,
+        label: `Option ${index}`,
+      }));
+      select.setItems(items);
+      setGuardedWindow(select, 0, 350);
+      (select as any)._renderOptions();
+      const firstRange = (select as any)._renderPlan.intendedRenderKeys[0];
+
+      expect((select as any)._materializeGuardedVirtualKey('item-399')).toBe(true);
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(['item-399']);
+      expect(select.shadowRoot!.querySelector('[data-value="value-0"]')).toBeNull();
+      expect(select.shadowRoot!.querySelector('[id$="option-0"]')).toBeNull();
+      expect((select as any)._virtualizationScope.mountedKeys).not.toContain(firstRange);
+    });
+
+    it('keeps public virtualize configuration from activating guarded bounded mode', () => {
+      select.updateConfig({ virtualize: true });
+      select.setItems(makeItems());
+
+      expect((select as any)._guardedVirtualizer).toBeNull();
+      expect((select as any)._renderPlan.mode).toBe('legacy-full');
+      expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+    });
+
+    it('does not install a scroll listener for guarded window updates', () => {
+      select.setItems(makeItems());
+      const optionsContainer = (select as any)._optionsContainer as HTMLElement;
+      const addListener = vi.spyOn(optionsContainer, 'addEventListener');
+
+      setGuardedWindow(select, 0, 2);
+      (select as any)._renderOptions();
+
+      expect(addListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
+      addListener.mockRestore();
+    });
   });
 });
