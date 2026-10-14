@@ -20,6 +20,19 @@ export interface VirtualizerScrollResult {
   scrollTop: number;
 }
 
+export interface VirtualizerWindow {
+  startIndex: number;
+  endIndex: number;
+  windowSize: number;
+}
+
+export interface VirtualizerWindowUpdate {
+  window: VirtualizerWindow;
+  changed: boolean;
+  scrollTop: number;
+  viewportHeight: number;
+}
+
 export class Virtualizer {
   private container: HTMLElement;
   private itemsLength: number;
@@ -35,6 +48,7 @@ export class Virtualizer {
   private destroyed = false;
   private recycleRafId = 0;
   private intendedScrollTop = 0;
+  private currentWindow: VirtualizerWindow | null = null;
 
   constructor(container: HTMLElement, itemsLength: number, itemGetter: ItemGetter, options: VirtualizerOptions) {
     this.container = container;
@@ -93,6 +107,34 @@ export class Virtualizer {
     this.pool.setMaxSize(newPoolSize);
     
     return { startIndex, endIndex, windowSize };
+  }
+
+  /** Computes and records a scroll-derived window without installing listeners. */
+  updateWindow(scrollTop: number, viewportHeight: number): VirtualizerWindowUpdate | null {
+    if (this.destroyed) return null;
+
+    const safeScrollTop = Number.isFinite(scrollTop) ? Math.max(0, scrollTop) : 0;
+    const safeViewportHeight = Number.isFinite(viewportHeight) && viewportHeight >= 0
+      ? viewportHeight
+      : 0;
+    const nextWindow = this.computeWindow(safeScrollTop, safeViewportHeight);
+    const changed = this.currentWindow === null
+      || this.currentWindow.startIndex !== nextWindow.startIndex
+      || this.currentWindow.endIndex !== nextWindow.endIndex
+      || this.currentWindow.windowSize !== nextWindow.windowSize;
+
+    this.currentWindow = { ...nextWindow };
+    return {
+      window: { ...nextWindow },
+      changed,
+      scrollTop: safeScrollTop,
+      viewportHeight: safeViewportHeight,
+    };
+  }
+
+  /** Returns a copy of the last recorded window, or null before the first update. */
+  getCurrentWindow(): VirtualizerWindow | null {
+    return this.currentWindow ? { ...this.currentWindow } : null;
   }
 
   /** Finds the item containing an offset, advancing past exact item boundaries. */
@@ -272,6 +314,7 @@ export class Virtualizer {
   setItemsLength(newLength: number): void {
     const previousLength = this.itemsLength;
     this.itemsLength = newLength;
+    if (newLength !== previousLength) this.currentWindow = null;
 
     let removedMeasurement = false;
     for (const [index, height] of this.measuredHeights) {
@@ -311,6 +354,7 @@ export class Virtualizer {
     this.measuredHeights.clear();
     this.measuredHeightTotal = 0;
     this.averageHeight = this.estimatedItemHeight;
+    this.currentWindow = null;
     if (this.fenwick) {
       this.fenwick.reset();
     }

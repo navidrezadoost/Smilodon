@@ -39,6 +39,101 @@ describe('Virtualizer', () => {
     expect(v.computeWindow(10000, 1000)).toEqual({ startIndex: 9, endIndex: 9, windowSize: 1 });
   });
 
+  it('returns and records the initial window snapshot', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+
+    expect(v.getCurrentWindow()).toBeNull();
+    const update = v.updateWindow(20, 20);
+
+    expect(update).toEqual({
+      window: { startIndex: 1, endIndex: 5, windowSize: 5 },
+      changed: true,
+      scrollTop: 20,
+      viewportHeight: 20,
+    });
+    expect(v.getCurrentWindow()).toEqual(update?.window);
+  });
+
+  it('reports unchanged when the computed window range is the same', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 2 });
+    v.updateWindow(20, 20);
+
+    const update = v.updateWindow(20, 20);
+
+    expect(update?.changed).toBe(false);
+    expect(update?.window).toEqual(v.getCurrentWindow());
+  });
+
+  it('reports changed when scrolling changes the window range', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 0 });
+    const initial = v.updateWindow(0, 10);
+
+    const update = v.updateWindow(50, 10);
+
+    expect(initial?.changed).toBe(true);
+    expect(update?.changed).toBe(true);
+    expect(update?.window).not.toEqual(initial?.window);
+  });
+
+  it('clamps negative scrollTop to zero in the update result', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+
+    expect(v.updateWindow(-20, 10)).toEqual({
+      window: { startIndex: 0, endIndex: 2, windowSize: 3 },
+      changed: true,
+      scrollTop: 0,
+      viewportHeight: 10,
+    });
+  });
+
+  it('normalizes invalid viewport heights to zero', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+
+    const update = v.updateWindow(0, Number.NaN);
+
+    expect(update?.viewportHeight).toBe(0);
+    expect(update?.window).toEqual({ startIndex: 0, endIndex: 1, windowSize: 2 });
+  });
+
+  it('returns a zero-size snapshot for an empty list', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 0, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+
+    expect(v.updateWindow(0, 20)).toEqual({
+      window: { startIndex: 0, endIndex: -1, windowSize: 0 },
+      changed: true,
+      scrollTop: 0,
+      viewportHeight: 20,
+    });
+    expect(v.getCurrentWindow()).toEqual({ startIndex: 0, endIndex: -1, windowSize: 0 });
+  });
+
+  it('returns null and clears the current snapshot after destruction', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+    v.updateWindow(20, 20);
+    v.destroy();
+
+    expect(v.updateWindow(30, 20)).toBeNull();
+    expect(v.getCurrentWindow()).toBeNull();
+  });
+
+  it('invalidates the current window snapshot when item count changes', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
+    v.updateWindow(20, 20);
+
+    v.setItemsLength(50);
+
+    expect(v.getCurrentWindow()).toBeNull();
+    expect(v.updateWindow(20, 20)?.changed).toBe(true);
+  });
+
   it('keeps the window size consistent with the inclusive bounds', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 1 });
