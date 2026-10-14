@@ -75,8 +75,18 @@ export class Virtualizer {
 
   computeWindow(scrollTop: number, viewportHeight: number) {
     const { buffer } = this.options;
-    const startIndex = Math.max(Math.floor(scrollTop / this.averageHeight) - buffer, 0);
-    const endIndex = Math.min(Math.ceil((scrollTop + viewportHeight) / this.averageHeight) + buffer, this.itemsLength - 1);
+    const calculatedStartIndex = this.fenwick
+      ? this.indexAtOffset(scrollTop) - buffer
+      : Math.floor(scrollTop / this.averageHeight) - buffer;
+    const startIndex = this.itemsLength > 0
+      ? Math.max(0, Math.min(this.itemsLength - 1, calculatedStartIndex))
+      : 0;
+    const calculatedEndIndex = this.fenwick
+      ? this.fenwick.lowerBound(Math.max(0, scrollTop + viewportHeight)) + buffer
+      : Math.ceil((scrollTop + viewportHeight) / this.averageHeight) + buffer;
+    const endIndex = this.itemsLength > 0
+      ? Math.max(0, Math.min(this.itemsLength - 1, calculatedEndIndex))
+      : -1;
     const windowSize = Math.max(0, endIndex - startIndex + 1);
     
     // Adjust pool size dynamically based on window
@@ -84,6 +94,22 @@ export class Virtualizer {
     this.pool.setMaxSize(newPoolSize);
     
     return { startIndex, endIndex, windowSize };
+  }
+
+  /** Finds the item containing an offset, advancing past exact item boundaries. */
+  private indexAtOffset(offset: number): number {
+    if (!this.fenwick || this.itemsLength <= 0) return 0;
+
+    const target = Math.max(0, offset);
+    let index = Math.max(0, Math.min(this.itemsLength - 1, this.fenwick.lowerBound(target)));
+
+    // FenwickTree.lowerBound returns the preceding item when the target lands
+    // exactly on an item boundary. For the viewport start, select the next item.
+    while (index < this.itemsLength - 1 && this.cumulativeOffset(index + 1) <= target) {
+      index += 1;
+    }
+
+    return index;
   }
 
   cumulativeOffset(index: number): number {
