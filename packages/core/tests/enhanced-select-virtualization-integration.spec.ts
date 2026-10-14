@@ -115,6 +115,143 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
   });
 
+  it('clearing a filter remaps keys to the current filtered indexes before materialization', () => {
+    select.updateConfig({ searchable: true });
+    select.setItems(makeItems());
+    filterTo(select, 'Banana');
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    filterTo(select, '');
+
+    const plan = (select as any)._renderPlan;
+    expect(plan.filteredKeys).toEqual(['a', 'b', 'c']);
+    expect(plan.filteredIndexByKey.get('a')).toBe(0);
+    expect(plan.filteredIndexByKey.get('b')).toBe(1);
+    expect(plan.filteredIndexByKey.get('c')).toBe(2);
+    expect((select as any)._materializeGuardedVirtualKey('c')).toBe(true);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+  });
+
+  it('keeps selection attached to its key after reorder and guarded remount', () => {
+    select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+    const [apple, banana, cherry] = makeItems();
+    select.setItems([apple, banana, cherry]);
+    clickOption(select, 0);
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    select.setItems([cherry, apple, banana]);
+
+    expect(engineSelectedKeys(select)).toEqual(['a']);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+    expect(select.shadowRoot!.querySelector('[data-value="APL"]')?.getAttribute('aria-selected')).toBe('true');
+    expect(engineSelectedKeys(select)).toEqual(['a']);
+  });
+
+  it('remaps active identity by key after reorder and materializes the current index', () => {
+    const [apple, banana, cherry] = makeItems();
+    select.setItems([apple, banana, cherry]);
+    select.open();
+    (select as any)._setActive(0);
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    select.setItems([cherry, apple, banana]);
+
+    expect(engineActiveKey(select)).toBe('a');
+    expect((select as any)._state.activeIndex).toBe(1);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+
+    (select as any)._setActive(1);
+
+    const activeOption = select.shadowRoot!.querySelector<HTMLElement>('[data-value="APL"]');
+    expect(engineActiveKey(select)).toBe('a');
+    expect(activeOption).toBeTruthy();
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption!.id);
+  });
+
+  it('moves the active guarded window repeatedly without losing active identity', () => {
+    select.setItems(makeItems());
+    select.open();
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+
+    (select as any)._setActive(2);
+    expect(engineActiveKey(select)).toBe('c');
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(
+      select.shadowRoot!.querySelector<HTMLElement>('[data-value="CHR"]')?.id,
+    );
+
+    (select as any)._setActive(0);
+    expect(engineActiveKey(select)).toBe('a');
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+    expect(getInput(select).getAttribute('aria-activedescendant')).toBe(
+      select.shadowRoot!.querySelector<HTMLElement>('[data-value="APL"]')?.id,
+    );
+  });
+
+  it('moves a repeated selected-key materialization without losing selection', () => {
+    select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    clickOption(select, 2);
+    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
+    (select as any)._renderOptions();
+    const selectedBefore = engineSelectedKeys(select);
+
+    expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+    expect((select as any)._materializeGuardedVirtualKey('c')).toBe(true);
+
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect(select.shadowRoot!.querySelector('[data-value="CHR"]')?.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('discards superseded chunk renders without stale IDs or mounted keys', async () => {
+    const items = Array.from({ length: 800 }, (_, index) => ({
+      id: `item-${index}`,
+      value: `value-${index}`,
+      label: `Option ${index}`,
+    }));
+    select.setItems(items);
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 400 };
+    (select as any)._renderOptions();
+    expect(select.shadowRoot!.querySelectorAll('[part="option"]').length).toBe(80);
+
+    (select as any)._guardedVirtualWindow = { startIndex: 500, endIndex: 800 };
+    (select as any)._renderOptions();
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+
+    const expectedKeys = items.slice(500).map((item) => item.id);
+    const rendered = Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'));
+    expect(rendered).toHaveLength(300);
+    expect(rendered[0].dataset.smIndex).toBe('500');
+    expect(rendered.some((option) => option.id.endsWith('-option-0'))).toBe(false);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(expectedKeys);
+  });
+
+  it('refreshes custom renderer item and index context after guarded remount', () => {
+    const calls: Array<{ id: string; index: number }> = [];
+    select.optionRenderer = (item: unknown, index: number) => {
+      calls.push({ id: (item as TestItem).id, index });
+      return document.createElement('div');
+    };
+    select.setItems(makeItems());
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+    const previousCallCount = calls.length;
+
+    expect((select as any)._materializeGuardedVirtualKey('c')).toBe(true);
+
+    expect(calls.slice(previousCallCount)).toEqual([{ id: 'c', index: 2 }]);
+    expect(select.shadowRoot!.querySelector('[data-value="CHR"]')?.getAttribute('data-index')).toBe('2');
+  });
+
   it('restores selected option ARIA after clearing and reapplying a filter', () => {
     select.updateConfig({ searchable: true, selection: { mode: 'multi', closeOnSelect: false } });
     select.setItems(makeItems());
@@ -284,10 +421,14 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   });
 
   it('keeps legacy-full as the default active render mode', () => {
+    select.updateConfig({ searchable: true });
     select.setItems(makeItems());
+    filterTo(select, 'a');
 
     expect((select as any)._renderPlan.mode).toBe('legacy-full');
-    expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+    expect((select as any)._renderPlan.filteredKeys).toEqual(['a', 'b']);
+    expect(Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'))
+      .map((option) => option.dataset.value)).toEqual(['APL', 'BAN']);
   });
 
   it('renders only the guarded bounded subset while legacy-full remains the default', () => {
