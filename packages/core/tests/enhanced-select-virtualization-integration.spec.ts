@@ -40,6 +40,14 @@ function clickOption(select: EnhancedSelect, index: number): void {
   option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
 }
 
+function setGuardedWindow(select: EnhancedSelect, startIndex: number, endIndex: number): void {
+  const itemHeight = 20;
+  (select as any)._updateGuardedVirtualWindow(
+    startIndex * itemHeight,
+    Math.max(0, endIndex - startIndex - 1) * itemHeight,
+  );
+}
+
 describe('EnhancedSelect pre-virtualization integration guards', () => {
   let select: EnhancedSelect;
 
@@ -104,7 +112,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       key: 'ArrowDown', bubbles: true, cancelable: true,
     }));
     const activeKey = engineActiveKey(select);
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
     expect(engineActiveKey(select)).toBe(activeKey);
 
@@ -119,7 +127,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     select.updateConfig({ searchable: true });
     select.setItems(makeItems());
     filterTo(select, 'Banana');
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
 
     filterTo(select, '');
@@ -138,7 +146,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     const [apple, banana, cherry] = makeItems();
     select.setItems([apple, banana, cherry]);
     clickOption(select, 0);
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
 
     select.setItems([cherry, apple, banana]);
@@ -155,7 +163,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     select.setItems([apple, banana, cherry]);
     select.open();
     (select as any)._setActive(0);
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
 
     select.setItems([cherry, apple, banana]);
@@ -176,7 +184,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   it('moves the active guarded window repeatedly without losing active identity', () => {
     select.setItems(makeItems());
     select.open();
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
 
     (select as any)._setActive(2);
@@ -199,7 +207,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     select.setItems(makeItems());
     clickOption(select, 0);
     clickOption(select, 2);
-    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
+    setGuardedWindow(select, 1, 2);
     (select as any)._renderOptions();
     const selectedBefore = engineSelectedKeys(select);
 
@@ -219,11 +227,11 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       label: `Option ${index}`,
     }));
     select.setItems(items);
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 400 };
+    setGuardedWindow(select, 0, 400);
     (select as any)._renderOptions();
     expect(select.shadowRoot!.querySelectorAll('[part="option"]').length).toBe(80);
 
-    (select as any)._guardedVirtualWindow = { startIndex: 500, endIndex: 800 };
+    setGuardedWindow(select, 500, 800);
     (select as any)._renderOptions();
     await new Promise((resolve) => window.setTimeout(resolve, 50));
 
@@ -242,7 +250,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       return document.createElement('div');
     };
     select.setItems(makeItems());
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
     const previousCallCount = calls.length;
 
@@ -433,7 +441,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
   it('renders only the guarded bounded subset while legacy-full remains the default', () => {
     select.setItems(makeItems());
-    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
+    setGuardedWindow(select, 1, 2);
 
     (select as any)._renderOptions();
 
@@ -444,9 +452,151 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 1, endIndex: 2 });
   });
 
+  it('calculates guarded render bounds through Virtualizer.updateWindow', () => {
+    select.setItems(makeItems());
+
+    setGuardedWindow(select, 0, 2);
+
+    expect((select as any)._guardedVirtualizer.getCurrentWindow()).toEqual({
+      startIndex: 0,
+      endIndex: 1,
+      windowSize: 2,
+    });
+    expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 0, endIndex: 2 });
+    (select as any)._renderOptions();
+    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b']);
+  });
+
+  it('applies scrollToIndex intent through updateWindow without changing selection or active identity', () => {
+    select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    select.open();
+    (select as any)._setActive(0);
+    setGuardedWindow(select, 0, 1);
+    const selectedBefore = engineSelectedKeys(select);
+    const activeBefore = engineActiveKey(select);
+    const virtualizer = (select as any)._guardedVirtualizer;
+
+    const scrollIntent = virtualizer.scrollToIndex(2);
+    expect(scrollIntent).toMatchObject({ index: 2, offset: 40, scrollTop: 40 });
+    expect((select as any)._applyGuardedScrollResult(scrollIntent)).toBe(true);
+    (select as any)._renderOptions();
+
+    expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 2, endIndex: 2 });
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['c']);
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(engineActiveKey(select)).toBe(activeBefore);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  it('does not create or use a guarded controller in default legacy-full mode', () => {
+    select.setItems(makeItems());
+
+    expect((select as any)._guardedVirtualizer).toBeNull();
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
+    expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+  });
+
+  it('resolves a filtered key against the current order before scroll materialization', () => {
+    select.updateConfig({ searchable: true });
+    const [apple, banana, cherry] = makeItems();
+    select.setItems([cherry, apple, banana]);
+    filterTo(select, 'a');
+    setGuardedWindow(select, 0, 1);
+    (select as any)._renderOptions();
+
+    expect((select as any)._renderPlan.filteredKeys).toEqual(['a', 'b']);
+    expect((select as any)._renderPlan.filteredIndexByKey.get('a')).toBe(0);
+    expect((select as any)._renderPlan.filteredIndexByKey.get('b')).toBe(1);
+    expect((select as any)._materializeGuardedVirtualKey('b')).toBe(true);
+
+    expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 1, endIndex: 1 });
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b']);
+    expect(select.shadowRoot!.querySelector('[data-value="BAN"]')).toBeTruthy();
+  });
+
+  it('refreshes the controller after filter changes while preserving selection and active identity policy', () => {
+    select.updateConfig({ searchable: true, selection: { mode: 'multi', closeOnSelect: false } });
+    select.setItems(makeItems());
+    clickOption(select, 2);
+    select.open();
+    (select as any)._setActive(2);
+    const selectedBefore = engineSelectedKeys(select);
+    setGuardedWindow(select, 2, 3);
+    (select as any)._renderOptions();
+
+    filterTo(select, 'Apple');
+
+    expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 0, endIndex: 0 });
+    expect((select as any)._virtualizationScope.filteredKeys).toEqual(['a']);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(engineActiveKey(select)).toBeNull();
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  it('keeps selected and active keys stable across repeated guarded window updates', () => {
+    select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+    select.setItems(makeItems());
+    clickOption(select, 0);
+    select.open();
+    (select as any)._setActive(2);
+    const selectedBefore = engineSelectedKeys(select);
+    const activeBefore = engineActiveKey(select);
+
+    setGuardedWindow(select, 0, 1);
+    (select as any)._renderOptions();
+    setGuardedWindow(select, 1, 3);
+    (select as any)._renderOptions();
+    setGuardedWindow(select, 0, 2);
+    (select as any)._renderOptions();
+
+    expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+    expect(engineActiveKey(select)).toBe(activeBefore);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a', 'b']);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  it('updates mounted keys and active descendant only after the controller window is rendered', () => {
+    select.setItems(makeItems());
+    select.open();
+    (select as any)._setActive(0);
+    const input = getInput(select);
+    const apple = select.shadowRoot!.querySelector<HTMLElement>('[data-value="APL"]')!;
+    expect(input.getAttribute('aria-activedescendant')).toBe(apple.id);
+
+    setGuardedWindow(select, 1, 2);
+    expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeTruthy();
+
+    (select as any)._renderOptions();
+
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b']);
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+    const remountedApple = select.shadowRoot!.querySelector<HTMLElement>('[data-value="APL"]');
+    expect(remountedApple).toBeTruthy();
+    expect(input.getAttribute('aria-activedescendant')).toBe(remountedApple!.id);
+  });
+
+  it('destroys and clears the guarded controller when grouped rendering takes over', () => {
+    const groupedItems = makeItems();
+    select.setItems(groupedItems);
+    setGuardedWindow(select, 1, 2);
+    expect((select as any)._guardedVirtualizer).toBeTruthy();
+
+    select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
+
+    expect((select as any)._guardedVirtualizer).toBeNull();
+    expect((select as any)._guardedVirtualWindow).toBeNull();
+    expect((select as any)._renderPlan.mode).toBe('legacy-full');
+    expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+  });
+
   it('materializes a requested key into the current guarded window', () => {
     select.setItems(makeItems());
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
 
     expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
@@ -462,7 +612,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     select.setItems(makeItems());
     clickOption(select, 0);
     const selectedBefore = engineSelectedKeys(select);
-    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 3 };
+    setGuardedWindow(select, 1, 3);
 
     (select as any)._renderOptions();
 
@@ -486,10 +636,11 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(activeKey).not.toBeNull();
     const activeIndex = (select as any)._itemRegistry.keyToIndex.get(activeKey);
 
-    (select as any)._guardedVirtualWindow = {
-      startIndex: activeIndex === 0 ? 1 : 0,
-      endIndex: activeIndex === 0 ? 3 : 1,
-    };
+    setGuardedWindow(
+      select,
+      activeIndex === 0 ? 1 : 0,
+      activeIndex === 0 ? 3 : 1,
+    );
     (select as any)._renderOptions();
 
     expect(engineActiveKey(select)).toBe(activeKey);
@@ -516,7 +667,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     const firstKey = activeKey === 'c' ? 'a' : 'c';
     const latestKey = activeKey === 'a' ? 'b' : 'a';
 
-    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
     expect((select as any)._materializeGuardedVirtualKey(firstKey)).toBe(true);
     expect((select as any)._materializeGuardedVirtualKey(latestKey)).toBe(true);
@@ -575,7 +726,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   it('keeps grouped rendering on the existing full synchronous path', () => {
     const groupedItems = makeItems();
     select.setItems(groupedItems);
-    (select as any)._guardedVirtualWindow = { startIndex: 1, endIndex: 2 };
+    setGuardedWindow(select, 1, 2);
 
     select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
 

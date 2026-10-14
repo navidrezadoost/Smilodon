@@ -1135,3 +1135,53 @@ updates have not been connected.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. The expanded integration spec now has 34
 tests. No runtime fix was required.
+
+## 31. Phase 4.4.9 Guarded Virtualizer-backed Window Controller
+
+Guarded mode now creates a private `Virtualizer` controller and derives its
+render window from `updateWindow(scrollTop, viewportHeight)`. The Virtualizer
+uses inclusive end indexes; `EnhancedSelect` translates them to the existing
+half-open render-plan range. Its controller uses an internal 20 px estimated
+row height and zero buffer for this guarded integration slice. It receives a
+detached container because this stage only needs window and scroll-intent
+calculation; the component's options container and DOM scroll position are not
+mutated.
+
+Active and selected key materialization resolves each key through the current
+filtered key-to-index map and calls `scrollToKey()`. The returned scroll intent
+is passed through `updateWindow()` to compute the next render range. The
+controller also accepts `scrollToIndex()` results through the same update
+path. Filter and reorder renders refresh its item count/key snapshot and
+recompute the window from the stored scroll position. Mounted keys continue to
+come from rendered option targets after the render work runs; active-descendant
+is only present when the active target is mounted and has an ID.
+
+The controller is created only by the private guarded path. The normal
+`legacy-full` mode does not instantiate it and still renders every filtered
+option. Grouped rendering destroys and clears the guarded controller before
+using its existing full synchronous path. Disconnect also destroys controller
+state. No production scroll listener, DOM scroll assignment, public
+`virtualize` behavior change, NativeSelectElement integration, or benchmark
+claim was added.
+
+`enhanced-select-virtualization-integration.spec.ts` verifies Virtualizer
+window calculation, default full rendering, current filtered key resolution
+after reorder/filter, scroll-to-key and scroll-to-index intent paths, active
+and selected identity preservation, target mounting and ARIA restoration,
+filter refresh, grouped teardown, repeated updates, and superseded render
+cleanup. Existing selection, active, and accessibility integration coverage
+continues to pass.
+
+### Phase 4.4.9 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualization, selection, active, accessibility, and Virtualizer suites | 168 passed. |
+| `npm run test:unit` | 476 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No public or default virtualization
+behavior changed.
