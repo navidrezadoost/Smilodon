@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 Component Integration Planning documented. No component integration has started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guard tests implemented and verified locally. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -822,3 +822,37 @@ integration starts.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No runtime, test, or configuration file
 changed in Phase 4.4.0.
+
+## 23. Phase 4.4.1 EnhancedSelect Pre-integration Guard Tests
+
+`packages/core/tests/enhanced-select-virtualization-integration.spec.ts`
+records the current behavior before bounded-window rendering changes. The
+seven guards verify that selected keys stay attached to stable item keys over
+filtering and rerender; filtering a selected item out preserves its engine
+selection; filtering away the active key follows the current invalidation
+policy and clears active-descendant; and selected option ARIA is correct after
+filters are cleared and reapplied.
+
+The suite also records that a custom renderer receives the current item and
+index after reorder, that active-descendant is removed when its current target
+is absent, and that the current chunked path eventually mounts all 360
+filtered options. The last assertion is a baseline for the current rendering
+behavior; bounded-window implementation must deliberately replace or relocate
+that expectation when its new behavior is introduced.
+
+No runtime, virtualizer, accessibility applier, export, or configuration file
+changed. The test passes against the existing component implementation, so
+Phase 4.4 runtime integration has not started.
+
+### Phase 4.4.1 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 73 passed. |
+| `npm run test:unit` | 441 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No runtime behavior changed.
