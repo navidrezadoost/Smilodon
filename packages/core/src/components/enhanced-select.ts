@@ -34,6 +34,7 @@ import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
 import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
 import { SelectOption } from './select-option';
 import { arrayIncludesValue } from '../utils/value-equality.js';
+import { Virtualizer, type VirtualizerScrollResult } from '../utils/virtualizer.js';
 
 interface PageCache {
   [page: number]: unknown[];
@@ -117,6 +118,10 @@ export class EnhancedSelect extends HTMLElement {
   // Null keeps the public/default renderer on its legacy full path. This
   // private state is only used by guarded virtualization integration.
   private _guardedVirtualWindow: { startIndex: number; endIndex: number } | null = null;
+  private _guardedVirtualizer: Virtualizer | null = null;
+  private _guardedVirtualizerKeys: SelectKey[] = [];
+  private _guardedVirtualScrollTop = 0;
+  private _guardedVirtualViewportHeight = 0;
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
@@ -360,6 +365,7 @@ export class EnhancedSelect extends HTMLElement {
     this._connectionController = undefined;
     this._asyncGeneration += 1;
     this._clearLifecycleTasks();
+    this._destroyGuardedVirtualizer();
 
     // Cleanup observers
     this._resizeObserver?.disconnect();
@@ -3948,7 +3954,7 @@ export class EnhancedSelect extends HTMLElement {
     this._ensureRegistryCurrent();
     const record = this._getRecordByIndex(index);
     let option = this._getOptionElementByIndex(index);
-    if (!option && record && this._guardedVirtualWindow) {
+    if (!option && record && this._guardedVirtualizer) {
       this._materializeGuardedVirtualKey(record.key);
       option = this._getOptionElementByIndex(index);
     }
@@ -4382,7 +4388,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Find and scroll to the target option
     let option = this._getOptionElementByIndex(targetIndex);
-    if (!option && this._guardedVirtualWindow) {
+    if (!option && this._guardedVirtualizer) {
       const targetKey = this._itemRegistry.indexToKey.get(targetIndex);
       if (targetKey !== undefined) {
         this._materializeGuardedVirtualKey(targetKey);
@@ -5135,26 +5141,78 @@ export class EnhancedSelect extends HTMLElement {
     };
   }
 
+  private _ensureGuardedVirtualizer(filteredKeys: readonly SelectKey[]): Virtualizer {
+    if (!this._guardedVirtualizer) {
+      // The controller only calculates ranges and scroll intents. Give it a
+      // detached container so its internal styling never touches rendered UI.
+      this._guardedVirtualizer = new Virtualizer(
+        document.createElement('div'),
+        filteredKeys.length,
+        (index) => this._renderPlan.filteredKeys[index],
+        { estimatedItemHeight: 20, buffer: 0 },
+      );
+    } else {
+      const keysChanged = filteredKeys.length !== this._guardedVirtualizerKeys.length
+        || filteredKeys.some((key, index) => !Object.is(key, this._guardedVirtualizerKeys[index]));
+      if (keysChanged) this._guardedVirtualizer.setItemsLength(filteredKeys.length);
+    }
+
+    this._guardedVirtualizerKeys = [...filteredKeys];
+    return this._guardedVirtualizer;
+  }
+
+  private _applyGuardedScrollResult(result: VirtualizerScrollResult | null): boolean {
+    if (!result || !this._guardedVirtualizer) return false;
+
+    this._guardedVirtualScrollTop = result.scrollTop;
+    const update = this._guardedVirtualizer.updateWindow(
+      this._guardedVirtualScrollTop,
+      this._guardedVirtualViewportHeight,
+    );
+    if (!update) return false;
+
+    this._guardedVirtualWindow = {
+      startIndex: update.window.startIndex,
+      endIndex: update.window.endIndex + 1,
+    };
+    return true;
+  }
+
+  private _updateGuardedVirtualWindow(scrollTop: number, viewportHeight: number): boolean {
+    const virtualizer = this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+    this._guardedVirtualScrollTop = scrollTop;
+    this._guardedVirtualViewportHeight = viewportHeight;
+    const update = virtualizer.updateWindow(scrollTop, viewportHeight);
+    if (!update) return false;
+
+    this._guardedVirtualWindow = {
+      startIndex: update.window.startIndex,
+      endIndex: update.window.endIndex + 1,
+    };
+    return true;
+  }
+
+  private _destroyGuardedVirtualizer(): void {
+    this._guardedVirtualizer?.destroy();
+    this._guardedVirtualizer = null;
+    this._guardedVirtualizerKeys = [];
+    this._guardedVirtualWindow = null;
+    this._guardedVirtualScrollTop = 0;
+    this._guardedVirtualViewportHeight = 0;
+  }
+
   private _materializeGuardedVirtualKey(key: SelectKey): boolean {
-    if (!this._guardedVirtualWindow) return false;
+    if (!this._guardedVirtualizer) return false;
 
     const targetIndex = this._renderPlan.filteredIndexByKey.get(key);
     if (targetIndex === undefined) return false;
 
-    const itemCount = this._renderPlan.filteredKeys.length;
-    const windowSize = Math.max(
-      1,
-      this._guardedVirtualWindow.endIndex - this._guardedVirtualWindow.startIndex,
+    this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+    const result = this._guardedVirtualizer.scrollToKey(
+      key,
+      (candidate) => this._renderPlan.filteredIndexByKey.get(candidate),
     );
-    const startIndex = Math.max(
-      0,
-      Math.min(itemCount - windowSize, targetIndex - Math.floor((windowSize - 1) / 2)),
-    );
-
-    this._guardedVirtualWindow = {
-      startIndex,
-      endIndex: Math.min(itemCount, startIndex + windowSize),
-    };
+    if (!this._applyGuardedScrollResult(result)) return false;
     this._renderOptions();
     return true;
   }
@@ -5213,7 +5271,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      this._guardedVirtualWindow = null;
+      this._destroyGuardedVirtualizer();
       this._renderPlan = this._createLegacyRenderPlan(this._itemRegistry.records.map((record) => record.index));
       filteredIndicesForScope = this._renderPlan.filteredIndices;
       this._registerShadowItems(filteredIndicesForScope);
@@ -5271,6 +5329,16 @@ export class EnhancedSelect extends HTMLElement {
       this._renderPlan = this._createLegacyRenderPlan(computedFilteredIndices);
       filteredIndicesForScope = this._renderPlan.filteredIndices;
       this._registerShadowItems(filteredIndicesForScope);
+      if (this._guardedVirtualizer) {
+        const virtualizer = this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+        const update = virtualizer.updateWindow(
+          this._guardedVirtualScrollTop,
+          this._guardedVirtualViewportHeight,
+        );
+        this._guardedVirtualWindow = update
+          ? { startIndex: update.window.startIndex, endIndex: update.window.endIndex + 1 }
+          : null;
+      }
       if (this._guardedVirtualWindow) {
         this._renderPlan = this._createVirtualRenderPlan(
           this._guardedVirtualWindow.startIndex,
