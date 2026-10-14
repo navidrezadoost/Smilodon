@@ -75,6 +75,118 @@ describe('Virtualizer', () => {
     expect(base).toBeGreaterThanOrEqual(20 * 50);
   });
 
+  it('updates averageHeight after the first measurement', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const node = document.createElement('div');
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 80 });
+
+    v.measureOnAppear(node, 4);
+
+    expect(v.averageHeight).toBe(80);
+    expect(v.measuredHeights.size).toBe(1);
+  });
+
+  it('updates averageHeight when an existing measurement changes', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const node = document.createElement('div');
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 60, writable: true });
+    v.measureOnAppear(node, 4);
+
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 80 });
+    v.measureOnAppear(node, 4);
+
+    expect(v.averageHeight).toBe(80);
+    expect(v.measuredHeights.get(4)).toBe(80);
+  });
+
+  it('does not change the measured aggregate for a height change below threshold', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, {
+      estimatedItemHeight: 40,
+      buffer: 2,
+      measurementThreshold: 5,
+    });
+    const node = document.createElement('div');
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 40, writable: true });
+    v.measureOnAppear(node, 4);
+
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 44 });
+    v.measureOnAppear(node, 4);
+
+    expect(v.measuredHeights.get(4)).toBe(40);
+    expect(v.measuredHeights.size).toBe(1);
+    expect(v.averageHeight).toBe(40);
+  });
+
+  it('removes out-of-range measurements and updates the average on resize', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const first = document.createElement('div');
+    const removed = document.createElement('div');
+    Object.defineProperty(first, 'offsetHeight', { configurable: true, value: 20 });
+    Object.defineProperty(removed, 'offsetHeight', { configurable: true, value: 40 });
+    v.measureOnAppear(first, 1);
+    v.measureOnAppear(removed, 5);
+    expect(v.averageHeight).toBe(30);
+
+    v.setItemsLength(3);
+
+    expect(v.measuredHeights.size).toBe(1);
+    expect(v.measuredHeights.has(5)).toBe(false);
+    expect(v.averageHeight).toBe(20);
+    expect(v.cumulativeOffset(3)).toBe(60);
+  });
+
+  it('clears measured aggregate state on destroy', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const node = document.createElement('div');
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 80 });
+    v.measureOnAppear(node, 4);
+
+    v.destroy();
+
+    expect(v.measuredHeights.size).toBe(0);
+    expect(v.averageHeight).toBe(40);
+  });
+
+  it('keeps Fenwick offsets correct when measurements are first added and then updated', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    Object.defineProperty(first, 'offsetHeight', { configurable: true, value: 100, writable: true });
+    Object.defineProperty(second, 'offsetHeight', { configurable: true, value: 60 });
+    v.measureOnAppear(first, 0);
+    v.measureOnAppear(second, 1);
+    expect(v.cumulativeOffset(3)).toBe(200);
+
+    Object.defineProperty(first, 'offsetHeight', { configurable: true, value: 120 });
+    v.measureOnAppear(first, 0);
+
+    expect(v.cumulativeOffset(3)).toBe(220);
+    expect(v.scrollToIndex(3)?.offset).toBe(220);
+  });
+
+  it('rebuilds Fenwick offsets and measurement average after length changes', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
+    const node = document.createElement('div');
+    Object.defineProperty(node, 'offsetHeight', { configurable: true, value: 80 });
+    v.measureOnAppear(node, 5500);
+
+    v.setItemsLength(7000);
+    expect(v.cumulativeOffset(5501)).toBe(220080);
+
+    v.setItemsLength(5000);
+
+    expect(v.measuredHeights.size).toBe(0);
+    expect(v.averageHeight).toBe(40);
+    expect(v.cumulativeOffset(5000)).toBe(200000);
+  });
+
   it('activates Fenwick tree for large lists', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 10000, (i) => i, { 
