@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed locally; Phase 4.4 Component Integration Planning is next. No component integration has started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 Component Integration Planning documented. No component integration has started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -690,3 +690,135 @@ ARIA behavior, browser test, or benchmark claim was added. The build regenerated
 the embedded React Native Core bundle as a side effect; the generated file was
 restored. Phase 4.3 is closed locally. Phase 4.4 begins with component
 integration planning; no component implementation has started.
+
+## 22. Phase 4.4.0 Component Integration Planning
+
+This stage defines the first component integration design without changing
+runtime code, tests, package exports, or rendering behavior. `EnhancedSelect`
+is the first integration target because it already has the stable-key
+`ItemRegistry`, engine `activeKey` / `selectedKeys`, and accessibility applier.
+`NativeSelectElement` remains a later, separate integration: its current
+index-based identity and custom-renderer fallback need their own migration
+design and regression coverage.
+
+### Scope Mapping
+
+The first `EnhancedSelect` implementation should map its current collections
+to the virtualization contract as follows:
+
+| Contract scope | `EnhancedSelect` source / planned meaning |
+| --- | --- |
+| `DataKeys` | Stable keys for all currently loaded `_state.loadedItems`, represented by the full `ItemRegistry`. |
+| `FilteredKeys` | Stable keys in `filteredItems` after the current query and existing filtering rules. |
+| `RegisteredKeys` | Engine-valid logical candidates for the current filtered set. Registration covers the filtered set, independent of which options are in the render window. |
+| `WindowKeys` | Ordered stable keys selected by the virtualizer for the viewport plus configured overscan. |
+| `MountedKeys` | Keys whose option targets are actually present in the options container after the current render commit. Derive this from rendered targets, not from `WindowKeys` alone. |
+| `SelectedKeys` | The engine-authoritative full selected-key set. Window eviction and filtering do not prune it. |
+| `ActiveKey` | The engine-authoritative active key, preserved while it remains a valid filtered candidate even if it is outside the current window. |
+
+`ItemRegistry` remains a full loaded-data registry and must not become a DOM
+registry. Engine `registeredKeys` remains the logical filtered candidate set
+and must not be synchronized to the mounted window. Filtering can change
+candidate validity; viewport eviction only changes `WindowKeys` and
+`MountedKeys`.
+
+### Rendering and Identity Strategy
+
+Replace the current chunked full-list path with bounded window rendering only
+after the pre-integration unit and component tests below pass. Keep synchronous
+behavior for the existing small-list and grouped fallback paths until renderer
+parity is designed and tested. The first runtime slice should use stable keys
+to resolve current indexes whenever the filtered order changes; indexes are
+positions for the current data generation, never item identity.
+
+When a valid `ActiveKey` is outside `WindowKeys`, preserve it in engine state
+and request that it be brought into the window. Apply the scroll/window update
+before exposing an ARIA target. The web adapter may set
+`aria-activedescendant` only after the corresponding option is in
+`MountedKeys` and has a stable rendered ID; it removes the attribute while the
+target is absent and restores it after mount. Selected keys remain untouched
+through every window eviction/remount.
+
+Active navigation and scroll-to-selected should produce semantic key-based
+scroll intent first. The component resolves the key against the current
+filtered ordering, asks the virtualizer to update the intended position/window,
+renders the target, then synchronizes active-descendant state after mount.
+Direct dependence on an already-mounted option node must not be required to
+request materialization. A key absent from the filtered set follows the
+filter/active-key policy; it must not be treated as an offscreen window item.
+
+### Risks and Rollback
+
+- Chunked rendering currently has grouped-list and small-list branches, while
+  custom renderers can create one element per item. Moving each branch to a
+  bounded window may change ordering, grouping, or renderer lifecycle unless
+  parity is demonstrated first.
+- The engine currently clears active identity when filtering removes its key.
+  The integration must distinguish that logical invalidation from temporary
+  viewport unmounting, which preserves a still-valid key.
+- Option IDs, selected/active styling, event listeners, and renderer state must
+  be refreshed on every mount or reuse so a prior key cannot leak state to a
+  different key.
+- Variable-height measurements are currently index-based. Reorder or content
+  changes need measurement invalidation/reconciliation before measured offsets
+  can safely drive key-based navigation.
+- A render and accessibility synchronization race could leave a stale or
+  missing active-descendant relationship. The DOM target must be checked after
+  the render commit, including when a render request is superseded.
+
+Rollback for the first runtime slice is to restore the previous
+`_renderOptions()` chunked rendering and existing option lifecycle as one
+unit, while retaining the pure virtualization APIs. Do not partially roll back
+only ARIA synchronization or only selection projection: the rendering window,
+mounted-target lookup, and active-key materialization must move together. Keep
+the implementation isolated behind the existing component rendering path so
+the old path can be restored without changing public APIs or selection state.
+
+### Required Tests Before Runtime Integration
+
+1. **Pure scope tests:** assert `DataKeys`, `FilteredKeys`, `RegisteredKeys`,
+   `WindowKeys`, and `MountedKeys` remain distinct; window and mounted subsets
+   are valid; reorder resolves the current index by key.
+2. **Engine/component selection tests:** select multiple keys, evict their
+   option targets, reorder and remount, then verify `selectedKeys` and selected
+   presentation remain attached to the same keys. Filtering and viewport
+   eviction must have separate assertions.
+3. **Active/window integration tests:** set an active key outside the window,
+   preserve it, request key-based scroll/materialization, then verify the key
+   is mounted before active-descendant is exposed. Also verify filtered-out
+   keys follow the explicit active-candidate policy.
+4. **ARIA integration tests:** ensure active-descendant is absent for an
+   unmounted or ID-less target, restored with the correct ID after mount, and
+   never points to a stale target after eviction, reorder, or superseded render.
+5. **Renderer lifecycle tests:** cover built-in options and custom rendered
+   options through mount, eviction, reuse/remount, reorder, and cleanup. Grouped
+   rendering remains on its existing path until a separate parity test covers
+   bounded grouped windows.
+6. **Scroll tests:** verify scroll-to-selected and active navigation use key
+   intent, resolve against the current filtered order, and materialize the
+   target before the adapter receives its mounted target. Include variable
+   heights and changed item counts.
+7. **Browser E2E:** at a high option index, navigate to an initially unmounted
+   item and verify visible rendering, DOM focus ownership, selection identity,
+   and valid `aria-activedescendant`; repeat after filtering and reorder. Also
+   cover open-to-selected and close/reopen window restoration.
+8. **Failure and rollback checks:** supersede a pending render, remove or
+   disable a target, and destroy/update the virtualizer during pending work;
+   verify no stale DOM target, selection loss, or retained renderer node.
+
+The runtime implementation should begin only after these tests are agreed and
+the first-slice renderer/fallback behavior is specified. This planning stage
+adds no tests or runtime changes; it defines the required evidence before
+integration starts.
+
+### Phase 4.4.0 Documentation Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No runtime, test, or configuration file
+changed in Phase 4.4.0.
