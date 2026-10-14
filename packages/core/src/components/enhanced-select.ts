@@ -67,6 +67,14 @@ interface LegacySelectedEntry {
   item: unknown;
 }
 
+interface EnhancedSelectRenderPlan {
+  mode: 'legacy-full';
+  filteredIndices: number[];
+  filteredKeys: SelectKey[];
+  intendedRenderKeys: SelectKey[];
+  filteredIndexByKey: ReadonlyMap<SelectKey, number>;
+}
+
 export class EnhancedSelect extends HTMLElement {
   /** live set of all connected instances; used to auto-close siblings */
   private static _instances: Set<EnhancedSelect> = new Set();
@@ -98,6 +106,13 @@ export class EnhancedSelect extends HTMLElement {
     mountedKeys: [],
     selectedKeys: new Set(),
     activeKey: null,
+  };
+  private _renderPlan: EnhancedSelectRenderPlan = {
+    mode: 'legacy-full',
+    filteredIndices: [],
+    filteredKeys: [],
+    intendedRenderKeys: [],
+    filteredIndexByKey: new Map(),
   };
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
@@ -5034,7 +5049,7 @@ export class EnhancedSelect extends HTMLElement {
       registeredKeys: Array.from(this._engine.state.registeredKeys),
       // The current chunked path schedules all filtered items for rendering;
       // this scaffold records that target set until bounded windows are wired.
-      windowKeys: filteredKeys.slice(),
+      windowKeys: this._renderPlan.intendedRenderKeys.slice(),
       mountedKeys: this._getMountedVirtualizationKeys(this._optionsContainer.children),
       selectedKeys: new Set(this._engine.state.selectedKeys),
       activeKey: this._engine.state.activeKey,
@@ -5073,6 +5088,23 @@ export class EnhancedSelect extends HTMLElement {
     };
   }
 
+  private _createLegacyRenderPlan(filteredIndices: readonly number[]): EnhancedSelectRenderPlan {
+    const indices = [...filteredIndices];
+    const filteredKeys = indices
+      .map((index) => this._itemRegistry.indexToKey.get(index))
+      .filter((key): key is SelectKey => key !== undefined);
+    const filteredIndexByKey = new Map<SelectKey, number>();
+    filteredKeys.forEach((key, filteredIndex) => filteredIndexByKey.set(key, filteredIndex));
+
+    return {
+      mode: 'legacy-full',
+      filteredIndices: indices,
+      filteredKeys,
+      intendedRenderKeys: filteredKeys.slice(),
+      filteredIndexByKey,
+    };
+  }
+
   private _refreshVirtualizationScope(filteredIndices: readonly number[]): void {
     this._virtualizationScope = this._deriveVirtualizationScope(filteredIndices);
   }
@@ -5108,6 +5140,7 @@ export class EnhancedSelect extends HTMLElement {
     // Show searching state (exclusive state)
     if (this._state.isSearching) {
       this._registerShadowItems([]);
+      this._renderPlan = this._createLegacyRenderPlan([]);
       this._refreshVirtualizationScope(filteredIndicesForScope);
       this._syncLegacyActiveAria();
       const searching = document.createElement('div');
@@ -5126,7 +5159,8 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      filteredIndicesForScope = this._itemRegistry.records.map((record) => record.index);
+      this._renderPlan = this._createLegacyRenderPlan(this._itemRegistry.records.map((record) => record.index));
+      filteredIndicesForScope = this._renderPlan.filteredIndices;
       this._registerShadowItems(filteredIndicesForScope);
       this._refreshVirtualizationScope(filteredIndicesForScope);
       this._state.groupedItems.forEach((group, groupIndex) => {
@@ -5166,7 +5200,7 @@ export class EnhancedSelect extends HTMLElement {
       });
     } else {
       // Normal rendering (flat list or filtered)
-      const filteredIndices: number[] = [];
+      const computedFilteredIndices: number[] = [];
       this._state.loadedItems.forEach((item, index) => {
         if (query) {
           try {
@@ -5177,8 +5211,10 @@ export class EnhancedSelect extends HTMLElement {
           }
         }
 
-        filteredIndices.push(index);
+        computedFilteredIndices.push(index);
       });
+      this._renderPlan = this._createLegacyRenderPlan(computedFilteredIndices);
+      const filteredIndices = this._renderPlan.filteredIndices;
       filteredIndicesForScope = filteredIndices;
       this._registerShadowItems(filteredIndices);
       this._refreshVirtualizationScope(filteredIndicesForScope);

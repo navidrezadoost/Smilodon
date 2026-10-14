@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold implemented and verified locally. Bounded rendering has not started.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold implemented and verified locally. Bounded rendering has not started.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -899,3 +899,42 @@ renderer guards remain in the same focused suite set.
 
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. No runtime behavior changed.
+
+## 25. Phase 4.4.3 EnhancedSelect Render Plan Scaffold
+
+`EnhancedSelect._createLegacyRenderPlan()` creates a private plan containing
+the current filtered loaded-item indexes, stable filtered keys, a
+`filteredIndexByKey` mapping to each key's current position in the filtered
+order, and `intendedRenderKeys`. The current plan mode is `legacy-full`, so
+every filtered key is intended for rendering. `_renderOptions()` consumes the
+plan's filtered indexes for the existing flat-list rendering path, including
+the current chunk scheduling. The virtualization scope takes `WindowKeys`
+from `intendedRenderKeys` and continues to derive `MountedKeys` from actual
+option targets.
+
+The grouped branch records a full legacy plan while retaining its existing
+group iteration, synchronous rendering, and header behavior. No bounded
+window is selected; `Virtualizer` is not instantiated or imported. Chunk size,
+frame scheduling, custom renderer calls, scroll behavior, and selection,
+active-key, and ARIA behavior are unchanged. The helper and plan snapshot
+remain private and add no public API.
+
+`enhanced-select-virtualization-integration.spec.ts` verifies that plans contain
+all filtered keys; intended keys equal filtered keys in legacy mode; stable
+keys map to current filtered positions after reorder; selection is unchanged
+when a plan is created; grouped output remains synchronous with its group
+header; and after chunk completion mounted keys equal the plan's intended
+keys. Existing active/ARIA guard tests continue to pass.
+
+### Phase 4.4.3 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 83 passed. |
+| `npm run test:unit` | 451 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No render behavior changed.
