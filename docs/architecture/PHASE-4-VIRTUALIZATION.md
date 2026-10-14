@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization implemented and verified locally. Legacy-full remains the default.**
+Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization committed as fb1390c; Phase 4.4.7 guarded active/selected materialization integration implemented and verified locally. Legacy-full remains the default.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1055,3 +1055,45 @@ was added.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. The materialization state remains private
 and guarded, with no change to default or public virtualization behavior.
+
+## 29. Phase 4.4.7 Guarded Active and Selected Materialization
+
+While `_guardedVirtualWindow` is active, `_setActive(index)` materializes the
+record's key if its option target is outside the current window, then continues
+the existing active-state update after the target is mounted. The active key
+remains engine-owned; `aria-activedescendant` is synchronized by the existing
+accessibility path only after the rendered option target and its ID exist.
+
+The existing `_scrollToSelected()` path now materializes its chosen selected
+key when guarded rendering has left that target outside the window. It then
+continues its existing scroll and active update behavior. Selection is not
+changed by window eviction, and the option receives selected ARIA when it is
+rendered again. Filter updates still register the filtered logical candidates
+and clear an active key that is no longer in that candidate set. Render-cycle
+guards continue to discard stale chunk callbacks when a later render replaces
+the window.
+
+All added materialization behavior is conditional on the private guarded
+window. The default `legacy-full` path, public `virtualize` setting, grouped
+rendering, public keyboard behavior, and public API remain unchanged. No scroll
+listener, new scroll operation, NativeSelectElement change, or benchmark claim
+was added.
+
+`enhanced-select-virtualization-integration.spec.ts` covers active materialize
+and ARIA restoration, selected scroll-to-selected materialization and selected
+ARIA restoration, stale target cleanup after sequential window replacement,
+filter invalidation under the guard, default rendering, and grouped fallback.
+
+### Phase 4.4.7 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused guard, selection parity, active parity, and accessibility integration suites | 93 passed. |
+| `npm run test:unit` | 461 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. Guarded active and selected materialization
+remains private, with no default or public virtualization behavior change.

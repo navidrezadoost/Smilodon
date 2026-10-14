@@ -96,6 +96,25 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
   });
 
+  it('keeps filter invalidation policy when a guarded window is active', () => {
+    select.updateConfig({ searchable: true });
+    select.setItems(makeItems());
+    select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
+    const activeKey = engineActiveKey(select);
+    (select as any)._guardedVirtualWindow = { startIndex: 0, endIndex: 1 };
+    (select as any)._renderOptions();
+    expect(engineActiveKey(select)).toBe(activeKey);
+
+    filterTo(select, 'Apple');
+
+    expect(engineActiveKey(select)).toBeNull();
+    expect((select as any)._virtualizationScope.filteredKeys).toEqual(['a']);
+    expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
   it('restores selected option ARIA after clearing and reapplying a filter', () => {
     select.updateConfig({ searchable: true, selection: { mode: 'multi', closeOnSelect: false } });
     select.setItems(makeItems());
@@ -310,7 +329,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeNull();
     expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b', 'c']);
 
-    expect((select as any)._materializeGuardedVirtualKey('a')).toBe(true);
+    (select as any)._scrollToSelected();
 
     expect(engineSelectedKeys(select)).toEqual(['a']);
     expect(select.shadowRoot!.querySelector('[data-value="APL"]')?.getAttribute('aria-selected')).toBe('true');
@@ -337,7 +356,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     expect((select as any)._virtualizationScope.mountedKeys).not.toContain(activeKey);
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
 
-    expect((select as any)._materializeGuardedVirtualKey(activeKey)).toBe(true);
+    (select as any)._setActive(activeIndex);
 
     const activeOption = select.shadowRoot!.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
     expect(activeOption).toBeTruthy();
