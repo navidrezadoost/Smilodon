@@ -515,7 +515,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     // Wait, if optionRenderer is provided as inline function, it changes every render.
     // We should wrap it too IF it is provided.
 
-    if (!!optionRenderer) {
+    if (optionRenderer) {
       return (item: SelectItem, index: number, helpers: RendererHelpers) => {
         return (
           optionRendererRef.current?.(item, index, helpers) ||
@@ -546,7 +546,6 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       entry.root.render(<>{renderer(item, index)}</>);
       return entry.container;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!optionRenderer, !!(customRenderer ?? renderItem)]); // Only reconstruct if presence changes
 
   const resolvedGroupHeaderRenderer = useMemo(() => {
