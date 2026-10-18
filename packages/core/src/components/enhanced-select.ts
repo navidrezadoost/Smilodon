@@ -122,6 +122,10 @@ export class EnhancedSelect extends HTMLElement {
   private _guardedVirtualizerKeys: SelectKey[] = [];
   private _guardedVirtualScrollTop = 0;
   private _guardedVirtualViewportHeight = 0;
+  private _guardedVirtualOverscan = 0;
+  private _guardedVirtualWindowRafId: number | null = null;
+  private _guardedScrollListenerAttached = false;
+  private _onGuardedVirtualScroll = (): void => this._scheduleGuardedVirtualWindowUpdate();
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
@@ -364,6 +368,7 @@ export class EnhancedSelect extends HTMLElement {
     this._connectionController?.abort();
     this._connectionController = undefined;
     this._asyncGeneration += 1;
+    this._cancelGuardedVirtualWindowUpdate();
     this._clearLifecycleTasks();
     this._destroyGuardedVirtualizer();
     this._virtualizationScope = {
@@ -5153,8 +5158,10 @@ export class EnhancedSelect extends HTMLElement {
         document.createElement('div'),
         filteredKeys.length,
         (index) => this._renderPlan.filteredKeys[index],
-        { estimatedItemHeight: 20, buffer: 0 },
+        { estimatedItemHeight: this._resolveGuardedEstimatedItemHeight(), buffer: 0 },
       );
+      this._dropdown.addEventListener('scroll', this._onGuardedVirtualScroll, { passive: true });
+      this._guardedScrollListenerAttached = true;
     } else {
       const keysChanged = filteredKeys.length !== this._guardedVirtualizerKeys.length
         || filteredKeys.some((key, index) => !Object.is(key, this._guardedVirtualizerKeys[index]));
@@ -5163,6 +5170,80 @@ export class EnhancedSelect extends HTMLElement {
 
     this._guardedVirtualizerKeys = [...filteredKeys];
     return this._guardedVirtualizer;
+  }
+
+  private _resolveGuardedEstimatedItemHeight(): number {
+    const configuredHeight = this._config.estimatedItemHeight;
+    if (typeof configuredHeight === 'number' && Number.isFinite(configuredHeight) && configuredHeight > 0) {
+      return configuredHeight;
+    }
+
+    const renderedOption = this._optionsContainer.querySelector<HTMLElement>('[part="option"]');
+    const measuredHeight = renderedOption?.getBoundingClientRect().height || renderedOption?.offsetHeight;
+    if (typeof measuredHeight === 'number' && Number.isFinite(measuredHeight) && measuredHeight > 0) {
+      return measuredHeight;
+    }
+
+    return 48;
+  }
+
+  private _resolveGuardedViewportHeight(): number {
+    const candidates = [
+      this._dropdown.clientHeight,
+      this._dropdown.getBoundingClientRect().height,
+      this._optionsContainer.clientHeight,
+      this._optionsContainer.getBoundingClientRect().height,
+    ];
+    return candidates.find((height) => Number.isFinite(height) && height > 0) ?? 0;
+  }
+
+  private _resolveGuardedOverscan(): number {
+    return 2;
+  }
+
+  private _applyGuardedWindowUpdate(
+    update: { window: { startIndex: number; endIndex: number; windowSize: number }; scrollTop: number; viewportHeight: number },
+    overscan = 0,
+  ): boolean {
+    if (!this._guardedVirtualizer) return false;
+
+    this._guardedVirtualScrollTop = update.scrollTop;
+    this._guardedVirtualViewportHeight = update.viewportHeight;
+    const itemCount = this._renderPlan.filteredKeys.length;
+    const nextWindow = {
+      startIndex: Math.max(0, update.window.startIndex - overscan),
+      endIndex: Math.min(itemCount, update.window.endIndex + 1 + overscan),
+    };
+    const changed = this._guardedVirtualWindow?.startIndex !== nextWindow.startIndex
+      || this._guardedVirtualWindow?.endIndex !== nextWindow.endIndex;
+    this._guardedVirtualWindow = nextWindow;
+    return changed;
+  }
+
+  private _scheduleGuardedVirtualWindowUpdate(): void {
+    if (!this._guardedVirtualizer || this._guardedVirtualWindowRafId !== null) return;
+
+    this._guardedVirtualWindowRafId = this._requestLifecycleFrame(() => {
+      this._guardedVirtualWindowRafId = null;
+      const virtualizer = this._guardedVirtualizer;
+      if (!virtualizer) return;
+
+      const update = virtualizer.updateWindow(
+        this._dropdown.scrollTop,
+        this._resolveGuardedViewportHeight(),
+      );
+      this._guardedVirtualOverscan = this._resolveGuardedOverscan();
+      if (update && this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan)) {
+        this._renderOptions();
+      }
+    });
+  }
+
+  private _cancelGuardedVirtualWindowUpdate(): void {
+    if (this._guardedVirtualWindowRafId === null) return;
+    cancelAnimationFrame(this._guardedVirtualWindowRafId);
+    this._lifecycleRafs.delete(this._guardedVirtualWindowRafId);
+    this._guardedVirtualWindowRafId = null;
   }
 
   private _applyGuardedScrollResult(result: VirtualizerScrollResult | null): boolean {
@@ -5179,6 +5260,7 @@ export class EnhancedSelect extends HTMLElement {
       startIndex: update.window.startIndex,
       endIndex: update.window.endIndex + 1,
     };
+    this._guardedVirtualOverscan = 0;
     return true;
   }
 
@@ -5189,20 +5271,24 @@ export class EnhancedSelect extends HTMLElement {
     const update = virtualizer.updateWindow(scrollTop, viewportHeight);
     if (!update) return false;
 
-    this._guardedVirtualWindow = {
-      startIndex: update.window.startIndex,
-      endIndex: update.window.endIndex + 1,
-    };
+    this._guardedVirtualOverscan = 0;
+    this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan);
     return true;
   }
 
   private _destroyGuardedVirtualizer(): void {
+    this._cancelGuardedVirtualWindowUpdate();
+    if (this._guardedScrollListenerAttached) {
+      this._dropdown.removeEventListener('scroll', this._onGuardedVirtualScroll);
+      this._guardedScrollListenerAttached = false;
+    }
     this._guardedVirtualizer?.destroy();
     this._guardedVirtualizer = null;
     this._guardedVirtualizerKeys = [];
     this._guardedVirtualWindow = null;
     this._guardedVirtualScrollTop = 0;
     this._guardedVirtualViewportHeight = 0;
+    this._guardedVirtualOverscan = 0;
   }
 
   private _materializeGuardedVirtualKey(key: SelectKey): boolean {
@@ -5339,9 +5425,11 @@ export class EnhancedSelect extends HTMLElement {
           this._guardedVirtualScrollTop,
           this._guardedVirtualViewportHeight,
         );
-        this._guardedVirtualWindow = update
-          ? { startIndex: update.window.startIndex, endIndex: update.window.endIndex + 1 }
-          : null;
+        if (update) {
+          this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan);
+        } else {
+          this._guardedVirtualWindow = null;
+        }
       }
       if (this._guardedVirtualWindow) {
         this._renderPlan = this._createVirtualRenderPlan(

@@ -1223,3 +1223,52 @@ NativeSelectElement, Virtualizer API, or default behavior changed.
 The build regenerated the embedded React Native Core bundle as a side effect;
 the generated file was restored. One lifecycle fix was required: clear the
 mounted-key snapshot on disconnect after destroying the guarded controller.
+
+## 33. Phase 4.4.11 Guarded Viewport Sizing and Scroll Scheduling Scaffold
+
+The guarded controller now resolves estimated row height from the existing
+`estimatedItemHeight` config when it is a finite positive number. Otherwise,
+it measures the first rendered option and falls back to a safe 48 px estimate
+when no valid measurement is available. No new config field was added.
+
+Viewport height is read from the dropdown's client and bounding-box geometry,
+then from the options container geometry. Missing, zero, negative, or
+non-finite measurements resolve to zero; the Virtualizer still returns a
+bounded range for that case. Guarded scroll updates add two rows of overscan
+on either side, clamped to the filtered item count. Materialization intents
+continue to use their direct key/index range without extra overscan.
+
+Creating the private guarded controller attaches one passive scroll listener
+to the dropdown. Scroll events coalesce into a lifecycle-managed animation
+frame; the callback reads the current `scrollTop` and viewport geometry,
+updates the window, and renders only when the range changes. Disconnect and
+grouped fallback cancel pending work and remove the listener before destroying
+the controller. The normal `legacy-full` path does not create the controller
+or install this listener. No DOM scroll position is assigned, and the public
+`virtualize` option still does not activate guarded rendering.
+
+This is a sizing and scheduling scaffold; it does not add spacer elements or
+preserve the full list's scroll height while only a bounded subset is mounted.
+It is not yet the production virtual-scrolling path.
+
+The regression tests cover configured and fallback item heights, viewport
+geometry, invalid dimensions, overscan, scroll event scheduling, cancellation
+on disconnect/grouped fallback, identity preservation across scheduled
+updates, active-descendant clearing/restoration, and unchanged default
+rendering/config behavior. During implementation, a test caught scheduled
+overscan being lost when `_renderOptions()` recalculated the range; the
+component now retains and reapplies the guarded overscan for that render.
+
+### Phase 4.4.11 Verification
+
+| Check | Result |
+| --- | --- |
+| Focused virtualization, selection, active, accessibility, and Virtualizer suites | 191 passed. |
+| `npm run test:unit` | 499 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
+| `git diff --check` | Passed. |
+
+The build regenerated the embedded React Native Core bundle as a side effect;
+the generated file was restored. No public API, `virtualize` behavior,
+NativeSelectElement behavior, or default rendering behavior changed.
