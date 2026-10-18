@@ -1,9 +1,9 @@
 # Phase 2 - Stable Identity & Selection Model
 
-Status: **Phase 2A accepted; Phase 2B pure-engine slice implemented and verified.**
-Engine exports remain experimental, as documented in Phase 1. Runtime integration
-and the `EnhancedSelect` migration remain Phase 2C/2D work. Existing partial
-runtime work in the working tree is not evidence that those stages are complete.
+Status: **Phase 2C accepted and committed; Phase 2D.1 and 2D.2 authority flips complete.**
+Engine exports remain experimental, as documented in Phase 1. The Phase 2D.1
+selection flip and Phase 2D.2 active-key flip are complete inside
+`EnhancedSelect`; adapter migration remains out of scope.
 
 ## 1. Problem
 
@@ -521,8 +521,9 @@ It selects Cherry through the public value API, reorders items, moves active
 identity with ArrowDown, filters out that active option, and verifies that
 selection survives while `aria-activedescendant` clears.
 
-The Phase 2D authority flip remains forbidden until this gate is accepted and
-the unrelated dirty worktree paths have been separately reconciled.
+At the time of this Phase 2C.3 report, the Phase 2D authority flip was blocked
+pending gate acceptance and worktree reconciliation. The Phase 2C checkpoint
+was subsequently accepted and committed before Phase 2D.1 began.
 
 ### Phase 2C.3 Verification (2026-10-12)
 
@@ -538,9 +539,166 @@ the unrelated dirty worktree paths have been separately reconciled.
 | `git diff --check` | Passed after removing the eight trailing spaces in `variables.css`. |
 
 The tracked diff snapshot is `/tmp/smilodon-phase2c3-before.patch`; as with
-`git diff`, it excludes untracked paths. The worktree still contains broad
+`git diff`, it excludes untracked paths. The worktree contained broad
 modified/deleted documentation and workflow files, modified adapter sources,
-the already-modified generated React Native core bundle, Phase 2 engine/platform
-files, and untracked `publish.sh`. These were present at stage entry and were
-preserved. They must be separately reconciled before Phase 2D; this verification
-does not claim a clean worktree or authority flip.
+the generated React Native core bundle, Phase 2 engine/platform files, and
+untracked `publish.sh`. These were preserved outside the Phase 2C checkpoint.
+Phase 2D.1 began on a separate branch and kept its source edits within the
+approved authority-flip scope; unrelated dirty paths remain outside this stage.
+
+## Phase 2D.1 — Selection Authority Flip
+
+Status: **Complete.**
+
+Scope is limited to selection authority in `EnhancedSelect`. The engine's
+`selectedKeys` is the source of truth for selection mutations. The
+`_syncLegacySelectionFromEngine` helper projects keys that have current registry
+records into `selectedIndices` and `selectedItems`; selected keys absent from the
+registry remain selected in the engine and retain a cached record for value APIs
+and change events. Active navigation continues to use legacy `activeIndex` and
+the engine's `activeKey` remains a shadow.
+
+This stage flips option selection, range/select-all replacement, removal, clear,
+programmatic value updates, required/config reconciliation, and item registry
+replacement. Existing Phase 2C parity coverage remains, with parity now meaning
+that the registered legacy projection agrees with engine selection. The new
+`enhanced-select-authority.spec.ts` verifies engine-first dispatch, derived
+snapshots, detached selection retention, duplicate-key handling, and compatible
+`change.detail.selectedValues` behavior.
+
+### Phase 2D.1 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused selection parity and authority suites | 29 passed. |
+| Full unit suite | 308 passed, one skipped. |
+| `npm run lint` | Passed with six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |
+
+The selection mutation audit leaves legacy snapshot assignment only in
+`_syncLegacySelectionFromEngine`; no selection path directly mutates the
+compatibility `selectedIndices` or `selectedItems` collections. Active-key
+ownership remains in shadow mode, and no adapter source was changed for this
+stage.
+
+## Phase 2D.2 — ActiveKey Authority Flip
+
+Status: **Complete.**
+
+The engine's `activeKey` is now the source of truth for navigation and
+activation. `_syncLegacyActiveFromEngine` derives the compatibility
+`activeIndex` through the current registry and synchronizes
+`aria-activedescendant`. Arrow navigation resolves its current position from
+`activeKey`; Enter resolves the selected option from that key. Open, Home/End,
+type-ahead, renderer focus, scroll-to-selected, selection activation, filter
+registration, item replacement, and disabled/config reconciliation dispatch or
+reconcile engine active state before projecting the legacy index. Disabled
+options cannot become the engine active key.
+
+The existing `enhanced-select-active-parity.spec.ts` remains. The new
+`enhanced-select-active-authority.spec.ts` covers engine-first ArrowUp/ArrowDown,
+disabled prevention, filter and replacement behavior, ARIA projection,
+selection activation, and navigation after deliberate legacy-index corruption.
+
+### Phase 2D.2 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused active parity, active authority, and selection authority suites | 37 passed. |
+| Full unit suite | 318 passed, one skipped. |
+| `npm run lint` | Passed with six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |
+
+The active-index mutation audit leaves assignment only in
+`_syncLegacyActiveFromEngine`. All remaining `activeIndex` reads are projection,
+rendering, ARIA, or compatibility styling; navigation and activation use the
+engine key. No adapter source was changed for this stage.
+
+## Phase 2 Final Status
+
+Status: **Complete.**
+
+- `selectedKeys` is the authority for selection.
+- `activeKey` is the authority for active identity.
+- Legacy `selectedIndices`, `selectedItems`, and `activeIndex` are compatibility projections.
+- No adapter API was changed and no public API breaking change was introduced.
+- Detached selected keys remain resolvable through the selected-record cache.
+- The React Native embedded Core bundle was regenerated and is included in the Phase 2D.3 checkpoint.
+- `_mirrorLegacySelection` and `_mirrorLegacyActive` remain deprecated test/backward-compatibility shims; production authority paths use engine keys.
+
+The final authority audit found no direct `.add()`, `.delete()`, `.clear()`, or
+`.set()` mutation of the compatibility selection collections. The exact
+`_selectedIndices` / `_selectedItems` audit patterns and `_activeIndex` pattern
+returned no matches because the component stores these projections in
+`_state`. The concrete assignment audit found selection projection assignments
+only in `_syncLegacySelectionFromEngine` (lines 1024–1025) and active projection
+assignment only in `_syncLegacyActiveFromEngine` (line 1056). No production
+caller references either deprecated shim.
+
+### Phase 2D.4 Final Regression Gate (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Full unit suite | 326 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Targeted stable-identity E2E | Three passed across Chromium, Firefox, and WebKit. |
+| Full E2E suite (`--workers=2`) | 57 passed, 15 skipped. |
+| `git diff --check` | Passed. |
+
+The full E2E setup now configures multi-select through the public
+`updateConfig()` API rather than mutating private `_config`, so the engine
+selection policy is updated with the component config. A default four-worker
+full-suite attempt had one intermittent WebKit active-descendant timeout; the
+targeted cross-browser run and the full suite rerun with two workers passed.
+
+## Phase 2D.3 — Compatibility Snapshot Cleanup
+
+Status: **Complete.**
+
+`selectedIndices`, `selectedItems`, and `activeIndex` are compatibility
+projections. Engine `selectedKeys` and `activeKey` own selection and active
+identity. The component derives the index and item snapshots from the current
+registry for rendering and legacy-facing behavior; no public mutation path
+reads those snapshots as selection or navigation authority.
+
+`_selectedRecordsByKey` is the selected-record cache. For a selected key in the
+registry, its current record replaces the cached record. If the key is removed
+from the registry while still selected in the engine, the last known record
+remains available to `getSelectedItems()`, `getSelectedValues()`, change event
+details, and the displayed selected label. Deselecting or clearing the key
+removes the cache entry. Re-registering the same key refreshes the cache from
+the replacement item.
+
+The development invariant checks are named `_assertSelectionProjection` and
+`_assertActiveProjection`. `_mirrorLegacySelection` and
+`_mirrorLegacyActive` remain deprecated private test setup shims because older
+renderer and styling tests call them; production component paths dispatch
+engine events and then derive compatibility snapshots.
+
+The new `enhanced-select-compatibility-projection.spec.ts` verifies selection
+and active projections, detached and replacement record cache behavior,
+backward-compatible change details, engine-first `setSelectedValues()`, clear,
+and recovery from deliberately corrupted compatibility snapshots. Core does
+not implement a separate form-associated value channel; the visible input
+label and public value/event APIs resolve selected records from engine keys,
+the registry, and the cache.
+
+### Phase 2D.3 Verification (2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Focused selection, active, and compatibility projection suites | 64 passed. |
+| Full unit suite | 326 passed, one skipped. |
+| `npm run lint` | Passed with zero errors and six existing warnings. |
+| `npm run build` | Passed across workspaces; regenerated the embedded Core bundle. |
+| `npm run test:contracts` | Six passed, 44 skipped. |
+| Playwright shadow smoke | Passed in Chromium, Firefox, and WebKit. |
+| `git diff --check` | Passed. |
