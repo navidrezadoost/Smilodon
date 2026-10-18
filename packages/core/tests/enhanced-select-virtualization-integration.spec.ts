@@ -41,11 +41,23 @@ function clickOption(select: EnhancedSelect, index: number): void {
 }
 
 function setGuardedWindow(select: EnhancedSelect, startIndex: number, endIndex: number): void {
-  const itemHeight = 20;
+  const itemHeight = (select as any)._resolveGuardedEstimatedItemHeight() as number;
   (select as any)._updateGuardedVirtualWindow(
     startIndex * itemHeight,
     Math.max(0, endIndex - startIndex - 1) * itemHeight,
   );
+}
+
+function runGuardedScheduledUpdate(select: EnhancedSelect): void {
+  const scheduled: { callback?: () => void } = {};
+  const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame')
+    .mockImplementation((...args: unknown[]) => {
+      scheduled.callback = args[0] as () => void;
+      return 9001;
+    });
+  (select as any)._scheduleGuardedVirtualWindowUpdate();
+  requestFrame.mockRestore();
+  scheduled.callback?.();
 }
 
 describe('EnhancedSelect pre-virtualization integration guards', () => {
@@ -479,7 +491,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     const virtualizer = (select as any)._guardedVirtualizer;
 
     const scrollIntent = virtualizer.scrollToIndex(2);
-    expect(scrollIntent).toMatchObject({ index: 2, offset: 40, scrollTop: 40 });
+    expect(scrollIntent).toMatchObject({ index: 2, offset: 96, scrollTop: 96 });
     expect((select as any)._applyGuardedScrollResult(scrollIntent)).toBe(true);
     (select as any)._renderOptions();
 
@@ -901,16 +913,240 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
     });
 
-    it('does not install a scroll listener for guarded window updates', () => {
+    it('does not install a scroll listener in default legacy-full mode', () => {
       select.setItems(makeItems());
       const optionsContainer = (select as any)._optionsContainer as HTMLElement;
-      const addListener = vi.spyOn(optionsContainer, 'addEventListener');
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      const containerListener = vi.spyOn(optionsContainer, 'addEventListener');
+      const dropdownListener = vi.spyOn(dropdown, 'addEventListener');
 
-      setGuardedWindow(select, 0, 2);
+      expect(containerListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
+      expect(dropdownListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
+      containerListener.mockRestore();
+      dropdownListener.mockRestore();
+    });
+  });
+
+  describe('guarded viewport sizing and scroll scheduling scaffold', () => {
+    it('uses the configured estimated item height when it is valid', () => {
+      select.updateConfig({ estimatedItemHeight: 24 });
+      select.setItems(makeItems());
+
+      setGuardedWindow(select, 0, 1);
+
+      expect((select as any)._guardedVirtualizer.averageHeight).toBe(24);
+      expect((select as any)._resolveGuardedEstimatedItemHeight()).toBe(24);
+    });
+
+    it('uses a rendered option measurement when the configured height is invalid', () => {
+      select.updateConfig({ estimatedItemHeight: Number.NaN });
+      select.setItems(makeItems());
+      const option = select.shadowRoot!.querySelector<HTMLElement>('[part="option"]')!;
+      vi.spyOn(option, 'getBoundingClientRect').mockReturnValue({ height: 31 } as DOMRect);
+
+      expect((select as any)._resolveGuardedEstimatedItemHeight()).toBe(31);
+      setGuardedWindow(select, 0, 1);
+      expect((select as any)._guardedVirtualizer.averageHeight).toBe(31);
+    });
+
+    it('uses a safe internal estimate when configured and rendered heights are invalid', () => {
+      select.updateConfig({ estimatedItemHeight: Number.POSITIVE_INFINITY });
+      select.setItems(makeItems());
+
+      expect((select as any)._resolveGuardedEstimatedItemHeight()).toBe(48);
+      setGuardedWindow(select, 0, 1);
+      expect((select as any)._guardedVirtualizer.averageHeight).toBe(48);
+    });
+
+    it('derives guarded viewport height from dropdown and options container geometry', () => {
+      select.setItems(makeItems());
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      const optionsContainer = (select as any)._optionsContainer as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 137 });
+      Object.defineProperty(optionsContainer, 'clientHeight', { configurable: true, value: 93 });
+
+      expect((select as any)._resolveGuardedViewportHeight()).toBe(137);
+
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 0 });
+      vi.spyOn(dropdown, 'getBoundingClientRect').mockReturnValue({ height: 0 } as DOMRect);
+      expect((select as any)._resolveGuardedViewportHeight()).toBe(93);
+    });
+
+    it('turns zero or invalid viewport measurements into a safe bounded window', () => {
+      select.setItems(makeItems());
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      const optionsContainer = (select as any)._optionsContainer as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: Number.NaN });
+      Object.defineProperty(optionsContainer, 'clientHeight', { configurable: true, value: -1 });
+      vi.spyOn(dropdown, 'getBoundingClientRect').mockReturnValue({ height: Number.POSITIVE_INFINITY } as DOMRect);
+      vi.spyOn(optionsContainer, 'getBoundingClientRect').mockReturnValue({ height: 0 } as DOMRect);
+
+      expect((select as any)._resolveGuardedViewportHeight()).toBe(0);
+      runGuardedScheduledUpdate(select);
+
+      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 0, endIndex: 3 });
+      expect((select as any)._virtualizationScope.mountedKeys.length).toBeLessThanOrEqual(3);
+    });
+
+    it('applies a small guarded overscan around the visible range', () => {
+      select.updateConfig({ estimatedItemHeight: 20 });
+      const items = Array.from({ length: 20 }, (_, index) => ({
+        id: `item-${index}`,
+        value: `value-${index}`,
+        label: `Option ${index}`,
+      }));
+      select.setItems(items);
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
+      dropdown.scrollTop = 100;
+
+      runGuardedScheduledUpdate(select);
+
+      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 3, endIndex: 10 });
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(3, 10).map((item) => item.id));
+    });
+
+    it('refreshes the guarded window after scrollTop changes and a scheduled update runs', () => {
+      select.updateConfig({ estimatedItemHeight: 20 });
+      const items = Array.from({ length: 20 }, (_, index) => ({
+        id: `item-${index}`,
+        value: `value-${index}`,
+        label: `Option ${index}`,
+      }));
+      select.setItems(items);
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
+      dropdown.scrollTop = 160;
+
+      runGuardedScheduledUpdate(select);
+
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 8, endIndex: 10 });
+      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 6, endIndex: 13 });
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(6, 13).map((item) => item.id));
+    });
+
+    it('routes guarded dropdown scroll events to the private scheduling helper', () => {
+      select.setItems(makeItems());
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      const schedule = vi.spyOn(select as any, '_scheduleGuardedVirtualWindowUpdate');
+
+      dropdown.dispatchEvent(new Event('scroll'));
+
+      expect(schedule).toHaveBeenCalledOnce();
+      schedule.mockRestore();
+    });
+
+    it('cancels pending guarded scroll work and clears targets on disconnect', () => {
+      select.setItems(makeItems());
+      setGuardedWindow(select, 0, 1);
+      const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame').mockReturnValue(9010);
+      const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame');
+      (select as any)._scheduleGuardedVirtualWindowUpdate();
+
+      select.remove();
+
+      expect(cancelFrame).toHaveBeenCalledWith(9010);
+      expect((select as any)._guardedVirtualWindowRafId).toBeNull();
+      expect((select as any)._guardedVirtualizer).toBeNull();
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual([]);
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+    });
+
+    it('cancels guarded scheduling and destroys the controller on grouped fallback', () => {
+      const groupedItems = makeItems();
+      select.setItems(groupedItems);
+      setGuardedWindow(select, 0, 1);
+      const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame').mockReturnValue(9011);
+      const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame');
+      const removeListener = vi.spyOn((select as any)._dropdown as HTMLElement, 'removeEventListener');
+      (select as any)._scheduleGuardedVirtualWindowUpdate();
+
+      select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
+
+      expect(cancelFrame).toHaveBeenCalledWith(9011);
+      expect((select as any)._guardedVirtualizer).toBeNull();
+      expect((select as any)._guardedScrollListenerAttached).toBe(false);
+      expect(removeListener.mock.calls.some(([type]) => type === 'scroll')).toBe(true);
+      expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+      removeListener.mockRestore();
+    });
+
+    it('preserves selection and active identity through repeated scheduled updates', () => {
+      select.updateConfig({ estimatedItemHeight: 20, selection: { mode: 'multi', closeOnSelect: false } });
+      const items = Array.from({ length: 12 }, (_, index) => ({
+        id: `item-${index}`,
+        value: `value-${index}`,
+        label: `Option ${index}`,
+      }));
+      select.setItems(items);
+      clickOption(select, 0);
+      select.open();
+      (select as any)._setActive(10);
+      const selectedBefore = engineSelectedKeys(select);
+      const activeBefore = engineActiveKey(select);
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
+
+      dropdown.scrollTop = 80;
+      runGuardedScheduledUpdate(select);
+      dropdown.scrollTop = 160;
+      runGuardedScheduledUpdate(select);
+
+      expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+      expect(engineActiveKey(select)).toBe(activeBefore);
+    });
+
+    it('clears active descendant after a scheduled eviction and restores it after materialization', () => {
+      select.updateConfig({ estimatedItemHeight: 20 });
+      const items = Array.from({ length: 12 }, (_, index) => ({
+        id: `item-${index}`,
+        value: `value-${index}`,
+        label: `Option ${index}`,
+      }));
+      select.setItems(items);
+      select.open();
+      (select as any)._setActive(0);
+      setGuardedWindow(select, 0, 1);
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 20 });
+      dropdown.scrollTop = 120;
+
+      runGuardedScheduledUpdate(select);
+
+      expect((select as any)._virtualizationScope.mountedKeys).not.toContain('item-0');
+      expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+      expect((select as any)._materializeGuardedVirtualKey('item-0')).toBe(true);
+      const activeOption = select.shadowRoot!.querySelector<HTMLElement>('[data-value="value-0"]');
+      expect(activeOption).toBeTruthy();
+      expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption!.id);
+    });
+
+    it('keeps default full rendering and installs no scroll listener outside guarded mode', () => {
+      select.updateConfig({ virtualize: true });
+      select.setItems(makeItems());
+      const dropdown = (select as any)._dropdown as HTMLElement;
+      const optionsContainer = (select as any)._optionsContainer as HTMLElement;
+      const dropdownListener = vi.spyOn(dropdown, 'addEventListener');
+      const optionsListener = vi.spyOn(optionsContainer, 'addEventListener');
+
       (select as any)._renderOptions();
 
-      expect(addListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
-      addListener.mockRestore();
+      expect((select as any)._guardedVirtualizer).toBeNull();
+      expect((select as any)._renderPlan.mode).toBe('legacy-full');
+      expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b', 'c']);
+      expect(select.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3);
+      expect(dropdownListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
+      expect(optionsListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
+      dropdownListener.mockRestore();
+      optionsListener.mockRestore();
     });
   });
 });
