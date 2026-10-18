@@ -148,7 +148,7 @@ function escapeForInjection(value: unknown) {
   return JSON.stringify(value)
     .replace(/\\/g, '\\\\')
     .replace(/`/g, '\\`')
-    .replace(/\$/g, '\\\$')
+    .replace(/\$/g, '\\$')
 }
 
 function createHtml(collapsedHeight: number) {

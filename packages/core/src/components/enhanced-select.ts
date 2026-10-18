@@ -27,10 +27,14 @@ import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapt
 import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
 import type { SelectionReason, ActiveReason } from '../engine/selection-policy.js';
 import type { SelectEvent } from '../engine/select-events.js';
+import { computeWindowKeys, type VirtualizationScope } from '../engine/virtualization.js';
+import { computeAccessibilityEffects, deriveAccessibilityState } from '../engine/accessibility.js';
+import { applyAccessibilityEffects } from '../platform/web/accessibility-effects.js';
 import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
 import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
 import { SelectOption } from './select-option';
 import { arrayIncludesValue } from '../utils/value-equality.js';
+import { Virtualizer, type VirtualizerScrollResult } from '../utils/virtualizer.js';
 
 interface PageCache {
   [page: number]: unknown[];
@@ -64,6 +68,14 @@ interface LegacySelectedEntry {
   item: unknown;
 }
 
+interface EnhancedSelectRenderPlan {
+  mode: 'legacy-full' | 'virtual-window';
+  filteredIndices: number[];
+  filteredKeys: SelectKey[];
+  intendedRenderKeys: SelectKey[];
+  filteredIndexByKey: ReadonlyMap<SelectKey, number>;
+}
+
 export class EnhancedSelect extends HTMLElement {
   /** live set of all connected instances; used to auto-close siblings */
   private static _instances: Set<EnhancedSelect> = new Set();
@@ -87,6 +99,33 @@ export class EnhancedSelect extends HTMLElement {
   private _liveRegion?: HTMLElement;
   private _state: SelectState;
   private _engine: SelectEngineBridge = new SelectEngineBridge();
+  private _virtualizationScope: VirtualizationScope<SelectKey> = {
+    dataKeys: [],
+    filteredKeys: [],
+    registeredKeys: [],
+    windowKeys: [],
+    mountedKeys: [],
+    selectedKeys: new Set(),
+    activeKey: null,
+  };
+  private _renderPlan: EnhancedSelectRenderPlan = {
+    mode: 'legacy-full',
+    filteredIndices: [],
+    filteredKeys: [],
+    intendedRenderKeys: [],
+    filteredIndexByKey: new Map(),
+  };
+  // Null keeps the public/default renderer on its legacy full path. This
+  // private state is only used by guarded virtualization integration.
+  private _guardedVirtualWindow: { startIndex: number; endIndex: number } | null = null;
+  private _guardedVirtualizer: Virtualizer | null = null;
+  private _guardedVirtualizerKeys: SelectKey[] = [];
+  private _guardedVirtualScrollTop = 0;
+  private _guardedVirtualViewportHeight = 0;
+  private _guardedVirtualOverscan = 0;
+  private _guardedVirtualWindowRafId: number | null = null;
+  private _guardedScrollListenerAttached = false;
+  private _onGuardedVirtualScroll = (): void => this._scheduleGuardedVirtualWindowUpdate();
   private _effectRunner = new DefaultSelectEffectRunner();
   private _itemAdapter: ItemAdapter<unknown, SelectKey> = this._createEngineItemAdapter();
   private _itemRegistry: ItemRegistry<unknown, SelectKey> = createItemRegistry([], this._itemAdapter);
@@ -274,6 +313,8 @@ export class EnhancedSelect extends HTMLElement {
     this._assembleDOM();
     this._attachEventListeners();
     this._initializeObservers();
+    this._syncComboboxAccessibility();
+    this._syncListboxAccessibility();
   }
 
   connectedCallback(): void {
@@ -327,7 +368,13 @@ export class EnhancedSelect extends HTMLElement {
     this._connectionController?.abort();
     this._connectionController = undefined;
     this._asyncGeneration += 1;
+    this._cancelGuardedVirtualWindowUpdate();
     this._clearLifecycleTasks();
+    this._destroyGuardedVirtualizer();
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: [],
+    };
 
     // Cleanup observers
     this._resizeObserver?.disconnect();
@@ -1133,9 +1180,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _syncLegacyActiveAria(): void {
-    const option = this._state.isOpen ? this._getOptionElementByIndex(this._state.activeIndex) : null;
-    if (option?.id) this._input.setAttribute('aria-activedescendant', option.id);
-    else this._input.removeAttribute('aria-activedescendant');
+    this._syncComboboxAccessibility();
   }
 
   private _syncStyleConfigVariables(): void {
@@ -1602,10 +1647,7 @@ export class EnhancedSelect extends HTMLElement {
       Object.assign(input.style, inputStyles);
     }
     
-    input.setAttribute('role', 'combobox');
-    input.setAttribute('aria-expanded', 'false');
     input.setAttribute('aria-haspopup', 'listbox');
-    input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
     
     return input;
   }
@@ -1622,12 +1664,6 @@ export class EnhancedSelect extends HTMLElement {
     
     if (this._config.styles.dropdown) {
       Object.assign(dropdown.style, this._config.styles.dropdown);
-    }
-    
-    dropdown.setAttribute('role', 'listbox');
-    dropdown.setAttribute('aria-labelledby', `${this._uniqueId}-input`);
-    if (this._config.selection.mode === 'multi') {
-      dropdown.setAttribute('aria-multiselectable', 'true');
     }
     
     return dropdown;
@@ -1711,7 +1747,6 @@ export class EnhancedSelect extends HTMLElement {
     // Set ARIA relationships
     const listboxId = `${this._uniqueId}-listbox`;
     this._dropdown.id = listboxId;
-    this._input.setAttribute('aria-controls', listboxId);
     this._input.setAttribute('aria-owns', listboxId);
 
     this._syncInputContainerMode();
@@ -3198,7 +3233,7 @@ export class EnhancedSelect extends HTMLElement {
       }
 
       // Focus the input (do not prevent default behavior for input itself)
-      this._input.focus();
+      this._applyFocusIntent('input', 'input-container-trigger');
 
       // If we just opened the dropdown, transfer pointer capture to the
       // options container so the subsequent pointerup lands there instead of
@@ -3242,7 +3277,7 @@ export class EnhancedSelect extends HTMLElement {
         this._handleOpen();
       }
 
-      this._input.focus();
+      this._applyFocusIntent('input', 'input-container-activation');
     });
 
     this._inputContent.addEventListener('pointermove', (e) => {
@@ -3421,7 +3456,7 @@ export class EnhancedSelect extends HTMLElement {
   private _runEngineEffects(effects: ReturnType<SelectEngineBridge['dispatch']>): void {
     this._effectRunner.run(effects, {
       focusTrigger: () => {
-        this._input?.focus();
+        this._applyFocusIntent('input', 'engine-focus-trigger');
       },
       syncAria: () => {
         this._syncPopupAria();
@@ -3431,11 +3466,90 @@ export class EnhancedSelect extends HTMLElement {
 
   private _syncPopupAria(): void {
     if (!this._input) return;
+    this._syncComboboxAccessibility();
+  }
 
-    this._input.setAttribute('aria-expanded', String(this._state.isOpen));
-    if (!this._state.isOpen) {
-      this._input.removeAttribute('aria-activedescendant');
-    }
+  private _syncComboboxAccessibility(): void {
+    if (!this._input || !this._engine || !this._state) return;
+
+    const accessibilityState = deriveAccessibilityState(this._engine.state, {
+      searchable: this._config.searchable,
+      readonly: !this._config.searchable,
+      invalid: this._hasError,
+    });
+    const effects = computeAccessibilityEffects(accessibilityState, {
+      controlsId: this._dropdown?.id || null,
+      optionKeys: [],
+    }).filter((effect) => effect.type === 'SYNC_COMBOBOX_ARIA');
+
+    applyAccessibilityEffects(effects, {
+      combobox: this._input,
+      getOptionByKey: (key) => {
+        if (!this._state.isOpen) return null;
+        const index = this._itemRegistry.keyToIndex.get(key);
+        return index === undefined ? null : this._getOptionElementByIndex(index);
+      },
+    });
+  }
+
+  private _syncListboxAccessibility(): void {
+    if (!this._dropdown || !this._engine || !this._state) return;
+
+    const derivedState = deriveAccessibilityState(this._engine.state, {
+      label: { labelId: this._input?.id ?? null },
+    });
+    const accessibilityState = {
+      ...derivedState,
+      // The component's existing busy lifecycle is not yet mirrored to engine dataStatus.
+      busy: this._state.isBusy,
+    };
+    const effects = computeAccessibilityEffects(accessibilityState, {
+      controlsId: this._dropdown.id || null,
+      optionKeys: [],
+    }).filter((effect) => effect.type === 'SYNC_LISTBOX_ARIA');
+
+    applyAccessibilityEffects(effects, { listbox: this._dropdown });
+  }
+
+  private _syncRenderedOptionAccessibility(): void {
+    if (!this._optionsContainer || !this._engine || !this._state) return;
+
+    const optionTargets = new Map<SelectKey, HTMLElement>();
+    this._optionsContainer.querySelectorAll<HTMLElement>('[data-index]').forEach((option) => {
+      const index = Number(option.getAttribute('data-index'));
+      if (!Number.isFinite(index)) return;
+      const key = this._itemRegistry.indexToKey.get(index);
+      if (key !== undefined) optionTargets.set(key, option);
+    });
+    if (optionTargets.size === 0) return;
+
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      controlsId: this._dropdown?.id || null,
+      optionKeys: [...optionTargets.keys()],
+    }).filter((effect) => effect.type === 'SYNC_OPTION_ARIA');
+
+    applyAccessibilityEffects(effects, {
+      getOptionByKey: (key) => optionTargets.get(key) ?? null,
+    });
+  }
+
+  private _applyFocusIntent(
+    target: 'input' | 'clear-button' | 'active-option' | 'none',
+    reason: string,
+    focusTarget?: HTMLElement | null,
+  ): void {
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      optionKeys: [],
+      focusIntents: [{ target, reason }],
+    }).filter((effect) => effect.type === 'FOCUS_INTENT');
+
+    applyAccessibilityEffects(effects, {
+      focusTargets: {
+        input: target === 'input' ? this._input : null,
+        clearButton: target === 'clear-button' ? this._clearControl : null,
+        getActiveOption: () => target === 'active-option' ? focusTarget ?? null : null,
+      },
+    }, { applyFocus: true });
   }
 
   private _handleOpen(): void {
@@ -3458,7 +3572,6 @@ export class EnhancedSelect extends HTMLElement {
     this.setAttribute('data-open', 'true');
     this._liftStackingAncestors();
     this._dropdown.style.display = 'block';
-    this._input.setAttribute('aria-expanded', 'true');
     this._updateArrowRotation();
 
     // Render options when opening
@@ -3490,8 +3603,6 @@ export class EnhancedSelect extends HTMLElement {
     this._restoreLiftedAncestors();
     this._dropdown.style.display = 'none';
     this._dropdown.setAttribute('data-placement', this._resolvedDropdownPlacement);
-    this._input.setAttribute('aria-expanded', 'false');
-    this._input.removeAttribute('aria-activedescendant');
     this._updateArrowRotation();
     this._runEngineEffects(effects);
     
@@ -3506,13 +3617,12 @@ export class EnhancedSelect extends HTMLElement {
       this._liftStackingAncestors();
       this._dropdown.style.display = 'block';
       this._syncDropdownPlacement();
-      this._input.setAttribute('aria-expanded', 'true');
     } else {
       this.removeAttribute('data-open');
       this._restoreLiftedAncestors();
       this._dropdown.style.display = 'none';
-      this._input.setAttribute('aria-expanded', 'false');
     }
+    this._syncComboboxAccessibility();
   }
 
   private _liftStackingAncestors(): void {
@@ -3852,7 +3962,11 @@ export class EnhancedSelect extends HTMLElement {
   private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {
     this._ensureRegistryCurrent();
     const record = this._getRecordByIndex(index);
-    const option = this._getOptionElementByIndex(index);
+    let option = this._getOptionElementByIndex(index);
+    if (!option && record && this._guardedVirtualizer) {
+      this._materializeGuardedVirtualKey(record.key);
+      option = this._getOptionElementByIndex(index);
+    }
     if (!record || record.disabled || !option || option.getAttribute('aria-disabled') === 'true') {
       return;
     }
@@ -3930,7 +4044,7 @@ export class EnhancedSelect extends HTMLElement {
       keyboardFocus: (index: number) => {
         this._setActive(index);
         const el = this._getOptionElementByIndex(index);
-        el?.focus?.();
+        this._applyFocusIntent('active-option', 'renderer-keyboard-focus', el);
       },
     };
   }
@@ -4006,12 +4120,21 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _announce(message: string): void {
-    if (this._liveRegion) {
-      this._liveRegion.textContent = message;
-      this._setLifecycleTimeout(() => {
-        if (this._liveRegion) this._liveRegion.textContent = '';
-      }, 1000);
-    }
+    const effects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+      optionKeys: [],
+      announcements: [{ politeness: 'polite', message }],
+    }).filter((effect) => effect.type === 'ANNOUNCE');
+
+    applyAccessibilityEffects(effects, { liveRegion: this._liveRegion });
+    if (!this._liveRegion) return;
+
+    this._setLifecycleTimeout(() => {
+      const clearEffects = computeAccessibilityEffects(deriveAccessibilityState(this._engine.state), {
+        optionKeys: [],
+        announcements: [{ politeness: 'polite', message: '' }],
+      }).filter((effect) => effect.type === 'ANNOUNCE');
+      applyAccessibilityEffects(clearEffects, { liveRegion: this._liveRegion });
+    }, 1000);
   }
 
   private _selectOption(index: number, opts?: { shiftKey?: boolean; toggleKey?: boolean; reason?: SelectionReason }): void {
@@ -4115,7 +4238,6 @@ export class EnhancedSelect extends HTMLElement {
       (option as SelectOption).setSelected(false);
     } else if (option) {
       option.classList.remove('selected', 'sm-selected', 'smilodon-option--selected');
-      option.setAttribute('aria-selected', 'false');
 
       const stateTokens = (option.dataset.smState || '')
         .split(' ')
@@ -4274,7 +4396,14 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     // Find and scroll to the target option
-  const option = this._getOptionElementByIndex(targetIndex);
+    let option = this._getOptionElementByIndex(targetIndex);
+    if (!option && this._guardedVirtualizer) {
+      const targetKey = this._itemRegistry.indexToKey.get(targetIndex);
+      if (targetKey !== undefined) {
+        this._materializeGuardedVirtualKey(targetKey);
+        option = this._getOptionElementByIndex(targetIndex);
+      }
+    }
     
     if (option) {
       // Use smooth scrolling with center alignment for better UX
@@ -4324,11 +4453,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _setBusy(busy: boolean): void {
     this._state.isBusy = busy;
-    if (busy) {
-      this._dropdown.setAttribute('aria-busy', 'true');
-    } else {
-      this._dropdown.removeAttribute('aria-busy');
-    }
+    this._syncListboxAccessibility();
     
     // Trigger re-render to show/hide busy indicator
     // We use _renderOptions to handle the UI update
@@ -4771,7 +4896,7 @@ export class EnhancedSelect extends HTMLElement {
     // Update input state based on new config
     if (this._input) {
       this._input.readOnly = !this._config.searchable;
-      this._input.setAttribute('aria-autocomplete', this._config.searchable ? 'list' : 'none');
+      this._syncComboboxAccessibility();
       if (this._state.selectedIndices.size === 0) {
         this._input.placeholder = this._config.placeholder || 'Select an option...';
       }
@@ -4792,13 +4917,7 @@ export class EnhancedSelect extends HTMLElement {
 
     this._syncStyleConfigVariables();
 
-    if (this._dropdown) {
-      if (this._config.selection.mode === 'multi') {
-        this._dropdown.setAttribute('aria-multiselectable', 'true');
-      } else {
-        this._dropdown.removeAttribute('aria-multiselectable');
-      }
-    }
+    this._syncListboxAccessibility();
 
     if (this.isConnected) {
       this._syncDirectionConfig();
@@ -4877,7 +4996,7 @@ export class EnhancedSelect extends HTMLElement {
       clearedSearch: shouldClearSearch && hadSearch,
     });
 
-    this._input.focus();
+    this._applyFocusIntent('input', 'clear-control-complete');
   }
 
   private _syncClearControlState(): void {
@@ -4906,7 +5025,7 @@ export class EnhancedSelect extends HTMLElement {
   setError(message: string): void {
     this._hasError = true;
     this._errorMessage = message;
-    this._input.setAttribute('aria-invalid', 'true');
+    this._syncComboboxAccessibility();
     this._announce(`Error: ${message}`);
   }
 
@@ -4916,7 +5035,7 @@ export class EnhancedSelect extends HTMLElement {
   clearError(): void {
     this._hasError = false;
     this._errorMessage = '';
-    this._input.removeAttribute('aria-invalid');
+    this._syncComboboxAccessibility();
   }
 
   /**
@@ -4924,13 +5043,12 @@ export class EnhancedSelect extends HTMLElement {
    */
   setRequired(required: boolean): void {
     if (required) {
-      this._input.setAttribute('aria-required', 'true');
       this._input.setAttribute('required', '');
     } else {
-      this._input.removeAttribute('aria-required');
       this._input.removeAttribute('required');
     }
     this._syncEngineSelectionConfig();
+    this._syncComboboxAccessibility();
   }
 
   /**
@@ -4949,6 +5067,250 @@ export class EnhancedSelect extends HTMLElement {
   /**
    * Render options based on current state
    */
+  private _deriveVirtualizationScope(filteredIndices: readonly number[]): VirtualizationScope<SelectKey> {
+    const keyForIndex = (index: number): SelectKey | undefined => this._itemRegistry.indexToKey.get(index);
+    const filteredKeys = filteredIndices
+      .map(keyForIndex)
+      .filter((key): key is SelectKey => key !== undefined);
+    return {
+      dataKeys: this._itemRegistry.records.map((record) => record.key),
+      filteredKeys,
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      // The current chunked path schedules all filtered items for rendering;
+      // this scaffold records that target set until bounded windows are wired.
+      windowKeys: this._renderPlan.intendedRenderKeys.slice(),
+      mountedKeys: this._getMountedVirtualizationKeys(this._optionsContainer.children),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _getMountedVirtualizationKeys(targets: ArrayLike<Element>): SelectKey[] {
+    const keyForIndex = (index: number): SelectKey | undefined => this._itemRegistry.indexToKey.get(index);
+    return Array.from(targets)
+      .filter((target): target is HTMLElement => target instanceof HTMLElement
+        && (target.hasAttribute('data-sm-selectable') || target.hasAttribute('data-selectable')))
+      .map((target) => Number(target.getAttribute('data-sm-index') ?? target.getAttribute('data-index')))
+      .filter(Number.isInteger)
+      .map(keyForIndex)
+      .filter((key): key is SelectKey => key !== undefined);
+  }
+
+  private _refreshMountedVirtualizationScope(): void {
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: this._getMountedVirtualizationKeys(this._optionsContainer.children),
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _appendMountedVirtualizationTargets(targets: ArrayLike<Element>): void {
+    const mountedKeys = this._getMountedVirtualizationKeys(targets);
+    this._virtualizationScope = {
+      ...this._virtualizationScope,
+      mountedKeys: [...new Set([...this._virtualizationScope.mountedKeys, ...mountedKeys])],
+      registeredKeys: Array.from(this._engine.state.registeredKeys),
+      selectedKeys: new Set(this._engine.state.selectedKeys),
+      activeKey: this._engine.state.activeKey,
+    };
+  }
+
+  private _createLegacyRenderPlan(filteredIndices: readonly number[]): EnhancedSelectRenderPlan {
+    const indices = [...filteredIndices];
+    const filteredKeys = indices
+      .map((index) => this._itemRegistry.indexToKey.get(index))
+      .filter((key): key is SelectKey => key !== undefined);
+    const filteredIndexByKey = new Map<SelectKey, number>();
+    filteredKeys.forEach((key, filteredIndex) => filteredIndexByKey.set(key, filteredIndex));
+
+    return {
+      mode: 'legacy-full',
+      filteredIndices: indices,
+      filteredKeys,
+      intendedRenderKeys: filteredKeys.slice(),
+      filteredIndexByKey,
+    };
+  }
+
+  private _createVirtualRenderPlan(startIndex: number, endIndex: number): EnhancedSelectRenderPlan {
+    const filteredKeys = this._renderPlan.filteredKeys.slice();
+    const intendedRenderKeys = computeWindowKeys(filteredKeys, startIndex, endIndex);
+    const filteredIndices = intendedRenderKeys
+      .map((key) => this._itemRegistry.keyToIndex.get(key))
+      .filter((index): index is number => index !== undefined);
+
+    return {
+      mode: 'virtual-window',
+      filteredIndices,
+      filteredKeys,
+      intendedRenderKeys,
+      filteredIndexByKey: new Map(this._renderPlan.filteredIndexByKey),
+    };
+  }
+
+  private _ensureGuardedVirtualizer(filteredKeys: readonly SelectKey[]): Virtualizer {
+    if (!this._guardedVirtualizer) {
+      // The controller only calculates ranges and scroll intents. Give it a
+      // detached container so its internal styling never touches rendered UI.
+      this._guardedVirtualizer = new Virtualizer(
+        document.createElement('div'),
+        filteredKeys.length,
+        (index) => this._renderPlan.filteredKeys[index],
+        { estimatedItemHeight: this._resolveGuardedEstimatedItemHeight(), buffer: 0 },
+      );
+      this._dropdown.addEventListener('scroll', this._onGuardedVirtualScroll, { passive: true });
+      this._guardedScrollListenerAttached = true;
+    } else {
+      const keysChanged = filteredKeys.length !== this._guardedVirtualizerKeys.length
+        || filteredKeys.some((key, index) => !Object.is(key, this._guardedVirtualizerKeys[index]));
+      if (keysChanged) this._guardedVirtualizer.setItemsLength(filteredKeys.length);
+    }
+
+    this._guardedVirtualizerKeys = [...filteredKeys];
+    return this._guardedVirtualizer;
+  }
+
+  private _resolveGuardedEstimatedItemHeight(): number {
+    const configuredHeight = this._config.estimatedItemHeight;
+    if (typeof configuredHeight === 'number' && Number.isFinite(configuredHeight) && configuredHeight > 0) {
+      return configuredHeight;
+    }
+
+    const renderedOption = this._optionsContainer.querySelector<HTMLElement>('[part="option"]');
+    const measuredHeight = renderedOption?.getBoundingClientRect().height || renderedOption?.offsetHeight;
+    if (typeof measuredHeight === 'number' && Number.isFinite(measuredHeight) && measuredHeight > 0) {
+      return measuredHeight;
+    }
+
+    return 48;
+  }
+
+  private _resolveGuardedViewportHeight(): number {
+    const candidates = [
+      this._dropdown.clientHeight,
+      this._dropdown.getBoundingClientRect().height,
+      this._optionsContainer.clientHeight,
+      this._optionsContainer.getBoundingClientRect().height,
+    ];
+    return candidates.find((height) => Number.isFinite(height) && height > 0) ?? 0;
+  }
+
+  private _resolveGuardedOverscan(): number {
+    return 2;
+  }
+
+  private _applyGuardedWindowUpdate(
+    update: { window: { startIndex: number; endIndex: number; windowSize: number }; scrollTop: number; viewportHeight: number },
+    overscan = 0,
+  ): boolean {
+    if (!this._guardedVirtualizer) return false;
+
+    this._guardedVirtualScrollTop = update.scrollTop;
+    this._guardedVirtualViewportHeight = update.viewportHeight;
+    const itemCount = this._renderPlan.filteredKeys.length;
+    const nextWindow = {
+      startIndex: Math.max(0, update.window.startIndex - overscan),
+      endIndex: Math.min(itemCount, update.window.endIndex + 1 + overscan),
+    };
+    const changed = this._guardedVirtualWindow?.startIndex !== nextWindow.startIndex
+      || this._guardedVirtualWindow?.endIndex !== nextWindow.endIndex;
+    this._guardedVirtualWindow = nextWindow;
+    return changed;
+  }
+
+  private _scheduleGuardedVirtualWindowUpdate(): void {
+    if (!this._guardedVirtualizer || this._guardedVirtualWindowRafId !== null) return;
+
+    this._guardedVirtualWindowRafId = this._requestLifecycleFrame(() => {
+      this._guardedVirtualWindowRafId = null;
+      const virtualizer = this._guardedVirtualizer;
+      if (!virtualizer) return;
+
+      const update = virtualizer.updateWindow(
+        this._dropdown.scrollTop,
+        this._resolveGuardedViewportHeight(),
+      );
+      this._guardedVirtualOverscan = this._resolveGuardedOverscan();
+      if (update && this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan)) {
+        this._renderOptions();
+      }
+    });
+  }
+
+  private _cancelGuardedVirtualWindowUpdate(): void {
+    if (this._guardedVirtualWindowRafId === null) return;
+    cancelAnimationFrame(this._guardedVirtualWindowRafId);
+    this._lifecycleRafs.delete(this._guardedVirtualWindowRafId);
+    this._guardedVirtualWindowRafId = null;
+  }
+
+  private _applyGuardedScrollResult(result: VirtualizerScrollResult | null): boolean {
+    if (!result || !this._guardedVirtualizer) return false;
+
+    this._guardedVirtualScrollTop = result.scrollTop;
+    const update = this._guardedVirtualizer.updateWindow(
+      this._guardedVirtualScrollTop,
+      this._guardedVirtualViewportHeight,
+    );
+    if (!update) return false;
+
+    this._guardedVirtualWindow = {
+      startIndex: update.window.startIndex,
+      endIndex: update.window.endIndex + 1,
+    };
+    this._guardedVirtualOverscan = 0;
+    return true;
+  }
+
+  private _updateGuardedVirtualWindow(scrollTop: number, viewportHeight: number): boolean {
+    const virtualizer = this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+    this._guardedVirtualScrollTop = scrollTop;
+    this._guardedVirtualViewportHeight = viewportHeight;
+    const update = virtualizer.updateWindow(scrollTop, viewportHeight);
+    if (!update) return false;
+
+    this._guardedVirtualOverscan = 0;
+    this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan);
+    return true;
+  }
+
+  private _destroyGuardedVirtualizer(): void {
+    this._cancelGuardedVirtualWindowUpdate();
+    if (this._guardedScrollListenerAttached) {
+      this._dropdown.removeEventListener('scroll', this._onGuardedVirtualScroll);
+      this._guardedScrollListenerAttached = false;
+    }
+    this._guardedVirtualizer?.destroy();
+    this._guardedVirtualizer = null;
+    this._guardedVirtualizerKeys = [];
+    this._guardedVirtualWindow = null;
+    this._guardedVirtualScrollTop = 0;
+    this._guardedVirtualViewportHeight = 0;
+    this._guardedVirtualOverscan = 0;
+  }
+
+  private _materializeGuardedVirtualKey(key: SelectKey): boolean {
+    if (!this._guardedVirtualizer) return false;
+
+    const targetIndex = this._renderPlan.filteredIndexByKey.get(key);
+    if (targetIndex === undefined) return false;
+
+    this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+    const result = this._guardedVirtualizer.scrollToKey(
+      key,
+      (candidate) => this._renderPlan.filteredIndexByKey.get(candidate),
+    );
+    if (!this._applyGuardedScrollResult(result)) return false;
+    this._renderOptions();
+    return true;
+  }
+
+  private _refreshVirtualizationScope(filteredIndices: readonly number[]): void {
+    this._virtualizationScope = this._deriveVirtualizationScope(filteredIndices);
+  }
+
   private _renderOptions(): void {
     this._ensureRegistryCurrent();
     this._renderCycleId += 1;
@@ -4961,6 +5323,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Clear options container
     this._optionsContainer.innerHTML = '';
+    let filteredIndicesForScope: number[] = [];
     
     // Ensure dropdown only contains options container (cleanup legacy direct children)
     // We need to preserve optionsContainer, so we can't just clear dropdown.innerHTML
@@ -4979,6 +5342,8 @@ export class EnhancedSelect extends HTMLElement {
     // Show searching state (exclusive state)
     if (this._state.isSearching) {
       this._registerShadowItems([]);
+      this._renderPlan = this._createLegacyRenderPlan([]);
+      this._refreshVirtualizationScope(filteredIndicesForScope);
       this._syncLegacyActiveAria();
       const searching = document.createElement('div');
       searching.className = 'searching-state';
@@ -4996,7 +5361,11 @@ export class EnhancedSelect extends HTMLElement {
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
-      this._registerShadowItems(this._itemRegistry.records.map((record) => record.index));
+      this._destroyGuardedVirtualizer();
+      this._renderPlan = this._createLegacyRenderPlan(this._itemRegistry.records.map((record) => record.index));
+      filteredIndicesForScope = this._renderPlan.filteredIndices;
+      this._registerShadowItems(filteredIndicesForScope);
+      this._refreshVirtualizationScope(filteredIndicesForScope);
       this._state.groupedItems.forEach((group, groupIndex) => {
         let header: HTMLElement;
         if (this.groupHeaderRenderer) {
@@ -5034,7 +5403,7 @@ export class EnhancedSelect extends HTMLElement {
       });
     } else {
       // Normal rendering (flat list or filtered)
-      const filteredIndices: number[] = [];
+      const computedFilteredIndices: number[] = [];
       this._state.loadedItems.forEach((item, index) => {
         if (query) {
           try {
@@ -5045,9 +5414,31 @@ export class EnhancedSelect extends HTMLElement {
           }
         }
 
-        filteredIndices.push(index);
+        computedFilteredIndices.push(index);
       });
-      this._registerShadowItems(filteredIndices);
+      this._renderPlan = this._createLegacyRenderPlan(computedFilteredIndices);
+      filteredIndicesForScope = this._renderPlan.filteredIndices;
+      this._registerShadowItems(filteredIndicesForScope);
+      if (this._guardedVirtualizer) {
+        const virtualizer = this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
+        const update = virtualizer.updateWindow(
+          this._guardedVirtualScrollTop,
+          this._guardedVirtualViewportHeight,
+        );
+        if (update) {
+          this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan);
+        } else {
+          this._guardedVirtualWindow = null;
+        }
+      }
+      if (this._guardedVirtualWindow) {
+        this._renderPlan = this._createVirtualRenderPlan(
+          this._guardedVirtualWindow.startIndex,
+          this._guardedVirtualWindow.endIndex,
+        );
+      }
+      const filteredIndices = this._renderPlan.filteredIndices;
+      this._refreshVirtualizationScope(filteredIndicesForScope);
 
       if (filteredIndices.length === 0 && !this._state.isBusy) {
         const empty = document.createElement('div');
@@ -5092,7 +5483,10 @@ export class EnhancedSelect extends HTMLElement {
               this._renderSingleOption(item, itemIndex, getValue, getLabel, fragment);
             }
 
+            const renderedTargets = Array.from(fragment.children);
             this._optionsContainer.appendChild(fragment);
+            this._appendMountedVirtualizationTargets(renderedTargets);
+            this._syncRenderedOptionAccessibility();
             this._syncLegacyActiveAria();
 
             if (cursor < filteredIndices.length) {
@@ -5119,6 +5513,7 @@ export class EnhancedSelect extends HTMLElement {
       }
     }
     
+    this._refreshMountedVirtualizationScope();
     // Append Busy Indicator if busy
     if (this._state.isBusy && this._config.busyBucket.enabled) {
       const busyBucket = document.createElement('div');
@@ -5144,6 +5539,7 @@ export class EnhancedSelect extends HTMLElement {
       this._addLoadMoreTrigger();
     }
 
+    this._syncRenderedOptionAccessibility();
     this._syncLegacyActiveAria();
     this._finalizePerfMarks();
     
@@ -5360,16 +5756,6 @@ export class EnhancedSelect extends HTMLElement {
     }
     
     optionEl.id = optionEl.id || meta.id;
-
-    if (!optionEl.getAttribute('role')) {
-      optionEl.setAttribute('role', 'option');
-    }
-    optionEl.setAttribute('aria-selected', String(meta.selected));
-    if (meta.disabled && !meta.disabledBehavior.selectable) {
-      optionEl.setAttribute('aria-disabled', 'true');
-    } else {
-      optionEl.removeAttribute('aria-disabled');
-    }
 
     if (!optionEl.hasAttribute('tabindex')) {
       optionEl.tabIndex = -1;
