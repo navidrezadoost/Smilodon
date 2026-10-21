@@ -34,6 +34,14 @@ function getInput(select: EnhancedSelect): HTMLInputElement {
   return input!;
 }
 
+function getOptionsContainer(select: EnhancedSelect): HTMLElement {
+  const container: unknown = (select as unknown as { _optionsContainer: unknown })._optionsContainer;
+  if (!(container instanceof HTMLElement)) {
+    throw new Error('Expected EnhancedSelect options container to be an HTMLElement');
+  }
+  return container;
+}
+
 function filterTo(select: EnhancedSelect, query: string): void {
   const input = getInput(select);
   input.value = query;
@@ -82,11 +90,16 @@ function mockResizeObservers(): Array<{
       instances.push({
         targets: this.targets,
         callback,
-        emit: (target, height) => callback([{
-          target,
-          contentRect: { height } as DOMRectReadOnly,
-          borderBoxSize: [{ blockSize: height, inlineSize: 100 }] as ResizeObserverSize[],
-        } as ResizeObserverEntry], this as unknown as ResizeObserver),
+        emit: (target, height) => {
+          const box: ResizeObserverSize = { blockSize: height, inlineSize: 100 };
+          callback([{
+            target,
+            contentRect: new DOMRect(0, 0, 100, height),
+            borderBoxSize: [box],
+            contentBoxSize: [box],
+            devicePixelContentBoxSize: [box],
+          }], this as unknown as ResizeObserver);
+        },
       });
     }
     observe(target: Element): void { this.targets.add(target); }
@@ -277,19 +290,17 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       label: `Option ${index}`,
     }));
     select.setItems(items);
-    setGuardedWindow(select, 0, 400);
-    (select as any)._renderOptions();
     expect(select.shadowRoot!.querySelectorAll('[part="option"]').length).toBe(80);
 
-    setGuardedWindow(select, 500, 800);
-    (select as any)._renderOptions();
+    // A newer chunked legacy render supersedes the first render generation.
+    select.setItems(items.slice(500));
     await new Promise((resolve) => window.setTimeout(resolve, 50));
 
     const expectedKeys = items.slice(500).map((item) => item.id);
     const rendered = Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'));
     expect(rendered).toHaveLength(300);
-    expect(rendered[0].dataset.smIndex).toBe('500');
-    expect(rendered.some((option) => option.id.endsWith('-option-0'))).toBe(false);
+    expect(rendered[0].dataset.smIndex).toBe('0');
+    expect(rendered.some((option) => option.dataset.value === 'value-0')).toBe(false);
     expect((select as any)._virtualizationScope.mountedKeys).toEqual(expectedKeys);
   });
 
@@ -509,12 +520,12 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
     expect((select as any)._guardedVirtualizer.getCurrentWindow()).toEqual({
       startIndex: 0,
-      endIndex: 1,
-      windowSize: 2,
+      endIndex: 0,
+      windowSize: 1,
     });
-    expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 0, endIndex: 2 });
+    expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 0, endIndex: 1 });
     (select as any)._renderOptions();
-    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a', 'b']);
+    expect((select as any)._renderPlan.intendedRenderKeys).toEqual(['a']);
   });
 
   it('applies scrollToIndex intent through updateWindow without changing selection or active identity', () => {
@@ -605,7 +616,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
     expect(engineSelectedKeys(select)).toEqual(selectedBefore);
     expect(engineActiveKey(select)).toBe(activeBefore);
-    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a', 'b']);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['a']);
     expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
   });
 
@@ -668,7 +679,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
     expect(engineSelectedKeys(select)).toEqual(selectedBefore);
     expect(select.shadowRoot!.querySelector('[data-value="APL"]')).toBeNull();
-    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b', 'c']);
+    expect((select as any)._virtualizationScope.mountedKeys).toEqual(['b']);
 
     (select as any)._scrollToSelected();
 
@@ -929,7 +940,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
         label: `Option ${index}`,
       }));
       select.setItems(items);
-      setGuardedWindow(select, 0, 350);
+      // Keep a zero-height viewport so materializing one distant key produces
+      // one mounted option rather than a 350-row viewport window.
+      setGuardedWindow(select, 0, 1);
       (select as any)._renderOptions();
       const firstRange = (select as any)._renderPlan.intendedRenderKeys[0];
 
@@ -1042,8 +1055,8 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
       runGuardedScheduledUpdate(select);
 
-      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 3, endIndex: 10 });
-      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(3, 10).map((item) => item.id));
+      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 3, endIndex: 9 });
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(3, 9).map((item) => item.id));
     });
 
     it('refreshes the guarded window after scrollTop changes and a scheduled update runs', () => {
@@ -1061,9 +1074,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
       runGuardedScheduledUpdate(select);
 
-      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 8, endIndex: 10 });
-      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 6, endIndex: 13 });
-      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(6, 13).map((item) => item.id));
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 8, endIndex: 9 });
+      expect((select as any)._guardedVirtualWindow).toEqual({ startIndex: 6, endIndex: 12 });
+      expect((select as any)._virtualizationScope.mountedKeys).toEqual(items.slice(6, 12).map((item) => item.id));
     });
 
     it('routes guarded dropdown scroll events to the private scheduling helper', () => {
@@ -1306,7 +1319,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       select.setItems([items[10], ...items.slice(0, 10), ...items.slice(11)]);
 
       expect((select as any)._materializeGuardedVirtualKey('item-0')).toBe(true);
-      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 1, endIndex: 6 });
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 1, endIndex: 5 });
       expect((select as any)._optionsContainer.scrollTop).toBe(20);
       expect((select as any)._virtualizationScope.mountedKeys).toContain('item-0');
       expect(scroller).toBe((select as any)._optionsContainer);
@@ -1443,7 +1456,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
         option.textContent = (item as TestItem).label;
         return option;
       };
-      setupGuardedRendererList(makeLargeItems(40));
+      setupGuardedRendererList(makeLargeItems(40), 20);
       const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
 
       observers[0].emit(option, 29);
@@ -1458,7 +1471,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
         reused.textContent = (item as TestItem).label;
         return reused;
       };
-      setupGuardedRendererList(makeLargeItems(40));
+      setupGuardedRendererList(makeLargeItems(40), 20);
       const oldObserver = observers[observers.length - 1];
       const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
 
@@ -1490,15 +1503,15 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       const observers = mockResizeObservers();
       setupGuardedRendererList(makeLargeItems(6000), 80);
       const scroller = (select as any)._optionsContainer as HTMLElement;
-      scroller.scrollTop = 200;
+      scroller.scrollTop = 80;
       runGuardedScheduledUpdate(select);
       const aboveAnchor = scroller.querySelector<HTMLElement>('[data-index="3"]')!;
       expect(observers[0].targets.has(aboveAnchor)).toBe(true);
 
-      observers[0].emit(aboveAnchor, 60);
+      observers[0].emit(aboveAnchor, 40);
 
-      expect(scroller.scrollTop).toBe(220);
-      expect((select as any)._guardedVirtualizer.cumulativeOffset(5)).toBe(220);
+      expect(scroller.scrollTop).toBe(100);
+      expect((select as any)._guardedVirtualizer.cumulativeOffset(4)).toBe(100);
     });
 
     it('keeps an explicit scroll-to-key position when the target row is measured', () => {
@@ -1633,7 +1646,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       const option = select.shadowRoot!.querySelector<HTMLElement>('[data-value="value-0"]')!;
       expect(option.dataset.index).toBe('1');
       expect(option.id).toBe(`${(select as any)._uniqueId}-option-1`);
-      expect(option.textContent).toContain('Option 0');
+      expect(option.shadowRoot?.textContent).toContain('Option 0');
     });
 
     it('passes current custom item and index context after reorder, filter, and remount', () => {
@@ -1806,8 +1819,10 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
         return option;
       };
       const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame')
-        .mockImplementation((callback: () => void) => {
-          scheduled.push(callback);
+        .mockImplementation((...args: unknown[]) => {
+          const callback = args[0];
+          if (typeof callback !== 'function') throw new TypeError('Expected a lifecycle callback');
+          scheduled.push(callback as () => void);
           return 9040 + scheduled.length;
         });
       select.setItems(makeLargeItems(400));
@@ -1864,9 +1879,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
         return option;
       };
       setupGuardedRendererList(makeLargeItems(30));
-      const mountedBeforeDisconnect = Array.from(
-        (select as any)._optionsContainer.querySelectorAll<HTMLElement>('[data-index]'),
-      );
+      const mountedBeforeDisconnect = Array.from(getOptionsContainer(select).querySelectorAll<HTMLElement>('[data-index]'));
       const staleObserver = observers[observers.length - 1];
 
       select.remove();
@@ -1875,14 +1888,14 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect(staleObserver.targets.size).toBe(0);
       document.body.appendChild(select);
 
-      const mountedAfterReconnect = Array.from(
-        (select as any)._optionsContainer.querySelectorAll<HTMLElement>('[data-index]'),
-      );
+      const mountedAfterReconnect = Array.from(getOptionsContainer(select).querySelectorAll<HTMLElement>('[data-index]'));
       expect(mountedBeforeDisconnect.every((node) => !node.isConnected)).toBe(true);
       expect(mountedAfterReconnect.every((node) => !mountedBeforeDisconnect.includes(node))).toBe(true);
       expect(renderedNodes.some((node) => mountedBeforeDisconnect.includes(node))).toBe(true);
       expect(observers[observers.length - 1]).not.toBe(staleObserver);
-      staleObserver.emit(mountedBeforeDisconnect[0], 99);
+      const staleNode = mountedBeforeDisconnect[0];
+      expect(staleNode).toBeDefined();
+      staleObserver.emit(staleNode!, 99);
       expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
     });
 

@@ -117,7 +117,19 @@ jobs:
         run: npm ci
 
       - name: Install browser engine
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-4
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps ${{ matrix.browser }} 2>&1 \
+              | tee "test-results/phase-4/${{ matrix.browser }}-install-attempt-${attempt}.log"; then
+              exit 0
+            fi
+            if (( attempt < 3 )); then
+              sleep $((attempt * 10))
+            fi
+          done
+          exit 1
 
       - name: Build component packages
         run: npm run build

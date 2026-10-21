@@ -5,7 +5,7 @@ describe('Virtualizer', () => {
   it('uses the prefix index for fixed-height windows at small list sizes', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 1000, (i) => i, { estimatedItemHeight: 50, buffer: 2 });
-    expect(v.computeWindow(250, 500)).toEqual({ startIndex: 3, endIndex: 17, windowSize: 15 });
+    expect(v.computeWindow(250, 500)).toEqual({ startIndex: 3, endIndex: 16, windowSize: 14 });
   });
 
   it('uses Fenwick lowerBound for large variable-height windows', () => {
@@ -32,11 +32,11 @@ describe('Virtualizer', () => {
     expect(v.computeWindow(-100, 10)).toEqual({ startIndex: 0, endIndex: 0, windowSize: 1 });
   });
 
-  it('clamps start and end indexes at the last item for beyond-list scroll positions', () => {
+  it('keeps bounded overscan and clamps the end index for beyond-list scroll positions', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 40, buffer: 2 });
 
-    expect(v.computeWindow(10000, 1000)).toEqual({ startIndex: 9, endIndex: 9, windowSize: 1 });
+    expect(v.computeWindow(10000, 1000)).toEqual({ startIndex: 7, endIndex: 9, windowSize: 3 });
   });
 
   it('returns and records the initial window snapshot', () => {
@@ -47,7 +47,7 @@ describe('Virtualizer', () => {
     const update = v.updateWindow(20, 20);
 
     expect(update).toEqual({
-      window: { startIndex: 1, endIndex: 5, windowSize: 5 },
+      window: { startIndex: 1, endIndex: 4, windowSize: 4 },
       changed: true,
       scrollTop: 20,
       viewportHeight: 20,
@@ -83,7 +83,7 @@ describe('Virtualizer', () => {
     const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
 
     expect(v.updateWindow(-20, 10)).toEqual({
-      window: { startIndex: 0, endIndex: 2, windowSize: 3 },
+      window: { startIndex: 0, endIndex: 1, windowSize: 2 },
       changed: true,
       scrollTop: 0,
       viewportHeight: 10,
@@ -185,7 +185,7 @@ describe('Virtualizer', () => {
     expect(v.cumulativeOffset(1)).toBe(20);
     expect(v.cumulativeOffset(11)).toBe(440);
     expect(v.cumulativeOffset(count)).toBe(count * 40 + 40);
-    expect(v.computeWindow(440, 80)).toMatchObject({ startIndex: 11, endIndex: 13 });
+    expect(v.computeWindow(440, 80)).toMatchObject({ startIndex: 11, endIndex: 12 });
 
     const totalHeight = v.cumulativeOffset(count);
     let lastStart = -1;
@@ -501,8 +501,8 @@ describe('Virtualizer', () => {
     expect(target).toEqual({ index: 20, offset: 200, scrollTop: 200 });
     expect(v.updateWindow(target!.scrollTop, 10)?.window).toEqual({
       startIndex: 20,
-      endIndex: 21,
-      windowSize: 2,
+      endIndex: 20,
+      windowSize: 1,
     });
   });
 

@@ -12,32 +12,32 @@ export const TailwindSelect = () => {
   const selectRef = useRef<EnhancedSelectElement>(null);
 
   useEffect(() => {
-    if (selectRef.current) {
-      // 1. Set options
-      selectRef.current.options = [
-        { value: 'react', label: 'React' },
-        { value: 'vue', label: 'Vue' },
-        { value: 'svelte', label: 'Svelte' },
-        { value: 'angular', label: 'Angular', disabled: true },
-      ];
+    if (!selectRef.current) return;
 
-      // 2. Set classMap for Tailwind integration
-      selectRef.current.classMap = {
-        selected: 'bg-blue-600 text-white font-medium ring-2 ring-blue-300',
-        active: 'bg-blue-50 text-blue-900',
-        disabled: 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
-      };
+    // 1. Set options
+    selectRef.current.options = [
+      { value: 'react', label: 'React' },
+      { value: 'vue', label: 'Vue' },
+      { value: 'svelte', label: 'Svelte' },
+      { value: 'angular', label: 'Angular', disabled: true },
+    ];
 
-      // 3. Listen to events
-      const handleChange = (e: Event) => {
-        console.log('Selected:', (e.target as EnhancedSelectElement).value);
-      };
-      
-      selectRef.current.addEventListener('change', handleChange);
-      return () => {
-        selectRef.current?.removeEventListener('change', handleChange);
-      };
-    }
+    // 2. Set classMap for Tailwind integration
+    selectRef.current.classMap = {
+      selected: 'bg-blue-600 text-white font-medium ring-2 ring-blue-300',
+      active: 'bg-blue-50 text-blue-900',
+      disabled: 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+    };
+
+    // 3. Listen to events
+    const handleChange = (e: Event) => {
+      console.log('Selected:', (e.target as EnhancedSelectElement).value);
+    };
+
+    selectRef.current.addEventListener('change', handleChange);
+    return () => {
+      selectRef.current?.removeEventListener('change', handleChange);
+    };
   }, []);
 
   return (
