@@ -1451,6 +1451,27 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect((select as any)._guardedVirtualizer.measuredHeights.get(0)).toBe(29);
     });
 
+    it('rejects a queued resize callback from a superseded render of a reused renderer node', () => {
+      const observers = mockResizeObservers();
+      const reused = document.createElement('div');
+      select.optionRenderer = (item: unknown) => {
+        reused.textContent = (item as TestItem).label;
+        return reused;
+      };
+      setupGuardedRendererList(makeLargeItems(40));
+      const oldObserver = observers[observers.length - 1];
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+
+      (select as any)._renderOptions();
+      expect((select as any)._optionsContainer.querySelector('[data-index="0"]')).toBe(option);
+      expect(observers[observers.length - 1]).not.toBe(oldObserver);
+
+      oldObserver.emit(option, 99);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+      observers[observers.length - 1].emit(option, 27);
+      expect((select as any)._guardedVirtualizer.measuredHeights.get(0)).toBe(27);
+    });
+
     it('ignores zero, non-finite, and stale option measurements', () => {
       const observers = mockResizeObservers();
       setupGuardedRendererList(makeLargeItems(40));
@@ -1518,6 +1539,31 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
       expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
       expect((select as any)._renderPlan.filteredKeys).toHaveLength(11);
+    });
+
+    it('keeps selection, active identity, and ARIA coherent across measurement, scroll, filter, and keyboard input', () => {
+      const observers = mockResizeObservers();
+      select.updateConfig({ selection: { mode: 'multi', closeOnSelect: false } });
+      const scroller = setupGuardedRendererList(makeLargeItems(100));
+      select.open();
+      const firstOption = scroller.querySelector<HTMLElement>('[data-index="0"]')!;
+      observers[observers.length - 1].emit(firstOption, 30);
+      scroller.scrollTop = 600;
+      runGuardedScheduledUpdate(select);
+      filterTo(select, 'Option 1');
+      getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'ArrowDown', bubbles: true, cancelable: true,
+      }));
+
+      const filteredKeys = (select as any)._renderPlan.filteredKeys as string[];
+      const activeKey = engineActiveKey(select);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+      expect(activeKey).not.toBeNull();
+      expect(filteredKeys).toContain(activeKey);
+      expect(engineSelectedKeys(select)).toEqual([]);
+      const activeIndex = (select as any)._itemRegistry.keyToIndex.get(activeKey);
+      const activeOption = select.shadowRoot!.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
+      expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption?.id ?? null);
     });
 
     it('tears down observers for grouped fallback and ignores callbacks after disconnect', () => {
@@ -1809,6 +1855,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     });
 
     it('releases mounted custom option nodes on disconnect and creates fresh nodes on reconnect', () => {
+      const observers = mockResizeObservers();
       const renderedNodes: HTMLElement[] = [];
       select.optionRenderer = (item: unknown) => {
         const option = document.createElement('div');
@@ -1820,10 +1867,12 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       const mountedBeforeDisconnect = Array.from(
         (select as any)._optionsContainer.querySelectorAll<HTMLElement>('[data-index]'),
       );
+      const staleObserver = observers[observers.length - 1];
 
       select.remove();
       expect((select as any)._optionsContainer.querySelector('[data-index]')).toBeNull();
       expect((select as any)._optionsContainer.querySelector('[data-virtual-spacer]')).toBeNull();
+      expect(staleObserver.targets.size).toBe(0);
       document.body.appendChild(select);
 
       const mountedAfterReconnect = Array.from(
@@ -1832,6 +1881,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect(mountedBeforeDisconnect.every((node) => !node.isConnected)).toBe(true);
       expect(mountedAfterReconnect.every((node) => !mountedBeforeDisconnect.includes(node))).toBe(true);
       expect(renderedNodes.some((node) => mountedBeforeDisconnect.includes(node))).toBe(true);
+      expect(observers[observers.length - 1]).not.toBe(staleObserver);
+      staleObserver.emit(mountedBeforeDisconnect[0], 99);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
     });
 
     it('settles rapid scroll, filter, and reorder work on the latest rendered keys', () => {
@@ -1856,6 +1908,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     });
 
     it('keeps a 10,000-item custom renderer mount set bounded by viewport and overscan', () => {
+      const observers = mockResizeObservers();
       select.optionRenderer = (item: unknown) => {
         const option = document.createElement('div');
         option.textContent = (item as TestItem).label;
@@ -1868,6 +1921,8 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect(scroller.querySelectorAll('[part="option"]').length).toBeLessThanOrEqual(10);
       expect((select as any)._virtualizationScope.mountedKeys.length).toBeLessThanOrEqual(10);
       expect((select as any)._renderPlan.filteredKeys).toHaveLength(10_000);
+      expect(observers[observers.length - 1].targets.size).toBe(scroller.querySelectorAll('[part="option"]').length);
+      expect(observers.slice(0, -1).every((observer) => observer.targets.size === 0)).toBe(true);
     });
 
     it('keeps built-in and custom renderers on the full legacy path by default', () => {

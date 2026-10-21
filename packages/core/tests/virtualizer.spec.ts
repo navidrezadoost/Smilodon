@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Virtualizer } from '../src/utils/virtualizer';
 
 describe('Virtualizer', () => {
-  it('preserves average-height window calculation without Fenwick', () => {
+  it('uses the prefix index for fixed-height windows at small list sizes', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 1000, (i) => i, { estimatedItemHeight: 50, buffer: 2 });
     expect(v.computeWindow(250, 500)).toEqual({ startIndex: 3, endIndex: 17, windowSize: 15 });
@@ -100,6 +100,13 @@ describe('Virtualizer', () => {
     expect(update?.window).toEqual({ startIndex: 0, endIndex: 1, windowSize: 2 });
   });
 
+  it('keeps the viewport-start item in a zero-height window at an exact boundary', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 10, (i) => i, { estimatedItemHeight: 10, buffer: 0 });
+
+    expect(v.computeWindow(20, 0)).toEqual({ startIndex: 2, endIndex: 2, windowSize: 1 });
+  });
+
   it('returns a zero-size snapshot for an empty list', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 0, (i) => i, { estimatedItemHeight: 10, buffer: 1 });
@@ -158,16 +165,62 @@ describe('Virtualizer', () => {
     const v = new Virtualizer(container, 100, (i) => i, { estimatedItemHeight: 50, buffer: 2 });
     
     // Simulate measurement at index 10: actual 70px
-    v.measuredHeights.set(10, 70);
+    v.measureItem(10, 70);
     
-    // Cumulative offset should account for measured heights
     const base = v.cumulativeOffset(20);
-    expect(base).toBeGreaterThan(0);
-    
-    // With one measured height of 70 and average of 50, offset should increase
-    // Expected: 10 * 50 (unmeasured) + 70 (measured) + 9 * 50 (unmeasured) = 1020
-    // But cumulative offset uses different logic, so just check it's reasonable
-    expect(base).toBeGreaterThanOrEqual(20 * 50);
+    expect(base).toBe(1020);
+  });
+
+  it.each([100, 1000, 10_000])('keeps measured offsets and repeated windows consistent for %i items', (count) => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, count, (i) => i, {
+      estimatedItemHeight: 40,
+      buffer: 0,
+      measurementThreshold: 0,
+    });
+    v.measureItem(0, 20);
+    v.measureItem(10, 60);
+    v.measureItem(count - 1, 80);
+
+    expect(v.cumulativeOffset(1)).toBe(20);
+    expect(v.cumulativeOffset(11)).toBe(440);
+    expect(v.cumulativeOffset(count)).toBe(count * 40 + 40);
+    expect(v.computeWindow(440, 80)).toMatchObject({ startIndex: 11, endIndex: 13 });
+
+    const totalHeight = v.cumulativeOffset(count);
+    let lastStart = -1;
+    let lastEnd = -1;
+    for (let iteration = 0; iteration < 250; iteration += 1) {
+      const update = v.updateWindow((iteration * 73) % totalHeight, 80);
+      lastStart = update?.window.startIndex ?? -1;
+      lastEnd = update?.window.endIndex ?? -1;
+    }
+    expect(lastStart).toBeGreaterThanOrEqual(0);
+    expect(lastEnd).toBeLessThan(count);
+  });
+
+  it('uses one measured-height policy for small-list offsets and window lookup', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 100, (i) => i, {
+      estimatedItemHeight: 40,
+      buffer: 0,
+      measurementThreshold: 0,
+    });
+    v.measureItem(0, 20);
+
+    expect(v.cumulativeOffset(1)).toBe(20);
+    expect(v.computeWindow(20, 20)).toMatchObject({ startIndex: 1, endIndex: 1 });
+    expect(v.scrollToIndex(1)?.offset).toBe(20);
+  });
+
+  it('clamps cumulative offsets to the current item range', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 3, (i) => i, { estimatedItemHeight: 10, buffer: 0 });
+    v.measureItem(1, 15);
+
+    expect(v.cumulativeOffset(-1)).toBe(0);
+    expect(v.cumulativeOffset(Number.NaN)).toBe(0);
+    expect(v.cumulativeOffset(100)).toBe(35);
   });
 
   it('updates averageHeight after the first measurement', () => {
@@ -231,7 +284,7 @@ describe('Virtualizer', () => {
     expect(v.measuredHeights.size).toBe(1);
     expect(v.measuredHeights.has(5)).toBe(false);
     expect(v.averageHeight).toBe(20);
-    expect(v.cumulativeOffset(3)).toBe(60);
+    expect(v.cumulativeOffset(3)).toBe(100);
   });
 
   it('clears measured aggregate state on destroy', () => {
@@ -282,16 +335,15 @@ describe('Virtualizer', () => {
     expect(v.cumulativeOffset(5000)).toBe(200000);
   });
 
-  it('activates Fenwick tree for large lists', () => {
+  it('uses estimated heights for unmeasured rows in large-list offsets', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 10000, (i) => i, { 
       estimatedItemHeight: 40, 
       buffer: 5 
     });
     
-    // Fenwick tree should be active for 10k items
     const offset = v.cumulativeOffset(5000);
-    expect(offset).toBe(5000 * 40); // No measurements yet, should use average
+    expect(offset).toBe(5000 * 40); // Unmeasured rows use the configured estimate.
   });
 
   it('supports dynamic item length updates', () => {

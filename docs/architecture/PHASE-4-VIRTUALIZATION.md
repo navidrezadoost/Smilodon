@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 and 4.5.1–4.5.2 implementation complete with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
+Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 and 4.5.1–4.5.3 implementation complete with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1391,3 +1391,50 @@ default renderer path still creates no guarded measurement observer, and the
 Phase 4.5.2 is implementation-complete and verification-pending. No
 production activation is authorized by this phase; the Phase 4.4.11–4.12 and
 4.5.1 executable gates remain release blockers.
+
+## 37. Phase 4.5.3 Integration Stabilization and Complexity Gate
+
+The Fenwick prefix index is now used at every list size. Measured rows retain
+their validated heights; unmeasured rows retain the configured estimate.
+`cumulativeOffset()`, `scrollToIndex()`, and both window boundaries therefore
+use one geometry policy for small and large lists. `averageHeight` remains a
+measurement statistic, not a substitute for the unmeasured-row estimate.
+Offsets clamp to the current item range.
+
+Geometry complexity is separate from performance evidence: prefix queries and
+point measurement updates are O(log n); viewport start/end lookup is O(log n)
+with a bounded boundary correction; rebuilding the base tree is O(n log n)
+with the current Fenwick initialization. Targeted tests exercise measured
+offsets and repeated window updates at 100, 1,000, and 10,000 items without
+wall-clock assertions. These tests do not constitute a benchmark.
+
+Detached option targets from earlier renders are ignored. If a renderer reuses
+the exact same option element across renders, the measurement generation is
+advanced and its observer replaced before the new target metadata is attached;
+queued callbacks from the prior generation are then rejected. Ordinary renders
+retain the observer while unobserving evicted targets, avoiding needless
+observer replacement. Targets remain limited to currently mounted option
+roots. Disconnect, grouped fallback, filter/data/renderer invalidation, and
+reconnect continue to tear down or reconstruct the guarded observer and
+virtualizer deterministically. This is ownership coverage, not retained-heap
+or leak certification.
+
+Integration coverage combines scrolling, measurement, filtering, keyboard
+navigation, key identity, selection, and ARIA; additional cases cover anchor
+preservation, explicit key scrolling, stale render callbacks, grouped and
+disconnect cleanup, reconnect, bounded targets, and unchanged legacy-full
+rendering. No public API, NativeSelectElement, or default activation behavior
+changed.
+
+### Phase 4.5.3 Verification Status
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed for the Phase 4.5.3 changes. |
+| Requested Vitest suites, `npm run test:unit`, lint, and build | NOT RUN: Node.js/npm/npx are unavailable in the implementation environment. |
+| Chromium, Firefox, WebKit, performance, accessibility, and retained-heap certification | NOT RUN; reserved for Phase 4.6. |
+
+Phase 4.5.3 is implementation-complete and verification-pending. Earlier
+deferred executable gates remain release blockers. Production activation
+remains blocked until executable verification and Phase 4.6 browser
+certification succeed.
