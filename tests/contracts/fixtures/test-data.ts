@@ -7,6 +7,7 @@ export interface SelectItem {
   label: string;
   disabled?: boolean;
   group?: string;
+  [key: string]: unknown;
 }
 
 export interface GroupedItem {

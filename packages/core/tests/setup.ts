@@ -9,6 +9,12 @@ if (typeof performance === 'undefined') {
   };
 }
 
+// jsdom does not implement this browser scrolling API. Preserve real behavior
+// wherever available, and provide a no-op only for tests that run without it.
+if (typeof HTMLElement !== 'undefined' && typeof HTMLElement.prototype.scrollIntoView !== 'function') {
+  HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 // Polyfill for requestAnimationFrame
 if (typeof requestAnimationFrame === 'undefined') {
   (globalThis as Record<string, unknown>).requestAnimationFrame = (cb: () => void) => {

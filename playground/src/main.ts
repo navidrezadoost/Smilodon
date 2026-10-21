@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { scenarios, getScenariosByCategory, getScenarioById, type Scenario } from './scenarios';
 import type * as Monaco from 'monaco-editor';
 
@@ -94,8 +96,9 @@ class PlaygroundApp {
   private async loadMonaco() {
     try {
       // Import Monaco from CDN
-      const monaco = await import('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/+esm');
-      this.monaco = monaco as any;
+      const monacoUrl = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/+esm';
+      const monaco = await import(/* @vite-ignore */ monacoUrl) as typeof Monaco;
+      this.monaco = monaco;
       
       // Configure Monaco
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -287,7 +290,7 @@ class PlaygroundApp {
     this.currentScenario = scenario;
     
     // Update UI
-    document.querySelectorAll('.scenario-item').forEach(el => {
+    document.querySelectorAll<HTMLElement>('.scenario-item').forEach(el => {
       el.classList.toggle('active', el.dataset.scenarioId === id);
     });
     

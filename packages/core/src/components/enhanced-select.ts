@@ -4047,6 +4047,13 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _getSelectableOptionIndices(): number[] {
+    if (this._guardedVirtualizer) {
+      return this._renderPlan.filteredKeys.flatMap((key) => {
+        const record = this._itemRegistry.keyToRecord.get(key);
+        return record && !record.disabled ? [record.index] : [];
+      });
+    }
+
     return this._getSelectableOptions()
       .map((option) => Number(option.getAttribute('data-sm-index') ?? option.getAttribute('data-index')))
       .filter((index) => Number.isFinite(index));
@@ -5404,10 +5411,7 @@ export class EnhancedSelect extends HTMLElement {
         const currentIndex = this._renderPlan.filteredIndexByKey.get(meta.key);
         if (currentIndex === undefined || currentIndex !== meta.index) continue;
 
-        const borderBox = entry.borderBoxSize;
-        const reportedHeight = Array.isArray(borderBox)
-          ? borderBox[0]?.blockSize
-          : (borderBox as ResizeObserverSize | undefined)?.blockSize;
+        const reportedHeight = entry.borderBoxSize?.[0]?.blockSize;
         const height = typeof reportedHeight === 'number' ? reportedHeight : entry.contentRect.height;
         if (!Number.isFinite(height) || height <= 0) continue;
         changed = virtualizer.measureItem(meta.index, height) || changed;
@@ -5535,6 +5539,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _renderOptions(): void {
     this._ensureRegistryCurrent();
+    const scrollTopBeforeRender = this._optionsContainer.scrollTop;
     this._renderCycleId += 1;
     const renderCycleId = this._renderCycleId;
     if (this._guardedVirtualizer) {
@@ -5550,6 +5555,7 @@ export class EnhancedSelect extends HTMLElement {
     // Clear options container
     this._optionsContainer.innerHTML = '';
     let filteredIndicesForScope: number[] = [];
+    let guardedScrollTopToRestore: number | null = null;
     
     // Ensure dropdown only contains options container (cleanup legacy direct children)
     // We need to preserve optionsContainer, so we can't just clear dropdown.innerHTML
@@ -5652,7 +5658,9 @@ export class EnhancedSelect extends HTMLElement {
       if (this._guardedVirtualizationRequested && !this._guardedVirtualizer) {
         this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
         this._guardedVirtualViewportHeight = this._resolveGuardedViewportHeight();
-        this._guardedVirtualScrollTop = this._optionsContainer.scrollTop;
+        // A data reorder/filter may have invalidated the old virtualizer, but
+        // the physical position is still available before the DOM is cleared.
+        this._guardedVirtualScrollTop = scrollTopBeforeRender;
       }
       if (this._guardedVirtualizer) {
         const virtualizer = this._ensureGuardedVirtualizer(this._renderPlan.filteredKeys);
@@ -5664,6 +5672,7 @@ export class EnhancedSelect extends HTMLElement {
           this._renderPlan.filteredKeys.length,
           this._guardedVirtualViewportHeight,
         );
+        guardedScrollTopToRestore = scrollTop;
         const update = virtualizer.updateWindow(
           scrollTop,
           this._guardedVirtualViewportHeight,
@@ -5783,6 +5792,13 @@ export class EnhancedSelect extends HTMLElement {
     // Append Load More Trigger (Button or Sentinel) if enabled and not busy
     else if ((this._config.loadMore.enabled || this._config.infiniteScroll.enabled) && this._state.loadedItems.length > 0) {
       this._addLoadMoreTrigger();
+    }
+
+    // Rebuilding the list temporarily removes its spacer geometry. Browsers
+    // clamp scrollTop during that interval, so restore the logical position
+    // only after the new top/bottom spacers and mounted rows are present.
+    if (guardedScrollTopToRestore !== null) {
+      this._optionsContainer.scrollTop = guardedScrollTopToRestore;
     }
 
     this._syncRenderedOptionAccessibility();
