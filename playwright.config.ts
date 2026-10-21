@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests/e2e',
   use: {
     headless: true,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   

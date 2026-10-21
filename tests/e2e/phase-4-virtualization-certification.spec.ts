@@ -61,16 +61,28 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
         index: Number(option.getAttribute('data-index')),
         rect: option.getBoundingClientRect(),
         height: option.offsetHeight,
+        computed: getComputedStyle(option),
       }));
       const visible = indexed.filter(({ rect }) => rect.bottom > containerRect.top && rect.top < containerRect.bottom);
       const visibleIndices = visible.map(({ index }) => index);
       const mountedIndices = indexed.map(({ index }) => index);
       const topSpacer = options.querySelector('[data-virtual-spacer="top"]') as HTMLElement | null;
       const bottomSpacer = options.querySelector('[data-virtual-spacer="bottom"]') as HTMLElement | null;
+      const virtualizer = element._guardedVirtualizer;
+      const window = element._guardedVirtualWindow;
+      const containerStyle = getComputedStyle(options);
       return {
         scrollHeight: options.scrollHeight,
         scrollTop: options.scrollTop,
+        clientHeight: options.clientHeight,
         viewportHeight: containerRect.height,
+        containerRect: { top: containerRect.top, bottom: containerRect.bottom, height: containerRect.height },
+        containerBox: {
+          paddingTop: containerStyle.paddingTop,
+          paddingBottom: containerStyle.paddingBottom,
+          borderTopWidth: containerStyle.borderTopWidth,
+          borderBottomWidth: containerStyle.borderBottomWidth,
+        },
         mountedCount: indexed.length,
         firstMountedIndex: mountedIndices[0],
         lastMountedIndex: mountedIndices[mountedIndices.length - 1],
@@ -81,8 +93,58 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
         mountedOptionHeight: indexed.reduce((sum, option) => sum + option.height, 0),
         topSpacerHeight: topSpacer?.getBoundingClientRect().height ?? 0,
         bottomSpacerHeight: bottomSpacer?.getBoundingClientRect().height ?? 0,
+        optionRects: indexed.map(({ index, rect, height, computed }) => ({
+          index,
+          top: rect.top,
+          bottom: rect.bottom,
+          rectHeight: rect.height,
+          offsetHeight: height,
+          marginTop: computed.marginTop,
+          marginBottom: computed.marginBottom,
+          borderTopWidth: computed.borderTopWidth,
+          borderBottomWidth: computed.borderBottomWidth,
+          paddingTop: computed.paddingTop,
+          paddingBottom: computed.paddingBottom,
+        })),
+        directChildren: Array.from(options.children, (child: Element) => {
+          const node = child as HTMLElement;
+          const rect = node.getBoundingClientRect();
+          const style = getComputedStyle(node);
+          return {
+            tagName: node.tagName,
+            className: typeof node.className === 'string' ? node.className : '',
+            virtualSpacer: node.getAttribute('data-virtual-spacer'),
+            dataIndex: node.getAttribute('data-index'),
+            top: rect.top,
+            bottom: rect.bottom,
+            height: rect.height,
+            offsetHeight: node.offsetHeight,
+            marginTop: style.marginTop,
+            marginBottom: style.marginBottom,
+            paddingTop: style.paddingTop,
+            paddingBottom: style.paddingBottom,
+            borderTopWidth: style.borderTopWidth,
+            borderBottomWidth: style.borderBottomWidth,
+          };
+        }),
+        guardedWindow: window ? { startIndex: window.startIndex, endIndex: window.endIndex } : null,
+        measuredOptionCount: virtualizer?.measuredHeights?.size ?? null,
+        measuredOptionIndexes: virtualizer?.measuredHeights ? Array.from(virtualizer.measuredHeights.keys()) : [],
+        cumulativeOffsets: virtualizer && window ? {
+          start: virtualizer.cumulativeOffset(window.startIndex),
+          end: virtualizer.cumulativeOffset(window.endIndex),
+          total: virtualizer.cumulativeOffset(element._guardedVirtualizerKeys.length),
+        } : null,
+        measurementGeneration: element._guardedMeasurementGeneration ?? null,
+        renderCycleId: element._renderCycleId ?? null,
+        pendingLifecycleRafs: element._lifecycleRafs?.size ?? null,
+        pendingVirtualWindowRaf: Boolean(element._guardedVirtualWindowRafId),
+        observedOptionCount: element._guardedObservedOptions?.size ?? null,
       };
     });
+    const spacerGeometryDifference = (sample: Awaited<ReturnType<typeof metrics>>) => Math.abs(
+      sample.topSpacerHeight + sample.mountedOptionHeight + sample.bottomSpacerHeight - sample.scrollHeight,
+    );
 
     const initial = await metrics();
     expect(initial.scrollHeight).toBeGreaterThan(300_000);
@@ -93,7 +155,17 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
 
     await scrollOptions(select, Math.floor(initial.scrollHeight / 2));
     await expect.poll(async () => (await metrics()).firstVisibleIndex).toBeGreaterThan(4_000);
-    const middle = await metrics();
+    let latestMiddle = await metrics();
+    try {
+      await expect.poll(async () => {
+        latestMiddle = await metrics();
+        return spacerGeometryDifference(latestMiddle);
+      }, { timeout: 8_000, intervals: [50, 100, 250, 500] }).toBeLessThan(500);
+    } catch (error) {
+      console.error('[phase-4-geometry-middle: convergence timeout]', JSON.stringify(latestMiddle));
+      throw error;
+    }
+    const middle = latestMiddle;
     expect(middle.scrollTop).toBeGreaterThan(100_000);
     expect(middle.mountedCount).toBeLessThan(30);
     expect(middle.visibleCount).toBeGreaterThan(4);
@@ -102,6 +174,7 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
     expect(middle.lastMountedIndex).toBeGreaterThanOrEqual(middle.lastVisibleIndex);
     expect(middle.topSpacerHeight).toBeGreaterThan(0);
     expect(middle.bottomSpacerHeight).toBeGreaterThan(0);
+    console.info('[phase-4-geometry-middle: settled]', JSON.stringify(middle));
     expect(Math.abs(middle.topSpacerHeight + middle.mountedOptionHeight + middle.bottomSpacerHeight - middle.scrollHeight))
       .toBeLessThan(500);
 
