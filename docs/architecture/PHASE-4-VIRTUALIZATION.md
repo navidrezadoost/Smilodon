@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phase 4.0–4.3.6 closed; Phase 4.4.0 planning committed as 5847158; Phase 4.4.1 guards committed as b100e74; Phase 4.4.2 state scaffold committed as 08d7e39; Phase 4.4.3 render plan scaffold committed as 083aab1; Phase 4.4.4 virtual render-plan calculation committed as f060d57; Phase 4.4.5 guarded virtual-plan application committed as ff80e7a; Phase 4.4.6 internal guarded window state and key materialization committed as fb1390c; Phase 4.4.7 guarded active/selected materialization integration committed as f1ab7b2; Phase 4.4.8 guarded virtualization stability gate passed and documented locally. Legacy-full remains the default.**
+Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 implementation complete with executable verification pending; Phase 4.5.1 renderer parity and lifecycle hardening implemented with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1292,11 +1292,12 @@ materialization applies the Virtualizer's scroll intent to the options
 container before rendering the target, preserving engine-owned active and
 selected keys while ARIA relationships follow mounted option nodes.
 
-Disconnect destroys the controller and clears mounted targets while retaining
-the private guarded-mode request so reconnect can create one fresh controller
-and listener. Grouped rendering clears that request and removes guarded spacer
-geometry before rendering all grouped options. The default `legacy-full` path
-continues to render all filtered options without spacers or a scroll listener.
+Disconnect destroys the controller, clears mounted targets and option/spacer
+nodes, and retains the private guarded-mode request so reconnect can create one
+fresh controller and listener. Grouped rendering clears that request and
+removes guarded spacer geometry before rendering all grouped options. The
+default `legacy-full` path continues to render all filtered options without
+spacers or a scroll listener.
 
 The integration suite now covers full-list scroll geometry with 10,000 items,
 spacer offsets, forward/backward scrolling, event coalescing, identity and ARIA
@@ -1317,3 +1318,39 @@ Phase 4.4.12 is implementation-complete and verification-pending. The
 Phase 4.4.11 executable gate also remains deferred. This commit must not be
 described as fully verified or used to activate guarded virtualization by
 default.
+
+## 35. Phase 4.5.1 Guarded Renderer Parity and Lifecycle Hardening
+
+The guarded renderer regression suite now covers built-in `SelectOption` and
+custom `optionRenderer` behavior through repeated window changes. It checks
+current item/index context after reorder and filtering, same-key item
+replacement, selected and disabled ARIA, active styling, click and keyboard
+selection, stable engine keys, active-descendant removal and restoration,
+stale render cancellation, grouped fallback, disconnect/reconnect, and the
+legacy full-render path. A 10,000-item custom-renderer case checks that mounted
+options remain bounded by viewport and overscan.
+
+Custom option normalization now refreshes component-generated IDs when a
+renderer reuses an element for another item or index, removes a stale
+`data-sm-value` when the current value is null, and refreshes labels that the
+component previously supplied while preserving an explicit renderer label.
+Disconnect removes mounted option and spacer nodes after releasing guarded
+controller state. Custom option tracking remains weakly held, and the
+component does not retain detached renderer nodes in a pool or array.
+
+Grouped rendering still destroys guarded scheduling and renders its full
+legacy option set. A later private request on flat items can create a fresh
+guarded controller. The public `virtualize` behavior, exports, and default
+renderer remain unchanged.
+
+### Phase 4.5.1 Verification Status
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed for the Phase 4.5.1 changes. |
+| Focused Vitest gate, unit suite, lint, and build | NOT RUN: Node.js/npm are unavailable in the implementation environment. |
+| Real-browser scroll, accessibility, and memory validation | NOT RUN; required before Phase 4.6 certification or production activation. |
+
+Phase 4.5.1 is implementation-complete and verification-pending. Its tests
+have been added but have not executed. The Phase 4.4.11 and 4.4.12 executable
+gates remain pending as release blockers.

@@ -156,6 +156,8 @@ export class EnhancedSelect extends HTMLElement {
   private _classMap?: ClassMap;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
+  private _customOptionNormalizedIds = new WeakMap<HTMLElement, string>();
+  private _customOptionNormalizedLabels = new WeakMap<HTMLElement, string>();
   private _mirrorGlobalStylesForCustomOptions = false;
   private _globalStylesObserver: MutationObserver | null = null;
   private _globalStylesContainer: HTMLElement | null = null;
@@ -376,6 +378,9 @@ export class EnhancedSelect extends HTMLElement {
       ...this._virtualizationScope,
       mountedKeys: [],
     };
+    Array.from(this._optionsContainer.children)
+      .filter((element) => element.hasAttribute('data-index') || element.hasAttribute('data-virtual-spacer'))
+      .forEach((element) => element.remove());
 
     // Cleanup observers
     this._resizeObserver?.disconnect();
@@ -803,8 +808,15 @@ export class EnhancedSelect extends HTMLElement {
     label: string;
     disabled: boolean;
   }): void {
-    if (!optionEl.hasAttribute('aria-label') && !optionEl.hasAttribute('aria-labelledby')) {
+    const previousNormalizedLabel = this._customOptionNormalizedLabels.get(optionEl);
+    const currentAriaLabel = optionEl.getAttribute('aria-label');
+    const canRefreshNormalizedLabel = previousNormalizedLabel !== undefined
+      && currentAriaLabel === previousNormalizedLabel;
+    if (!optionEl.hasAttribute('aria-labelledby') && (!currentAriaLabel || canRefreshNormalizedLabel)) {
       optionEl.setAttribute('aria-label', meta.label);
+      this._customOptionNormalizedLabels.set(optionEl, meta.label);
+    } else {
+      this._customOptionNormalizedLabels.delete(optionEl);
     }
 
     const nestedFocusableSelectors = [
@@ -5824,9 +5836,19 @@ export class EnhancedSelect extends HTMLElement {
     optionEl.dataset.smIndex = String(meta.index);
     if (meta.value != null) {
         optionEl.dataset.smValue = String(meta.value);
+    } else {
+        delete optionEl.dataset.smValue;
     }
     
-    optionEl.id = optionEl.id || meta.id;
+    // Refresh component-generated IDs when a renderer reuses an option node,
+    // while preserving an ID that the renderer supplied itself.
+    const previousNormalizedId = this._customOptionNormalizedIds.get(optionEl);
+    if (!optionEl.id || (previousNormalizedId !== undefined && optionEl.id === previousNormalizedId)) {
+      optionEl.id = meta.id;
+      this._customOptionNormalizedIds.set(optionEl, meta.id);
+    } else {
+      this._customOptionNormalizedIds.delete(optionEl);
+    }
 
     if (!optionEl.hasAttribute('tabindex')) {
       optionEl.tabIndex = -1;
