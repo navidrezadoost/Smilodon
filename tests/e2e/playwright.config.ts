@@ -127,8 +127,8 @@ export default defineConfig({
   // Web server configuration for local testing
   webServer: [
     {
-      command: 'npm run dev -w playground',
-      url: 'http://localhost:5173',
+      command: 'npm run dev:vanilla -w @smilodon/playground',
+      url: 'http://localhost:5173/vanilla-demo.html',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
     },

@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 4.6.1 infrastructure is merged. Its first GitHub Actions execution exposed compilation and regression-test failures, so Phase 4 certification remains **pending recovery PR verification**. Guarded virtualization remains test-only and production activation remains blocked.
+Phase 4.6.1 infrastructure and Phase 4.6.1B browser-provisioning recovery are merged. The dedicated certification matrix passed, while the repository-wide framework E2E and independent CI geometry failures remain **open pending Phase 4.6.1C hosted verification**. Guarded virtualization remains test-only and production activation remains blocked.
 
 The implementation baseline accepted for certification is Phase 4.5.3, commit `500731b`.
 
@@ -81,6 +81,15 @@ Local Node.js 20 verification on the recovery branch:
 | Local `git diff --check` | PASS | Developer check only; CI checks the PR commit range. |
 
 These local results do not replace the required hosted PR execution. The local Chromium executable was newer than the browser revision pinned by this checkout, and the local environment denied the pinned download; keep the recovery PR open until the workflow's regression and all three browser jobs have been reviewed. Do not merge on the basis of local checks alone.
+
+## Phase 4.6.1C CI convergence findings
+
+- **Framework E2E web-server failure — root cause established:** the React, Vue, Svelte, and Vanilla scripts select `tests/e2e/playwright.config.ts` explicitly. At merge commit `11c076e`, that nested config still used `npm run dev -w playground`, a workspace name that does not exist, while the root `playwright.config.ts` already used the valid `@smilodon/playground` workspace and vanilla demo URL. The browser preflight passed, then all four web-server launches failed before their test assertions ran. This was configuration drift, not an outdated checkout. The nested config is now aligned to the working root command and URL; the four suites still need a hosted run to prove they execute and pass.
+- **Spacer geometry failure — root cause not yet established:** the hosted CI failures reported differences of about 1,448 px and 2,275 px for the invariant `top spacer + mounted option offsetHeights + bottom spacer` versus container `scrollHeight`. These magnitudes are not rounding noise. The test now polls this same geometry difference for up to 8 seconds, retains the strict `< 500` assertion, and logs container geometry, all mounted option rectangles and box metrics, direct presentation children, spacer sizes, measured-height indexes/count, cumulative virtualizer offsets, and available render/measurement pending state. A local Chromium run using the cached browser revision (1234, not the pinned 1217) converged and passed with a 118.5 px midpoint difference; this does not explain or invalidate the larger hosted failures. The cause must be determined from the hosted diagnostics; no production rendering change or assertion relaxation is authorized on the evidence currently available.
+- **Failure artifacts:** the root Playwright config retains traces and screenshots on failure. The existing `CI` workflow now tees the full E2E output with `pipefail` and attempts to upload that log plus Playwright `test-results/` and `playwright-report/` on failure. Artifact-upload errors are non-fatal to the job and cannot mask the test command's status.
+- **Local verification:** with the cached Chromium revision (1234), all four framework Chromium projects executed: 64 passed and 20 were skipped by the existing project/test filters. The actual-component Phase 4 Chromium suite passed 5/5, and three repeated midpoint geometry runs passed. These local results do not establish the hosted four-framework cross-browser gate or replace the Playwright-pinned browser matrix.
+
+Phase 4.6.1C is not complete until the hosted framework suites actually execute and pass, the geometry invariant passes reproducibly, the dedicated three-engine matrix remains green, and failure artifacts are available. The present local environment lacks the Playwright-pinned browser revision, so its cached-browser Chromium result cannot substitute for those hosted gates.
 
 ## Phase 4.6.2 and release risks
 
