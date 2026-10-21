@@ -173,6 +173,7 @@ export class EnhancedSelect extends HTMLElement {
   private _asyncGeneration = 0;
   private _lifecycleTimers = new Set<number>();
   private _lifecycleRafs = new Set<number>();
+  private _keyboardActiveChangeGeneration = 0;
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
   private _suppressBlurClose = false;
   private _renderCycleId = 0;
@@ -3605,10 +3606,16 @@ export class EnhancedSelect extends HTMLElement {
 
     // Scroll to selected if configured
     if (this._config.scrollToSelected.enabled) {
+      const keyboardActiveChangeGeneration = this._keyboardActiveChangeGeneration;
+      const canRestoreOpenSelection = () => this._state.isOpen
+        && this._keyboardActiveChangeGeneration === keyboardActiveChangeGeneration;
+
       // Use requestAnimationFrame for better timing after render
       this._requestLifecycleFrame(() => {
+        if (!canRestoreOpenSelection()) return;
         // Double RAF to ensure layout is complete
         this._requestLifecycleFrame(() => {
+          if (!canRestoreOpenSelection()) return;
           this._scrollToSelected();
         });
       });
@@ -3990,6 +3997,8 @@ export class EnhancedSelect extends HTMLElement {
     if (!record || record.disabled || !option || option.getAttribute('aria-disabled') === 'true') {
       return;
     }
+
+    if (reason === 'keyboard') this._keyboardActiveChangeGeneration += 1;
 
     const previousIndex = this._state.activeIndex;
     this._dispatchActiveKey(record.key, reason, 'set active');
