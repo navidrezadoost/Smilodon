@@ -171,6 +171,7 @@ export default function Select(rawProps: SelectProps) {
   }
 
   let selectRef: EnhancedSelectElement | undefined
+  let selectContainer: HTMLDivElement | undefined
   const [isElementReady, setIsElementReady] = createSignal(false)
   const [internalValue, setInternalValue] = createSignal<SelectValue | undefined>(props.defaultValue)
   const [resolvedOptionRenderer, setResolvedOptionRenderer] = createSignal<SelectProps['optionRenderer'] | ((item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement) | undefined>()
@@ -556,6 +557,7 @@ export default function Select(rawProps: SelectProps) {
   }
 
   onMount(async () => {
+    selectRef = selectContainer?.querySelector('enhanced-select') as EnhancedSelectElement | undefined
     await waitForUpgrade()
     if (!selectRef || !isElementReady()) return
 
@@ -597,13 +599,12 @@ export default function Select(rawProps: SelectProps) {
   })
 
   return (
-    <enhanced-select
-      ref={(element: Element) => {
-        selectRef = element as EnhancedSelectElement
-      }}
-      class={rawProps.class ?? rawProps.className}
-      style={rawProps.style as JSX.CSSProperties}
+    <div ref={(element: HTMLDivElement | null) => { selectContainer = element ?? undefined }} style={{ display: 'contents' }}>
+      <enhanced-select
+        class={rawProps.class ?? rawProps.className}
+        style={rawProps.style as JSX.CSSProperties}
         dir={rawProps.direction}
-    />
+      />
+    </div>
   )
 }

@@ -36,6 +36,9 @@ async function createGuardedSelect(page: Page): Promise<Locator> {
   const select = page.locator('#phase-4-virtualization-select');
   await expect(select.locator('[part="listbox"]')).toBeVisible();
   await expect.poll(() => select.locator('[part="option"]').count()).toBeLessThan(30);
+  // Opening can schedule deferred scroll-to-selection work. Let that lifecycle
+  // settle before the scenario starts issuing its own scroll or keyboard input.
+  await expect.poll(() => select.evaluate((element: any) => element._lifecycleRafs.size)).toBe(0);
   return select;
 }
 
@@ -52,7 +55,7 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
     const select = await createGuardedSelect(page);
     const metrics = async () => select.evaluate((element: any) => {
       const options = element.shadowRoot.querySelector('.options-container') as HTMLElement;
-      const mounted = [...options.querySelectorAll('[part="option"]')] as HTMLElement[];
+      const mounted = Array.from(options.querySelectorAll<HTMLElement>('[part="option"]'));
       const containerRect = options.getBoundingClientRect();
       const indexed = mounted.map((option) => ({
         index: Number(option.getAttribute('data-index')),
@@ -162,7 +165,8 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
     expect(highIndex.selectedMounted).toBe(true);
     await expect.poll(() => select.evaluate((element: any) => element.shadowRoot.querySelectorAll('[part="option"]').length)).toBeLessThan(30);
     await expect.poll(() => select.evaluate((element: any) => {
-      const mounted = [...element.shadowRoot.querySelectorAll('[part="option"]')] as HTMLElement[];
+      const shadowRoot = element.shadowRoot as ShadowRoot;
+      const mounted = Array.from(shadowRoot.querySelectorAll<HTMLElement>('[part="option"]'));
       return mounted.some((option) => Number(option.getAttribute('data-index')) >= 9_800);
     })).toBe(true);
     await expect(options).toBeVisible();
@@ -189,11 +193,13 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
     await expect.poll(() => select.evaluate((element: any) => {
       const options = element.shadowRoot.querySelector('.options-container') as HTMLElement;
       const first = options.querySelector('[part="option"]') as HTMLElement | null;
-      return first?.textContent?.trim() ?? '';
+      const builtInLabel = first?.shadowRoot?.querySelector('.option-content')?.textContent?.trim();
+      return builtInLabel || first?.textContent?.trim() || '';
     })).toMatch(/Option 4[0-9]{3}/);
     await select.locator('[part="input"]').fill('Option 9999');
-    await expect(select.locator('[part="option"]')).toHaveCount(1);
-    await expect(select.locator('[part="option"]')).toContainText('Option 9999');
+    const mountedOptionHosts = select.locator('.options-container > [part="option"]');
+    await expect(mountedOptionHosts).toHaveCount(1);
+    await expect(mountedOptionHosts).toContainText('Option 9999');
 
     await select.locator('[part="input"]').fill('');
     await select.evaluate((element: any) => {
@@ -228,7 +234,9 @@ test.describe('Phase 4 actual-component guarded virtualization certification', (
       element.remove();
       parent.appendChild(element);
     });
-    await expect.poll(() => select.locator('[part="option"]').count()).toBeLessThan(30);
+    await select.evaluate((element: any) => element.open());
+    await expect.poll(() => select.evaluate((element: any) => element._lifecycleRafs.size)).toBe(0);
+    await expect.poll(() => select.locator('.options-container > [part="option"]').count()).toBeLessThan(30);
     const before = await select.evaluate((element: any) => element.shadowRoot.querySelectorAll('[part="option"]').length);
     await scrollOptions(select, 240_000);
     await expect.poll(() => select.evaluate((element: any) => {

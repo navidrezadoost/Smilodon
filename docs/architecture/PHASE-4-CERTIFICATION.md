@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 4.6.1 infrastructure has been added. Certification is **pending execution** in a Node-enabled environment. Guarded virtualization remains test-only and production activation remains blocked.
+Phase 4.6.1 infrastructure is merged. Its first GitHub Actions execution exposed compilation and regression-test failures, so Phase 4 certification remains **pending recovery PR verification**. Guarded virtualization remains test-only and production activation remains blocked.
 
 The implementation baseline accepted for certification is Phase 4.5.3, commit `500731b`.
 
@@ -42,7 +42,7 @@ npx playwright test tests/e2e/phase-4-virtualization-certification.spec.ts --pro
 
 Locally, the same browser suite can be launched with `npm run test:e2e:virtualization`; the root Playwright config starts the existing vanilla Vite playground, and the browser binaries must be installed first.
 
-The existing root Playwright configuration captures screenshots on failure and traces on retry. CI allows one retry so a failed first attempt retains a trace; the HTML report and test output directory are uploaded even when the browser job fails.
+The existing root Playwright configuration captures screenshots on failure and traces on retry. CI allows one retry so a failed first attempt retains a trace; the HTML report, test output, and per-attempt browser-install logs are uploaded even when the browser job fails. Browser installation is retried up to three times with increasing delays to absorb transient download or DNS failures; persistent failures still fail the job.
 
 ## Initial browser scenarios
 
@@ -56,19 +56,31 @@ The existing root Playwright configuration captures screenshots on failure and t
 
 The scenarios assert browser-observed DOM geometry and counts in addition to checking state used to drive test setup.
 
-## Execution evidence
+## Initial failure classification and recovery evidence
+
+The first CI run after merge (`915b312`) reported 8 focused-test failures, 537 passing tests, and 1 skipped test. The failures were classified and addressed as follows:
+
+- **Implementation defect:** exact viewport-end boundaries included the row beginning at the lower edge. The virtualizer now excludes that non-visible row while retaining configured overscan.
+- **Implementation defects found by real-browser execution:** rerendering cleared spacer geometry before restoring the scroll position, and guarded End navigation considered only mounted options. Scroll restoration now happens after the rebuilt rows/spacers are in place; guarded keyboard navigation resolves enabled options across the full filtered data set and materializes the target.
+- **Test assumptions/fixtures:** the chunk-supersession test had switched into guarded-window mode; a stale-ID assertion treated a reindexed item as though it retained its former position; several window and overscan expectations counted an exact lower boundary as visible; the reused-renderer observer test mounted multiple rows with one reused DOM node; scroll anchoring selected a row outside the rendered viewport; built-in option text lives in the option's open shadow root; and Playwright's shadow-piercing locator counted both option hosts and nested `part="option"` content. These tests now exercise the intended cases and assert the correct geometry/identity.
+- **Test-environment incompatibility:** jsdom lacks `scrollIntoView`; the test setup supplies a no-op only when that API is absent, leaving real browser implementations untouched. The local Playwright web-server probe was also routed through the shell's ambient proxy and received HTTP 400; the local run passed with proxy variables unset for localhost, as a GitHub-hosted runner does.
+- **TypeScript defects:** the component's `ResizeObserverEntry.borderBoxSize` access and the new integration/browser-test typings were corrected.
+- **Unrelated baseline failures:** root `tsc --noEmit` at pre-Phase-4 commit `5e88cd6` reproduced the React example/config return-path errors, Solid custom-element ref typing, playground Vite/remote-module/DOM typing, and React contract fixture mismatch. After confirming they were baseline failures, the typing issues were corrected with minimal scoped changes so the new root type-check gate can pass; the Solid wrapper uses `display: contents` to preserve the component's layout.
+
+Local Node.js 20 verification on the recovery branch:
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| Focused deferred Vitest suites | NOT RUN locally | Node/npm/npx are unavailable in this workspace shell. CI artifact pending. |
-| Full `test:unit` | NOT RUN locally | Node/npm/npx are unavailable in this workspace shell. CI artifact pending. |
-| TypeScript check | NOT RUN locally | Node/npm/npx are unavailable in this workspace shell. CI artifact pending. |
-| Lint | NOT RUN locally | Node/npm/npx are unavailable in this workspace shell. CI artifact pending. |
-| Build | NOT RUN locally | Node/npm/npx are unavailable in this workspace shell. CI artifact pending. |
-| Chromium / Firefox / WebKit suite | NOT RUN locally | Node/npm/npx and Playwright launchers are unavailable in this workspace shell. CI artifacts pending. |
-| Local working-tree `git diff --check` | PASS | Developer check only; the CI commit-range check is pending workflow execution. |
+| Focused deferred Vitest suites | PASS | 247 passed across 7 files. |
+| Full `test:unit` | PASS | 545 passed, 1 skipped across 25 files. |
+| TypeScript check | PASS | `npx tsc --noEmit` passes after the confirmed baseline typing issues were corrected. |
+| Lint | PASS | 0 errors; 6 existing warnings. |
+| Build all workspaces | PASS | `npm run build` exits 0. |
+| Chromium browser certification | PASS LOCALLY | 5/5 actual-component scenarios passed using an already-cached Chromium executable with ambient proxy variables unset for localhost; downloading the repository-pinned build returned a regional HTTP 403. |
+| Firefox / WebKit browser certification | PENDING | Must be verified by the recovery PR workflow. |
+| Local `git diff --check` | PASS | Developer check only; CI checks the PR commit range. |
 
-No failures have yet been classified because executable test results are not available. Any CI failures must be classified as implementation regression, incorrect test assumption, environment incompatibility, or pre-existing failure; do not weaken or skip assertions to obtain a pass.
+These local results do not replace the required hosted PR execution. The local Chromium executable was newer than the browser revision pinned by this checkout, and the local environment denied the pinned download; keep the recovery PR open until the workflow's regression and all three browser jobs have been reviewed. Do not merge on the basis of local checks alone.
 
 ## Phase 4.6.2 and release risks
 

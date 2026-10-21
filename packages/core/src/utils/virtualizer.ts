@@ -92,7 +92,18 @@ export class Virtualizer {
     const startIndex = this.itemsLength > 0
       ? Math.max(0, Math.min(this.itemsLength - 1, calculatedStartIndex))
       : 0;
-    const visibleEndIndex = this.indexAtOffset(Math.max(0, scrollTop + viewportHeight));
+    const viewportEnd = Math.max(0, scrollTop + viewportHeight);
+    let visibleEndIndex = this.indexAtOffset(viewportEnd);
+    // The item beginning exactly at the viewport's lower edge is not visible.
+    // indexAtOffset deliberately advances across exact boundaries for the
+    // viewport start, so reverse that choice here when the viewport has height.
+    if (
+      viewportHeight > 0
+      && visibleEndIndex > visibleStartIndex
+      && this.cumulativeOffset(visibleEndIndex) === viewportEnd
+    ) {
+      visibleEndIndex -= 1;
+    }
     const calculatedEndIndex = Math.max(visibleStartIndex, visibleEndIndex) + buffer;
     const endIndex = this.itemsLength > 0
       ? Math.max(0, Math.min(this.itemsLength - 1, calculatedEndIndex))
