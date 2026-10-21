@@ -18,7 +18,7 @@ export default defineConfig({
   
   // Reporting
   reporter: [
-    ['html', { outputFolder: '../../test-results/e2e' }],
+    ['html', { outputFolder: '../../playwright-report/frameworks' }],
     ['json', { outputFile: '../../test-results/e2e/results.json' }],
     ['junit', { outputFile: '../../test-results/e2e/junit.xml' }],
     process.env.CI ? ['github'] : ['list'],
@@ -125,7 +125,7 @@ export default defineConfig({
   ],
   
   // Web server configuration for local testing
-  webServer: process.env.CI ? undefined : [
+  webServer: [
     {
       command: 'npm run dev -w playground',
       url: 'http://localhost:5173',
