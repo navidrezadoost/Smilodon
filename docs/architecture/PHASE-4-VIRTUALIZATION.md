@@ -1263,12 +1263,57 @@ component now retains and reapplies the guarded overscan for that render.
 
 | Check | Result |
 | --- | --- |
-| Focused virtualization, selection, active, accessibility, and Virtualizer suites | 191 passed. |
-| `npm run test:unit` | 499 passed, one skipped. |
-| `npm run lint` | Passed with zero errors and six existing warnings. |
-| `npm run build` | Passed across workspaces; existing Rollup `eval` and React directive warnings remain. |
-| `git diff --check` | Passed. |
+| Focused virtualization, selection, active, accessibility, and Virtualizer suites | Deferred: Node.js/npm are unavailable in the implementation environment. |
+| `npm run test:unit` | Deferred. |
+| `npm run lint` | Deferred. |
+| `npm run build` | Deferred. |
+| `git diff --check` | Run for Phase 4.4.12 changes. |
 
-The build regenerated the embedded React Native Core bundle as a side effect;
-the generated file was restored. No public API, `virtualize` behavior,
-NativeSelectElement behavior, or default rendering behavior changed.
+The prior verification figures in the accepted 4.4.11 implementation record
+were not rerun in the current environment. Treat the executable quality gate
+for this phase as pending until a Node-equipped environment or CI runner
+completes it.
+
+## 34. Phase 4.4.12 Guarded Scroll Geometry and Window Positioning
+
+The guarded path now uses the options container, which owns `overflow: auto`,
+as its scroll container. Its scroll position and viewport height drive the
+Virtualizer window through the coalesced animation-frame scheduler. A passive
+scroll listener is attached once when the private guarded controller is
+created and removed during grouped fallback or disconnect.
+
+Guarded renders place presentation-only top and bottom spacer elements around
+the mounted option window. Their heights come from the Virtualizer's prefix
+offsets and total estimated height; `EnhancedSelect` does not keep a second
+height index. The spacers are hidden from accessibility APIs and have no
+option identity or selectable attributes. The scroll position is clamped to
+the current total height when filtering reduces the list. Scroll-to-key
+materialization applies the Virtualizer's scroll intent to the options
+container before rendering the target, preserving engine-owned active and
+selected keys while ARIA relationships follow mounted option nodes.
+
+Disconnect destroys the controller and clears mounted targets while retaining
+the private guarded-mode request so reconnect can create one fresh controller
+and listener. Grouped rendering clears that request and removes guarded spacer
+geometry before rendering all grouped options. The default `legacy-full` path
+continues to render all filtered options without spacers or a scroll listener.
+
+The integration suite now covers full-list scroll geometry with 10,000 items,
+spacer offsets, forward/backward scrolling, event coalescing, identity and ARIA
+preservation, reordered key scrolling, filter height and scroll clamping,
+custom option context, grouped teardown, reconnect cleanup, and unchanged
+legacy rendering. These are mocked-layout tests; real-browser scroll geometry
+and accessibility checks remain required before any production activation.
+
+### Phase 4.4.12 Verification Status
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed for the Phase 4.4.12 changes. |
+| Focused Vitest gate, unit suite, lint, and build | Deferred: Node.js/npm are unavailable in the implementation environment. |
+| Real-browser scroll and accessibility gate | Not run; required before production activation. |
+
+Phase 4.4.12 is implementation-complete and verification-pending. The
+Phase 4.4.11 executable gate also remains deferred. This commit must not be
+described as fully verified or used to activate guarded virtualization by
+default.

@@ -14,6 +14,12 @@ const makeItems = (): TestItem[] => [
   { id: 'c', value: 'CHR', label: 'Cherry' },
 ];
 
+const makeLargeItems = (count: number): TestItem[] => Array.from({ length: count }, (_, index) => ({
+  id: `item-${index}`,
+  value: `value-${index}`,
+  label: `Option ${index}`,
+}));
+
 function engineSelectedKeys(select: EnhancedSelect): SelectKey[] {
   return [...((select as any)._engine.state.selectedKeys as ReadonlySet<SelectKey>)];
 }
@@ -965,7 +971,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 137 });
       Object.defineProperty(optionsContainer, 'clientHeight', { configurable: true, value: 93 });
 
-      expect((select as any)._resolveGuardedViewportHeight()).toBe(137);
+      expect((select as any)._resolveGuardedViewportHeight()).toBe(93);
 
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 0 });
       vi.spyOn(dropdown, 'getBoundingClientRect').mockReturnValue({ height: 0 } as DOMRect);
@@ -998,7 +1004,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       }));
       select.setItems(items);
       setGuardedWindow(select, 0, 1);
-      const dropdown = (select as any)._dropdown as HTMLElement;
+      const dropdown = (select as any)._optionsContainer as HTMLElement;
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
       dropdown.scrollTop = 100;
 
@@ -1017,7 +1023,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       }));
       select.setItems(items);
       setGuardedWindow(select, 0, 1);
-      const dropdown = (select as any)._dropdown as HTMLElement;
+      const dropdown = (select as any)._optionsContainer as HTMLElement;
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
       dropdown.scrollTop = 160;
 
@@ -1031,7 +1037,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     it('routes guarded dropdown scroll events to the private scheduling helper', () => {
       select.setItems(makeItems());
       setGuardedWindow(select, 0, 1);
-      const dropdown = (select as any)._dropdown as HTMLElement;
+      const dropdown = (select as any)._optionsContainer as HTMLElement;
       const schedule = vi.spyOn(select as any, '_scheduleGuardedVirtualWindowUpdate');
 
       dropdown.dispatchEvent(new Event('scroll'));
@@ -1063,7 +1069,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       setGuardedWindow(select, 0, 1);
       const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame').mockReturnValue(9011);
       const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame');
-      const removeListener = vi.spyOn((select as any)._dropdown as HTMLElement, 'removeEventListener');
+      const removeListener = vi.spyOn((select as any)._optionsContainer as HTMLElement, 'removeEventListener');
       (select as any)._scheduleGuardedVirtualWindowUpdate();
 
       select.setGroupedItems([{ label: 'Fruit', options: groupedItems }]);
@@ -1092,7 +1098,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       const selectedBefore = engineSelectedKeys(select);
       const activeBefore = engineActiveKey(select);
       setGuardedWindow(select, 0, 1);
-      const dropdown = (select as any)._dropdown as HTMLElement;
+      const dropdown = (select as any)._optionsContainer as HTMLElement;
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 40 });
 
       dropdown.scrollTop = 80;
@@ -1115,7 +1121,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       select.open();
       (select as any)._setActive(0);
       setGuardedWindow(select, 0, 1);
-      const dropdown = (select as any)._dropdown as HTMLElement;
+      const dropdown = (select as any)._optionsContainer as HTMLElement;
       Object.defineProperty(dropdown, 'clientHeight', { configurable: true, value: 20 });
       dropdown.scrollTop = 120;
 
@@ -1147,6 +1153,226 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       expect(optionsListener.mock.calls.filter(([type]) => type === 'scroll')).toEqual([]);
       dropdownListener.mockRestore();
       optionsListener.mockRestore();
+    });
+  });
+
+  describe('guarded scroll geometry and positioning', () => {
+    function configureGuardedList(count = 100): { items: TestItem[]; scroller: HTMLElement } {
+      select.updateConfig({ estimatedItemHeight: 20, searchable: true });
+      const items = makeLargeItems(count);
+      select.setItems(items);
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 100 });
+      setGuardedWindow(select, 0, 5);
+      (select as any)._renderOptions();
+      return { items, scroller };
+    }
+
+    it('retains total virtual scroll height while mounting only the bounded window', () => {
+      const { scroller } = configureGuardedList(10_000);
+      const spacers = scroller.querySelectorAll<HTMLElement>('[data-virtual-spacer]');
+      Object.defineProperty(scroller, 'scrollHeight', {
+        configurable: true,
+        get: () => Array.from(spacers).reduce((total, spacer) => total + Number.parseFloat(spacer.style.height), 0)
+          + scroller.querySelectorAll('[part="option"]').length * 20,
+      });
+
+      expect(scroller.querySelectorAll('[part="option"]').length).toBeLessThanOrEqual(6);
+      expect(spacers).toHaveLength(2);
+      expect(scroller.scrollHeight).toBeGreaterThanOrEqual(10_000 * 20);
+      expect((select as any)._virtualizationScope.registeredKeys).toHaveLength(10_000);
+      expect((select as any)._virtualizationScope.mountedKeys.length).toBeLessThanOrEqual(6);
+    });
+
+    it('sets top and bottom spacer heights from virtualizer prefix offsets', () => {
+      const { scroller } = configureGuardedList(40);
+      (select as any)._updateGuardedVirtualWindow(200, 100);
+      (select as any)._renderOptions();
+      const virtualizer = (select as any)._guardedVirtualizer;
+      const window = (select as any)._guardedVirtualWindow;
+      const top = scroller.querySelector<HTMLElement>('[data-virtual-spacer="top"]')!;
+      const bottom = scroller.querySelector<HTMLElement>('[data-virtual-spacer="bottom"]')!;
+
+      expect(Number.parseFloat(top.style.height)).toBe(virtualizer.cumulativeOffset(window.startIndex));
+      expect(Number.parseFloat(bottom.style.height)).toBe(
+        Math.max(0, virtualizer.cumulativeOffset(40) - virtualizer.cumulativeOffset(window.endIndex)),
+      );
+      for (const spacer of [top, bottom]) {
+        expect(spacer.getAttribute('aria-hidden')).toBe('true');
+        expect(spacer.hasAttribute('data-index')).toBe(false);
+        expect(spacer.hasAttribute('data-sm-selectable')).toBe(false);
+      }
+    });
+
+    it('updates mounted options and spacer geometry while scrolling forward and backward', () => {
+      const { scroller } = configureGuardedList(100);
+      scroller.scrollTop = 800;
+      runGuardedScheduledUpdate(select);
+      expect((select as any)._virtualizationScope.mountedKeys[0]).toBe('item-38');
+      expect(Number.parseFloat(scroller.querySelector<HTMLElement>('[data-virtual-spacer="top"]')!.style.height)).toBeGreaterThan(0);
+
+      scroller.scrollTop = 0;
+      runGuardedScheduledUpdate(select);
+      expect((select as any)._virtualizationScope.mountedKeys[0]).toBe('item-0');
+      expect(Number.parseFloat(scroller.querySelector<HTMLElement>('[data-virtual-spacer="top"]')!.style.height)).toBe(0);
+    });
+
+    it('coalesces repeated scroll events and keeps one guarded listener attached', () => {
+      select.updateConfig({ estimatedItemHeight: 20 });
+      select.setItems(makeLargeItems(100));
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      const addListener = vi.spyOn(scroller, 'addEventListener');
+      setGuardedWindow(select, 0, 5);
+      const schedule = vi.spyOn(select as any, '_scheduleGuardedVirtualWindowUpdate');
+      const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame').mockReturnValue(9020);
+
+      scroller.dispatchEvent(new Event('scroll'));
+      scroller.dispatchEvent(new Event('scroll'));
+      scroller.dispatchEvent(new Event('scroll'));
+
+      expect(addListener.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+      expect(schedule).toHaveBeenCalledTimes(3);
+      expect(requestFrame).toHaveBeenCalledOnce();
+      expect((select as any)._guardedVirtualWindowRafId).toBe(9020);
+      addListener.mockRestore();
+      schedule.mockRestore();
+      requestFrame.mockRestore();
+    });
+
+    it('preserves selected identity while scrolling evicts its option node', () => {
+      select.updateConfig({ estimatedItemHeight: 20, selection: { mode: 'multi', closeOnSelect: false } });
+      const items = makeLargeItems(80);
+      select.setItems(items);
+      clickOption(select, 0);
+      const selectedBefore = engineSelectedKeys(select);
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 100 });
+      setGuardedWindow(select, 0, 5);
+      (select as any)._renderOptions();
+      scroller.scrollTop = 600;
+      runGuardedScheduledUpdate(select);
+
+      expect(engineSelectedKeys(select)).toEqual(selectedBefore);
+      expect(select.shadowRoot!.querySelector('[data-value="value-0"]')).toBeNull();
+    });
+
+    it('preserves active identity and removes its ARIA reference while offscreen', () => {
+      const { scroller } = configureGuardedList(80);
+      select.open();
+      (select as any)._setActive(0);
+      const activeBefore = engineActiveKey(select);
+      scroller.scrollTop = 600;
+      runGuardedScheduledUpdate(select);
+
+      expect(engineActiveKey(select)).toBe(activeBefore);
+      expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('uses the current key index when scrolling to a key after reorder', () => {
+      const { scroller } = configureGuardedList(20);
+      const items = makeLargeItems(20);
+      select.setItems([items[10], ...items.slice(0, 10), ...items.slice(11)]);
+
+      expect((select as any)._materializeGuardedVirtualKey('item-0')).toBe(true);
+      expect((select as any)._guardedVirtualizer.getCurrentWindow()).toMatchObject({ startIndex: 1, endIndex: 6 });
+      expect((select as any)._optionsContainer.scrollTop).toBe(20);
+      expect((select as any)._virtualizationScope.mountedKeys).toContain('item-0');
+      expect(scroller).toBe((select as any)._optionsContainer);
+    });
+
+    it('recalculates list height and clamps scrollTop when filtering shrinks results', () => {
+      const { scroller } = configureGuardedList(100);
+      scroller.scrollTop = 1800;
+      runGuardedScheduledUpdate(select);
+      filterTo(select, 'Option 1');
+
+      const virtualizer = (select as any)._guardedVirtualizer;
+      expect((select as any)._renderPlan.filteredKeys.length).toBe(11);
+      expect(virtualizer.cumulativeOffset(11)).toBe(220);
+      expect(scroller.scrollTop).toBeLessThanOrEqual(120);
+      expect((select as any)._guardedVirtualWindow.endIndex).toBeLessThanOrEqual(11);
+      expect(scroller.scrollHeight).toBeLessThan(100 * 20);
+    });
+
+    it('keeps active descendant absent until the active option is mounted, then restores it', () => {
+      const { scroller } = configureGuardedList(100);
+      select.open();
+      (select as any)._setActive(0);
+      scroller.scrollTop = 1000;
+      runGuardedScheduledUpdate(select);
+      expect(getInput(select).hasAttribute('aria-activedescendant')).toBe(false);
+
+      expect((select as any)._materializeGuardedVirtualKey('item-0')).toBe(true);
+      const activeOption = select.shadowRoot!.querySelector<HTMLElement>('[data-value="value-0"]')!;
+      expect(getInput(select).getAttribute('aria-activedescendant')).toBe(activeOption.id);
+      expect(activeOption.isConnected).toBe(true);
+    });
+
+    it('preserves custom renderer item and index context after scrolling', () => {
+      const calls: Array<{ id: string; index: number }> = [];
+      select.optionRenderer = (item: unknown, index: number) => {
+        calls.push({ id: (item as TestItem).id, index });
+        return document.createElement('div');
+      };
+      const { scroller } = configureGuardedList(100);
+      const previousCount = calls.length;
+      scroller.scrollTop = 1200;
+      runGuardedScheduledUpdate(select);
+
+      expect(calls.length).toBeGreaterThan(previousCount);
+      expect(calls.every(({ id, index }) => id === `item-${index}`)).toBe(true);
+      expect(Array.from(scroller.querySelectorAll<HTMLElement>('[part="option"]'))
+        .every((option) => option.dataset.smIndex === option.dataset.index)).toBe(true);
+    });
+
+    it('removes guarded spacer geometry when grouped rendering takes over', () => {
+      const { items, scroller } = configureGuardedList(20);
+      expect(scroller.querySelector('[data-virtual-spacer]')).toBeTruthy();
+
+      select.setGroupedItems([{ label: 'Options', options: items }]);
+
+      expect(scroller.querySelector('[data-virtual-spacer]')).toBeNull();
+      expect(scroller.querySelectorAll('[part="option"]')).toHaveLength(20);
+      expect((select as any)._guardedVirtualizer).toBeNull();
+    });
+
+    it('reconnects with one listener and cancels stale guarded work', () => {
+      const { scroller } = configureGuardedList(100);
+      const addListener = vi.spyOn(scroller, 'addEventListener');
+      const requestFrame = vi.spyOn(select as any, '_requestLifecycleFrame').mockReturnValue(9030);
+      (select as any)._scheduleGuardedVirtualWindowUpdate();
+      select.remove();
+
+      expect((select as any)._guardedVirtualWindowRafId).toBeNull();
+      document.body.appendChild(select);
+      expect((select as any)._guardedVirtualizer).toBeTruthy();
+      expect(addListener.mock.calls.filter(([type]) => type === 'scroll')).toHaveLength(1);
+      expect((select as any)._guardedVirtualWindowRafId).toBeNull();
+      addListener.mockRestore();
+      requestFrame.mockRestore();
+    });
+
+    it('leaves the legacy-full DOM structure and behavior unchanged', () => {
+      select.setItems(makeLargeItems(20));
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      const beforeChildren = Array.from(scroller.children).map((element) => element.tagName);
+
+      (select as any)._renderOptions();
+
+      expect((select as any)._renderPlan.mode).toBe('legacy-full');
+      expect(scroller.querySelector('[data-virtual-spacer]')).toBeNull();
+      expect(Array.from(scroller.children).map((element) => element.tagName)).toEqual(beforeChildren);
+      expect(scroller.querySelectorAll('[part="option"]')).toHaveLength(20);
+    });
+
+    it('bounds mounted options by viewport and overscan for 10,000 items', () => {
+      const { scroller } = configureGuardedList(10_000);
+      scroller.scrollTop = 50_000;
+      runGuardedScheduledUpdate(select);
+
+      expect(scroller.querySelectorAll('[part="option"]').length).toBeLessThanOrEqual(10);
+      expect((select as any)._virtualizationScope.mountedKeys.length).toBeLessThanOrEqual(10);
+      expect((select as any)._renderPlan.filteredKeys).toHaveLength(10_000);
     });
   });
 });
