@@ -28,7 +28,21 @@ jobs:
       - name: Install browsers
         run: npx playwright install --with-deps
       - name: E2E tests
-        run: npm run test:e2e
+        run: |
+          set -o pipefail
+          mkdir -p ci-diagnostics
+          npm run test:e2e 2>&1 | tee ci-diagnostics/e2e.log
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-diagnostics
+          path: |
+            ci-diagnostics/e2e.log
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
       - name: Bundle size (gzipped)
         run: |
           ls -lh dist/smilodon.js || true
