@@ -1,0 +1,72 @@
+name: Phase 4 Performance Baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: Measured repetitions per dataset and render mode (release review should use at least 5)
+        required: true
+        type: number
+        default: 5
+      warmups:
+        description: Warm-up runs per dataset and render mode (excluded from the report)
+        required: true
+        type: number
+        default: 1
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  chromium-browser-benchmark:
+    name: Chromium browser performance baseline (Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      CI: 'true'
+      PHASE4_BENCHMARK_REPETITIONS: ${{ inputs.repetitions }}
+      PHASE4_BENCHMARK_WARMUPS: ${{ inputs.warmups }}
+      PHASE4_BENCHMARK_OUTPUT: test-results/performance/phase-4.6.2a.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Playwright-pinned Chromium
+        run: |
+          set -o pipefail
+          mkdir -p test-results/performance
+          npx playwright install --with-deps chromium 2>&1 | tee test-results/performance/browser-install.log
+
+      - name: Build component packages
+        run: npm run build
+
+      - name: Run report-only real-browser baseline
+        run: |
+          set -o pipefail
+          npm run benchmark:phase4 2>&1 | tee test-results/performance/playwright.log
+
+      - name: Summarize baseline
+        if: always() && hashFiles('test-results/performance/phase-4.6.2a.json') != ''
+        run: npm run benchmark:phase4:summary
+
+      - name: Preserve browser benchmark data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-performance-baseline-${{ github.run_id }}
+          path: test-results/performance/
+          if-no-files-found: warn
+          retention-days: 30

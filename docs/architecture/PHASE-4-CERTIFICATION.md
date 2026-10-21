@@ -2,7 +2,9 @@
 
 ## Status
 
-Phase 4.6.1 infrastructure and Phase 4.6.1B browser-provisioning recovery are merged. The dedicated certification matrix passed, while the repository-wide framework E2E and independent CI geometry failures remain **open pending Phase 4.6.1C hosted verification**. Guarded virtualization remains test-only and production activation remains blocked.
+Phase 4.6.1 functional CI certification is accepted based on the reported results for [PR #29](https://github.com/navidrezadoost/Smilodon/pull/29), reported merged at `8b86ad6`. The review reports 16/16 successful checks, including unit and contract suites, all four framework E2E suites, keyboard navigation, the dedicated Chromium/Firefox/WebKit matrix, TypeScript, lint, build, and the independent CI geometry check. Independent GitHub verification was unavailable during review, so both the merge details and check results are recorded as review-reported.
+
+The earlier spacer-geometry failures did not recur in the reported PR #29 run. Their historical root cause is still undetermined; retain the strict geometry assertion and its failure diagnostics. Phase 4.6.2A browser baselining is authorized. Guarded virtualization remains test-only and public production activation remains **NO-GO**.
 
 The implementation baseline accepted for certification is Phase 4.5.3, commit `500731b`.
 
@@ -89,7 +91,7 @@ These local results do not replace the required hosted PR execution. The local C
 - **Failure artifacts:** the root Playwright config retains traces and screenshots on failure. The existing `CI` workflow now tees the full E2E output with `pipefail` and attempts to upload that log plus Playwright `test-results/` and `playwright-report/` on failure. Artifact-upload errors are non-fatal to the job and cannot mask the test command's status.
 - **Local verification:** with the cached Chromium revision (1234), all four framework Chromium projects executed: 64 passed and 20 were skipped by the existing project/test filters. The actual-component Phase 4 Chromium suite passed 5/5, and three repeated midpoint geometry runs passed. These local results do not establish the hosted four-framework cross-browser gate or replace the Playwright-pinned browser matrix.
 
-Phase 4.6.1C is not complete until the hosted framework suites actually execute and pass, the geometry invariant passes reproducibly, the dedicated three-engine matrix remains green, and failure artifacts are available. The present local environment lacks the Playwright-pinned browser revision, so its cached-browser Chromium result cannot substitute for those hosted gates.
+Phase 4.6.1C's prior acceptance gates were reported green in PR #29. The local Chromium results documented above remain supplementary and do not substitute for that hosted run. Preserve the diagnostics even though the geometry failure did not recur.
 
 ## Phase 4.6.1D keyboard regression findings
 
@@ -97,12 +99,59 @@ Phase 4.6.1C is not complete until the hosted framework suites actually execute 
 - **Correction:** the component now captures a keyboard-active generation when opening and skips the deferred restore if keyboard navigation has since changed the active option. The base keyboard test now synchronizes on focus-open and the active option, moves from Apple to Cherry with two ArrowDown presses, and retains the expected Cherry selection. A separate regression exercises the close/reopen/keyboard-move sequence and verifies deferred work cannot replace the active option or its ARIA reference.
 - **Local verification:** both keyboard cases and the deterministic deferred-scroll regression pass in cached Chromium 1234. The corrected Cherry scenario passed 20/20 repetitions with one worker and 20/20 with two workers; the five-test Chromium critical subset passed. Installing the pinned Playwright Chromium 1217 (Chrome 147.0.7727.15) was attempted but the browser CDN returned a regional HTTP 403, so this is not pinned-browser certification. Hosted verification is required.
 
-Phase 4.6.1D remains pending hosted verification. The separate Phase 4.6.1C geometry discrepancy and all three-engine/repository-wide gates remain open; no performance benchmarking or production activation is authorized.
+The keyboard regression correction was merged in PR #29 and is included in the review-reported 16/16 green checks. Its historical root cause was deterministically reproduced and fixed as documented above. Performance and production activation were not implied by that functional certification.
 
-## Phase 4.6.2 and release risks
+## Phase 4.6.2A — Browser benchmark methodology and proposed budgets
 
-Performance and memory benchmarking has **not** started. It requires reliable browser execution first. The benchmark plan must record runner/hardware, browser/runtime versions, dataset shape, repeated-run medians and high percentiles, and distinguish JavaScript heap from browser-process memory. Agree on performance thresholds before using the benchmark to make a release decision.
+Phase 4.6.2A is authorized. The benchmark harness is report-only: it measures the real built `EnhancedSelect` in Chromium for both `legacy-full` and test-only `virtual-window` modes at 1,000, 10,000, and 100,000 deterministic flat options. It does not change runtime defaults, expose a public virtualization option, or enforce performance budgets in CI.
 
-Accessibility certification and manual assistive-technology assessment have **not** started. The initial browser suite checks active-descendant integrity only; it does not constitute complete accessibility certification.
+Run it after building the workspace packages and installing the Playwright-pinned Chromium:
 
-Production activation is blocked until CI evidence shows passing regression, lint, build, browser-interaction, and accessibility gates and an evidence-backed performance/memory assessment is reviewed.
+```sh
+npm run build
+PHASE4_BENCHMARK_WARMUPS=1 PHASE4_BENCHMARK_REPETITIONS=5 \
+  PHASE4_BENCHMARK_OUTPUT=test-results/performance/phase-4.6.2a.json \
+  npm run benchmark:phase4
+npm run benchmark:phase4:summary
+```
+
+The manual `Phase 4 Performance Baseline` workflow runs the same harness on a clean Node 20 GitHub-hosted runner and preserves the raw measurements and Playwright diagnostics. The locked Playwright package supplies the browser revision. The report records the actual browser version/cache revision, Playwright version, OS/runner and CPU metadata, viewport, commit, deterministic data-generation recipe, repetitions, and warm-up policy. The initial matrix is serial at a 1280×800 viewport, 1× device scale factor, and 320 px list viewport. The harness injects a benchmark-only 40 px option-host rule inside the component's shadow root, measures a built-in option, and configures the virtualizer to the measured height in both modes; this isolates dataset-size effects from variable row geometry without changing production CSS. The test-only guarded mode uses the existing private integration seam; `legacy-full` remains the public default.
+
+Each measured trial captures browser-side dataset generation, synchronous `setItems`, time until the mode's initial render settles, first visible option after opening, full open/render settlement, End-key navigation to the final active option, seeded random-access scroll-to-index latency, scroll-frame intervals, DOM/option counts, filter application for 10k and 100k, and Chromium CDP `Runtime.getHeapUsage` snapshots before dataset generation, after initial render, before cleanup, and after component removal plus explicit `HeapProfiler.collectGarbage`. The 10k case additionally runs 100 monotonic sequential `scrollTop` updates, advancing eight rows per update and pacing updates at one animation frame, in both modes. Random-access and sustained scroll results retain raw samples and p50/p95/p99; frame observations count intervals over 33 ms and 50 ms without claiming a frame-rate guarantee. The End-key measurement exercises the component's user-facing active-key materialization path; the component does not expose a public `scrollToKey` API. CDP heap values are JavaScript heap observations, not total browser-process memory. Filter and DOM-count probes are not included in the scroll-latency samples. Lifecycle memory here is one measured mount/unmount cleanup per trial; the separate 100-cycle stress matrix belongs to the later lifecycle stage.
+
+### Proposed budget classes
+
+These are proposed review targets, not accepted release gates. First collect repeatable pinned-runner baselines; confirm or revise targets before using them to fail a release workflow.
+
+| Class | Proposed criterion | Rationale |
+| --- | --- | --- |
+| Hard correctness | All seeded scroll targets resolve visibly; the final End-key active descendant resolves to the final option; filtering `Option 999` returns 11 options; no JavaScript/test errors. | A fast benchmark that compares different data or silently misses an option is invalid. |
+| Hard virtualization invariant | `virtual-window` mounts no more than 64 option hosts at each dataset size. | Bounds option DOM against the fixed 320 px viewport plus overscan without asserting constant total memory. |
+| Performance target | Virtual mode's registration-to-initial-window p95 ≤ 500 ms (1k), 1.5 s (10k), and 5 s (100k). | Allows linear registry construction while setting a clear upper bound on initial usable output. |
+| Performance target | First visible option after open p95 ≤ 150 ms at each size. | Aims for prompt interaction while excluding dataset construction from open latency. |
+| Performance target | End-key-to-visible-target p95 ≤ 100 ms and p99 ≤ 250 ms. | Allows a few rendered frames for far-index materialization while catching visibly stale navigation. |
+| Performance target | Random scroll-to-index p95 ≤ 50 ms and p99 ≤ 100 ms. | Leaves room for one or a few browser frames without claiming a fixed frame rate. |
+| Performance target | Filter-to-render p95 ≤ 250 ms at 10k and ≤ 1 s at 100k. | Search necessarily inspects the dataset; the larger budget accounts for O(n) filtering and registration. |
+| Diagnostic warning | Report frame intervals >33 ms and >50 ms; investigate if >50 ms exceeds 10% of samples. | This is an observation threshold, not a 60 FPS guarantee or a failure by itself. |
+| Diagnostic warning | Investigate post-GC retained JS heap above baseline by `max(32 MiB, 25%)` across repeated runs. | Browser GC and heap accounting vary; a single delta is not proof of a leak. |
+
+`legacy-full` is the comparison control and is not required to meet the virtual-mode targets. The item registry and index maps remain O(n), so virtualization only bounds mounted option DOM; it does not imply constant total memory. The first local run is exploratory (`n=1`, no warm-up) and cannot validate p95/p99 budgets. A release review should use at least one warm-up plus five measured repetitions on the same pinned runner/browser, retain raw samples, and review workload-level quantiles alongside the control results. The `100k` legacy full-DOM case may be limited by runner memory; an incomplete case must remain visibly incomplete, not be reported as a passing performance result.
+
+### Initial exploratory local run
+
+The initial run is recorded in [`phase-4.6.2a-initial.json`](../../tests/performance/results/phase-4.6.2a-initial.json) with a machine-readable aggregation in [`phase-4.6.2a-initial.summary.json`](../../tests/performance/results/phase-4.6.2a-initial.summary.json). It used one measured repetition, zero warm-ups, Node `20.20.2`, Playwright `1.59.1`, Linux Manjaro 6.12, an AMD Ryzen 9 7845HX runner, a 1280×800 viewport, 320 px list viewport, and calibrated 40 px rows. This is not pinned-browser certification: the checkout expects Chromium revision `1217` / `147.0.7727.15`, but the local cache resolved revision `1234` and `browser.version()` reported `151.0.7922.34`. The browser context's Desktop Chrome user-agent override reports `147.0.7727.15`; the executable/browser version is the relevant runtime version here.
+
+| Dataset | Mode | Initial render settles (ms) | First visible after open (ms) | Random seek p95 (ms) | 10k sustained update p95 (ms) | Max mounted options | Post-GC JS heap delta |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | legacy-full | 425.5 | 292.4 | 0.02 | — | 1,000 | +3.4 MiB |
+| 1,000 | virtual-window | 46.9 | 16.0 | 16.78 | — | 12 | +1.5 MiB |
+| 10,000 | legacy-full | 4,892.4 | 744.6 | 0.11 | 0.08 | 10,000 | +0.0 MiB |
+| 10,000 | virtual-window | 30.0 | 23.9 | 16.83 | 0.06 | 12 | −1.3 MiB |
+| 100,000 | legacy-full | **Incomplete** — initial render did not settle within 180,000 ms | — | — | — | — | — |
+| 100,000 | virtual-window | 107.0 | 75.8 | 28.46 | — | 12 | +17.6 MiB |
+
+The 10k sequential workload completed 100 updates in both modes; its frame-interval p95 was about 16.67 ms, with one interval over 50 ms in legacy-full and none in virtual-window. In the 100k virtual random-seek workload, 54 of 99 sampled frame intervals exceeded 33 ms and none exceeded 50 ms, so these observations do not support a 60 FPS claim. Frame samples are diagnostic and sensitive to this single run. The 10k virtual filter returned all 11 model matches while mounting 8 rows; the 100k virtual filter returned all 111 matches while mounting 8 rows. No seeded scroll target failed in completed cases. These are individual observations, not p95 release results; negative or positive post-GC deltas are especially noisy at `n=1`. The 100k legacy case timed out specifically while waiting for the initial full render to settle. During that case Chromium repeatedly emitted `ResizeObserver loop completed with undelivered notifications`; page-level console/page-error counters remained zero, so the process diagnostics' source and rendering/observer interaction remain undiagnosed. Playwright's teardown also reported a browser-log string overflow, but the raw JSON preserves the stage-specific 180-second timeout and the failure trace is available from the local Playwright artifact directory. No production behavior was changed in response.
+
+This run therefore establishes a useful bounded-DOM observation for virtual mode through 100k, but it does not establish a complete three-size legacy comparison or validate any proposed budget. Re-run the matrix on the Playwright-pinned GitHub runner with at least one warm-up and five measured repetitions before drawing release conclusions. Phase 4.6.2B lifecycle stress and production activation remain unauthorized/NO-GO until the full certification review is complete.
+
+Phase 4.6.2B's 100-cycle 10k lifecycle stress matrix and Phase 4.6.2C's final release budgets remain future certification work. Accessibility certification and manual assistive-technology assessment also remain pending. Production activation remains **NO-GO** until performance, memory/lifecycle, accessibility, and release gates are separately reviewed.
