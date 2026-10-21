@@ -22,7 +22,7 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run unit tests
         run: npm run test:unit
       
@@ -87,23 +87,36 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+
+      - name: Prepare E2E diagnostics
+        run: mkdir -p ci-diagnostics
       
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: |
+          set -o pipefail
+          npx playwright install --with-deps chromium firefox webkit 2>&1 \
+            | tee "ci-diagnostics/${{ matrix.framework }}-browser-install.log"
       
       - name: Build packages
         run: npm run build
       
       - name: Run E2E tests - ${{ matrix.framework }}
-        run: npm run test:e2e:${{ matrix.framework }}
+        run: |
+          set -o pipefail
+          npm run test:e2e:${{ matrix.framework }} 2>&1 \
+            | tee "ci-diagnostics/${{ matrix.framework }}.log"
       
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: playwright-report-${{ matrix.framework }}
-          path: playwright-report/
+          name: e2e-diagnostics-${{ matrix.framework }}
+          path: |
+            ci-diagnostics/
+            test-results/
+            playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
 
   e2e-critical:
     name: E2E Critical Path
@@ -122,13 +135,32 @@ jobs:
         run: npm ci
       
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          set -o pipefail
+          mkdir -p ci-diagnostics
+          npx playwright install --with-deps chromium firefox webkit 2>&1 \
+            | tee ci-diagnostics/critical-browser-install.log
       
       - name: Build packages
         run: npm run build
       
       - name: Run critical path tests
-        run: npm run test:e2e:critical
+        run: |
+          set -o pipefail
+          npm run test:e2e:critical 2>&1 \
+            | tee ci-diagnostics/critical.log
+
+      - name: Upload critical-path diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-diagnostics-critical
+          path: |
+            ci-diagnostics/
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
 
   test-summary:
     name: Test Summary
