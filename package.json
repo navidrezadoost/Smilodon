@@ -32,6 +32,7 @@
     "test:e2e:svelte": "npm run test:e2e:preflight && playwright test --grep @svelte",
     "test:e2e:vanilla": "npm run test:e2e:preflight && playwright test --grep @vanilla",
     "test:e2e:critical": "npm run test:e2e:preflight && playwright test --grep @critical",
+    "test:e2e:virtualization": "playwright test tests/e2e/phase-4-virtualization-certification.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:stress": "vitest run packages/core/tests/stress.spec.ts --config packages/core/vitest.config.ts",
     "test:all": "npm run test:unit && npm run test:contracts && npm run test:e2e",

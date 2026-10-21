@@ -1,0 +1,142 @@
+name: Phase 4 Certification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  regression:
+    name: Regression, lint, and build (Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        id: dependencies
+        run: npm ci
+
+      - name: Run deferred focused regression suites
+        if: always() && steps.dependencies.outcome == 'success'
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-4
+          npx vitest run \
+            packages/core/tests/enhanced-select-virtualization-integration.spec.ts \
+            packages/core/tests/enhanced-select-selection-parity.spec.ts \
+            packages/core/tests/enhanced-select-active-parity.spec.ts \
+            packages/core/tests/enhanced-select-accessibility-integration.spec.ts \
+            packages/core/tests/virtualizer.spec.ts \
+            packages/core/tests/virtualization-contract.spec.ts \
+            packages/core/tests/memory-lifecycle.spec.ts \
+            --config packages/core/vitest.config.ts 2>&1 | tee test-results/phase-4/focused-vitest.log
+
+      - name: Run complete unit suite
+        if: always() && steps.dependencies.outcome == 'success'
+        run: |
+          set -o pipefail
+          npm run test:unit 2>&1 | tee test-results/phase-4/unit-vitest.log
+
+      - name: TypeScript check
+        if: always() && steps.dependencies.outcome == 'success'
+        run: |
+          set -o pipefail
+          npx tsc --noEmit 2>&1 | tee test-results/phase-4/typescript.log
+
+      - name: Lint
+        if: always() && steps.dependencies.outcome == 'success'
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee test-results/phase-4/lint.log
+
+      - name: Build all workspaces
+        if: always() && steps.dependencies.outcome == 'success'
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee test-results/phase-4/build.log
+
+      - name: Check committed patch whitespace
+        if: always()
+        env:
+          GIT_EVENT_BEFORE: ${{ github.event.before }}
+          GIT_EVENT_NAME: ${{ github.event_name }}
+          GIT_PR_BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-4
+          if [[ "$GIT_EVENT_NAME" == "pull_request" ]]; then
+            git diff --check "origin/$GIT_PR_BASE_REF...$GITHUB_SHA" 2>&1 | tee test-results/phase-4/diff-check.log
+          else
+            before="$GIT_EVENT_BEFORE"
+            if [[ "$before" =~ ^0+$ ]]; then
+              before="$GITHUB_SHA^"
+            fi
+            git diff --check "$before" "$GITHUB_SHA" 2>&1 | tee test-results/phase-4/diff-check.log
+          fi
+
+      - name: Preserve regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-regression-diagnostics
+          path: test-results/phase-4/
+          if-no-files-found: warn
+          retention-days: 14
+
+  browser:
+    name: Guarded virtualization (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install browser engine
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build component packages
+        run: npm run build
+
+      - name: Run actual-component certification scenarios
+        run: |
+          set -o pipefail
+          mkdir -p test-results/phase-4
+          npx playwright test tests/e2e/phase-4-virtualization-certification.spec.ts \
+            --project=${{ matrix.browser }} --retries=1 2>&1 | tee test-results/phase-4/${{ matrix.browser }}.log
+
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-${{ matrix.browser }}-diagnostics
+          path: |
+            test-results/phase-4/
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
