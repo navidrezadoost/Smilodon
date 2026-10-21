@@ -281,24 +281,38 @@ export class Virtualizer {
   }
 
   measureOnAppear(node: HTMLElement, index: number) {
-    if (this.destroyed || index >= this.itemsLength) return;
+    this.measureItem(index, node.offsetHeight);
+  }
 
-    const h = node.offsetHeight;
+  /** Records a validated measured height and updates the virtual offset index. */
+  measureItem(index: number, height: number): boolean {
+    if (
+      this.destroyed
+      || !Number.isInteger(index)
+      || index < 0
+      || index >= this.itemsLength
+      || !Number.isFinite(height)
+      || height <= 0
+    ) return false;
+
     const prev = this.measuredHeights.get(index);
     const threshold = this.options.measurementThreshold ?? 5;
-    
-    if (prev === undefined || Math.abs(prev - h) > threshold) {
+
+    if (prev === undefined || Math.abs(prev - height) > threshold) {
       const oldValue = prev ?? this.estimatedItemHeight;
-      this.measuredHeights.set(index, h);
-      this.measuredHeightTotal += h - (prev ?? 0);
+      this.measuredHeights.set(index, height);
+      this.measuredHeightTotal += height - (prev ?? 0);
       
       // Update Fenwick tree with new measurement
       if (this.fenwick) {
-        this.fenwick.update(index, oldValue, h);
+        this.fenwick.update(index, oldValue, height);
       }
       
       this.updateAverageHeight();
+      return true;
     }
+
+    return false;
   }
 
   /**

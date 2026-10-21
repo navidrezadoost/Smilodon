@@ -66,6 +66,37 @@ function runGuardedScheduledUpdate(select: EnhancedSelect): void {
   scheduled.callback?.();
 }
 
+function mockResizeObservers(): Array<{
+  targets: Set<Element>;
+  emit: (target: Element, height: number) => void;
+  callback: ResizeObserverCallback;
+}> {
+  const instances: Array<{
+    targets: Set<Element>;
+    emit: (target: Element, height: number) => void;
+    callback: ResizeObserverCallback;
+  }> = [];
+  class TestResizeObserver {
+    private targets = new Set<Element>();
+    constructor(private callback: ResizeObserverCallback) {
+      instances.push({
+        targets: this.targets,
+        callback,
+        emit: (target, height) => callback([{
+          target,
+          contentRect: { height } as DOMRectReadOnly,
+          borderBoxSize: [{ blockSize: height, inlineSize: 100 }] as ResizeObserverSize[],
+        } as ResizeObserverEntry], this as unknown as ResizeObserver),
+      });
+    }
+    observe(target: Element): void { this.targets.add(target); }
+    unobserve(target: Element): void { this.targets.delete(target); }
+    disconnect(): void { this.targets.clear(); }
+  }
+  vi.stubGlobal('ResizeObserver', TestResizeObserver);
+  return instances;
+}
+
 describe('EnhancedSelect pre-virtualization integration guards', () => {
   let select: EnhancedSelect;
 
@@ -76,6 +107,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
 
   afterEach(() => {
     select.remove();
+    vi.unstubAllGlobals();
   });
 
   it('keeps selected keys attached to the same item keys after filtering and rerendering', () => {
@@ -1387,6 +1419,129 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       return scroller;
     }
 
+    it('measures mounted guarded options and reflects measured geometry in spacers', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(40));
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      const option = scroller.querySelector<HTMLElement>('[data-index="0"]')!;
+      const virtualizer = (select as any)._guardedVirtualizer;
+
+      expect(observers).toHaveLength(1);
+      expect(observers[0].targets.has(option)).toBe(true);
+      expect(observers[0].targets.has(scroller.querySelector('[data-virtual-spacer]')!)).toBe(false);
+      observers[0].emit(option, 31);
+
+      expect(virtualizer.measuredHeights.get(0)).toBe(31);
+      expect(scroller.querySelector<HTMLElement>('[data-virtual-spacer="bottom"]')?.style.height)
+        .toBe(`${virtualizer.cumulativeOffset(40) - virtualizer.cumulativeOffset((select as any)._guardedVirtualWindow.endIndex)}px`);
+    });
+
+    it('measures custom renderer option roots through the same guarded path', () => {
+      const observers = mockResizeObservers();
+      select.optionRenderer = (item: unknown) => {
+        const option = document.createElement('div');
+        option.textContent = (item as TestItem).label;
+        return option;
+      };
+      setupGuardedRendererList(makeLargeItems(40));
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+
+      observers[0].emit(option, 29);
+
+      expect((select as any)._guardedVirtualizer.measuredHeights.get(0)).toBe(29);
+    });
+
+    it('ignores zero, non-finite, and stale option measurements', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(40));
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+      const virtualizer = (select as any)._guardedVirtualizer;
+      observers[0].emit(option, 0);
+      observers[0].emit(option, Number.NaN);
+      expect(virtualizer.measuredHeights.size).toBe(0);
+
+      select.setItems([...makeLargeItems(40)].reverse());
+      observers[0].emit(option, 90);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+    });
+
+    it('preserves the stable visible key and intra-row offset when rows above it grow', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(6000), 80);
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      scroller.scrollTop = 200;
+      runGuardedScheduledUpdate(select);
+      const aboveAnchor = scroller.querySelector<HTMLElement>('[data-index="3"]')!;
+      expect(observers[0].targets.has(aboveAnchor)).toBe(true);
+
+      observers[0].emit(aboveAnchor, 60);
+
+      expect(scroller.scrollTop).toBe(220);
+      expect((select as any)._guardedVirtualizer.cumulativeOffset(5)).toBe(220);
+    });
+
+    it('keeps an explicit scroll-to-key position when the target row is measured', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(6000));
+      expect((select as any)._materializeGuardedVirtualKey('item-8')).toBe(true);
+      const scroller = (select as any)._optionsContainer as HTMLElement;
+      const target = scroller.querySelector<HTMLElement>('[data-index="8"]')!;
+      expect(scroller.scrollTop).toBe(160);
+
+      observers[0].emit(target, 35);
+
+      expect(scroller.scrollTop).toBe(160);
+      expect((select as any)._guardedVirtualizer.measuredHeights.get(8)).toBe(35);
+    });
+
+    it('clears measurements when items with the same keys are replaced or reordered', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(40));
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+      observers[0].emit(option, 30);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(1);
+
+      select.setItems(makeLargeItems(40).reverse());
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+      select.setItems(makeLargeItems(40).map((item) => ({ ...item, label: `${item.label} replaced` })));
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+    });
+
+    it('invalidates index measurements when the active filter generation changes', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(40));
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+      observers[0].emit(option, 30);
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(1);
+
+      filterTo(select, 'Option 1');
+
+      expect((select as any)._guardedVirtualizer.measuredHeights.size).toBe(0);
+      expect((select as any)._renderPlan.filteredKeys).toHaveLength(11);
+    });
+
+    it('tears down observers for grouped fallback and ignores callbacks after disconnect', () => {
+      const observers = mockResizeObservers();
+      setupGuardedRendererList(makeLargeItems(40));
+      const observer = observers[0];
+      const option = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+      select.setGroupedItems([{ label: 'Group', options: makeLargeItems(2) }]);
+      expect(observer.targets.size).toBe(0);
+      expect((select as any)._guardedOptionResizeObserver).toBeNull();
+
+      select.setItems(makeLargeItems(40));
+      setGuardedWindow(select, 0, 3);
+      (select as any)._renderOptions();
+      const staleVirtualizer = (select as any)._guardedVirtualizer;
+      const staleObserver = observers[observers.length - 1];
+      const staleOption = (select as any)._optionsContainer.querySelector('[data-index="0"]') as HTMLElement;
+      select.remove();
+      staleObserver.emit(staleOption, 99);
+      expect(staleVirtualizer.measuredHeights.size).toBe(0);
+      expect(staleObserver.targets.size).toBe(0);
+      expect(option.isConnected).toBe(false);
+    });
+
     function renderWindow(startIndex: number, endIndex: number): void {
       setGuardedWindow(select, startIndex, endIndex);
       (select as any)._renderOptions();
@@ -1720,6 +1875,7 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
       select.setItems(items);
       const scroller = (select as any)._optionsContainer as HTMLElement;
       expect((select as any)._renderPlan.mode).toBe('legacy-full');
+      expect((select as any)._guardedOptionResizeObserver).toBeNull();
       expect(scroller.querySelectorAll('[part="option"]')).toHaveLength(items.length);
       expect(scroller.querySelector('[data-virtual-spacer]')).toBeNull();
 
