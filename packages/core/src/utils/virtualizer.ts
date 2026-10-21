@@ -43,7 +43,7 @@ export class Virtualizer {
   averageHeight: number;
   private pool: DOMPool;
   private itemGetter: ItemGetter;
-  private fenwick?: FenwickTree;
+  private fenwick: FenwickTree;
   private activeNodes = new Map<number, HTMLElement>(); // index -> node mapping
   private destroyed = false;
   private recycleRafId = 0;
@@ -78,25 +78,22 @@ export class Virtualizer {
       telemetry: options.enableTelemetry || false,
     });
 
-    // Use Fenwick tree for large lists (>5000 items)
-    if (itemsLength > 5000) {
-      this.fenwick = this.createFenwickTree(itemsLength);
-    }
+    // One prefix index keeps offset, window, and scroll calculations on the
+    // same measured-height policy at every list size.
+    this.fenwick = this.createFenwickTree(itemsLength);
     
     this.container.style.willChange = 'transform';
   }
 
   computeWindow(scrollTop: number, viewportHeight: number) {
     const { buffer } = this.options;
-    const calculatedStartIndex = this.fenwick
-      ? this.indexAtOffset(scrollTop) - buffer
-      : Math.floor(scrollTop / this.averageHeight) - buffer;
+    const visibleStartIndex = this.indexAtOffset(scrollTop);
+    const calculatedStartIndex = visibleStartIndex - buffer;
     const startIndex = this.itemsLength > 0
       ? Math.max(0, Math.min(this.itemsLength - 1, calculatedStartIndex))
       : 0;
-    const calculatedEndIndex = this.fenwick
-      ? this.fenwick.lowerBound(Math.max(0, scrollTop + viewportHeight)) + buffer
-      : Math.ceil((scrollTop + viewportHeight) / this.averageHeight) + buffer;
+    const visibleEndIndex = this.indexAtOffset(Math.max(0, scrollTop + viewportHeight));
+    const calculatedEndIndex = Math.max(visibleStartIndex, visibleEndIndex) + buffer;
     const endIndex = this.itemsLength > 0
       ? Math.max(0, Math.min(this.itemsLength - 1, calculatedEndIndex))
       : -1;
@@ -139,7 +136,7 @@ export class Virtualizer {
 
   /** Finds the item containing an offset, advancing past exact item boundaries. */
   private indexAtOffset(offset: number): number {
-    if (!this.fenwick || this.itemsLength <= 0) return 0;
+    if (this.itemsLength <= 0) return 0;
 
     const target = Math.max(0, offset);
     let index = Math.max(0, Math.min(this.itemsLength - 1, this.fenwick.lowerBound(target)));
@@ -154,19 +151,14 @@ export class Virtualizer {
   }
 
   cumulativeOffset(index: number): number {
-    if (index <= 0) return 0;
-    
-    // Use Fenwick tree for O(log n) prefix sum
-    if (this.fenwick) {
-      return this.fenwick.sum(index - 1);
+    if (!Number.isFinite(index)) {
+      return index === Number.POSITIVE_INFINITY && this.itemsLength > 0
+        ? this.fenwick.sum(this.itemsLength - 1)
+        : 0;
     }
-    
-    // Fallback: approximate using average height with sparse adjustments
-    let total = 0;
-    for (let i = 0; i < index; i++) {
-      total += this.measuredHeights.get(i) ?? this.averageHeight;
-    }
-    return total;
+    const boundedIndex = Math.max(0, Math.min(this.itemsLength, Math.trunc(index)));
+    if (boundedIndex === 0) return 0;
+    return this.fenwick.sum(boundedIndex - 1);
   }
 
   /**
@@ -304,9 +296,7 @@ export class Virtualizer {
       this.measuredHeightTotal += height - (prev ?? 0);
       
       // Update Fenwick tree with new measurement
-      if (this.fenwick) {
-        this.fenwick.update(index, oldValue, height);
-      }
+      this.fenwick.update(index, oldValue, height);
       
       this.updateAverageHeight();
       return true;
@@ -347,9 +337,7 @@ export class Virtualizer {
       }
     }
     
-    if (this.fenwick && newLength !== previousLength) {
-      this.fenwick = this.createFenwickTree(newLength);
-    } else if (!this.fenwick && newLength > 5000) {
+    if (newLength !== previousLength) {
       this.fenwick = this.createFenwickTree(newLength);
     }
   }
@@ -369,9 +357,7 @@ export class Virtualizer {
     this.measuredHeightTotal = 0;
     this.averageHeight = this.estimatedItemHeight;
     this.currentWindow = null;
-    if (this.fenwick) {
-      this.fenwick.reset();
-    }
+    this.fenwick.reset();
   }
 
   private updateAverageHeight(): void {

@@ -124,6 +124,7 @@ export class EnhancedSelect extends HTMLElement {
   private _guardedMeasurementQuery: string | null = null;
   private _guardedOptionResizeObserver: ResizeObserver | null = null;
   private _guardedObservedOptions = new Set<HTMLElement>();
+  private _guardedObserverSeenOptions = new WeakSet<HTMLElement>();
   private _guardedOptionMeasurements = new WeakMap<HTMLElement, { key: SelectKey; index: number; generation: number }>();
   private _guardedMeasurementGeneration = 0;
   private _guardedVirtualScrollTop = 0;
@@ -5192,8 +5193,6 @@ export class EnhancedSelect extends HTMLElement {
           measurementThreshold: 0,
         },
       );
-      this._guardedMeasurementGeneration += 1;
-      this._createGuardedOptionResizeObserver(this._guardedMeasurementGeneration);
       this._guardedVirtualScrollTop = this._optionsContainer.scrollTop;
       this._guardedVirtualViewportHeight = this._resolveGuardedViewportHeight();
       this._optionsContainer.addEventListener('scroll', this._onGuardedVirtualScroll, { passive: true });
@@ -5358,6 +5357,7 @@ export class EnhancedSelect extends HTMLElement {
 
   private _destroyGuardedVirtualizer(preserveRequestedMode = false): void {
     this._cancelGuardedVirtualWindowUpdate();
+    this._guardedMeasurementGeneration += 1;
     if (this._guardedScrollListenerAttached) {
       this._optionsContainer.removeEventListener('scroll', this._onGuardedVirtualScroll);
       this._guardedScrollListenerAttached = false;
@@ -5365,7 +5365,6 @@ export class EnhancedSelect extends HTMLElement {
     this._guardedVirtualizer?.destroy();
     this._guardedVirtualizer = null;
     this._teardownGuardedOptionResizeObserver();
-    this._guardedMeasurementGeneration += 1;
     if (!preserveRequestedMode) this._guardedVirtualizationRequested = false;
     this._guardedVirtualizerKeys = [];
     this._guardedVirtualWindow = null;
@@ -5458,11 +5457,10 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _syncGuardedOptionResizeTargets(): void {
-    const observer = this._guardedOptionResizeObserver;
     const virtualizer = this._guardedVirtualizer;
-    if (!observer || !virtualizer || !this._guardedVirtualizationRequested) return;
+    if (!virtualizer || !this._guardedVirtualizationRequested || !this.isConnected) return;
 
-    const current = new Set<HTMLElement>();
+    const candidates: Array<{ option: HTMLElement; key: SelectKey; index: number }> = [];
     for (const child of Array.from(this._optionsContainer.children)) {
       if (!(child instanceof HTMLElement) || !child.hasAttribute('data-index')) continue;
       const dataIndex = Number(child.getAttribute('data-index'));
@@ -5470,13 +5468,32 @@ export class EnhancedSelect extends HTMLElement {
       const key = this._itemRegistry.indexToKey.get(dataIndex);
       const index = key === undefined ? undefined : this._renderPlan.filteredIndexByKey.get(key);
       if (key === undefined || index === undefined) continue;
-      current.add(child);
-      this._guardedOptionMeasurements.set(child, {
+      candidates.push({ option: child, key, index });
+    }
+
+    const reusedTarget = candidates.some(({ option }) => this._guardedObserverSeenOptions.has(option));
+    if (reusedTarget && this._guardedOptionResizeObserver) {
+      this._guardedMeasurementGeneration += 1;
+      this._teardownGuardedOptionResizeObserver();
+    }
+    if (!this._guardedOptionResizeObserver) {
+      this._createGuardedOptionResizeObserver(this._guardedMeasurementGeneration);
+    }
+    const observer = this._guardedOptionResizeObserver;
+    if (!observer) return;
+
+    const current = new Set<HTMLElement>();
+    for (const { option, key, index } of candidates) {
+      current.add(option);
+      this._guardedOptionMeasurements.set(option, {
         key,
         index,
         generation: this._guardedMeasurementGeneration,
       });
-      if (!this._guardedObservedOptions.has(child)) observer.observe(child);
+      if (!this._guardedObservedOptions.has(option)) {
+        observer.observe(option);
+        this._guardedObserverSeenOptions.add(option);
+      }
     }
 
     for (const previous of this._guardedObservedOptions) {
@@ -5490,6 +5507,7 @@ export class EnhancedSelect extends HTMLElement {
       this._guardedOptionResizeObserver?.unobserve(option);
     }
     this._guardedObservedOptions.clear();
+    this._guardedObserverSeenOptions = new WeakSet();
     this._guardedOptionResizeObserver?.disconnect();
     this._guardedOptionResizeObserver = null;
     this._guardedOptionMeasurements = new WeakMap();
