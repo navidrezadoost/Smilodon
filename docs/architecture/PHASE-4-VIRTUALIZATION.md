@@ -1,6 +1,6 @@
 # Phase 4 — True Virtualization
 
-Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 implementation complete with executable verification pending; Phase 4.5.1 renderer parity and lifecycle hardening implemented with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
+Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 and 4.5.1–4.5.2 implementation complete with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -1354,3 +1354,40 @@ renderer remain unchanged.
 Phase 4.5.1 is implementation-complete and verification-pending. Its tests
 have been added but have not executed. The Phase 4.4.11 and 4.4.12 executable
 gates remain pending as release blockers.
+
+## 36. Phase 4.5.2 Variable-Height Measurement and Scroll Stability
+
+Guarded mode now observes only mounted option roots, including both built-in
+options and custom renderer roots. Spacer nodes and group headers are never
+measurement targets. Positive finite ResizeObserver block sizes are passed to
+the existing Virtualizer measurement owner, which updates measured heights,
+average estimates, and large-list Fenwick offsets. Invalid dimensions and
+callbacks from detached or superseded option generations are ignored.
+
+The controller uses a zero-pixel measurement threshold so every real height
+change is reflected. The component retains only currently observed option
+nodes and explicitly unobserves them during each render, disconnect, or grouped
+fallback. Reordered/filtered key sequences, query changes, item replacement,
+renderer replacement, and configuration/style changes discard index-based
+measurements before they can be assigned to another item. Height changes above
+the current viewport preserve the first visible stable key and its relative
+scroll offset where that key remains in the active filtered generation.
+
+The tests cover measured spacer geometry, invalid dimensions, stale callbacks,
+filter and item-generation invalidation, key-based scroll anchoring, observer
+cleanup, and Virtualizer indexed measurement including large-list offsets. The
+default renderer path still creates no guarded measurement observer, and the
+10,000-item mount bound remains a separate regression gate. The public
+`virtualize` option and default activation state are unchanged.
+
+### Phase 4.5.2 Verification Status
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed for the Phase 4.5.2 changes. |
+| Focused Vitest gate, unit suite, lint, and build | NOT RUN: Node.js/npm are unavailable in the implementation environment. |
+| Real-browser variable-height scroll and accessibility validation | NOT RUN; required before production activation. |
+
+Phase 4.5.2 is implementation-complete and verification-pending. No
+production activation is authorized by this phase; the Phase 4.4.11–4.12 and
+4.5.1 executable gates remain release blockers.

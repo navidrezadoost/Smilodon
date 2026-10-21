@@ -485,6 +485,27 @@ describe('Virtualizer', () => {
     });
   });
 
+  it('accepts only positive finite indexed measurements and updates offsets immediately', () => {
+    const container = document.createElement('div');
+    const v = new Virtualizer(container, 6000, (i) => i, {
+      estimatedItemHeight: 40,
+      buffer: 0,
+      measurementThreshold: 0,
+    });
+
+    expect(v.measureItem(0, 0)).toBe(false);
+    expect(v.measureItem(0, Number.NaN)).toBe(false);
+    expect(v.measureItem(0, Number.POSITIVE_INFINITY)).toBe(false);
+    expect(v.measureItem(-1, 20)).toBe(false);
+    expect(v.measureItem(6000, 20)).toBe(false);
+    expect(v.measuredHeights.size).toBe(0);
+
+    expect(v.measureItem(0, 24)).toBe(true);
+    expect(v.measureItem(0, 25)).toBe(true);
+    expect(v.cumulativeOffset(2)).toBe(65);
+    expect(v.averageHeight).toBe(25);
+  });
+
   it('shrinks measurements, active nodes, and current window safely', () => {
     const container = document.createElement('div');
     const v = new Virtualizer(container, 10, (i) => i, {

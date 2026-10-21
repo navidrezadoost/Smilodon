@@ -121,6 +121,11 @@ export class EnhancedSelect extends HTMLElement {
   private _guardedVirtualizer: Virtualizer | null = null;
   private _guardedVirtualizationRequested = false;
   private _guardedVirtualizerKeys: SelectKey[] = [];
+  private _guardedMeasurementQuery: string | null = null;
+  private _guardedOptionResizeObserver: ResizeObserver | null = null;
+  private _guardedObservedOptions = new Set<HTMLElement>();
+  private _guardedOptionMeasurements = new WeakMap<HTMLElement, { key: SelectKey; index: number; generation: number }>();
+  private _guardedMeasurementGeneration = 0;
   private _guardedVirtualScrollTop = 0;
   private _guardedVirtualViewportHeight = 0;
   private _guardedVirtualOverscan = 0;
@@ -231,6 +236,7 @@ export class EnhancedSelect extends HTMLElement {
   set classMap(map: ClassMap | undefined) {
     if (this._areClassMapsEqual(this._classMap, map)) return;
 
+    this._invalidateGuardedMeasurements();
     this._classMap = map;
     this._setGlobalStylesMirroring(Boolean(this._optionRenderer || map || this._groupHeaderRenderer));
     this._track('style', 'classMapChanged', {
@@ -4669,6 +4675,7 @@ export class EnhancedSelect extends HTMLElement {
   set optionRenderer(renderer: OptionRendererFn | undefined) {
     if (this._optionRenderer === renderer) return;
 
+    this._invalidateGuardedMeasurements();
     this._optionRenderer = renderer;
     this._setGlobalStylesMirroring(Boolean(renderer || this._classMap || this._groupHeaderRenderer));
     this._track('style', 'optionRendererChanged', { enabled: Boolean(renderer) });
@@ -4679,7 +4686,7 @@ export class EnhancedSelect extends HTMLElement {
    * Set items to display in the select
    */
   setItems(items: unknown[]): void {
-    
+    this._invalidateGuardedMeasurements();
     const previousLength = this._state.loadedItems.length;
     this._rebuildItemRegistry(items);
     this._state.groupedItems = this._groupItemsByProperty(items);
@@ -4751,6 +4758,7 @@ export class EnhancedSelect extends HTMLElement {
    * Set grouped items
    */
   setGroupedItems(groupedItems: GroupedItem[]): void {
+    this._destroyGuardedVirtualizer();
     this._rebuildItemRegistry(groupedItems.flatMap(group => group.options));
     this._state.groupedItems = groupedItems;
     this._renderOptions();
@@ -4879,6 +4887,7 @@ export class EnhancedSelect extends HTMLElement {
    * Update component configuration
    */
   updateConfig(config: Partial<GlobalSelectConfig>): void {
+    this._invalidateGuardedMeasurements();
     const previousMode = this._config.selection.mode;
     const previousEnabled = this._config.enabled;
     this._config = this._mergeConfig(this._config, config);
@@ -5164,6 +5173,12 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private _ensureGuardedVirtualizer(filteredKeys: readonly SelectKey[]): Virtualizer {
+    const keysChanged = this._guardedVirtualizer !== null && (
+      filteredKeys.length !== this._guardedVirtualizerKeys.length
+      || filteredKeys.some((key, index) => !Object.is(key, this._guardedVirtualizerKeys[index]))
+    );
+    if (keysChanged) this._destroyGuardedVirtualizer(true);
+
     if (!this._guardedVirtualizer) {
       // The controller only calculates ranges and scroll intents. Give it a
       // detached container so its internal styling never touches rendered UI.
@@ -5171,16 +5186,18 @@ export class EnhancedSelect extends HTMLElement {
         document.createElement('div'),
         filteredKeys.length,
         (index) => this._renderPlan.filteredKeys[index],
-        { estimatedItemHeight: this._resolveGuardedEstimatedItemHeight(), buffer: 0 },
+        {
+          estimatedItemHeight: this._resolveGuardedEstimatedItemHeight(),
+          buffer: 0,
+          measurementThreshold: 0,
+        },
       );
+      this._guardedMeasurementGeneration += 1;
+      this._createGuardedOptionResizeObserver(this._guardedMeasurementGeneration);
       this._guardedVirtualScrollTop = this._optionsContainer.scrollTop;
       this._guardedVirtualViewportHeight = this._resolveGuardedViewportHeight();
       this._optionsContainer.addEventListener('scroll', this._onGuardedVirtualScroll, { passive: true });
       this._guardedScrollListenerAttached = true;
-    } else {
-      const keysChanged = filteredKeys.length !== this._guardedVirtualizerKeys.length
-        || filteredKeys.some((key, index) => !Object.is(key, this._guardedVirtualizerKeys[index]));
-      if (keysChanged) this._guardedVirtualizer.setItemsLength(filteredKeys.length);
     }
 
     this._guardedVirtualizerKeys = [...filteredKeys];
@@ -5347,12 +5364,135 @@ export class EnhancedSelect extends HTMLElement {
     }
     this._guardedVirtualizer?.destroy();
     this._guardedVirtualizer = null;
+    this._teardownGuardedOptionResizeObserver();
+    this._guardedMeasurementGeneration += 1;
     if (!preserveRequestedMode) this._guardedVirtualizationRequested = false;
     this._guardedVirtualizerKeys = [];
     this._guardedVirtualWindow = null;
     this._guardedVirtualScrollTop = 0;
     this._guardedVirtualViewportHeight = 0;
     this._guardedVirtualOverscan = 0;
+  }
+
+  private _invalidateGuardedMeasurements(): void {
+    if (this._guardedVirtualizer) this._destroyGuardedVirtualizer(true);
+  }
+
+  private _createGuardedOptionResizeObserver(generation: number): void {
+    if (typeof ResizeObserver === 'undefined') return;
+    this._guardedOptionResizeObserver = new ResizeObserver((entries) => {
+      if (
+        generation !== this._guardedMeasurementGeneration
+        || !this._guardedVirtualizer
+        || !this._guardedVirtualizationRequested
+        || !this.isConnected
+      ) return;
+
+      const virtualizer = this._guardedVirtualizer;
+      const scrollTop = this._optionsContainer.scrollTop;
+      const viewportHeight = this._resolveGuardedViewportHeight();
+      const anchor = this._captureGuardedScrollAnchor(virtualizer, scrollTop, viewportHeight);
+      let changed = false;
+
+      for (const entry of entries) {
+        const option = entry.target;
+        if (!(option instanceof HTMLElement) || !this._guardedObservedOptions.has(option)) continue;
+        if (!option.isConnected || !this._optionsContainer.contains(option)) continue;
+        const meta = this._guardedOptionMeasurements.get(option);
+        if (!meta || meta.generation !== generation) continue;
+        const dataIndex = Number(option.getAttribute('data-index'));
+        if (!Number.isInteger(dataIndex) || !Object.is(this._itemRegistry.indexToKey.get(dataIndex), meta.key)) continue;
+        const currentIndex = this._renderPlan.filteredIndexByKey.get(meta.key);
+        if (currentIndex === undefined || currentIndex !== meta.index) continue;
+
+        const borderBox = entry.borderBoxSize;
+        const reportedHeight = Array.isArray(borderBox)
+          ? borderBox[0]?.blockSize
+          : (borderBox as ResizeObserverSize | undefined)?.blockSize;
+        const height = typeof reportedHeight === 'number' ? reportedHeight : entry.contentRect.height;
+        if (!Number.isFinite(height) || height <= 0) continue;
+        changed = virtualizer.measureItem(meta.index, height) || changed;
+      }
+
+      if (!changed) return;
+      if (anchor) {
+        const currentAnchorIndex = this._renderPlan.filteredIndexByKey.get(anchor.key);
+        if (currentAnchorIndex !== undefined) {
+          const anchoredScrollTop = Math.max(0, virtualizer.cumulativeOffset(currentAnchorIndex) + anchor.offset);
+          this._guardedVirtualScrollTop = anchoredScrollTop;
+          this._optionsContainer.scrollTop = anchoredScrollTop;
+        }
+      }
+      const update = virtualizer.updateWindow(this._optionsContainer.scrollTop, viewportHeight);
+      if (update) this._applyGuardedWindowUpdate(update, this._guardedVirtualOverscan);
+      this._renderOptions();
+    });
+  }
+
+  private _captureGuardedScrollAnchor(
+    virtualizer: Virtualizer,
+    scrollTop: number,
+    viewportHeight: number,
+  ): { key: SelectKey; offset: number } | null {
+    const viewportTop = this._optionsContainer.getBoundingClientRect().top + this._optionsContainer.clientTop;
+    const viewportBottom = viewportTop + viewportHeight;
+    const visible = Array.from(this._guardedObservedOptions)
+      .map((option) => ({ option, rect: option.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.height > 0 && rect.bottom > viewportTop && rect.top < viewportBottom)
+      .sort((left, right) => left.rect.top - right.rect.top)[0];
+    const visibleMeta = visible ? this._guardedOptionMeasurements.get(visible.option) : undefined;
+    if (visibleMeta && visibleMeta.generation === this._guardedMeasurementGeneration) {
+      return {
+        key: visibleMeta.key,
+        offset: scrollTop - virtualizer.cumulativeOffset(visibleMeta.index),
+      };
+    }
+
+    if (this._renderPlan.filteredKeys.length === 0) return null;
+    const index = virtualizer.computeWindow(scrollTop, 0).startIndex;
+    const key = this._renderPlan.filteredKeys[index];
+    return key === undefined ? null : {
+      key,
+      offset: scrollTop - virtualizer.cumulativeOffset(index),
+    };
+  }
+
+  private _syncGuardedOptionResizeTargets(): void {
+    const observer = this._guardedOptionResizeObserver;
+    const virtualizer = this._guardedVirtualizer;
+    if (!observer || !virtualizer || !this._guardedVirtualizationRequested) return;
+
+    const current = new Set<HTMLElement>();
+    for (const child of Array.from(this._optionsContainer.children)) {
+      if (!(child instanceof HTMLElement) || !child.hasAttribute('data-index')) continue;
+      const dataIndex = Number(child.getAttribute('data-index'));
+      if (!Number.isInteger(dataIndex)) continue;
+      const key = this._itemRegistry.indexToKey.get(dataIndex);
+      const index = key === undefined ? undefined : this._renderPlan.filteredIndexByKey.get(key);
+      if (key === undefined || index === undefined) continue;
+      current.add(child);
+      this._guardedOptionMeasurements.set(child, {
+        key,
+        index,
+        generation: this._guardedMeasurementGeneration,
+      });
+      if (!this._guardedObservedOptions.has(child)) observer.observe(child);
+    }
+
+    for (const previous of this._guardedObservedOptions) {
+      if (!current.has(previous)) observer.unobserve(previous);
+    }
+    this._guardedObservedOptions = current;
+  }
+
+  private _teardownGuardedOptionResizeObserver(): void {
+    for (const option of this._guardedObservedOptions) {
+      this._guardedOptionResizeObserver?.unobserve(option);
+    }
+    this._guardedObservedOptions.clear();
+    this._guardedOptionResizeObserver?.disconnect();
+    this._guardedOptionResizeObserver = null;
+    this._guardedOptionMeasurements = new WeakMap();
   }
 
   private _materializeGuardedVirtualKey(key: SelectKey): boolean {
@@ -5388,6 +5528,7 @@ export class EnhancedSelect extends HTMLElement {
       this._intersectionObserver.unobserve(this._loadMoreTrigger);
     }
     
+    this._unobserveGuardedOptionResizeTargets();
     // Clear options container
     this._optionsContainer.innerHTML = '';
     let filteredIndicesForScope: number[] = [];
@@ -5425,6 +5566,10 @@ export class EnhancedSelect extends HTMLElement {
     
     // Filter items by search query
     const query = this._state.searchQuery.toLowerCase();
+    if (this._guardedMeasurementQuery !== null && this._guardedMeasurementQuery !== query) {
+      this._invalidateGuardedMeasurements();
+    }
+    this._guardedMeasurementQuery = query;
     
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
@@ -5624,8 +5769,16 @@ export class EnhancedSelect extends HTMLElement {
 
     this._syncRenderedOptionAccessibility();
     this._syncLegacyActiveAria();
+    this._syncGuardedOptionResizeTargets();
     this._finalizePerfMarks();
     
+  }
+
+  private _unobserveGuardedOptionResizeTargets(): void {
+    for (const option of this._guardedObservedOptions) {
+      this._guardedOptionResizeObserver?.unobserve(option);
+    }
+    this._guardedObservedOptions.clear();
   }
 
   private _renderSingleOption(
