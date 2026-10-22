@@ -1,0 +1,802 @@
+{
+  "generatedAt": "2026-10-21T18:31:09.975Z",
+  "source": "tests/performance/results/phase-4.6.2a-initial.json",
+  "commit": "8b86ad6b55ebc98273ba461eb8cec515ce7f0cf9",
+  "completionStatus": "incomplete",
+  "failure": {
+    "datasetSize": 100000,
+    "mode": "legacy-full",
+    "repetition": 0,
+    "failureStage": "initial render settle",
+    "error": "BenchmarkStageTimeout: Benchmark stage \"initial render settle\" did not finish within 180000 ms."
+  },
+  "browser": {
+    "engine": "chromium",
+    "version": "151.0.7922.34",
+    "expectedRevision": "1217",
+    "expectedVersion": "147.0.7727.15",
+    "executablePath": "chrome",
+    "resolvedExecutablePath": null,
+    "actualBrowserCacheRevision": "1234",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36"
+  },
+  "runner": {
+    "platform": "linux",
+    "release": "6.12.94-1-MANJARO",
+    "architecture": "x64",
+    "cpuCount": 24,
+    "cpuModel": "AMD Ryzen 9 7845HX with Radeon Graphics",
+    "totalMemoryBytes": 33250754560,
+    "freeMemoryAtStartBytes": 20119093248,
+    "githubActions": false,
+    "githubRunnerName": null,
+    "githubImageOS": null,
+    "githubImageVersion": null
+  },
+  "protocol": {
+    "warmupsPerModeAndSize": 0,
+    "measuredRepetitionsPerModeAndSize": 1,
+    "browserSetupTimeoutMs": 120000,
+    "trialTimeoutMs": 180000,
+    "scrolling": "Deterministic seeded random-access seeks; target indexes are identical between render modes for each size and repetition.",
+    "gc": "Chromium CDP Runtime.getHeapUsage snapshots around each trial; HeapProfiler.collectGarbage before baseline and after removing the select and dropping benchmark data references.",
+    "measurementType": "Exploratory unless at least one warm-up and five measured repetitions are present; no performance budget is enforced by this harness."
+  },
+  "cases": [
+    {
+      "datasetSize": 1000,
+      "mode": "legacy-full",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "incompleteCases": [],
+      "registrationToInitialRenderMs": {
+        "samples": 1,
+        "p50": 425.54999999701977,
+        "p95": 425.54999999701977,
+        "p99": 425.54999999701977
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 1,
+        "p50": 292.4100000038743,
+        "p95": 292.4100000038743,
+        "p99": 292.4100000038743
+      },
+      "openToRenderSettledMs": {
+        "samples": 1,
+        "p50": 463.1300000026822,
+        "p95": 463.1300000026822,
+        "p99": 463.1300000026822
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 1,
+        "p50": 1.2650000005960464,
+        "p95": 1.2650000005960464,
+        "p99": 1.2650000005960464
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 1,
+        "p50": 1475.5050000026822,
+        "p95": 1475.5050000026822,
+        "p99": 1475.5050000026822
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 20,
+        "p50": 0.009999997913837433,
+        "p95": 0.020000003278255463,
+        "p99": 0.054999999701976776
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFramesOver50ms": 0,
+      "sustainedScrollFrameSampleCount": 0,
+      "filterToRenderedResultsMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "maxMountedOptions": 1000,
+      "maxObservedDeepDocumentNodes": 14043,
+      "retainedHeapDeltaBytes": {
+        "samples": 1,
+        "p50": 3599432,
+        "p95": 3599432,
+        "p99": 3599432
+      },
+      "frameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 16.664999999999964,
+        "p95": 16.664999999999964,
+        "p99": 16.664999999999964
+      },
+      "frameIntervalsOver50ms": 0,
+      "failedScrollTargets": [],
+      "frameSampleCount": 2,
+      "scrollLatencySamplesMs": [
+        0.054999999701976776,
+        0.020000003278255463,
+        0.009999997913837433,
+        0.005000002682209015,
+        0.004999995231628418,
+        0.01000000536441803,
+        0.009999997913837433,
+        0.005000002682209015,
+        0.009999997913837433,
+        0.005000002682209015,
+        0.004999995231628418,
+        0.009999997913837433,
+        0,
+        0.015000000596046448,
+        0.009999997913837433,
+        0.009999997913837433,
+        0.009999997913837433,
+        0.005000002682209015,
+        0.009999997913837433,
+        0.01000000536441803
+      ],
+      "frameP95SamplesMs": [
+        16.664999999999964
+      ]
+    },
+    {
+      "datasetSize": 1000,
+      "mode": "virtual-window",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "incompleteCases": [],
+      "registrationToInitialRenderMs": {
+        "samples": 1,
+        "p50": 46.85999999940395,
+        "p95": 46.85999999940395,
+        "p99": 46.85999999940395
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 1,
+        "p50": 16.019999995827675,
+        "p95": 16.019999995827675,
+        "p99": 16.019999995827675
+      },
+      "openToRenderSettledMs": {
+        "samples": 1,
+        "p50": 45.354999996721745,
+        "p95": 45.354999996721745,
+        "p99": 45.354999996721745
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 1,
+        "p50": 1.9800000041723251,
+        "p95": 1.9800000041723251,
+        "p99": 1.9800000041723251
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 1,
+        "p50": 11.880000002682209,
+        "p95": 11.880000002682209,
+        "p99": 11.880000002682209
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 20,
+        "p50": 16.649999998509884,
+        "p95": 16.780000001192093,
+        "p99": 16.780000001192093
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFramesOver50ms": 0,
+      "sustainedScrollFrameSampleCount": 0,
+      "filterToRenderedResultsMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 213,
+      "retainedHeapDeltaBytes": {
+        "samples": 1,
+        "p50": 1603440,
+        "p95": 1603440,
+        "p99": 1603440
+      },
+      "frameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "frameIntervalsOver50ms": 0,
+      "failedScrollTargets": [],
+      "frameSampleCount": 19,
+      "scrollLatencySamplesMs": [
+        3.7899999991059303,
+        15.174999997019768,
+        16.66999999433756,
+        16.535000003874302,
+        16.679999999701977,
+        16.649999998509884,
+        16.604999996721745,
+        16.679999999701977,
+        16.780000001192093,
+        16.604999996721745,
+        16.660000003874302,
+        16.644999995827675,
+        16.55000000447035,
+        16.67000000178814,
+        16.71500000357628,
+        16.780000001192093,
+        16.530000001192093,
+        16.644999995827675,
+        16.689999997615814,
+        16.660000003874302
+      ],
+      "frameP95SamplesMs": [
+        16.670000000000073
+      ]
+    },
+    {
+      "datasetSize": 10000,
+      "mode": "legacy-full",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "incompleteCases": [],
+      "registrationToInitialRenderMs": {
+        "samples": 1,
+        "p50": 4892.44999999553,
+        "p95": 4892.44999999553,
+        "p99": 4892.44999999553
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 1,
+        "p50": 744.6300000026822,
+        "p95": 744.6300000026822,
+        "p99": 744.6300000026822
+      },
+      "openToRenderSettledMs": {
+        "samples": 1,
+        "p50": 5528.910000003874,
+        "p95": 5528.910000003874,
+        "p99": 5528.910000003874
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 1,
+        "p50": 10.394999995827675,
+        "p95": 10.394999995827675,
+        "p99": 10.394999995827675
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 1,
+        "p50": 1925,
+        "p95": 1925,
+        "p99": 1925
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 50,
+        "p50": 0.054999999701976776,
+        "p95": 0.11000000685453415,
+        "p99": 0.26999999582767487
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 100,
+        "p50": 0.054999999701976776,
+        "p95": 0.07500000298023224,
+        "p99": 0.08000000566244125
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 16.67000000000189,
+        "p95": 16.67000000000189,
+        "p99": 16.67000000000189
+      },
+      "sustainedScrollFramesOver50ms": 1,
+      "sustainedScrollFrameSampleCount": 103,
+      "filterToRenderedResultsMs": {
+        "samples": 1,
+        "p50": 60.649999998509884,
+        "p95": 60.649999998509884,
+        "p99": 60.649999998509884
+      },
+      "maxMountedOptions": 10000,
+      "maxObservedDeepDocumentNodes": 140042,
+      "retainedHeapDeltaBytes": {
+        "samples": 1,
+        "p50": 36768,
+        "p95": 36768,
+        "p99": 36768
+      },
+      "frameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 199.98999999999796,
+        "p95": 199.98999999999796,
+        "p99": 199.98999999999796
+      },
+      "frameIntervalsOver50ms": 2,
+      "failedScrollTargets": [],
+      "frameSampleCount": 4,
+      "scrollLatencySamplesMs": [
+        0.26999999582767487,
+        0.07000000029802322,
+        0.06499999761581421,
+        0.1850000023841858,
+        0.054999999701976776,
+        0.0949999988079071,
+        0.03999999910593033,
+        0.019999995827674866,
+        0.05000000447034836,
+        0.07499999552965164,
+        0.0650000050663948,
+        0.07999999821186066,
+        0.08000000566244125,
+        0.07999999821186066,
+        0.015000000596046448,
+        0.05000000447034836,
+        0.08999999612569809,
+        0.0650000050663948,
+        0.0299999937415123,
+        0.03500000387430191,
+        0.07500000298023224,
+        0.04999999701976776,
+        0.034999996423721313,
+        0.01000000536441803,
+        0.07999999821186066,
+        0.04999999701976776,
+        0.07500000298023224,
+        0.015000000596046448,
+        0.030000001192092896,
+        0.044999994337558746,
+        0.03500000387430191,
+        0.10000000149011612,
+        0.06499999761581421,
+        0.07999999821186066,
+        0.015000000596046448,
+        0.05000000447034836,
+        0.02499999850988388,
+        0.054999999701976776,
+        0.07999999821186066,
+        0.02499999850988388,
+        0.03500000387430191,
+        0.08500000089406967,
+        0.02499999850988388,
+        0.07499999552965164,
+        0.054999999701976776,
+        0.11000000685453415,
+        0.0949999988079071,
+        0.030000001192092896,
+        0.019999995827674866,
+        0.07000000029802322
+      ],
+      "frameP95SamplesMs": [
+        199.98999999999796
+      ]
+    },
+    {
+      "datasetSize": 10000,
+      "mode": "virtual-window",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "incompleteCases": [],
+      "registrationToInitialRenderMs": {
+        "samples": 1,
+        "p50": 30.03499999642372,
+        "p95": 30.03499999642372,
+        "p99": 30.03499999642372
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 1,
+        "p50": 23.884999997913837,
+        "p95": 23.884999997913837,
+        "p99": 23.884999997913837
+      },
+      "openToRenderSettledMs": {
+        "samples": 1,
+        "p50": 63.75999999791384,
+        "p95": 63.75999999791384,
+        "p99": 63.75999999791384
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 1,
+        "p50": 5.464999996125698,
+        "p95": 5.464999996125698,
+        "p99": 5.464999996125698
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 1,
+        "p50": 12.780000001192093,
+        "p95": 12.780000001192093,
+        "p99": 12.780000001192093
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 50,
+        "p50": 16.660000003874302,
+        "p95": 16.825000002980232,
+        "p99": 17.314999997615814
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 100,
+        "p50": 0.03999999910593033,
+        "p95": 0.06000000238418579,
+        "p99": 0.06499999761581421
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "sustainedScrollFramesOver50ms": 0,
+      "sustainedScrollFrameSampleCount": 100,
+      "filterToRenderedResultsMs": {
+        "samples": 1,
+        "p50": 10.535000003874302,
+        "p95": 10.535000003874302,
+        "p99": 10.535000003874302
+      },
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 213,
+      "retainedHeapDeltaBytes": {
+        "samples": 1,
+        "p50": -1410120,
+        "p95": -1410120,
+        "p99": -1410120
+      },
+      "frameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "frameIntervalsOver50ms": 0,
+      "failedScrollTargets": [],
+      "frameSampleCount": 49,
+      "scrollLatencySamplesMs": [
+        6.9799999967217445,
+        13.225000001490116,
+        16.625,
+        16.825000002980232,
+        16.524999998509884,
+        16.67000000178814,
+        16.634999997913837,
+        16.74499999731779,
+        16.490000002086163,
+        16.785000003874302,
+        16.609999999403954,
+        16.53999999910593,
+        17.214999996125698,
+        16.174999997019768,
+        16.70500000566244,
+        16.59000000357628,
+        16.609999999403954,
+        16.644999995827675,
+        16.660000003874302,
+        16.634999997913837,
+        16.679999999701977,
+        16.674999997019768,
+        16.635000005364418,
+        16.685000002384186,
+        16.725000001490116,
+        16.65999999642372,
+        16.66499999910593,
+        16.689999997615814,
+        16.785000003874302,
+        16.525000005960464,
+        16.695000000298023,
+        16.66499999910593,
+        16.66999999433756,
+        16.660000003874302,
+        16.63000000268221,
+        17.314999997615814,
+        16.049999997019768,
+        16.71500000357628,
+        16.605000004172325,
+        16.61999999731779,
+        16.689999997615814,
+        16.674999997019768,
+        16.679999999701977,
+        16.609999999403954,
+        16.725000001490116,
+        16.684999994933605,
+        16.625,
+        16.680000007152557,
+        16.599999994039536,
+        16.719999998807907
+      ],
+      "frameP95SamplesMs": [
+        16.670000000000073
+      ]
+    },
+    {
+      "datasetSize": 100000,
+      "mode": "legacy-full",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 0,
+      "incompleteCases": [
+        {
+          "status": "incomplete",
+          "failureStage": "initial render settle",
+          "timeoutMs": 180000,
+          "elapsedMs": 180069,
+          "error": "BenchmarkStageTimeout: Benchmark stage \"initial render settle\" did not finish within 180000 ms."
+        }
+      ],
+      "registrationToInitialRenderMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "openToRenderSettledMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFramesOver50ms": 0,
+      "sustainedScrollFrameSampleCount": 0,
+      "filterToRenderedResultsMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "maxMountedOptions": null,
+      "maxObservedDeepDocumentNodes": null,
+      "retainedHeapDeltaBytes": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameP95PerTrialMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameIntervalsOver50ms": 0,
+      "failedScrollTargets": [],
+      "frameSampleCount": 0,
+      "scrollLatencySamplesMs": [],
+      "frameP95SamplesMs": []
+    },
+    {
+      "datasetSize": 100000,
+      "mode": "virtual-window",
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "incompleteCases": [],
+      "registrationToInitialRenderMs": {
+        "samples": 1,
+        "p50": 107.01500000059605,
+        "p95": 107.01500000059605,
+        "p99": 107.01500000059605
+      },
+      "firstVisibleAfterOpenMs": {
+        "samples": 1,
+        "p50": 75.77000000327826,
+        "p95": 75.77000000327826,
+        "p99": 75.77000000327826
+      },
+      "openToRenderSettledMs": {
+        "samples": 1,
+        "p50": 112.21500000357628,
+        "p95": 112.21500000357628,
+        "p99": 112.21500000357628
+      },
+      "keyboardEndHandlerLatencyMs": {
+        "samples": 1,
+        "p50": 34.09000000357628,
+        "p95": 34.09000000357628,
+        "p99": 34.09000000357628
+      },
+      "keyboardEndToVisibleTargetMs": {
+        "samples": 1,
+        "p50": 98.97000000625849,
+        "p95": 98.97000000625849,
+        "p99": 98.97000000625849
+      },
+      "scrollSeekLatencyMs": {
+        "samples": 100,
+        "p50": 25.66499999910593,
+        "p95": 28.45500000566244,
+        "p99": 43.125
+      },
+      "sustainedScrollSeekLatencyMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFrameP95PerTrialMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollFramesOver50ms": 0,
+      "sustainedScrollFrameSampleCount": 0,
+      "filterToRenderedResultsMs": {
+        "samples": 1,
+        "p50": 26.280000001192093,
+        "p95": 26.280000001192093,
+        "p99": 26.280000001192093
+      },
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 212,
+      "retainedHeapDeltaBytes": {
+        "samples": 1,
+        "p50": 18464996,
+        "p95": 18464996,
+        "p99": 18464996
+      },
+      "frameP95PerTrialMs": {
+        "samples": 1,
+        "p50": 33.335000000002765,
+        "p95": 33.335000000002765,
+        "p99": 33.335000000002765
+      },
+      "frameIntervalsOver50ms": 0,
+      "failedScrollTargets": [],
+      "frameSampleCount": 99,
+      "scrollLatencySamplesMs": [
+        26.5,
+        29.395000003278255,
+        33.04500000178814,
+        23.765000000596046,
+        27.154999993741512,
+        23.605000004172325,
+        26.780000001192093,
+        23.740000002086163,
+        26.765000000596046,
+        24.560000002384186,
+        26.78499999642372,
+        24.844999998807907,
+        25.37000000476837,
+        25.674999997019768,
+        42.24000000208616,
+        26.359999999403954,
+        25.814999997615814,
+        25.259999997913837,
+        25.899999998509884,
+        25.740000002086163,
+        24.354999996721745,
+        25.859999999403954,
+        23.07999999821186,
+        26.740000002086163,
+        23.604999996721745,
+        26.859999999403954,
+        24.075000002980232,
+        26.524999998509884,
+        24.5,
+        27.265000000596046,
+        24.88000000268221,
+        25.679999999701977,
+        25.105000004172325,
+        24.945000000298023,
+        26.19999999552965,
+        24.660000003874302,
+        26.109999999403954,
+        23.445000000298023,
+        27.799999997019768,
+        23.63000000268221,
+        26.66999999433756,
+        23.560000002384186,
+        26.46500000357628,
+        24.339999996125698,
+        27.554999999701977,
+        24.38000000268221,
+        25.799999997019768,
+        25.535000003874302,
+        43.125,
+        27.33500000089407,
+        24.384999997913837,
+        25.30000000447035,
+        27.009999997913837,
+        25.825000002980232,
+        23.929999999701977,
+        26.54500000178814,
+        23.060000002384186,
+        27.144999995827675,
+        24.265000000596046,
+        26.115000002086163,
+        23.375,
+        25.905000001192093,
+        24.04500000178814,
+        26.104999996721745,
+        24.234999999403954,
+        24.844999998807907,
+        24.86999999731779,
+        24.810000002384186,
+        25.54500000178814,
+        23.69999999552965,
+        25.530000001192093,
+        22.884999997913837,
+        28.45500000566244,
+        24.429999999701977,
+        26.55000000447035,
+        23.864999994635582,
+        27.010000005364418,
+        24.439999997615814,
+        25.990000002086163,
+        24.780000001192093,
+        25.614999994635582,
+        25.445000000298023,
+        44.274999998509884,
+        26.625,
+        25.815000005066395,
+        25.79500000178814,
+        24.779999993741512,
+        27.40999999642372,
+        23.825000002980232,
+        25.66499999910593,
+        22.410000003874302,
+        26.325000002980232,
+        23.684999994933605,
+        27.030000001192093,
+        23.399999998509884,
+        26.109999999403954,
+        24.21500000357628,
+        26.029999993741512,
+        26.799999997019768,
+        26.109999999403954
+      ],
+      "frameP95SamplesMs": [
+        33.335000000002765
+      ]
+    }
+  ]
+}
