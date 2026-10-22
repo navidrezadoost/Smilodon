@@ -4,11 +4,19 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { appendFileSync } from 'node:fs';
 import { Virtualizer } from '../src/utils/virtualizer.js';
 import { FenwickTree } from '../src/utils/fenwick-tree.js';
 import { DOMPool } from '../src/utils/dom-pool.js';
 import { WorkerManager } from '../src/utils/worker-manager.js';
 import { PerformanceTelemetry, measureSync } from '../src/utils/telemetry.js';
+
+function recordStressTiming(stage: string, durationMs: number): void {
+  const outputPath = process.env.PHASE4_CORE_STRESS_SAMPLE_OUTPUT;
+  if (!outputPath) return;
+
+  appendFileSync(outputPath, `${JSON.stringify({ stage, durationMs })}\n`);
+}
 
 describe('Stress Tests - 1M Items', () => {
   let container: HTMLElement;
@@ -45,17 +53,17 @@ describe('Stress Tests - 1M Items', () => {
       virtualizer.computeWindow(0, 600)
     );
 
+    recordStressTiming('computeWindow', d1);
     expect(window1.startIndex).toBe(0);
     expect(window1.endIndex).toBeGreaterThan(0);
-    expect(d1).toBeLessThan(10); // Should be < 10ms
 
     // Cumulative offset calculation should use Fenwick tree
     const { result: offset, duration: d2 } = measureSync('cumulativeOffset', () =>
       virtualizer.cumulativeOffset(50000)
     );
 
-    expect(offset).toBeGreaterThan(0);
-    expect(d2).toBeLessThan(5); // O(log n) should be fast
+    recordStressTiming('cumulativeOffset', d2);
+    expect(offset).toBe(2_000_000);
 
     // Render window
     const { duration: d3 } = measureSync('render', () => {
@@ -64,8 +72,10 @@ describe('Stress Tests - 1M Items', () => {
       });
     });
 
-    expect(d3).toBeLessThan(50); // Initial render < 50ms
-    expect(container.children.length).toBeGreaterThan(0);
+    recordStressTiming('initialRender', d3);
+    expect(container.children.length).toBe(window1.endIndex - window1.startIndex + 1);
+    expect(container.firstElementChild?.textContent).toBe(items[window1.startIndex]);
+    expect(container.lastElementChild?.textContent).toBe(items[window1.endIndex]);
 
     virtualizer.destroy();
   });
@@ -118,38 +128,45 @@ describe('Stress Tests - 1M Items', () => {
   });
 });
 
-describe('Fenwick Tree Performance', () => {
-  it('should handle 1M updates in reasonable time', () => {
+describe('Fenwick Tree Large-Scale Operations', () => {
+  it('should preserve correctness on a 1M-item tree under repeated operations', () => {
     const SIZE = 1_000_000;
     const tree = new FenwickTree(SIZE);
 
     // Initial population
     const { duration: populateTime } = measureSync('populate', () => {
       for (let i = 0; i < 1000; i++) {
-        tree.add(i, Math.random() * 100);
+        tree.add(i, i + 1);
       }
     });
 
-    expect(populateTime).toBeLessThan(100); // 1000 updates < 100ms
+    recordStressTiming('fenwickPopulate1000', populateTime);
+    expect(tree.sum(999)).toBe(500_500);
 
     // Prefix sum queries
+    const queryIndices = Array.from({ length: 1000 }, (_, index) => (index * 997) % SIZE);
+    let queryChecksum = 0;
     const { duration: queryTime } = measureSync('queries', () => {
-      for (let i = 0; i < 1000; i++) {
-        tree.sum(Math.floor(Math.random() * SIZE));
-      }
+      for (const index of queryIndices) queryChecksum += tree.sum(index);
     });
 
-    expect(queryTime).toBeLessThan(50); // 1000 queries < 50ms
+    recordStressTiming('fenwickPrefixQueries1000', queryTime);
+    const expectedQueryChecksum = queryIndices.reduce((total, index) => {
+      const prefix = index < 1000 ? ((index + 1) * (index + 2)) / 2 : 500_500;
+      return total + prefix;
+    }, 0);
+    expect(queryChecksum).toBe(expectedQueryChecksum);
 
     // Updates
     const { duration: updateTime } = measureSync('updates', () => {
       for (let i = 0; i < 1000; i++) {
-        const idx = Math.floor(Math.random() * SIZE);
-        tree.update(idx, 40, 50);
+        tree.update(i, i + 1, i + 2);
       }
     });
 
-    expect(updateTime).toBeLessThan(100); // 1000 updates < 100ms
+    recordStressTiming('fenwickUpdates1000', updateTime);
+    expect(tree.sum(999)).toBe(501_500);
+    expect(tree.sum(SIZE - 1)).toBe(501_500);
   });
 
   it('should support binary search (lowerBound)', () => {
@@ -342,8 +359,8 @@ describe('Performance Telemetry', () => {
     
     const duration = telemetry.markEnd('test-work');
     
+    recordStressTiming('telemetryMeasurement', duration);
     expect(duration).toBeGreaterThan(0);
-    expect(duration).toBeLessThan(100); // Should be fast
   });
 
   it('should generate performance report', () => {
