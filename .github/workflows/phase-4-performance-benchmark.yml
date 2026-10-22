@@ -113,3 +113,47 @@ jobs:
           path: test-results/performance/core-stress/
           if-no-files-found: warn
           retention-days: 30
+
+  lifecycle-memory-certification:
+    name: EnhancedSelect lifecycle and memory certification (pinned Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: 'true'
+      PHASE4_LIFECYCLE_OUTPUT: test-results/performance/lifecycle/phase-4.6.2b-lifecycle.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Playwright-pinned Chromium
+        run: |
+          set -o pipefail
+          mkdir -p test-results/performance/lifecycle
+          npx playwright install --with-deps chromium 2>&1 | tee test-results/performance/lifecycle/browser-install.log
+
+      - name: Build component packages
+        run: npm run build
+
+      - name: Run lifecycle and memory certification
+        run: |
+          set -o pipefail
+          mkdir -p test-results/performance/lifecycle
+          npm run test:phase4:lifecycle 2>&1 | tee test-results/performance/lifecycle/playwright.log
+
+      - name: Preserve lifecycle measurements and browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-lifecycle-memory-${{ github.run_id }}
+          path: test-results/performance/lifecycle/
+          if-no-files-found: warn
+          retention-days: 30
