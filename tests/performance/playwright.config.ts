@@ -17,8 +17,13 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     headless: true,
     viewport: { width: 1280, height: 800 },
-    trace: 'retain-on-failure',
+    // The benchmark creates and closes isolated contexts per attempt, so it
+    // owns tracing directly and writes one trace per failed attempt.
+    trace: 'off',
     screenshot: 'only-on-failure',
+    launchOptions: process.env.PHASE4_BENCHMARK_EXECUTABLE_PATH
+      ? { executablePath: process.env.PHASE4_BENCHMARK_EXECUTABLE_PATH }
+      : undefined,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

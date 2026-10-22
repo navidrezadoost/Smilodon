@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { cpus, freemem, platform, release, totalmem, arch } from 'node:os';
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { basename, dirname, relative, resolve } from 'node:path';
+import { devices, expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
 const DATASET_SIZES = [1_000, 10_000, 100_000] as const;
 // Run the bounded mode first so its 100k observation survives if the legacy
@@ -14,8 +14,10 @@ const ESTIMATED_ITEM_HEIGHT = 40;
 const FULL_RENDER_TIMEOUT_MS = 5 * 60 * 1000;
 const SETUP_TIMEOUT_MS = positiveInteger(process.env.PHASE4_BENCHMARK_SETUP_TIMEOUT_MS, 2 * 60 * 1000);
 const TRIAL_TIMEOUT_MS = positiveInteger(process.env.PHASE4_BENCHMARK_TRIAL_TIMEOUT_MS, 3 * 60 * 1000);
+const LEGACY_100K_CENSOR_TIMEOUT_MS = positiveInteger(process.env.PHASE4_BENCHMARK_LEGACY_100K_CENSOR_TIMEOUT_MS, 15_000);
 const REPETITIONS = positiveInteger(process.env.PHASE4_BENCHMARK_REPETITIONS, 1);
 const WARMUPS = nonNegativeInteger(process.env.PHASE4_BENCHMARK_WARMUPS, 0);
+const ARTIFACT_DIR = resolve(process.cwd(), 'test-results/performance/diagnostics');
 const OUTPUT_PATH = resolve(
   process.cwd(),
   process.env.PHASE4_BENCHMARK_OUTPUT ?? 'test-results/performance/phase-4.6.2a.json',
@@ -43,6 +45,15 @@ function quantile(values: number[], percentile: number): number | null {
   if (values.length === 0) return null;
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.max(0, Math.ceil(percentile * sorted.length) - 1)];
+}
+
+function countFixtureFilterMatches(size: number, query: string): number {
+  const normalizedQuery = query.toLocaleLowerCase('en-US');
+  let count = 0;
+  for (let index = 0; index < size; index += 1) {
+    if (`Option ${index}`.toLocaleLowerCase('en-US').includes(normalizedQuery)) count += 1;
+  }
+  return count;
 }
 
 function makeScrollTargets(size: number, count: number, repetition: number, itemHeight: number): number[] {
@@ -76,6 +87,7 @@ function collectRunnerMetadata(browserVersion: string) {
       executablePath: null,
       resolvedExecutablePath: null,
       actualBrowserCacheRevision: null,
+      explicitExecutableOverride: process.env.PHASE4_BENCHMARK_EXECUTABLE_PATH ?? null,
       userAgent: null,
     },
     runner: {
@@ -100,16 +112,25 @@ function collectRunnerMetadata(browserVersion: string) {
       scrollWorkloadSamples: { 1_000: 20, 10_000: 50, 100_000: 100 },
     },
     protocol: {
+      schemaVersion: 2,
       warmupsPerModeAndSize: WARMUPS,
       measuredRepetitionsPerModeAndSize: REPETITIONS,
       browserSetupTimeoutMs: SETUP_TIMEOUT_MS,
       trialTimeoutMs: TRIAL_TIMEOUT_MS,
+      legacy100kFeasibilityProbeTimeoutMs: LEGACY_100K_CENSOR_TIMEOUT_MS,
+      legacy100kPolicy: 'Run one bounded feasibility probe after the 1k/10k workload matrix and before 100k virtual trials; if censored, skip its remaining warmups/repetitions. If feasible, apply the same timeout bound to each legacy warmup/repetition and skip the remainder after any censor.',
       scrolling: 'Deterministic seeded random-access seeks; target indexes are identical between render modes for each size and repetition.',
       gc: 'Chromium CDP Runtime.getHeapUsage snapshots around each trial; HeapProfiler.collectGarbage before baseline and after removing the select and dropping benchmark data references.',
-      measurementType: 'Exploratory unless at least one warm-up and five measured repetitions are present; no performance budget is enforced by this harness.',
+      percentileInterpretation: 'Event-level pooled scroll percentiles and the distribution of per-trial p95 values are reported separately. A per-trial p95 is not a cross-repetition percentile.',
+      measurementType: 'Exploratory unless at least one warm-up and five measured repetitions are present for a feasible workload; no performance budget is enforced by this harness.',
     },
     completionStatus: 'in-progress',
     currentCase: null,
+    skippedWorkloads: [],
+    browserDiagnostics: {
+      resizeObserverWarningCapture: ['Page console events', 'Chromium CDP Log.entryAdded'],
+      interpretation: 'Counts are recorded per attempted workload. Browser-process stderr is preserved by the Playwright test log on test failure and is not inferred from page-event counters.',
+    },
     cases: [],
   };
 }
@@ -191,7 +212,6 @@ async function sampleDom(page: Page) {
       return count;
     };
     const firstOption = options.querySelector(':scope > [part="option"]') as HTMLElement | null;
-    const firstRect = firstOption?.getBoundingClientRect();
     return {
       deepDocumentNodeCount: countDeepNodes(document),
       mountedOptionCount: options.querySelectorAll(':scope > [part="option"]').length,
@@ -318,7 +338,7 @@ async function runTrial(
   const registration = await page.evaluate(() => {
     const win = window as any;
     return {
-      registrationToInitialRenderMs: performance.now() - win.__phase4BenchmarkTiming.registrationStartedAt,
+      registrationToHiddenRenderSettleMs: performance.now() - win.__phase4BenchmarkTiming.registrationStartedAt,
     };
   });
   const initialDom = await sampleDom(page);
@@ -336,6 +356,10 @@ async function runTrial(
     return row.height > 0 && row.bottom > viewport.top && row.top < viewport.bottom;
   }, undefined, { timeout: 30_000, polling: 'raf' });
   const firstOpen = await page.evaluate((startedAt) => performance.now() - startedAt, openStartedAt);
+  const registrationToInteractive = await page.evaluate(() => {
+    const win = window as any;
+    return performance.now() - win.__phase4BenchmarkTiming.registrationStartedAt;
+  });
   await waitForRenderSettled(page, size, mode);
   const openToRenderSettled = await page.evaluate((startedAt) => performance.now() - startedAt, openStartedAt);
   const openedDom = await sampleDom(page);
@@ -543,7 +567,7 @@ async function runTrial(
       win.__phase4FilterEvent = null;
     });
     await input.fill('Option 999');
-    const expectedResultCount = size === 10_000 ? 11 : 111;
+    const expectedResultCount = countFixtureFilterMatches(size, 'Option 999');
     await page.waitForFunction((count) => {
       const select = (window as any).__phase4BenchmarkSelect;
       const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
@@ -596,7 +620,8 @@ async function runTrial(
     datasetGenerationMs: setup.datasetGenerationMs,
     setItemsSyncMs: setup.setItemsSyncMs,
     calibratedItemHeight: setup.calibratedItemHeight,
-    registrationToInitialRenderMs: registration.registrationToInitialRenderMs,
+    registrationToHiddenRenderSettleMs: registration.registrationToHiddenRenderSettleMs,
+    registrationToInteractiveMs: registrationToInteractive,
     firstVisibleAfterOpenMs: firstOpen,
     openToRenderSettledMs: openToRenderSettled,
     keyboardEndHandlerLatencyMs: keyboard.handlerLatencyMs,
@@ -649,174 +674,359 @@ async function runTrial(
   };
 }
 
+async function measureCalibratedItemHeight(page: Page): Promise<number> {
+  return page.evaluate(({ listHeight, fallbackHeight }) => {
+    const probe = document.createElement('enhanced-select') as any;
+    document.body.appendChild(probe);
+    probe.updateConfig({
+      searchable: true,
+      estimatedItemHeight: fallbackHeight,
+      selection: { mode: 'single', closeOnSelect: false },
+      scrollToSelected: { enabled: false },
+    });
+    const benchmarkRowStyle = document.createElement('style');
+    benchmarkRowStyle.textContent = `.options-container > [part="option"] {
+      height: ${fallbackHeight}px !important;
+      min-height: ${fallbackHeight}px;
+      max-height: ${fallbackHeight}px;
+      box-sizing: border-box;
+    }`;
+    probe.shadowRoot.appendChild(benchmarkRowStyle);
+    const options = probe.shadowRoot.querySelector('.options-container') as HTMLElement;
+    options.style.height = `${listHeight}px`;
+    options.style.maxHeight = `${listHeight}px`;
+    options.style.padding = '0px';
+    options.style.overflow = 'auto';
+    probe.setItems([{ id: 'phase-4-height-probe', value: 'probe', label: 'Probe' }]);
+    probe.open();
+    const option = probe.shadowRoot.querySelector('.options-container > [part="option"]') as HTMLElement | null;
+    const height = option?.offsetHeight ?? 0;
+    probe.remove();
+    return height;
+  }, { listHeight: LIST_HEIGHT, fallbackHeight: ESTIMATED_ITEM_HEIGHT });
+}
+
+function createCaseDiagnostics() {
+  return {
+    pageConsoleWarningOrErrorCount: 0,
+    pageErrorCount: 0,
+    resizeObserverWarnings: { pageConsole: 0, cdpLog: 0 },
+    samples: [] as Array<{ source: string; type: string; text: string }>,
+  };
+}
+
+function attachCaseDiagnostics(page: Page, cdp: any, diagnostics: ReturnType<typeof createCaseDiagnostics>): void {
+  page.on('console', (message) => {
+    const type = message.type();
+    if (type !== 'error' && type !== 'warning') return;
+    const text = message.text();
+    diagnostics.pageConsoleWarningOrErrorCount += 1;
+    if (/ResizeObserver loop (completed|limit)/i.test(text)) diagnostics.resizeObserverWarnings.pageConsole += 1;
+    if (diagnostics.samples.length < 20) diagnostics.samples.push({ source: 'page-console', type, text });
+  });
+  page.on('pageerror', (error) => {
+    diagnostics.pageErrorCount += 1;
+    if (diagnostics.samples.length < 20) diagnostics.samples.push({ source: 'page-error', type: 'pageerror', text: error.message });
+  });
+  cdp.on('Log.entryAdded', ({ entry }: any) => {
+    const text = String(entry?.text ?? '');
+    if (!/ResizeObserver loop (completed|limit)/i.test(text)) return;
+    diagnostics.resizeObserverWarnings.cdpLog += 1;
+    if (diagnostics.samples.length < 20) diagnostics.samples.push({ source: 'cdp-log', type: entry.level ?? 'warning', text });
+  });
+}
+
+async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<boolean> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise.then(() => true, () => true),
+      new Promise<boolean>((resolveTimeout) => {
+        timeout = setTimeout(() => resolveTimeout(false), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function attemptName(spec: Record<string, any>): string {
+  if (spec.kind === 'measurement') return `rep-${spec.repetition}`;
+  if (spec.kind === 'warmup') return `warmup-${spec.warmupIndex}`;
+  return 'feasibility-probe';
+}
+
+function caseArtifactBase(spec: Record<string, any>): string {
+  return `phase4-${spec.datasetSize}-${spec.mode}-${attemptName(spec)}`;
+}
+
+async function preserveFailureArtifacts(
+  context: BrowserContext | null,
+  page: Page | null,
+  cdp: any,
+  traceStarted: boolean,
+  spec: Record<string, any>,
+  diagnostics: ReturnType<typeof createCaseDiagnostics>,
+  failure: { stage: string; error: string },
+) {
+  mkdirSync(ARTIFACT_DIR, { recursive: true });
+  const base = caseArtifactBase(spec);
+  const screenshotPath = resolve(ARTIFACT_DIR, `${base}.png`);
+  const tracePath = resolve(ARTIFACT_DIR, `${base}.zip`);
+  const contextPath = resolve(ARTIFACT_DIR, `${base}.error-context.json`);
+
+  if (page) {
+    await settleWithin(page.screenshot({ path: screenshotPath, timeout: 5_000 }), 6_000);
+  }
+  if (context && traceStarted) {
+    await settleWithin(context.tracing.stop({ path: tracePath }), 10_000);
+  }
+  if (cdp) await settleWithin(cdp.detach(), 2_000);
+  if (context) await settleWithin(context.close(), 5_000);
+
+  writeFileSync(contextPath, `${JSON.stringify({
+    ...spec,
+    failure,
+    diagnostics,
+    capturedAt: new Date().toISOString(),
+  }, null, 2)}\n`);
+
+  return {
+    screenshot: existsSync(screenshotPath) ? relative(process.cwd(), screenshotPath) : null,
+    trace: existsSync(tracePath) ? relative(process.cwd(), tracePath) : null,
+    errorContext: relative(process.cwd(), contextPath),
+  };
+}
+
+async function closeSuccessfulContext(context: BrowserContext | null, cdp: any, traceStarted: boolean): Promise<void> {
+  if (cdp) await settleWithin(cdp.detach(), 2_000);
+  if (context && traceStarted) await settleWithin(context.tracing.stop(), 5_000);
+  if (context) await settleWithin(context.close(), 5_000);
+}
+
+async function executeAttempt(
+  browser: Browser,
+  metadata: Record<string, any>,
+  spec: Record<string, any>,
+  timeoutMs: number,
+  repetitionSeed: number,
+) {
+  const startedAt = new Date().toISOString();
+  const stage = { value: 'browser context setup' };
+  const diagnostics = createCaseDiagnostics();
+  let context: BrowserContext | null = null;
+  let page: Page | null = null;
+  let cdp: any = null;
+  let traceStarted = false;
+  let setupStartedAt = Date.now();
+
+  try {
+    context = await browser.newContext({
+      ...devices['Desktop Chrome'],
+      viewport: VIEWPORT,
+      deviceScaleFactor: 1,
+    });
+    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+    traceStarted = true;
+    page = await context.newPage();
+    page.setDefaultTimeout(30_000);
+    await page.goto('http://localhost:5173/vanilla-demo.html');
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(() => document.body.replaceChildren());
+    cdp = await context.newCDPSession(page);
+    await cdp.send('Log.enable');
+    await cdp.send('HeapProfiler.enable');
+    attachCaseDiagnostics(page, cdp, diagnostics);
+    const calibratedItemHeight = await measureCalibratedItemHeight(page);
+    expect(calibratedItemHeight).toBeGreaterThan(0);
+    await cdp.send('HeapProfiler.collectGarbage');
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    if (!metadata.browser.userAgent) metadata.browser.userAgent = userAgent;
+    metadata.dataset.calibratedItemHeight = calibratedItemHeight;
+    const setupElapsedMs = Date.now() - setupStartedAt;
+
+    stage.value = 'trial execution';
+    const repetition = repetitionSeed;
+    const result = await withTrialTimeout(
+      runTrial(page, cdp, spec.datasetSize, spec.mode, repetition, calibratedItemHeight, stage),
+      stage,
+      timeoutMs,
+    );
+    const record: Record<string, any> = {
+      ...result,
+      ...spec,
+      status: 'complete',
+      startedAt,
+      endedAt: new Date().toISOString(),
+      elapsedMs: Date.now() - Date.parse(startedAt),
+      setupElapsedMs,
+      diagnostics,
+    };
+    if (spec.kind !== 'measurement') delete (record as Record<string, any>).repetition;
+    await closeSuccessfulContext(context, cdp, traceStarted);
+    return record;
+  } catch (error) {
+    const isTimeout = error instanceof BenchmarkStageTimeout;
+    const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    const failureStage = isTimeout ? error.stage : stage.value;
+    const record: Record<string, any> = {
+      ...spec,
+      status: isTimeout ? 'incomplete' : 'failed',
+      startedAt,
+      endedAt: new Date().toISOString(),
+      elapsedMs: Date.now() - Date.parse(startedAt),
+      setupElapsedMs: Date.now() - setupStartedAt,
+      failureStage,
+      timeoutMs: isTimeout ? error.timeoutMs : null,
+      error: message,
+      diagnostics,
+    };
+    if (isTimeout && spec.datasetSize === 100_000 && spec.mode === 'legacy-full') {
+      record.classification = 'legacy-scalability-censored';
+    } else if (spec.mode === 'virtual-window' && !isTimeout) {
+      record.classification = 'virtual-correctness-or-runtime-failure';
+    }
+    record.artifacts = await preserveFailureArtifacts(
+      context,
+      page,
+      cdp,
+      traceStarted,
+      spec,
+      diagnostics,
+      { stage: failureStage, error: message },
+    );
+    return record;
+  }
+}
+
+function isKnownLegacyCensor(result: Record<string, any>): boolean {
+  return result.status === 'incomplete'
+    && result.datasetSize === 100_000
+    && result.mode === 'legacy-full'
+    && result.classification === 'legacy-scalability-censored';
+}
+
 test.describe('Phase 4 browser performance baseline', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(60 * 60 * 1000);
 
-  test('records real-browser legacy-full and virtual-window workloads at 1k, 10k, and 100k', async ({ page, browser }) => {
+  test('records complete feasible workloads and preserves bounded legacy censoring', async ({ browser }) => {
     mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
+    mkdirSync(ARTIFACT_DIR, { recursive: true });
     const metadata: any = collectRunnerMetadata(browser.version());
-    const browserMetadata = await page.evaluate(() => navigator.userAgent).catch(() => null);
-    metadata.browser.userAgent = browserMetadata;
-    const browserDiagnostics = {
-      consoleErrorOrWarningCount: 0,
-      resizeObserverLoopWarningCount: 0,
-      pageErrorCount: 0,
-      samples: [] as Array<{ type: string; text: string }>,
-    };
-    metadata.browserDiagnostics = browserDiagnostics;
-    page.on('console', (message) => {
-      const type = message.type();
-      if (type !== 'error' && type !== 'warning') return;
-      const text = message.text();
-      browserDiagnostics.consoleErrorOrWarningCount += 1;
-      if (text.includes('ResizeObserver loop completed')) browserDiagnostics.resizeObserverLoopWarningCount += 1;
-      if (browserDiagnostics.samples.length < 20) browserDiagnostics.samples.push({ type, text });
-    });
-    page.on('pageerror', (error) => {
-      browserDiagnostics.pageErrorCount += 1;
-      if (browserDiagnostics.samples.length < 20) {
-        browserDiagnostics.samples.push({ type: 'pageerror', text: error.message });
-      }
-    });
     const browserType = browser.browserType();
     try {
-      const executable = browserType.executablePath();
+      const executable = process.env.PHASE4_BENCHMARK_EXECUTABLE_PATH ?? browserType.executablePath();
       metadata.browser.executablePath = basename(executable);
       const realExecutable = realpathSync(executable);
-      metadata.browser.actualBrowserCacheRevision = realExecutable.match(/chromium-(\d+)/)?.[1] ?? null;
+      metadata.browser.actualBrowserCacheRevision = realExecutable.match(/(?:chromium|chromium_headless_shell)-(\d+)/)?.[1] ?? null;
     } catch {
       // Some managed browsers do not expose a local executable path.
     }
-    writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
+    const persist = () => writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
+    const fatalRecords: Array<Record<string, any>> = [];
+    persist();
 
-    await page.goto('http://localhost:5173/vanilla-demo.html');
-    await page.waitForLoadState('networkidle');
-    await page.evaluate(() => document.body.replaceChildren());
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('HeapProfiler.enable');
-    const calibratedItemHeight = await page.evaluate(({ listHeight, fallbackHeight }) => {
-      const probe = document.createElement('enhanced-select') as any;
-      document.body.appendChild(probe);
-      probe.updateConfig({
-        searchable: true,
-        estimatedItemHeight: fallbackHeight,
-        selection: { mode: 'single', closeOnSelect: false },
-        scrollToSelected: { enabled: false },
-      });
-      const benchmarkRowStyle = document.createElement('style');
-      benchmarkRowStyle.textContent = `.options-container > [part="option"] {
-        height: ${fallbackHeight}px !important;
-        min-height: ${fallbackHeight}px;
-        max-height: ${fallbackHeight}px;
-        box-sizing: border-box;
-      }`;
-      probe.shadowRoot.appendChild(benchmarkRowStyle);
-      const options = probe.shadowRoot.querySelector('.options-container') as HTMLElement;
-      options.style.height = `${listHeight}px`;
-      options.style.maxHeight = `${listHeight}px`;
-      options.style.padding = '0px';
-      options.style.overflow = 'auto';
-      probe.setItems([{ id: 'phase-4-height-probe', value: 'probe', label: 'Probe' }]);
-      probe.open();
-      const option = probe.shadowRoot.querySelector('.options-container > [part="option"]') as HTMLElement | null;
-      const height = option?.offsetHeight ?? 0;
-      probe.remove();
-      return height;
-    }, { listHeight: LIST_HEIGHT, fallbackHeight: ESTIMATED_ITEM_HEIGHT });
-    expect(calibratedItemHeight).toBeGreaterThan(0);
-    metadata.dataset.calibratedItemHeight = calibratedItemHeight;
-    await cdp.send('HeapProfiler.collectGarbage');
+    const runAttempt = async (spec: Record<string, any>, timeoutMs: number, repetitionSeed: number) => {
+      metadata.currentCase = { ...spec, startedAt: new Date().toISOString(), timeoutMs };
+      persist();
+      const result = await executeAttempt(browser, metadata, spec, timeoutMs, repetitionSeed);
+      metadata.cases.push(result);
+      metadata.currentCase = null;
+      if (result.status !== 'complete' && !isKnownLegacyCensor(result)) fatalRecords.push(result);
+      persist();
+      if (result.diagnostics?.resizeObserverWarnings?.pageConsole || result.diagnostics?.resizeObserverWarnings?.cdpLog) {
+        console.warn('[phase-4-resize-observer-diagnostics]', JSON.stringify({
+          datasetSize: spec.datasetSize,
+          mode: spec.mode,
+          kind: spec.kind,
+          repetition: spec.repetition ?? null,
+          warmupIndex: spec.warmupIndex ?? null,
+          resizeObserverWarnings: result.diagnostics.resizeObserverWarnings,
+        }));
+      }
+      console.info('[phase-4-benchmark-attempt]', JSON.stringify({
+        datasetSize: spec.datasetSize,
+        mode: spec.mode,
+        kind: spec.kind,
+        repetition: spec.repetition ?? null,
+        warmupIndex: spec.warmupIndex ?? null,
+        status: result.status,
+        classification: result.classification ?? null,
+        elapsedMs: result.elapsedMs,
+        failureStage: result.failureStage ?? null,
+        diagnostics: result.diagnostics,
+        artifacts: result.artifacts ?? null,
+      }));
+      return result;
+    };
 
-    for (const size of DATASET_SIZES) {
-      for (const mode of MODES) {
-        for (let warmup = 0; warmup < WARMUPS; warmup += 1) {
-          const warmupStartedAt = new Date().toISOString();
-          const stage = { value: 'starting warm-up' };
-          try {
-            const result = await withTrialTimeout(
-              runTrial(page, cdp, size, mode, -(warmup + 1), calibratedItemHeight, stage),
-              stage,
-              TRIAL_TIMEOUT_MS,
-            );
-            console.info('[phase-4-benchmark-warmup]', JSON.stringify({ warmup, ...result }));
-          } catch (error) {
-            const timeout = error instanceof BenchmarkStageTimeout ? error : null;
-            const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-            (metadata.cases as unknown[]).push({
-              datasetSize: size,
-              mode,
-              warmup,
-              status: timeout ? 'incomplete' : 'failed',
-              startedAt: warmupStartedAt,
-              endedAt: new Date().toISOString(),
-              elapsedMs: Date.now() - Date.parse(warmupStartedAt),
-              failureStage: timeout?.stage ?? 'warm-up execution',
-              timeoutMs: timeout?.timeoutMs ?? null,
-              error: message,
-            });
-            metadata.currentCase = null;
-            metadata.completionStatus = timeout ? 'incomplete' : 'failed';
-            metadata.failure = {
-              datasetSize: size,
-              mode,
-              warmup,
-              failureStage: timeout?.stage ?? 'warm-up execution',
-              error: message,
-            };
-            writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-            if (timeout) await browser.close().catch(() => undefined);
-            throw error;
-          }
-        }
-        for (let repetition = 0; repetition < REPETITIONS; repetition += 1) {
-          const caseStartedAt = new Date().toISOString();
-          metadata.currentCase = { datasetSize: size, mode, repetition, startedAt: caseStartedAt };
-          writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-          const stage = { value: 'starting trial' };
-          try {
-            const result = await withTrialTimeout(
-              runTrial(page, cdp, size, mode, repetition, calibratedItemHeight, stage),
-              stage,
-              TRIAL_TIMEOUT_MS,
-            );
-            (metadata.cases as unknown[]).push({ status: 'complete', ...result });
-            metadata.currentCase = null;
-            writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-            console.info('[phase-4-benchmark-case]', JSON.stringify(result));
-          } catch (error) {
-            const timeout = error instanceof BenchmarkStageTimeout ? error : null;
-            (metadata.cases as unknown[]).push({
-              datasetSize: size,
-              mode,
-              repetition,
-              status: timeout ? 'incomplete' : 'failed',
-              startedAt: caseStartedAt,
-              endedAt: new Date().toISOString(),
-              elapsedMs: Date.now() - Date.parse(caseStartedAt),
-              failureStage: timeout?.stage ?? 'trial execution',
-              timeoutMs: timeout?.timeoutMs ?? null,
-              error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-            });
-            metadata.currentCase = null;
-            metadata.completionStatus = timeout ? 'incomplete' : 'failed';
-            metadata.failure = {
-              datasetSize: size,
-              mode,
-              repetition,
-              failureStage: timeout?.stage ?? 'trial execution',
-              error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-            };
-            writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-            if (timeout) await browser.close().catch(() => undefined);
-            throw error;
-          }
+    const runFeasibleMode = async (
+      size: number,
+      mode: typeof MODES[number],
+      timeoutMs = TRIAL_TIMEOUT_MS,
+    ) => {
+      for (let warmupIndex = 0; warmupIndex < WARMUPS; warmupIndex += 1) {
+        const warmup = await runAttempt(
+          { datasetSize: size, mode, kind: 'warmup', warmupIndex },
+          timeoutMs,
+          -(warmupIndex + 1),
+        );
+        if (isKnownLegacyCensor(warmup)) {
+          metadata.skippedWorkloads.push({ datasetSize: size, mode, skippedWarmups: WARMUPS - warmupIndex - 1, skippedRepetitions: REPETITIONS, reason: 'legacy-full 100k feasibility timeout' });
+          return;
         }
       }
+      for (let repetition = 0; repetition < REPETITIONS; repetition += 1) {
+        const measurement = await runAttempt(
+          { datasetSize: size, mode, kind: 'measurement', repetition },
+          timeoutMs,
+          repetition,
+        );
+        if (isKnownLegacyCensor(measurement)) {
+          metadata.skippedWorkloads.push({ datasetSize: size, mode, skippedWarmups: 0, skippedRepetitions: REPETITIONS - repetition - 1, reason: 'legacy-full 100k feasibility timeout' });
+          return;
+        }
+      }
+    };
+
+    for (const size of [1_000, 10_000]) {
+      for (const mode of MODES) await runFeasibleMode(size, mode);
     }
-    metadata.completionStatus = 'complete';
+
+    const legacyProbe = await runAttempt(
+      { datasetSize: 100_000, mode: 'legacy-full', kind: 'feasibility-probe' },
+      LEGACY_100K_CENSOR_TIMEOUT_MS,
+      -1001,
+    );
+    if (isKnownLegacyCensor(legacyProbe)) {
+      metadata.skippedWorkloads.push({
+        datasetSize: 100_000,
+        mode: 'legacy-full',
+        skippedWarmups: WARMUPS,
+        skippedRepetitions: REPETITIONS,
+        reason: 'separately bounded legacy scalability probe was censored before full render settled',
+      });
+    } else if (legacyProbe.status === 'complete') {
+      await runFeasibleMode(100_000, 'legacy-full', LEGACY_100K_CENSOR_TIMEOUT_MS);
+    } else {
+      metadata.skippedWorkloads.push({
+        datasetSize: 100_000,
+        mode: 'legacy-full',
+        skippedWarmups: WARMUPS,
+        skippedRepetitions: REPETITIONS,
+        reason: 'feasibility probe failed; legacy measurements were not started',
+      });
+    }
+
+    await runFeasibleMode(100_000, 'virtual-window');
+    metadata.currentCase = null;
     metadata.completedAt = new Date().toISOString();
-    writeFileSync(OUTPUT_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-    await cdp.detach();
+    metadata.completionStatus = fatalRecords.length > 0
+      ? 'failed'
+      : metadata.skippedWorkloads.length > 0 ? 'complete-with-censored-or-skipped-cases' : 'complete';
+    metadata.failure = fatalRecords.length ? fatalRecords[0] : null;
+    persist();
+    expect(fatalRecords, JSON.stringify(fatalRecords, null, 2)).toHaveLength(0);
   });
 });

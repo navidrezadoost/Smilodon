@@ -42,6 +42,7 @@
     "benchmark": "node scripts/benchmark.js",
     "benchmark:phase4": "playwright test --config tests/performance/playwright.config.ts",
     "benchmark:phase4:summary": "node scripts/summarize-phase-4-benchmark.mjs",
+    "test:benchmark:phase4": "node --test tests/performance/summarize-phase-4-benchmark.test.mjs",
     "playwright:install": "playwright install",
     "ws:version:core": "npm version patch -w @smilodon/core",
     "ws:publish:core": "npm publish --workspace @smilodon/core",
