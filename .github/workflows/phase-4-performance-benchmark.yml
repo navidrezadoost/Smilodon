@@ -76,3 +76,40 @@ jobs:
           path: test-results/performance/
           if-no-files-found: warn
           retention-days: 30
+
+  core-stress-benchmark:
+    name: Core stress targets (Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run repeated core stress targets
+        run: |
+          set -o pipefail
+          mkdir -p test-results/performance/core-stress
+          PHASE4_CORE_STRESS_WARMUPS=1 \
+          PHASE4_CORE_STRESS_REPETITIONS=5 \
+          PHASE4_CORE_STRESS_BENCHMARK_OUTPUT=test-results/performance/core-stress/phase-4.6.2a2-core-stress.json \
+            npm run benchmark:core-stress 2>&1 | tee test-results/performance/core-stress/benchmark.log
+
+      - name: Preserve core stress benchmark data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-core-stress-baseline-${{ github.run_id }}
+          path: test-results/performance/core-stress/
+          if-no-files-found: warn
+          retention-days: 30
