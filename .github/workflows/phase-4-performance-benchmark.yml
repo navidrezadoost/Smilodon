@@ -121,6 +121,7 @@ jobs:
     env:
       CI: 'true'
       PHASE4_LIFECYCLE_OUTPUT: test-results/performance/lifecycle/phase-4.6.2b-lifecycle.json
+      PHASE4_LIFECYCLE_ATTRIBUTION_OUTPUT: test-results/performance/lifecycle/phase-4.6.2b2-attribution.json
     steps:
       - uses: actions/checkout@v4
         with:
