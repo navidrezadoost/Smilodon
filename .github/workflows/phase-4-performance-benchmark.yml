@@ -61,7 +61,7 @@ jobs:
       PHASE4_BENCHMARK_OUTPUT: test-results/performance/phase-4.6.2a.json
       PHASE4_ENDKEY_WARMUPS: '1'
       PHASE4_ENDKEY_REPETITIONS: '5'
-      PHASE4_ENDKEY_ATTRIBUTION_OUTPUT: test-results/performance/phase-4.6.2c2-end-key-attribution.json
+      PHASE4_ENDKEY_ATTRIBUTION_OUTPUT: test-results/performance/phase-4.6.2c3b-frame-attribution.json
     steps:
       - uses: actions/checkout@v4
         with:
