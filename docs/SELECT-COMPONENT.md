@@ -620,11 +620,12 @@ const config: GlobalSelectConfig = {
 
 ## Accessibility
 
-- Full keyboard navigation (Arrow keys, Enter, Escape, Home, End)
-- ARIA attributes for screen readers
-- Focus management
-- Live region announcements
-- Type-ahead search
+- The internal combobox and popup listbox receive their accessible name from the host's `aria-label`; the combobox's literal description comes from `aria-description`.
+- `setError(message)` marks the combobox invalid and associates the message with it; `clearError()` removes that error description.
+- Keyboard interaction includes Arrow keys, Enter, Escape, Home, and End, with focus normally remaining on the combobox input. Removing a selected chip by keyboard moves focus to the next available remove control.
+- Selection, result-count, and validation announcements use a polite live region.
+- Host `aria-labelledby` and `aria-describedby` references are not forwarded across the component's shadow-root boundary. Use the literal host attributes above; error descriptions are linked internally.
+- Automated cross-browser accessibility checks are in progress. Manual screen-reader and assistive-technology assessment is still required; this list is not a complete accessibility conformance claim.
 
 ## Browser Support
 

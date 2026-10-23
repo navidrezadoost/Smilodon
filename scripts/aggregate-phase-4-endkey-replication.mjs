@@ -6,6 +6,32 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const REPORT_NAME = 'phase-4.6.2c3b-frame-attribution.json';
 const EXPECTED_TARGET_INDEX = 99_999;
 const DEFAULT_BOOTSTRAP_REPLICATES = 2_000;
+const BYTES_PER_GIB = 1024 ** 3;
+const HARDWARE_EQUIVALENCE_POLICY = {
+  version: 'nearest-binary-gib-v1',
+  bytesPerGiB: BYTES_PER_GIB,
+  memoryCapacityRule: 'Round totalMemoryBytes / bytesPerGiB to the nearest whole GiB; exact half-GiB ties round upward.',
+  rawMemoryProvenance: 'sources[].environment.runner.totalMemoryBytes',
+  exactRunnerFields: ['platform', 'release', 'architecture', 'cpuModel', 'cpuCount', 'githubImageOS', 'githubImageVersion'],
+  exactCompatibilityFields: [
+    'environment.commit',
+    'environment.nodeVersion',
+    'environment.playwrightVersion',
+    'environment.browser.engine',
+    'environment.browser.actualVersion',
+    'environment.browser.expectedVersion',
+    'environment.browser.expectedRevision',
+    'protocol.datasetSha256',
+    'protocol.itemCount',
+    'protocol.itemHeightPx',
+    'protocol.listViewportHeight',
+    'protocol.datasetRecipe',
+    'protocol.navigationSequence',
+    'protocol.viewport',
+    'protocol.warmupPairs',
+    'protocol.measuredPairs',
+  ],
+};
 const PERCENTILE_REQUIREMENTS = {
   p95: { probability: 0.95, minimumRuns: 20, minimumPairs: 100 },
   p99: { probability: 0.99, minimumRuns: 30, minimumPairs: 300 },
@@ -298,7 +324,7 @@ function hardwareProfile(report) {
     architecture: runner.architecture,
     cpuModel: runner.cpuModel,
     cpuCount: runner.cpuCount,
-    totalMemoryBytes: runner.totalMemoryBytes,
+    memoryCapacityNearestGiB: Math.round(runner.totalMemoryBytes / BYTES_PER_GIB),
     githubImageOS: runner.githubImageOS,
     githubImageVersion: runner.githubImageVersion,
   };
@@ -541,6 +567,7 @@ export function aggregateReplicationReports({
       environment: report?.environment ?? null,
       protocol: report?.protocol ?? null,
       rawAttempts: Array.isArray(report?.attempts) ? report.attempts : [],
+      hardwareEquivalence: null,
     };
   });
 
@@ -569,6 +596,11 @@ export function aggregateReplicationReports({
       stratumKey: key,
       compatibilityProfile: compatibility,
       hardwareProfile: hardware,
+      hardwareEquivalence: {
+        policyVersion: HARDWARE_EQUIVALENCE_POLICY.version,
+        memoryCapacityNearestGiB: hardware.memoryCapacityNearestGiB,
+        sourceMemoryObservations: [],
+      },
       sourceRunKeys: [],
       runs: [],
     };
@@ -593,6 +625,15 @@ export function aggregateReplicationReports({
     run.replications.push({ replicationId: source.replicationId, generatedAt: report.environment.generatedAt, pairs });
     run.pairs.push(...pairs);
     source.stratumKey = key;
+    source.hardwareEquivalence = {
+      policyVersion: HARDWARE_EQUIVALENCE_POLICY.version,
+      memoryCapacityNearestGiB: hardware.memoryCapacityNearestGiB,
+      stratumKey: key,
+    };
+    stratum.hardwareEquivalence.sourceMemoryObservations.push({
+      sourceRunKey: source.sourceRunKey,
+      totalMemoryBytes: report.environment.runner.totalMemoryBytes,
+    });
     stratum.sourceRunKeys.push(source.sourceRunKey);
     strataMap.set(key, stratum);
   }
@@ -606,10 +647,21 @@ export function aggregateReplicationReports({
       bootstrapReplicates,
       seed: `${seed}:${stratum.stratumKey}`,
     });
+    const memoryValues = stratum.hardwareEquivalence.sourceMemoryObservations.map((observation) => observation.totalMemoryBytes);
+    const minimumMemoryBytes = Math.min(...memoryValues);
+    const maximumMemoryBytes = Math.max(...memoryValues);
     return {
       stratumKey: stratum.stratumKey,
       compatibilityProfile: stratum.compatibilityProfile,
       hardwareProfile: stratum.hardwareProfile,
+      hardwareEquivalence: {
+        ...stratum.hardwareEquivalence,
+        observedMemoryRangeBytes: {
+          minimum: minimumMemoryBytes,
+          maximum: maximumMemoryBytes,
+          difference: maximumMemoryBytes - minimumMemoryBytes,
+        },
+      },
       sourceRunKeys: stratum.sourceRunKeys,
       independentRunCount: runRecords.length,
       independentWorkflowRunCount: runRecords.length,
@@ -689,6 +741,7 @@ export function aggregateReplicationReports({
       incompletePairsExcluded: true,
       incompatibleCompatibilityOrHardwareProfilesAreNeverPooled: true,
     },
+    hardwareEquivalencePolicy: HARDWARE_EQUIVALENCE_POLICY,
     integrity: {
       discoveredSourceCount: entries.length,
       validSourceCount: sources.filter((source) => source.included).length,

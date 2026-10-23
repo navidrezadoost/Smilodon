@@ -13,6 +13,7 @@ function makeReport({
   runId = 10_000 + replicationId,
   cpuModel = 'AMD EPYC 7763 64-Core Processor',
   imageVersion = '20261018.339.1',
+  totalMemoryBytes = 16_000_000_000,
   latency = 50,
   sampleLatencies,
   start = 'minimal',
@@ -121,7 +122,7 @@ function makeReport({
         architecture: 'x64',
         cpuCount: 4,
         cpuModel,
-        totalMemoryBytes: 16_000_000_000,
+        totalMemoryBytes,
         githubActions: true,
         githubImageOS: 'ubuntu24',
         githubImageVersion: imageVersion,
@@ -203,6 +204,62 @@ test('keeps different CPU and hosted-image profiles in separate hardware strata'
     assert.equal(result.integrity.validForAnalysis, true);
     assert.equal(result.strata.length, 2);
     assert.deepEqual(new Set(result.strata.map((stratum) => stratum.hardwareProfile.cpuModel)), new Set(['CPU A', 'CPU B']));
+  });
+});
+
+test('groups small RAM observation differences by nearest binary GiB and retains exact source provenance', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const firstMemoryBytes = 16_766_414_848;
+    const secondMemoryBytes = 16_766_410_752;
+    writeReport(makeReport({ replicationId: 1, runId: 41_001, totalMemoryBytes: firstMemoryBytes }));
+    writeReport(makeReport({ replicationId: 1, runId: 41_002, start: 'instrumented', totalMemoryBytes: secondMemoryBytes }));
+
+    const result = aggregateReplicationReports({
+      inputDirectory,
+      expectedWorkflowRunIds: ['41001', '41002'],
+      expectedCommit: COMMIT,
+      bootstrapReplicates: 100,
+    });
+
+    assert.equal(result.integrity.validForAnalysis, true);
+    assert.equal(result.strata.length, 1);
+    assert.equal(result.strata[0].independentWorkflowRunCount, 2);
+    assert.equal(result.strata[0].completeMeasuredPairCount, 10);
+    assert.equal(result.strata[0].hardwareProfile.memoryCapacityNearestGiB, 16);
+    assert.equal('totalMemoryBytes' in result.strata[0].hardwareProfile, false);
+    assert.deepEqual(
+      result.sources.map((source) => source.environment.runner.totalMemoryBytes).sort((left, right) => left - right),
+      [secondMemoryBytes, firstMemoryBytes],
+    );
+    assert.deepEqual(
+      result.strata[0].hardwareEquivalence.sourceMemoryObservations
+        .map((observation) => observation.totalMemoryBytes)
+        .sort((left, right) => left - right),
+      [secondMemoryBytes, firstMemoryBytes],
+    );
+    assert.equal(result.strata[0].hardwareEquivalence.observedMemoryRangeBytes.difference, 4_096);
+    assert.equal(result.hardwareEquivalencePolicy.version, 'nearest-binary-gib-v1');
+    assert.ok(result.hardwareEquivalencePolicy.exactRunnerFields.includes('cpuModel'));
+    assert.ok(result.hardwareEquivalencePolicy.exactCompatibilityFields.includes('environment.browser.actualVersion'));
+    assert.ok(result.sources.every((source) => source.hardwareEquivalence?.policyVersion === 'nearest-binary-gib-v1'));
+  });
+});
+
+test('keeps materially different RAM capacities in separate hardware strata', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    writeReport(makeReport({ replicationId: 1, runId: 42_001, totalMemoryBytes: 8 * 1024 ** 3 }));
+    writeReport(makeReport({ replicationId: 1, runId: 42_002, totalMemoryBytes: 32 * 1024 ** 3 }));
+
+    const result = aggregateReplicationReports({
+      inputDirectory,
+      expectedWorkflowRunIds: ['42001', '42002'],
+      expectedCommit: COMMIT,
+      bootstrapReplicates: 100,
+    });
+
+    assert.equal(result.integrity.validForAnalysis, true);
+    assert.equal(result.strata.length, 2);
+    assert.deepEqual(new Set(result.strata.map((stratum) => stratum.hardwareProfile.memoryCapacityNearestGiB)), new Set([8, 32]));
   });
 });
 
