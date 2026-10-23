@@ -59,6 +59,9 @@ jobs:
       PHASE4_BENCHMARK_REPETITIONS: ${{ inputs.repetitions || 5 }}
       PHASE4_BENCHMARK_WARMUPS: ${{ inputs.warmups || 1 }}
       PHASE4_BENCHMARK_OUTPUT: test-results/performance/phase-4.6.2a.json
+      PHASE4_ENDKEY_WARMUPS: '1'
+      PHASE4_ENDKEY_REPETITIONS: '5'
+      PHASE4_ENDKEY_ATTRIBUTION_OUTPUT: test-results/performance/phase-4.6.2c2-end-key-attribution.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,6 +92,11 @@ jobs:
       - name: Summarize baseline
         if: always() && hashFiles('test-results/performance/phase-4.6.2a.json') != ''
         run: npm run benchmark:phase4:summary
+
+      - name: Run paired 100k End-key latency attribution
+        run: |
+          set -o pipefail
+          npm run benchmark:phase4:endkey 2>&1 | tee test-results/performance/end-key-attribution.log
 
       - name: Preserve browser benchmark data
         if: always()
