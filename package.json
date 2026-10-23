@@ -43,6 +43,7 @@
     "benchmark": "node scripts/benchmark.js",
     "benchmark:phase4": "playwright test --config tests/performance/playwright.config.ts",
     "benchmark:phase4:summary": "node scripts/summarize-phase-4-benchmark.mjs",
+    "benchmark:phase4:endkey": "playwright test --config tests/performance/end-key-attribution.playwright.config.ts",
     "test:phase4:lifecycle": "playwright test --config tests/performance/lifecycle.playwright.config.ts",
     "benchmark:core-stress": "node scripts/benchmark-core-stress.mjs",
     "test:benchmark:phase4": "node --test tests/performance/summarize-phase-4-benchmark.test.mjs",
