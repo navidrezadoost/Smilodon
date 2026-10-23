@@ -47,6 +47,7 @@
     "test:phase4:lifecycle": "playwright test --config tests/performance/lifecycle.playwright.config.ts",
     "benchmark:core-stress": "node scripts/benchmark-core-stress.mjs",
     "test:benchmark:phase4": "node --test tests/performance/summarize-phase-4-benchmark.test.mjs",
+    "test:benchmark:phase4:replication": "node --test tests/performance/aggregate-phase-4-endkey-replication.test.mjs",
     "playwright:install": "playwright install",
     "ws:version:core": "npm version patch -w @smilodon/core",
     "ws:publish:core": "npm publish --workspace @smilodon/core",

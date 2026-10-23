@@ -1,0 +1,151 @@
+name: Phase 4 End-key Controlled Replication
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase-4-endkey-replication.yml
+      - .github/workflows/phase-4-endkey-replication-analysis.yml
+      - package.json
+      - scripts/aggregate-phase-4-endkey-replication.mjs
+      - tests/performance/aggregate-phase-4-endkey-replication.test.mjs
+      - tests/performance/phase-4-end-key-attribution.spec.ts
+  workflow_dispatch:
+    inputs:
+      replication_indices:
+        description: Replication jobs for this bounded dispatch (select at most five; these remain one workflow-run cluster)
+        required: true
+        type: choice
+        options:
+          - '[1]'
+          - '[1,2]'
+          - '[1,2,3]'
+          - '[1,2,3,4]'
+          - '[1,2,3,4,5]'
+        default: '[1]'
+
+permissions:
+  actions: read
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  aggregator-tests:
+    name: Deterministic replication evaluator tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test report integrity and run-cluster analysis
+        run: npm run test:benchmark:phase4:replication
+
+  replication:
+    name: Pinned Chromium replication ${{ matrix.replication }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        replication: ${{ fromJSON(inputs.replication_indices || '[1]') }}
+    env:
+      CI: 'true'
+      PHASE4_ENDKEY_WARMUPS: '1'
+      PHASE4_ENDKEY_REPETITIONS: '5'
+      PHASE4_ENDKEY_REPLICATION_ID: ${{ matrix.replication }}
+      PHASE4_ENDKEY_ATTRIBUTION_OUTPUT: test-results/performance/phase-4-c5a/phase-4.6.2c3b-frame-attribution.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Playwright-pinned Chromium
+        run: |
+          set -o pipefail
+          mkdir -p test-results/performance/phase-4-c5a
+          npx playwright install --with-deps chromium 2>&1 | tee test-results/performance/phase-4-c5a/browser-install.log
+
+      - name: Build component packages
+        run: npm run build
+
+      - name: Run controlled 100k paired End-key replication
+        run: |
+          set -o pipefail
+          npm run benchmark:phase4:endkey 2>&1 | tee test-results/performance/phase-4-c5a/playwright.log
+
+      - name: Preserve raw source report and browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-c5-source-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.replication }}
+          path: |
+            test-results/performance/phase-4-c5a/
+            test-results/performance/end-key-attribution-playwright/
+            test-results/performance/end-key-attribution/
+          if-no-files-found: warn
+          retention-days: 90
+
+  aggregate:
+    name: Validate source reports and generate stratified analysis
+    if: always()
+    needs: [aggregator-tests, replication]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download source artifacts from this dispatch
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phase-4-c5-source-*
+          path: test-results/performance/phase-4-c5a/sources
+          merge-multiple: false
+
+      - name: Validate sources and regenerate report-only analysis
+        env:
+          PHASE4_EXPECTED_REPLICATION_INDICES: ${{ inputs.replication_indices || '[1]' }}
+        run: |
+          EXPECTED_COUNT="$(node -e "process.stdout.write(String(JSON.parse(process.env.PHASE4_EXPECTED_REPLICATION_INDICES).length))")"
+          node scripts/aggregate-phase-4-endkey-replication.mjs \
+            --input-dir test-results/performance/phase-4-c5a/sources \
+            --output test-results/performance/phase-4-c5a/phase-4.6.2c5a-aggregate.json \
+            --expected-count "$EXPECTED_COUNT" \
+            --expected-workflow-run-id '${{ github.run_id }}' \
+            --expected-commit '${{ github.sha }}'
+
+      - name: Preserve raw sources and aggregate artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-endkey-replication-analysis-${{ github.run_id }}
+          path: test-results/performance/phase-4-c5a/
+          if-no-files-found: warn
+          retention-days: 90

@@ -42,6 +42,7 @@ jobs:
       - name: Test evaluator and benchmark-summary logic
         run: |
           npm run test:benchmark:phase4
+          npm run test:benchmark:phase4:replication
           node --test tests/performance/evaluate-phase-4-performance.test.mjs
 
       - name: Regenerate checked-in analysis
