@@ -42,7 +42,7 @@ export interface SelectProps {
   infiniteScroll?: boolean;
   /** Number of items per page (for infinite scroll) */
   pageSize?: number;
-  /** Enable virtual scrolling */
+  /** Enable legacy chunked rendering for large flat lists; this does not window to the viewport. */
   virtualized?: boolean;
   /** Maximum number of selections (for multi-select) */
   maxSelections?: number;

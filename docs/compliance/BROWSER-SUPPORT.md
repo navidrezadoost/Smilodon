@@ -1,6 +1,8 @@
 # Browser Support Matrix & Service Level Agreement
 ## Smilodon Component Library
 
+> **Historical policy document — not current certification or an SLA.** The compatibility and accessibility claims below have not been revalidated against the current maintained adapters and browser matrix. WCAG conformance, React Native platform parity, and production viewport virtualization are not established here; see the [Phase 4 certification record](../architecture/PHASE-4-CERTIFICATION.md).
+
 **Version:** 1.0.0  
 **Last Updated:** December 7, 2025  
 **Policy Version:** 1.0.0  

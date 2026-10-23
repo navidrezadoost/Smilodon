@@ -1,5 +1,7 @@
 # Phase 3 — Accessibility Engine
 
+Historical Phase 3 snapshot: this records the earlier staged design baseline and has been superseded by the current Phase 4.6.3 accessibility tests and findings in [PHASE-4-CERTIFICATION.md](./PHASE-4-CERTIFICATION.md). The line references and gaps below are not a statement of the current implementation.
+
 Status: **Phase 3.0–3.5 closed; final accessibility regression passed in Chromium and Firefox. WebKit could not launch because host libraries are missing.**
 This document records the current accessibility surface and staged engine,
 web adapter, and component integration contracts.

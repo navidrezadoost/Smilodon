@@ -2,6 +2,8 @@
 
 > Transparent, reproducible, and engineered comparison across ecosystems.
 
+> Historical report: the measurements and conclusions below predate the current Phase 4 benchmark harness, use different environments, and are not release evidence or performance guarantees. In particular, claims about constant viewport-bounded DOM do not describe the current public `EnhancedSelect` behavior. See the [Phase 4 certification record](./architecture/PHASE-4-CERTIFICATION.md) for the current report-only evidence and [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status) for public rendering status.
+
 ---
 
 ## 1. Scope & Competitors

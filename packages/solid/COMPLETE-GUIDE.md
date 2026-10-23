@@ -1,8 +1,12 @@
 # @smilodon/solid - Complete Guide
 
-**Production-ready, accessible Select component for SolidJS applications**
+**Select component guide for SolidJS applications**
 
 This guide explains how to install, configure, style, optimize, and troubleshoot the SolidJS adapter for Smilodon. It is intended to answer the full lifecycle of questions a Solid user typically has: simple setup, medium-complexity usage, and advanced production concerns.
+
+> Capability caveat: the public `virtualized` option enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+>
+> Accessibility status: selected keyboard and ARIA behaviors are implemented, but pinned cross-browser verification and manual assistive-technology assessment are pending. This guide is not a WCAG conformance statement. For the maintained public API, use the [API reference](../../docs/API-REFERENCE.md) and the adapter's exported TypeScript types.
 
 ---
 
@@ -232,7 +236,7 @@ Choose uncontrolled mode when you want:
 | `error` | `boolean` | `false` | Error state |
 | `infiniteScroll` | `boolean` | `false` | Enable load-more behavior |
 | `pageSize` | `number` | `50` | Infinite-scroll page size |
-| `virtualized` | `boolean` | `true` | Virtualized option rendering |
+| `virtualized` | `boolean` | `true` | Incremental chunk rendering for large flat lists; not viewport windowing |
 | `maxSelections` | `number` | `undefined` | Maximum selection count in multi mode |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `clearable` | `boolean` | `false` | Show clear control |
@@ -456,7 +460,7 @@ Reference docs:
 
 ### Medium guidance
 
-- if rows have consistent height, keep the visual design consistent so virtualization remains accurate
+- item-height estimates apply only to the guarded viewport-window test path, not public chunk rendering
 - avoid rebuilding arrays unnecessarily during unrelated reactivity updates
 - keep renderer output minimal for 10K+ item lists
 
@@ -472,7 +476,7 @@ See [../../docs/PERFORMANCE.md](../../docs/PERFORMANCE.md).
 
 ## Accessibility
 
-The Solid adapter inherits the shared accessibility model from the runtime.
+The Solid adapter inherits implemented accessibility behavior from the runtime; this summary is not a conformance claim.
 
 Support includes:
 
@@ -485,7 +489,7 @@ Support includes:
 
 Recommended host patterns:
 
-- connect labels with `aria-labelledby` where needed
+- provide a literal `aria-label` and `aria-description`; host IDREF attributes are not forwarded across the shadow boundary
 - provide descriptive placeholder and helper text
 - keep custom renderers semantically simple
 - test screen-reader flows when using advanced option rendering

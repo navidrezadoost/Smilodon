@@ -1,8 +1,12 @@
 # @smilodon/react - Complete Guide
 
-**Production-ready, accessible Select component for React applications**
+**Select component guide for React applications**
 
 This guide provides comprehensive documentation for using Smilodon Select in React applications, covering all features, styling options, and advanced use cases.
+
+> Capability caveat: the public `virtualized` prop enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+>
+> Accessibility status: selected keyboard and ARIA behaviors are implemented, but pinned cross-browser verification and manual assistive-technology assessment are pending. This guide is not a WCAG conformance statement. For the maintained public API, use the [API reference](../../docs/API-REFERENCE.md) and the adapter's exported TypeScript types.
 
 ---
 
@@ -139,7 +143,7 @@ interface SelectProps {
   style?: React.CSSProperties;
   
   // Advanced
-  virtualization?: boolean;
+  virtualized?: boolean;
   customRenderer?: (item: SelectItem, index: number) => React.ReactNode;
   
   // Events
@@ -161,10 +165,10 @@ interface SelectProps {
 | `disabled` | `boolean` | `false` | Disable the select |
 | `placeholder` | `string` | `'Select...'` | Placeholder text |
 | `maxHeight` | `number` | `300` | Max dropdown height (px) |
-| `estimatedItemHeight` | `number` | `48` | Estimated item height for virtualization |
+| `estimatedItemHeight` | `number` | `48` | Passed to core config for the guarded viewport-windowing test path; it does not affect public chunk rendering |
 | `className` | `string` | `undefined` | CSS class name |
 | `style` | `React.CSSProperties` | `undefined` | Inline styles (CSS variables) |
-| `virtualization` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `false` | Enable incremental chunk rendering for large flat lists; not viewport windowing |
 | `customRenderer` | `function` | `undefined` | Custom option renderer |
 | `onOpen` | `() => void` | `undefined` | Called when dropdown opens |
 | `onClose` | `() => void` | `undefined` | Called when dropdown closes |
@@ -940,7 +944,6 @@ function CustomRendererSelect() {
       onChange={(val) => setValue(val as string)}
       customRenderer={customRenderer}
       placeholder="Select a user"
-      estimatedItemHeight={60}
     />
   );
 }
@@ -973,8 +976,7 @@ function LargeDataset() {
       items={items}
       value={value}
       onChange={(val) => setValue(val as string)}
-      virtualization={true}
-      estimatedItemHeight={48}
+      virtualized={true}
       placeholder="Search 100k items..."
       searchable
     />
@@ -1099,7 +1101,7 @@ function GenericSelect<T extends SelectItem>({
 
 ## Accessibility
 
-Smilodon is WCAG 2.1 AAA compliant with full keyboard support:
+Smilodon implements selected keyboard and ARIA behavior. Pinned cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
 
 ### Keyboard Navigation
 
@@ -1116,7 +1118,7 @@ The component automatically includes:
 - `role="combobox"`
 - `aria-expanded`
 - `aria-haspopup`
-- `aria-label` / `aria-labelledby`
+- `aria-label` / `aria-description` (literal host attributes are forwarded)
 - `aria-activedescendant`
 - `aria-multiselectable` (when `multiple={true}`)
 
@@ -1132,7 +1134,7 @@ function AccessibleSelect() {
         value={value}
         onChange={setValue}
         placeholder="Select your country"
-        // Component automatically uses the label via aria-labelledby
+        aria-label="Country"
       />
     </div>
   );
@@ -1325,10 +1327,10 @@ const [value, setValue] = useState<(string | number)[]>([]);
 
 If you experience slow rendering with large datasets:
 
-1. Enable virtualization (enabled by default)
+1. Use `virtualized` only for incremental chunk rendering; it does not bound mounted DOM.
 2. Use `useMemo` for items array
 3. Use `useCallback` for event handlers
-4. Increase `estimatedItemHeight` if items are taller than 48px
+4. Use host-controlled paging/search for datasets that should not all be loaded at once.
 
 ```tsx
 const items = useMemo(() => generateLargeDataset(), []);
@@ -1338,8 +1340,7 @@ const handleChange = useCallback((val) => setValue(val), []);
   items={items}
   value={value}
   onChange={handleChange}
-  virtualization={true}
-  estimatedItemHeight={48}
+  virtualized={true}
 />
 ```
 

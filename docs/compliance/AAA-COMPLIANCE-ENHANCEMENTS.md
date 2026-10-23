@@ -1,14 +1,16 @@
 # WCAG 2.2 Level AAA Compliance Enhancements
 
+> **Historical, unverified draft — not a current AAA conformance claim.** The descriptions and pass statuses below have not been independently revalidated for the maintained component. Cross-browser and manual assistive-technology certification remain pending.
+
 **Date:** December 7, 2025  
 **Version:** 1.0.0  
-**Status:** ✅ Enhanced AAA Support
+**Current status:** Not certified; the AAA claims in this historical draft are unverified.
 
 ---
 
 ## Overview
 
-This document summarizes the enhancements made to achieve **Level AAA compliance** for specific success criteria in the Smilodon component library. While the primary conformance target remains **Level AA**, the component now exceeds requirements in four AAA criteria, creating a competitive advantage in the accessibility market.
+This historical document records prior intended enhancements. It does not establish Level AAA conformance for the current component or adapters.
 
 ---
 
