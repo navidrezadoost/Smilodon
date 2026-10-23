@@ -1,0 +1,125 @@
+name: Phase 4 End-key Replication Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_ids:
+        description: JSON array of completed Phase 4 End-key replication workflow run IDs (one source report is required per run)
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate-selection:
+    name: Validate selected source workflow runs
+    runs-on: ubuntu-24.04
+    outputs:
+      source_run_ids: ${{ steps.validate.outputs.source_run_ids }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate unique run IDs and bounded selection
+        id: validate
+        env:
+          SOURCE_RUN_IDS: ${{ inputs.source_run_ids }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const ids = JSON.parse(process.env.SOURCE_RUN_IDS);
+          if (!Array.isArray(ids) || ids.length < 1 || ids.length > 30) {
+            throw new Error('source_run_ids must be a JSON array with 1 to 30 workflow run IDs');
+          }
+          const normalized = ids.map(String);
+          if (normalized.some((id) => !/^\d+$/.test(id) || Number(id) < 1)) {
+            throw new Error('every workflow run ID must be a positive number');
+          }
+          if (new Set(normalized).size !== normalized.length) {
+            throw new Error('source_run_ids must not contain duplicates');
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `source_run_ids=${JSON.stringify(normalized)}\n`);
+          NODE
+
+  collect:
+    name: Download source artifact for run ${{ matrix.run_id }}
+    needs: validate-selection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        run_id: ${{ fromJSON(needs.validate-selection.outputs.source_run_ids) }}
+    steps:
+      - name: Download that run's pinned-browser source artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phase-4-c5-source-${{ matrix.run_id }}-*
+          run-id: ${{ matrix.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-results/performance/phase-4-c5a/sources/${{ matrix.run_id }}
+          merge-multiple: false
+
+      - name: Preserve downloaded source artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-c5-collected-${{ matrix.run_id }}
+          path: test-results/performance/phase-4-c5a/sources/${{ matrix.run_id }}/
+          if-no-files-found: warn
+          retention-days: 90
+
+  analyze:
+    name: Regenerate stratified run-cluster analysis
+    if: always()
+    needs: [validate-selection, collect]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download collected inputs from this analysis run
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phase-4-c5-collected-*
+          path: test-results/performance/phase-4-c5a/sources
+          merge-multiple: false
+
+      - name: Test deterministic aggregation logic
+        run: npm run test:benchmark:phase4:replication
+
+      - name: Validate sources and regenerate report-only analysis
+        env:
+          SOURCE_RUN_IDS: ${{ needs.validate-selection.outputs.source_run_ids }}
+        run: |
+          node scripts/aggregate-phase-4-endkey-replication.mjs \
+            --input-dir test-results/performance/phase-4-c5a/sources \
+            --output test-results/performance/phase-4-c5a/phase-4.6.2c5a-aggregate.json \
+            --expected-workflow-run-ids "$SOURCE_RUN_IDS"
+
+      - name: Preserve raw inputs and aggregate artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-4-endkey-replication-analysis-${{ github.run_id }}
+          path: test-results/performance/phase-4-c5a/
+          if-no-files-found: warn
+          retention-days: 90
