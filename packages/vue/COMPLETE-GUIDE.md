@@ -1,8 +1,12 @@
 # @smilodon/vue - Complete Guide
 
-**Production-ready, accessible Select component for Vue 3 applications**
+**Select component guide for Vue 3 applications**
 
 This guide provides comprehensive documentation for using Smilodon Select in Vue 3 applications, covering all features, styling options, and advanced use cases.
+
+> Capability caveat: the public `virtualized` prop enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+>
+> Accessibility status: selected keyboard and ARIA behaviors are implemented, but pinned cross-browser verification and manual assistive-technology assessment are pending. This guide is not a WCAG conformance statement. For the maintained public API, use the [API reference](../../docs/API-REFERENCE.md) and the adapter's exported TypeScript types.
 
 ---
 
@@ -151,7 +155,7 @@ const value = ref<string | number>('')
 1. Register `enhanced-select` as a custom element in the Vue compiler path.
 2. Keep direct DOM access inside `onMounted()`.
 3. Pass plain serializable item arrays from server-side data loaders.
-4. Prefer `virtualized` for large lists and provide `estimatedItemHeight` when option heights are visually stable.
+4. `virtualized` enables incremental chunk rendering only; use host-controlled paging when the full dataset should not be loaded.
 5. Style the component with CSS variables and `::part()` instead of assuming access to internal markup.
 
 ### SSR and hydration guidance
@@ -239,14 +243,13 @@ interface SelectProps {
   
   // Display
   maxHeight?: number;
-  estimatedItemHeight?: number;
   
   // Styling
   class?: string;
   style?: Record<string, string | number>;
   
   // Advanced
-  virtualization?: boolean;
+  virtualized?: boolean;
   customRenderer?: (item: SelectItem, index: number) => VNode;
 }
 ```
@@ -262,10 +265,9 @@ interface SelectProps {
 | `disabled` | `boolean` | `false` | Disable the select |
 | `placeholder` | `string` | `'Select...'` | Placeholder text |
 | `maxHeight` | `number` | `300` | Max dropdown height (px) |
-| `estimatedItemHeight` | `number` | `48` | Estimated item height for virtualization |
 | `class` | `string` | `undefined` | CSS class name |
 | `style` | `object` | `undefined` | Inline styles (CSS variables) |
-| `virtualization` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `true` | Enable incremental chunk rendering for large flat lists; not viewport windowing |
 | `customRenderer` | `function` | `undefined` | Custom option renderer |
 
 ### Events
@@ -1105,7 +1107,6 @@ const customRenderer = (item: SelectItem) => {
     v-model="selectedUser"
     :customRenderer="customRenderer"
     placeholder="Select a user"
-    :estimatedItemHeight="60"
   />
 </template>
 ```
@@ -1136,8 +1137,7 @@ const items = computed(() =>
   <Select
     :items="items"
     v-model="value"
-    :virtualization="true"
-    :estimatedItemHeight="48"
+    :virtualized="true"
     placeholder="Search 100k items..."
     searchable
   />
@@ -1340,7 +1340,7 @@ const {
 
 ## Accessibility
 
-Smilodon is WCAG 2.1 AAA compliant with full keyboard support:
+Smilodon implements selected keyboard and ARIA behavior. Pinned cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
 
 ### Keyboard Navigation
 
@@ -1357,7 +1357,7 @@ The component automatically includes:
 - `role="combobox"`
 - `aria-expanded`
 - `aria-haspopup`
-- `aria-label` / `aria-labelledby`
+- `aria-label` / `aria-description` (literal host attributes are forwarded)
 - `aria-activedescendant`
 - `aria-multiselectable` (when `multiple`)
 
@@ -1378,7 +1378,7 @@ const country = ref('');
       :items="['USA', 'Canada', 'Mexico']"
       v-model="country"
       placeholder="Select your country"
-      aria-labelledby="country-label"
+      aria-label="Country"
     />
   </div>
 </template>
@@ -1585,8 +1585,8 @@ export default defineConfig({
 If you experience slow rendering with large datasets:
 
 1. Use `computed` for items array
-2. Enable virtualization (enabled by default)
-3. Increase `estimatedItemHeight` if items are taller than 48px
+2. `virtualized` only enables incremental chunk rendering; it does not bound mounted DOM.
+3. Use host-controlled paging/search when not all results should be loaded at once.
 
 ```vue
 <script setup lang="ts">
@@ -1599,8 +1599,7 @@ const items = computed(() => generateLargeDataset());
   <Select
     :items="items"
     v-model="value"
-    :virtualization="true"
-    :estimatedItemHeight="48"
+    :virtualized="true"
   />
 </template>
 ```

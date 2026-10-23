@@ -229,6 +229,47 @@ test.describe('Basic Selection', () => {
     expect(events).toHaveLength(1);
     expect(events[0].selectedValues).toContain('cherry');
   });
+
+  test('@all should emit the option select event before the aggregate change event', async ({ page }) => {
+    const select = page.locator('enhanced-select').first();
+    await select.evaluate((element: any) => {
+      element.__selectionEventTrace = [];
+      element.addEventListener('select', (event: CustomEvent) => {
+        element.__selectionEventTrace.push({
+          type: 'select',
+          index: event.detail.index,
+          value: event.detail.value,
+          label: event.detail.label,
+          selected: event.detail.selected,
+          multi: event.detail.multi,
+        });
+      });
+      element.addEventListener('change', (event: CustomEvent) => {
+        element.__selectionEventTrace.push({
+          type: 'change',
+          selectedValues: event.detail.selectedValues,
+        });
+      });
+    });
+
+    await openDropdown(select);
+    await select.evaluate((element: any) => {
+      const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+      option?.click();
+    });
+
+    await expect.poll(() => select.evaluate((element: any) => element.__selectionEventTrace.length)).toBe(2);
+    const trace = await select.evaluate((element: any) => element.__selectionEventTrace);
+    expect(trace[0]).toMatchObject({
+      type: 'select',
+      index: 0,
+      value: 'apple',
+      label: 'Apple',
+      selected: true,
+      multi: false,
+    });
+    expect(trace[1]).toMatchObject({ type: 'change', selectedValues: ['apple'] });
+  });
   
   test('@all @critical should navigate with keyboard', async ({ page }) => {
     const select = page.locator('enhanced-select').first();

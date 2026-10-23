@@ -1,6 +1,6 @@
 # Adapter Capability Matrix
 
-This document provides a project-wide analysis of styling, functionality, eventing, and runtime limitations control across adapters.
+This document inventories declared API surface, not feature parity or release certification. Coverage depth varies by adapter; the [Phase 4 feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) is the current status record. Do not infer browser-verified behavior from a checkmark in this table.
 
 ## Core Runtime Contract (all adapters)
 
@@ -18,19 +18,21 @@ New diagnostic event:
 
 ## Capability Matrix
 
-| Area | Core Web Component | React | Vue | Svelte | Vanilla |
-|---|---|---|---|---|---|
-| Class-based styling (`classMap`) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Custom option renderer | ✅ | ✅ (React + DOM bridge) | ✅ (VNode + DOM bridge) | ✅ (DOM bridge) | ✅ |
-| Group header renderer | ✅ | ✅ | ✅ | ⚠️ via grouped API only | ✅ via core element |
-| CSS custom properties / parts | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Search + open/close/select/change events | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clear-control event (`clear`) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Diagnostic event (`diagnostic`) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Infinite scroll/load-more hooks | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Runtime capability report | ✅ | ✅ (imperative handle) | ✅ (`defineExpose`) | ✅ (exported methods) | ✅ (helper functions) |
-| Runtime limitation policy control | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Runtime tracking snapshot control | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Area | Core Web Component | React | Vue | Svelte | Solid | React Native | Vanilla |
+|---|---|---|---|---|---|---|---|
+| Class-based styling (`classMap`) | API | API | API | API | API | Platform-specific | API |
+| Custom option renderer | API | API (React + DOM bridge) | API (VNode + DOM bridge) | API (DOM bridge) | API | WebView/web path | API |
+| Group header renderer | API | API | API | Partial (grouped API) | API | API | Core element API |
+| CSS custom properties / parts | API | forwarded | forwarded | forwarded | forwarded | bridged style map / web | Core element API |
+| Search + open/close/select/change events | API | callbacks | emits | component events | callbacks | callbacks | callbacks/events |
+| Clear-control event (`clear`) | API | callback | emit | component event | callback | callback | callback/event |
+| Diagnostic event (`diagnostic`) | API | callback | emit | component event | callback | callback | callback/event |
+| Infinite scroll/load-more hooks | host signal | callback | emit | component event | callback | callback | callback/event |
+| Runtime capability report | API | imperative handle | exposed method | exported method | handle | handle | helper function |
+| Runtime limitation policy control | API | prop/handle | prop/method | prop/method | prop/handle | config/handle | helper function |
+| Runtime tracking snapshot control | API | prop/handle | prop/method | prop/method | prop/handle | config/handle | helper function |
+
+`API` means the source exposes the corresponding surface; it does not mean every branch is comprehensively tested. The `select` event/callback path now has focused regression tests, but adapter suites remain small and unequal: React's shared contract runner currently has 43 pending cases, while Vue, Svelte, and Vanilla contract files each have two focused tests. Solid and React Native have no equivalent contract suites. React Native's native WebView and React Native Web paths also require platform-specific verification. The current framework Playwright projects filter a shared scenario suite that boots the Vanilla playground; their project names do not constitute browser tests of each wrapper.
 
 ## Known Limitations (Tracked + User-Controllable)
 

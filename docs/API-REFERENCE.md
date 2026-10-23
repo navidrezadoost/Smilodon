@@ -1,13 +1,14 @@
 # API Reference
 
-Complete API documentation for `@smilodon` packages.
+API inventory for `@smilodon` packages. The maintained select API is `EnhancedSelect` in core and `Select` in the React, Vue, Svelte, Solid, and React Native adapters; Vanilla provides `createSelect` helpers for the core element. `@smilodon/react-native` uses a WebView bridge on native platforms and a direct custom-element implementation on React Native Web. `NativeSelectElement` remains exported as a legacy compatibility API; its section below is not the primary component API. Angular is unsupported.
 
 ---
 
 ## Table of Contents
 
 1. [Core Package](#core-package)
-   - [NativeSelectElement](#nativeselectelement)
+   - [EnhancedSelect](#enhancedselect)
+   - [Legacy NativeSelectElement](#legacy-nativeselectelement-compatibility-api)
    - [Virtualizer](#virtualizer)
    - [WorkerManager](#workermanager)
    - [Telemetry](#telemetry)
@@ -15,8 +16,10 @@ Complete API documentation for `@smilodon` packages.
 2. [React Adapter](#react-adapter)
 3. [Vue Adapter](#vue-adapter)
 4. [Svelte Adapter](#svelte-adapter)
-5. [Angular Adapter](#angular-adapter)
-6. [TypeScript Types](#typescript-types)
+5. [Solid Adapter](#solid-adapter)
+6. [React Native Adapter](#react-native-adapter)
+7. [Vanilla Adapter](#vanilla-adapter)
+8. [TypeScript Types](#typescript-types)
 
 ---
 
@@ -115,9 +118,54 @@ Direction-related runtime config:
 
 For the exhaustive latest token inventory, see [STYLING-TOKENS.md](./STYLING-TOKENS.md). For usage patterns and examples, see [STYLING.md](./STYLING.md).
 
-### NativeSelectElement
+### EnhancedSelect
 
-Web Component providing the base select functionality.
+The maintained core custom element is registered as `<enhanced-select>` and exported as `EnhancedSelect` from `@smilodon/core`. The React, Vue, and Svelte `Select` components wrap this shared runtime. See each package guide for framework-specific controlled-value and event conventions.
+
+```ts
+import '@smilodon/core';
+import type { EnhancedSelect } from '@smilodon/core';
+
+const select = document.querySelector('enhanced-select') as EnhancedSelect;
+select.setItems([
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana' },
+]);
+select.setError('Choose a fruit.');
+select.clearError();
+```
+
+#### Core element methods
+
+| Method | Signature | Behavior |
+| --- | --- | --- |
+| `setItems` | `(items: unknown[]) => void` | Replaces the item set. |
+| `setGroupedItems` | `(groups: GroupedItem[]) => void` | Replaces the grouped item set. |
+| `getSelectedItems` | `() => unknown[]` | Returns selected item objects. |
+| `getSelectedValues` | `() => unknown[]` | Returns selected values. |
+| `setSelectedValues` | `(values: unknown[]) => Promise<void>` | Replaces selection by value; can fetch missing selected items when configured. |
+| `clear` / `clearSearch` | `() => void` | Clears selection or search query. |
+| `open` / `close` | `() => void` | Opens or closes the popup. |
+| `updateConfig` | `(config: Partial<GlobalSelectConfig>) => void` | Applies partial runtime configuration. |
+| `setError` | `(message: string) => void` | Marks the internal combobox invalid and associates its internal error description. |
+| `clearError` | `() => void` | Clears invalid state and the internal error description. |
+| `setRequired` / `validate` | `(required: boolean) => void` / `() => boolean` | Sets required state or validates the current selection. |
+
+`setError` and `clearError` are core element methods and are exposed by the React, Vue, Svelte, and Solid handles, the React Native Web handle, and the Vanilla helpers. The native React Native WebView handle does not currently expose them. Host `aria-labelledby` and `aria-describedby` ID strings are not copied into the shadow tree; use the documented literal accessible-name/description fallback instead. `aria-description` and `aria-label` are forwarded by the core component.
+
+The [WICG Reference Target explainer](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/reference-target-explainer.md) is an evolving standards proposal, not a cross-browser production mechanism assumed by this API. Cross-root references remain explicitly unsupported here until platform support and compatibility are independently verified.
+
+#### Core events
+
+`select` fires for an option interaction with `{ item, index, value, label, selected, multi }`, followed by the aggregate `change` event with `{ selectedItems, selectedValues, selectedIndices }`. The selected state is already updated when `select` fires. Host-controlled search and load-more events request work; core does not fetch, cancel, or cache pages.
+
+#### Rendering and virtualization status
+
+The public `virtualize` setting on `EnhancedSelect` enables chunked rendering for large flat lists. It does not implement viewport-windowed virtualization. The `virtual-window` path is guarded by a private test seam, not a supported public mode, and is not production-activated. See [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+
+### Legacy NativeSelectElement (compatibility API)
+
+`NativeSelectElement` remains exported for compatibility with older integrations. The maintained adapters and current examples use `EnhancedSelect`; this legacy API has separate behavior and should not be treated as proof of current `EnhancedSelect` capabilities.
 
 #### Usage
 
@@ -675,7 +723,13 @@ if (hasOverflowHiddenAncestor(selectElement)) {
 
 ## React Adapter
 
-### NativeSelect Component
+`@smilodon/react` is maintained. Its primary component is `Select` from `@smilodon/react`; its `NativeSelect` export below is a compatibility wrapper around `NativeSelectElement`.
+
+### Current `Select` component
+
+The current React adapter wraps the core `EnhancedSelect` runtime. See [`packages/react/README.md`](../packages/react/README.md) for its controlled/uncontrolled props, event callbacks, refs, and current API.
+
+### Legacy `NativeSelect` component
 
 React wrapper for NativeSelectElement.
 
@@ -778,7 +832,13 @@ selectRef.current?.clearSelection();
 
 ## Vue Adapter
 
-### NativeSelect Component
+`@smilodon/vue` is maintained. Its primary component is `Select` from `@smilodon/vue`; its `NativeSelect` export below is a compatibility wrapper around `NativeSelectElement`.
+
+### Current `Select` component
+
+The current Vue adapter wraps the core `EnhancedSelect` runtime. See [`packages/vue/README.md`](../packages/vue/README.md) for `v-model`, events, exposed methods, and current API.
+
+### Legacy `NativeSelect` component
 
 Vue wrapper for NativeSelectElement.
 
@@ -865,7 +925,13 @@ function openSelect() {
 
 ## Svelte Adapter
 
-### NativeSelect Component
+`@smilodon/svelte` is maintained. Its primary component is `Select` from `@smilodon/svelte`; its `NativeSelect` export below is a compatibility wrapper around `NativeSelectElement`.
+
+### Current `Select` component
+
+The current Svelte adapter wraps the core `EnhancedSelect` runtime. See [`packages/svelte/README.md`](../packages/svelte/README.md) for bindable values, dispatched events, component methods, and current API.
+
+### Legacy `NativeSelect` component
 
 Svelte wrapper for NativeSelectElement.
 
@@ -942,150 +1008,21 @@ interface NativeSelectProps<T = any> {
 
 ---
 
-## Angular Adapter
+## Angular Adapter (unsupported)
 
-Angular component wrapper for `@smilodon/core`.
+There is no maintained or supported `@smilodon/angular` package. Angular usage examples and types are intentionally omitted from this current API reference. Use a maintained adapter or integrate the core custom element directly.
 
-### Installation
+## Solid Adapter
 
-```bash
-npm install @smilodon/core @smilodon/angular
-```
+`@smilodon/solid` is maintained. Its `Select` component exposes controlled/uncontrolled values, selection and lifecycle callbacks, runtime diagnostics, and an imperative handle. The exact surface is defined by [`packages/solid/src/Select.tsx`](../packages/solid/src/Select.tsx); adapter-wide feature parity is not implied by API presence. See the [feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md).
 
-### Module Import
+## React Native Adapter
 
-```typescript
-// app.module.ts
-import { NgModule } from '@angular/core';
-import { NativeSelectModule } from '@smilodon/angular';
+`@smilodon/react-native` is maintained with two platform paths: a native WebView bridge and a direct custom-element implementation for React Native Web. Both expose selection callbacks, but their imperative handle surfaces differ; for example, `setError`/`clearError` currently exist only on the web handle. Platform behavior and parity are documented in the [React Native guide](../packages/react-native/README.md) and implemented in [`packages/react-native/src/Select.tsx`](../packages/react-native/src/Select.tsx) and [`Select.web.tsx`](../packages/react-native/src/Select.web.tsx). The current shared adapter contract suite does not cover this package, so API presence is not a platform certification.
 
-@NgModule({
-  imports: [
-    NativeSelectModule
-  ]
-})
-export class AppModule { }
-```
+## Vanilla Adapter
 
-### Basic Usage
-
-```typescript
-// app.component.ts
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-root',
-  template: `
-    <native-select
-      [items]="items"
-      [placeholder]="'Select an item'"
-      [multiple]="false"
-      [virtualized]="true"
-      (select)="handleSelect($event)">
-    </native-select>
-  `
-})
-export class AppComponent {
-  items = [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' },
-    { id: 3, label: 'Cherry' }
-  ];
-  
-  handleSelect(event: any) {
-    console.log('Selected:', event.items);
-  }
-}
-```
-
-### Component API
-
-#### Inputs
-
-```typescript
-@Input() items: T[] = [];
-@Input() selectedIndices: number[] = [];
-@Input() multi: boolean = false;
-@Input() virtualized: boolean = false;
-@Input() estimatedItemHeight: number = 48;
-@Input() buffer: number = 5;
-@Input() searchable: boolean = false;
-@Input() placeholder: string = 'Select...';
-@Input() disabled: boolean = false;
-```
-
-#### Outputs
-
-```typescript
-@Output() select = new EventEmitter<{ indices: number[]; items: T[] }>();
-@Output() open = new EventEmitter<void>();
-@Output() close = new EventEmitter<void>();
-```
-
-#### Methods
-
-```typescript
-// Access via ViewChild
-@ViewChild(NativeSelectComponent) selectRef!: NativeSelectComponent;
-
-// Programmatic control
-this.selectRef.open();
-this.selectRef.close();
-this.selectRef.setSelectedIndices([0, 1]);
-this.selectRef.scrollToIndex(10);
-```
-
-#### Example with Template Reference
-
-```typescript
-// app.component.ts
-import { Component, ViewChild } from '@angular/core';
-import { NativeSelectComponent } from '@smilodon/angular';
-
-@Component({
-  selector: 'app-root',
-  template: `
-    <native-select
-      #mySelect
-      [items]="items"
-      [selectedIndices]="selectedIndices"
-      [multiple]="true"
-      [virtualized]="true"
-      [estimatedItemHeight]="48"
-      [buffer]="10"
-      (select)="handleSelect($event)"
-      (open)="handleOpen()"
-      class="my-select">
-    </native-select>
-    
-    <button (click)="openSelect()">Open Programmatically</button>
-  `
-})
-export class AppComponent {
-  @ViewChild('mySelect') selectRef!: NativeSelectComponent;
-  
-  items = [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' },
-    { id: 3, label: 'Cherry' }
-  ];
-  
-  selectedIndices: number[] = [];
-  
-  handleSelect(event: any) {
-    this.selectedIndices = event.indices;
-    console.log('Selected items:', event.items);
-  }
-  
-  handleOpen() {
-    console.log('Select opened');
-  }
-  
-  openSelect() {
-    this.selectRef.open();
-  }
-}
-```
+`@smilodon/vanilla` is maintained. `createSelect(options)` creates the core custom element and accepts item/configuration and event-callback options; the package also exports helper functions including `setError(element, message)` and `clearError(element)`. See [`packages/vanilla/src/index.ts`](../packages/vanilla/src/index.ts) and the [feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md). Use core element methods such as `setItems`, `setSelectedValues`, `updateConfig`, `setError`, and `clearError`; the legacy Vanilla guide contains older `NativeSelect` examples and is not the current method inventory.
 
 ---
 
@@ -1190,24 +1127,6 @@ import type { NativeSelectProps } from '@smilodon/svelte';
 let props: NativeSelectProps<MyItem> = {
   items: myItems
 };
-```
-
-#### Angular
-
-```typescript
-import type { NativeSelectComponent } from '@smilodon/angular';
-
-// Component reference
-@ViewChild(NativeSelectComponent) select!: NativeSelectComponent<MyItem>;
-
-// Component inputs
-interface NativeSelectInputs<T> {
-  items: T[];
-  placeholder?: string;
-  multiple?: boolean;
-  virtualized?: boolean;
-  searchable?: boolean;
-}
 ```
 
 ---

@@ -53,7 +53,7 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     expect(input.getAttribute('aria-autocomplete')).toBe('none');
     expect(input.getAttribute('aria-controls')).toBe(listbox.id);
     expect(listbox.getAttribute('role')).toBe('listbox');
-    expect(listbox.getAttribute('aria-labelledby')).toBe(input.id);
+    expect(listbox.hasAttribute('aria-labelledby')).toBe(false);
     expect(listbox.hasAttribute('aria-multiselectable')).toBe(false);
   });
 
@@ -97,6 +97,42 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     select.setError('Choose an option');
 
     expect(getInput(select).getAttribute('aria-invalid')).toBe('true');
+    const descriptionId = getInput(select).getAttribute('aria-describedby');
+    expect(descriptionId).toBeTruthy();
+    expect(select.shadowRoot?.getElementById(descriptionId!)?.textContent).toBe('Choose an option');
+  });
+
+  it('clears the validation description relationship when error state is cleared', () => {
+    select.setError('Choose an option');
+    const descriptionId = getInput(select).getAttribute('aria-describedby');
+
+    select.clearError();
+
+    expect(getInput(select).getAttribute('aria-invalid')).toBe('false');
+    expect(getInput(select).hasAttribute('aria-describedby')).toBe(false);
+    expect(select.shadowRoot?.getElementById(descriptionId!)?.textContent).toBe('');
+  });
+
+  it('reflects host accessible-name and description attributes onto the internal combobox', () => {
+    const input = getInput(select);
+    const listbox = getListbox(select);
+    select.setAttribute('aria-label', 'Favorite fruit');
+    select.setAttribute('aria-description', 'Choose a fruit for the order.');
+
+    expect(input.getAttribute('aria-label')).toBe('Favorite fruit');
+    expect(input.getAttribute('aria-description')).toBe('Choose a fruit for the order.');
+    expect(listbox.getAttribute('aria-label')).toBe('Favorite fruit');
+
+    select.setAttribute('aria-label', 'Preferred fruit');
+    select.removeAttribute('aria-description');
+
+    expect(input.getAttribute('aria-label')).toBe('Preferred fruit');
+    expect(input.hasAttribute('aria-description')).toBe(false);
+    expect(listbox.getAttribute('aria-label')).toBe('Preferred fruit');
+
+    select.removeAttribute('aria-label');
+    expect(input.hasAttribute('aria-label')).toBe(false);
+    expect(listbox.hasAttribute('aria-label')).toBe(false);
   });
 
   it('keeps controls id stable and points it at the listbox', () => {
@@ -241,13 +277,11 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     expect(getListbox(select).hasAttribute('aria-busy')).toBe(false);
   });
 
-  it('keeps a valid non-empty listbox label relationship without empty labels', () => {
-    const input = getInput(select);
+  it('does not create an ID reference to the internal combobox as a listbox name', () => {
     const listbox = getListbox(select);
 
-    expect(listbox.getAttribute('aria-labelledby')).toBe(input.id);
+    expect(listbox.hasAttribute('aria-labelledby')).toBe(false);
     expect(listbox.hasAttribute('aria-label')).toBe(false);
-    expect(listbox.getAttribute('aria-labelledby')).not.toBe('');
   });
 
   it('keeps normal option role=option through the web applier path', async () => {

@@ -1,6 +1,8 @@
 # Performance Tuning Guide
 
-Optimize `@smilodon` for maximum performance.
+> **Historical mixed-era guide — not a current performance contract.** The targets and measurements below have not been reproduced by the Phase 4 harness. `NativeSelectElement` examples refer to a legacy compatibility API; the maintained `EnhancedSelect` public `virtualized` setting performs incremental chunk rendering, not viewport windowing. See [Phase 4 certification](./architecture/PHASE-4-CERTIFICATION.md) and [known limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status) for current evidence.
+
+Use this guide as a collection of legacy tuning notes, not as a promise or release budget for the current component.
 
 ---
 
@@ -19,6 +21,8 @@ Optimize `@smilodon` for maximum performance.
 ---
 
 ## Performance Goals
+
+The thresholds in this historical section are unverified planning targets, not current product guarantees or release gates.
 
 ### Target Metrics
 
@@ -191,6 +195,8 @@ native-select {
 ---
 
 ## Virtualizer Tuning
+
+This section describes the separate legacy `NativeSelectElement` virtualizer. It does not describe public `EnhancedSelect` viewport virtualization.
 
 ### Understanding Virtualization
 
@@ -742,18 +748,17 @@ console.log('Scroll FPS:', metrics.scrollFPS);
 - A single interaction triggers too much synchronous work (full option rebuilds, complex renderer DOM, layout reads during active updates).
 
 **Solutions**:
-1. Enable virtualization for large lists (`virtualized` / `virtualize`).
-2. Provide an accurate `estimatedItemHeight` so windowing math stays stable.
+1. The public `EnhancedSelect` `virtualize` setting only enables incremental chunks; it does not provide a bounded viewport window.
+2. `estimatedItemHeight` is used by the guarded viewport-window test path, not by public chunk rendering.
 3. Keep option renderers lightweight (avoid nested buttons, deep trees, and expensive per-row styles).
 4. Prefer default/lightweight option rendering when profiling raw list throughput.
 5. Keep expensive layout-affecting CSS (`box-shadow`, gradients, complex transitions) to a minimum in stress scenarios.
 
 ```tsx
-// React large-list baseline
+// React chunk-rendering example; this does not enable viewport windowing
 <Select
   items={items}
   virtualized
-  estimatedItemHeight={40}
   searchable
 />
 ```

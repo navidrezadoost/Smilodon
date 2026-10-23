@@ -8,6 +8,7 @@ export interface AccessibilityLabelState {
   labelledBy?: readonly string[];
   describedBy?: readonly string[];
   ariaLabel?: string | null;
+  ariaDescription?: string | null;
 }
 
 export interface AccessibilityValidationState {
@@ -48,6 +49,7 @@ export interface ComboboxAccessibilityIntent<TKey extends SelectKey = SelectKey>
   labelledBy: readonly string[];
   describedBy: readonly string[];
   ariaLabel: string | null;
+  ariaDescription: string | null;
 }
 
 export interface ListboxAccessibilityIntent {
@@ -165,6 +167,7 @@ export function computeComboboxAccessibility<TKey extends SelectKey>(
     labelledBy: getLabelledBy(state.label),
     describedBy: getDescribedBy(state),
     ariaLabel: state.label.ariaLabel ?? null,
+    ariaDescription: state.label.ariaDescription ?? null,
   };
 }
 

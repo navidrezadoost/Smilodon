@@ -1,6 +1,6 @@
-# Phase 4 — True Virtualization
+# Phase 4 — Virtualization Architecture (historical audit)
 
-Status: **Phases 4.0–4.3.6 closed; 4.4.9–4.10 closed; 4.4.11–4.12 and 4.5.1–4.5.3 implementation complete with executable verification pending. Legacy-full remains the default; production activation remains blocked on executable and real-browser verification.**
+> **Status snapshot superseded.** This architecture audit records the rendering model during the virtualization migration; its original milestone checklist is no longer the release-status source. Current certification results and activation gates are maintained in the [Phase 4 certification record](./PHASE-4-CERTIFICATION.md). The public `EnhancedSelect` `virtualize` setting enables incremental chunk rendering, while viewport-windowed rendering remains guarded by a private test seam and is not production-activated. Production activation remains **NO-GO**.
 
 This audit describes the current rendering and identity behavior before a
 virtualization migration. “Virtualization” currently refers to two different
@@ -18,7 +18,7 @@ used by `NativeSelectElement`.
 2. `_renderOptions()` clears the options container, filters the loaded array
    from the current query, then calls `_registerShadowItems()` with every
    filtered index (`enhanced-select.ts:5016–5114`).
-3. With the default `virtualize: true`, a flat filtered list of more than 300
+3. When `virtualize: true`, a flat filtered list of more than 300
    items is rendered in chunks of 80 across animation frames. The path still
    renders the complete filtered list; it does not maintain a viewport window
    or remove off-screen options after rendering (`enhanced-select.ts:5127–5185`).

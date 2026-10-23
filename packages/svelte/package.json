@@ -1,7 +1,7 @@
 {
   "name": "@smilodon/svelte",
   "version": "1.9.3",
-  "description": "Production-ready, accessible select component for Svelte - part of the Smilodon UI toolkit",
+  "description": "Svelte select adapter for @smilodon/core",
   "type": "module",
   "svelte": "./dist/index.mjs",
   "main": "./dist/index.cjs",

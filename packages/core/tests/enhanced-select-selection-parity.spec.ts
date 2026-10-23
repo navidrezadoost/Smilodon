@@ -62,6 +62,38 @@ describe('EnhancedSelect selection shadow parity', () => {
     expect(engineSelectedKeys(select)).toEqual(['a']);
   });
 
+  it('emits a detailed select event before change and invokes configured callbacks in order', () => {
+    const order: string[] = [];
+    select.updateConfig({
+      callbacks: {
+        onChange: () => order.push('callback:change'),
+        onSelect: () => order.push('callback:select'),
+      },
+    });
+    select.setItems(makeItems());
+    select.addEventListener('select', (event) => {
+      order.push('event:select');
+      expect((event as CustomEvent).detail).toMatchObject({
+        item: makeItems()[0],
+        index: 0,
+        value: 'APL',
+        label: 'Apple',
+        selected: true,
+        multi: false,
+      });
+    });
+    select.addEventListener('change', () => order.push('event:change'));
+
+    clickOption(select, 0);
+
+    expect(order).toEqual([
+      'event:select',
+      'event:change',
+      'callback:change',
+      'callback:select',
+    ]);
+  });
+
   it('mirrors multiple pointer selections by key', () => {
     select.updateConfig({ selection: { mode: 'multi' } });
     select.setItems(makeItems());
@@ -258,11 +290,23 @@ describe('EnhancedSelect selection shadow parity', () => {
     select.setItems(makeItems());
     clickOption(select, 0);
     select.open();
+    const selectEvents: unknown[] = [];
+    select.addEventListener('select', (event) => {
+      selectEvents.push((event as CustomEvent).detail);
+    });
 
     dispatchKey(select, 'ArrowDown', { shiftKey: true });
 
     expect((select as any)._state.selectedIndices).toEqual(new Set([0, 1]));
     expect(engineSelectedKeys(select)).toEqual(['a', 'b']);
+    expect(selectEvents).toEqual([expect.objectContaining({
+      item: makeItems()[1],
+      index: 1,
+      value: 'BAN',
+      label: 'Banana',
+      selected: true,
+      multi: true,
+    })]);
   });
 
   it('mirrors select-all while excluding disabled options', () => {

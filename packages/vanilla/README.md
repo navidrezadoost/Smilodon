@@ -2,11 +2,15 @@
 
 Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
+> Large-list status: the helper's public `virtualized` option maps to legacy chunked rendering for large flat lists; it does not window rows to the viewport. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+
+> Current API: use the [API reference](../../docs/API-REFERENCE.md) and the package's exported TypeScript declarations. The long-form guide below contains legacy `NativeSelect` examples and is not a current API inventory.
+
 ## Features
 
 - ✨ **Simple API** - Easy-to-use helper functions for vanilla JS
 - 🔍 **Zero Dependencies** - Only requires @smilodon/core
-- ♿ **Fully Accessible** - WCAG 2.1 AAA compliant
+- ♿ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
 - ⚡ **Tiny Bundle** - < 1KB gzipped
 - 🔧 **TypeScript** - Full type safety included
 - 📦 **Tree-Shakeable** - Import only what you need
@@ -18,7 +22,7 @@ Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon
 
 **Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
 
-👉 **[Complete Vanilla JS Guide](./COMPLETE-GUIDE.md)** 👈
+👉 **[Legacy Vanilla JS Guide (mixed-era examples)](./COMPLETE-GUIDE.md)** 👈
 
 ## Installation
 
@@ -327,12 +331,12 @@ function generateItems(start, end) {
 document.getElementById('app').appendChild(select);
 ```
 
-### Virtual Scrolling (Large Datasets)
+### Incremental Chunk Rendering (Large Flat Lists)
 
 ```typescript
 import { createSelect } from '@smilodon/vanilla';
 
-// Generate 100,000 items
+// Generate a large flat item set
 const items = Array.from({ length: 100000 }, (_, i) => ({
   value: i + 1,
   label: `Item ${i + 1}`,
@@ -340,9 +344,9 @@ const items = Array.from({ length: 100000 }, (_, i) => ({
 
 const select = createSelect({
   items,
-  virtualized: true,
+  virtualized: true, // Incremental chunks, not viewport windowing
   searchable: true,
-  placeholder: '100k items with virtual scrolling...'
+  placeholder: 'Large item list'
 });
 
 document.getElementById('app').appendChild(select);
@@ -528,7 +532,7 @@ Creates and returns a new select element.
 | `error` | `boolean` | `false` | Show error state |
 | `infiniteScroll` | `boolean` | `false` | Enable infinite scroll |
 | `pageSize` | `number` | `50` | Items per page |
-| `virtualized` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `false` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
 | `maxSelections` | `number` | `undefined` | Max selections |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `className` | `string` | `''` | Custom CSS class |

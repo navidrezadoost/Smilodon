@@ -1,6 +1,8 @@
 # @smilodon/vue
 
-Production-ready, accessible select component for Vue 3 applications.
+Select component for Vue 3 applications with keyboard and ARIA behaviors under active verification.
+
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -29,10 +31,10 @@ The complete guide includes:
 - New: `optionRenderer` prop mirrors the Web Component Option B API (returns an HTMLElement for full DOM control).
 
 ### Advanced scenarios (Vue)
-- **A11y-first**: wrap with label/description and bind ARIA:
+- **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary:
   ```vue
-  <label id="team-label" for="team-picker">Team</label>
-  <Select id="team-picker" :aria-labelledby="'team-label'" />
+  <label for="team-picker">Team</label>
+  <Select id="team-picker" aria-label="Team" />
   ```
 - **Server-side lookup**: fetch on `search` and call `setItems` on the element ref:
   ```vue
@@ -44,9 +46,9 @@ The complete guide includes:
     (picker.value as any)?.setItems(items);
   };
   ```
-- **Heavy lists (100k+)**: enable virtualization and pass an estimated height:
+- **Large flat lists**: the public setting enables chunked rendering, not viewport windowing:
   ```vue
-  <Select :items="bigList" virtualized :estimated-item-height="44" />
+  <Select :items="bigList" virtualized />
   ```
 
 - ✅ **Vue 3 Native** - Built for Vue 3 with Composition API and `<script setup>` support
@@ -55,10 +57,10 @@ The complete guide includes:
 - ✅ **Single & Multi-select** - One prop to switch modes
 - ✅ **Searchable** - Built-in filtering with customizable behavior
 - ✅ **Infinite Scroll** - Handle massive datasets efficiently
-- ✅ **Virtual Scrolling** - Render only visible items for performance
+- ✅ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - ✅ **Grouped Options** - Organize items into categories
 - 🎨 **Dark Mode** - apply `class="dark-mode"` or `data-theme="dark"` to the component or an ancestor; styles are scoped inside the shadow DOM.
-- ✅ **Accessible** - WCAG 2.1 AAA compliant, full keyboard navigation
+- ✅ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
 - ✅ **Flexible Input** - Accepts SelectItem objects, string arrays, or number arrays
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
 - ✅ **Tiny Bundle** - Optimized for production
@@ -535,7 +537,7 @@ const items: SelectItem[] = Array.from({ length: 50 }, (_, i) => ({
 </template>
 ```
 
-### Large Dataset with Virtual Scrolling (1000 items)
+### Large Dataset with Incremental Chunk Rendering (1000 items)
 
 ```vue
 <script setup lang="ts">
@@ -1389,7 +1391,7 @@ const customRenderer = (item: any, index: number) => {
 
 **For Method 1**:
 - Use `computed` to memoize large item arrays
-- Enable `virtualized` prop for 1000+ items
+- `virtualized` enables chunked rendering; it does not bound mounted DOM to the viewport.
 - Enable `infiniteScroll` for dynamic loading
 
 **For Method 2**:
@@ -1454,7 +1456,7 @@ const renderer = (item: any, index: number) => {
 | `error` | `boolean` | `false` | Show error state |
 | `infiniteScroll` | `boolean` | `false` | Enable infinite scroll |
 | `pageSize` | `number` | `50` | Items per page (for infinite scroll) |
-| `virtualized` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `true` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
 | `maxSelections` | `number` | - | Maximum selections (for multi-select) |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `className` | `string` | - | Custom CSS class |
@@ -1535,11 +1537,12 @@ The component uses web components from `@smilodon/core` and comes with built-in 
 
 ## Accessibility
 
-- ✅ Full keyboard navigation (Arrow keys, Enter, Escape, Tab)
-- ✅ Screen reader support with ARIA labels
-- ✅ Focus management and trap
-- ✅ High contrast mode support
-- ✅ WCAG 2.1 AAA compliant
+Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming/description forwarding, and focus restoration. This is not exhaustive keyboard or screen-reader certification.
+
+- ✅ ARIA naming and descriptions support literal host `aria-label` / `aria-description`; host ID references are not forwarded across the shadow boundary
+- ✅ Focus restoration behavior is covered in focused tests
+- ✅ High-contrast styling hooks are available; conformance is not certified
+- Cross-browser accessibility verification and manual assistive-technology assessment are still pending; this is not a WCAG conformance claim.
 
 ### Important: Passing inline functions as renderers
 
@@ -1561,7 +1564,7 @@ Adapters are designed to not loop even without memoization, but stability still 
 
 ## Performance
 
-- Virtual scrolling handles 100,000+ items smoothly
+- Incremental rendering is available for large flat lists; no production viewport-windowing guarantee is made
 - Efficient DOM updates with Vue's reactivity
 - Lazy loading with infinite scroll
 - Optimized re-renders with computed values

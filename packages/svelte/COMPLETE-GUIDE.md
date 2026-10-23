@@ -1,8 +1,12 @@
 # @smilodon/svelte - Complete Guide
 
-**Production-ready, accessible Select component for Svelte applications**
+**Select component guide for Svelte applications**
 
 This guide provides comprehensive documentation for using Smilodon Select in Svelte applications, covering all features, styling options, and advanced use cases.
+
+> Capability caveat: the public `virtualized` prop enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+>
+> Accessibility status: selected keyboard and ARIA behaviors are implemented, but pinned cross-browser verification and manual assistive-technology assessment are pending. This guide is not a WCAG conformance statement. For the maintained public API, use the [API reference](../../docs/API-REFERENCE.md) and the adapter's exported TypeScript types.
 
 ---
 
@@ -136,7 +140,7 @@ The Svelte adapter is designed for browser hydration around the shared custom el
 1. Fetch server data in `load()` or browser-only data in `onMount()`.
 2. Avoid direct custom-element mutation before mount.
 3. Keep large `items` arrays stable where possible.
-4. Keep `virtualized` enabled for large lists.
+4. `virtualized` enables incremental chunk rendering only; use host-controlled paging when the full dataset should not be loaded.
 5. Style through CSS variables and `:global(enhanced-select::part(...))` selectors.
 
 ---
@@ -201,14 +205,13 @@ interface SelectProps {
   
   // Display
   maxHeight?: number;
-  estimatedItemHeight?: number;
   
   // Styling
   class?: string;
   style?: string;
   
   // Advanced
-  virtualization?: boolean;
+  virtualized?: boolean;
   customRenderer?: (item: SelectItem, index: number) => string;
 }
 ```
@@ -224,10 +227,9 @@ interface SelectProps {
 | `disabled` | `boolean` | `false` | Disable the select |
 | `placeholder` | `string` | `'Select...'` | Placeholder text |
 | `maxHeight` | `number` | `300` | Max dropdown height (px) |
-| `estimatedItemHeight` | `number` | `48` | Estimated item height for virtualization |
 | `class` | `string` | `undefined` | CSS class name |
 | `style` | `string` | `undefined` | Inline styles (CSS variables) |
-| `virtualization` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `true` | Enable incremental chunk rendering for large flat lists; not viewport windowing |
 | `customRenderer` | `function` | `undefined` | Custom option renderer |
 
 ### Events
@@ -945,7 +947,6 @@ Automatically converted to:
   bind:value={selectedUser}
   {customRenderer}
   placeholder="Select a user"
-  estimatedItemHeight={60}
 />
 ```
 
@@ -971,8 +972,7 @@ Automatically converted to:
 <Select
   {items}
   bind:value
-  virtualization={true}
-  estimatedItemHeight={48}
+  virtualized={true}
   placeholder="Search 100k items..."
   searchable
 />
@@ -1093,7 +1093,7 @@ export const selectedItem = derived(
 
 ## Accessibility
 
-Smilodon is WCAG 2.1 AAA compliant with full keyboard support:
+Smilodon implements selected keyboard and ARIA behavior. Pinned cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
 
 ### Keyboard Navigation
 
@@ -1110,7 +1110,7 @@ The component automatically includes:
 - `role="combobox"`
 - `aria-expanded`
 - `aria-haspopup`
-- `aria-label` / `aria-labelledby`
+- `aria-label` / `aria-description` (literal host attributes are forwarded)
 - `aria-activedescendant`
 - `aria-multiselectable` (when `multiple`)
 
@@ -1290,9 +1290,9 @@ The component automatically includes:
 
 If you experience slow rendering with large datasets:
 
-1. Enable virtualization (enabled by default)
+1. Use `virtualized` only for incremental chunk rendering; it does not bound mounted DOM.
 2. Use reactive statements (`$:`) for computed items
-3. Increase `estimatedItemHeight` if items are taller than 48px
+3. Use host-controlled paging/search when not all results should be loaded at once.
 
 ```svelte
 <script lang="ts">
@@ -1302,8 +1302,7 @@ If you experience slow rendering with large datasets:
 <Select
   {items}
   bind:value
-  virtualization={true}
-  estimatedItemHeight={48}
+  virtualized={true}
 />
 ```
 
