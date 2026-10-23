@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: 'phase-4-lifecycle-stress.spec.ts',
+  testMatch: 'phase-4-lifecycle-*.spec.ts',
   fullyParallel: false,
   workers: 1,
   retries: 0,
