@@ -2,7 +2,9 @@
 
 SolidJS adapter for Smilodon's core custom-element select engine.
 
-This package gives Solid applications a native-feeling wrapper around the shared `enhanced-select` runtime while preserving the same capabilities available in the other adapters: grouped data, multi-select, search, virtualization, clear control, diagnostics, and limitation-policy APIs.
+This package gives Solid applications a wrapper around the shared `enhanced-select` runtime. Its public `virtualized` option enables legacy chunked rendering for large flat lists, not viewport-windowed rendering; true viewport virtualization remains guarded and is not a supported production mode.
+
+Accessibility verification is in progress. Selected ARIA and keyboard behaviors have automated coverage, but cross-browser verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim.
 
 ## 📖 Documentation
 
@@ -389,7 +391,7 @@ Common hooks:
 
 ## Performance guidance
 
-- Leave `virtualized` enabled for large lists.
+- `virtualized` enables chunked rendering, not viewport-windowed rendering or bounded DOM.
 - Provide stable `items` references when possible.
 - Use `optionRenderer` carefully for very large datasets; heavier DOM per row increases layout cost.
 - Prefer flat text or lightweight JSX for the fastest scrolling path.

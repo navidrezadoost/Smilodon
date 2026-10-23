@@ -5,7 +5,7 @@
  * 
  * React adapter for Smilodon Select Component
  * 
- * A production-ready, accessible select component for React applications.
+ * Select component for React applications; accessibility certification is pending.
  * 
  * @example
  * ```tsx

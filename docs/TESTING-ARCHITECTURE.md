@@ -313,7 +313,7 @@ npm run test:perf:compare     # Compare all frameworks
 
 **Location:** `tests/a11y/`
 
-**Purpose:** Ensure WCAG 2.1 AAA compliance across frameworks
+**Purpose:** Exercise selected accessibility contracts across supported adapters. Passing automated checks is not WCAG conformance certification; pinned cross-browser coverage and manual assistive-technology assessment remain separate gates.
 
 **Tool:** axe-core + Playwright
 

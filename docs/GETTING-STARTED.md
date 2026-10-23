@@ -1,5 +1,7 @@
 # Getting Started Guide
 
+> API status: examples in this older guide use the compatibility `NativeSelect`/`NativeSelectElement` API. The maintained component API is `Select` in the React, Vue, and Svelte adapters, or the `enhanced-select` custom element in core. See the [current Select Component guide](./SELECT-COMPONENT.md) and [API Reference](./API-REFERENCE.md). Angular is not a maintained adapter and `@smilodon/angular` is not a supported package.
+
 ## Quick Start (5 minutes)
 
 ### Installation
@@ -15,9 +17,6 @@ npm install @smilodon/core @smilodon/vue
 
 # Svelte
 npm install @smilodon/core @smilodon/svelte
-
-# Angular
-npm install @smilodon/core @smilodon/angular
 
 # Vanilla JavaScript
 npm install @smilodon/core
@@ -104,47 +103,7 @@ function handleSelect({ indices, items }) {
 
 #### Angular
 
-```typescript
-// app.module.ts
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { NativeSelectModule } from '@smilodon/angular';
-
-@NgModule({
-  imports: [
-    BrowserModule,
-    NativeSelectModule
-  ],
-  // ...
-})
-export class AppModule { }
-
-// app.component.ts
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-root',
-  template: `
-    <native-select
-      [items]="items"
-      (select)="handleSelect($event)">
-    </native-select>
-  `
-})
-export class AppComponent {
-  items = [
-    { id: 1, label: 'Apple' },
-    { id: 2, label: 'Banana' },
-    { id: 3, label: 'Cherry' }
-  ];
-  
-  handleSelect(event: any) {
-    console.log('Selected:', event.items[0]);
-  }
-}
-```
-
-**Time to first render: ~3 minutes** ✅
+Angular is not a maintained adapter. The repository does not publish a supported `@smilodon/angular` package; use a maintained adapter or the core custom element directly.
 
 #### Vanilla JS
 
@@ -520,19 +479,13 @@ console.log('Metrics:', telemetry.getMetrics());
    };
    ```
 
-2. **High-A11y Pattern** - Explicit labelling + live updates
+2. **Accessible labeling** - Use a literal accessible name and description
    ```html
-   <label id="user-picker-label" for="user-picker">Choose a user</label>
-   <enhanced-select id="user-picker" aria-labelledby="user-picker-label" aria-describedby="user-picker-help"></enhanced-select>
-   <p id="user-picker-help">Type to search; results update as you type.</p>
-   <script>
-     const el = document.querySelector('enhanced-select');
-     el.updateConfig({ searchable: true, callbacks: { onChange: (items) => {
-       el.setAttribute('aria-live', 'polite');
-       el.setAttribute('aria-atomic', 'true');
-     }}});
-   </script>
+   <label for="user-picker">Choose a user</label>
+   <enhanced-select id="user-picker" aria-label="Choose a user"
+     aria-description="Type to search; results update as you type."></enhanced-select>
    ```
+   The core forwards literal `aria-label` and `aria-description` attributes to its internal combobox. Host `aria-labelledby` and `aria-describedby` ID references are not forwarded across the shadow boundary; internal validation descriptions created by `setError()` are associated within the shadow root.
 
 3. **Server-Side Lookup** - Stream results as you fetch
    ```typescript
@@ -548,13 +501,14 @@ console.log('Metrics:', telemetry.getMetrics());
    });
    ```
 
-4. **Heavy List Virtualization (100k+)** - Tune buffers for smooth scroll
+4. **Large flat lists** - The public `virtualize` setting uses incremental chunk rendering; it is not viewport virtualization and does not guarantee bounded mounted DOM.
    ```typescript
    const items = Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Item ${i}` }));
    const el = document.querySelector('enhanced-select');
-   el.updateConfig({ virtualize: true, estimatedItemHeight: 44 });
+   el.updateConfig({ virtualize: true });
    el.setItems(items);
    ```
+   True viewport-windowed rendering remains guarded by a private test seam and is not a supported production mode. See [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 2. **Portal Mode** - Render outside overflow:hidden
    ```tsx

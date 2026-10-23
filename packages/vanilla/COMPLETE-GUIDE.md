@@ -1,8 +1,12 @@
 # @smilodon/vanilla - Complete Guide
 
-**Production-ready, accessible Select component for Vanilla JavaScript applications**
+**Vanilla JavaScript select component guide**
 
 This guide provides comprehensive documentation for using Smilodon Select with Vanilla JavaScript (no framework), covering all features, styling options, and advanced use cases.
+
+> Capability caveat: the public `virtualized` option enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+>
+> Compatibility note: this long-form guide contains examples from the legacy `NativeSelect` API and is not a reliable current API inventory. For the maintained `EnhancedSelect` and `@smilodon/vanilla` helper signatures, follow the [API reference](../../docs/API-REFERENCE.md) and exported TypeScript declarations. Accessibility verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance statement.
 
 ---
 
@@ -139,30 +143,21 @@ select.addEventListener('change', (event) => {
 ### Properties
 
 ```javascript
-// Get/Set items
-select.items = [{ value: '1', label: 'Option 1' }];
-console.log(select.items); // Array of items
+// Current helper API
+import { createSelect } from '@smilodon/vanilla';
 
-// Get/Set value
-select.value = 'apple';
-console.log(select.value); // 'apple'
+const select = createSelect({
+  items: [{ value: '1', label: 'Option 1' }],
+  multiple: true,
+  searchable: true,
+  virtualized: true, // Incremental chunk rendering; not viewport windowing
+});
+document.body.append(select);
 
-// Get/Set multiple values (multi-select)
-select.selectedValues = ['apple', 'banana'];
-console.log(select.selectedValues); // ['apple', 'banana']
-
-// Behavior properties
-select.multiple = true;           // Enable multi-select
-select.searchable = true;          // Enable search (default: true)
-select.disabled = false;           // Disable select
-select.placeholder = 'Select...';  // Placeholder text
-
-// Display properties
-select.maxHeight = 300;           // Max dropdown height (px)
-select.estimatedItemHeight = 48;  // Item height for virtualization
-
-// Advanced properties
-select.virtualization = true;      // Enable virtual scrolling (default: true)
+// Current EnhancedSelect imperative API
+select.setSelectedValues(['1']);
+console.log(select.getSelectedValues());
+select.updateConfig({ virtualize: true });
 ```
 
 ### Methods
@@ -889,7 +884,8 @@ enhanced-select {
   
   select.items = users;
   select.placeholder = 'Select a user';
-  select.estimatedItemHeight = 60;
+  // estimatedItemHeight only configures the guarded viewport-window test path.
+  select.updateConfig({ estimatedItemHeight: 60 });
   
   // Set custom renderer
   select.optionTemplate = (item) => `
@@ -929,8 +925,7 @@ enhanced-select {
   }));
   
   select.items = items;
-  select.virtualization = true;
-  select.estimatedItemHeight = 48;
+  select.updateConfig({ virtualize: true }); // Incremental chunks, not viewport windowing
   select.searchable = true;
   select.placeholder = 'Search 100k items...';
 </script>
@@ -1036,7 +1031,7 @@ enhanced-select {
 
 ## Accessibility
 
-Smilodon is WCAG 2.1 AAA compliant with full keyboard support:
+Smilodon implements selected keyboard and ARIA behavior. Pinned cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
 
 ### Keyboard Navigation
 
@@ -1053,7 +1048,7 @@ The component automatically includes:
 - `role="combobox"`
 - `aria-expanded`
 - `aria-haspopup`
-- `aria-label` / `aria-labelledby`
+- `aria-label` / `aria-description` (literal host attributes are forwarded)
 - `aria-activedescendant`
 - `aria-multiselectable` (when `multiple`)
 
@@ -1062,7 +1057,7 @@ The component automatically includes:
 ```html
 <label id="country-label">Country</label>
 <enhanced-select
-  aria-labelledby="country-label"
+  aria-label="Country"
   placeholder="Select your country"
 ></enhanced-select>
 ```
@@ -1221,13 +1216,12 @@ select.selectedValues = ['apple', 'banana'];
 
 If you experience slow rendering with large datasets:
 
-1. Enable virtualization (enabled by default)
-2. Increase `estimatedItemHeight` if items are taller than 48px
+1. `virtualize` enables incremental chunk rendering; it does not bound mounted DOM.
+2. Use host-controlled paging if the full result set should not be loaded at once.
 3. Use debouncing for search events
 
 ```javascript
-select.virtualization = true;
-select.estimatedItemHeight = 60;
+select.updateConfig({ virtualize: true });
 
 // Debounce search
 let searchTimeout;

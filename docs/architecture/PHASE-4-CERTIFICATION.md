@@ -466,7 +466,7 @@ C.5B is authorized as an aggregation pilot, not as the full statistical study. T
 
 The `Phase 4 End-key Replication Analysis` workflow then receives the selected source workflow run IDs as a JSON array. Review its raw source and aggregate artifact for one complete report per independent run, zero integrity/validation errors, preserved warm-ups and all raw attempts, identical commit and compatibility profile, independent run count equal to selected run count, five measured pairs per source, and correct stratification. The expected outcome is a reproducible report-only analysis with wide/inconclusive uncertainty at this small sample size; no threshold is supplied and no latency budget is accepted. This pilot validates cross-run retrieval, provenance, stratification, and clustering only. It does not authorize the proposed 100-pair p95 or 300-pair p99 study.
 
-The bounded source dispatches completed and their cross-run artifact exposed an overly granular RAM identity rule; the evidence and authorized correction are recorded below. C.5B source collection and integrity validation are accepted, while the corrected cross-run aggregation still requires hosted verification before C.5B.1 closes.
+The bounded source dispatches completed and their initial cross-run artifact exposed an overly granular RAM identity rule; the evidence and authorized correction are recorded below. The later hosted aggregation result is recorded in the dated follow-up; its artifact content still needs review.
 
 ### Phase 4.6.2C.5B — Hosted controlled replication result
 
@@ -485,9 +485,13 @@ The aggregator now uses the versioned `nearest-binary-gib-v1` memory-capacity cl
 
 Memory is the only runner field treated by this equivalence rule. Platform, kernel release, CPU architecture/model/count, and GitHub runner image/version remain exact grouping requirements. Compatibility remains exact for commit, Node and Playwright versions, pinned Chromium engine/version/revision, fixture identity and recipe, navigation sequence, viewport, and warm-up/measured-pair protocol. Thus the rule does not pool different CPUs, browsers, workloads, commits, or runner images merely to increase sample count.
 
-New deterministic tests cover the two pilot RAM values grouping into one stratum while preserving both exact byte counts, materially different 8-GiB and 32-GiB capacities staying separate, and the existing mixed-CPU/image separation gate. The suite passes locally: 21/21 tests. The original analysis artifact is preserved as evidence of the defect. A corrected two-source aggregate must still be generated and reviewed from the updated branch; even with two runs and ten pairs, the configured p95 evidence requirement remains at least 20 independent runs and 100 pairs. No latency budget is enabled or accepted.
+New deterministic tests cover the two pilot RAM values grouping into one stratum while preserving both exact byte counts, materially different 8-GiB and 32-GiB capacities staying separate, and the existing mixed-CPU/image separation gate. The suite passed locally: 21/21 tests. The original analysis artifact is preserved as evidence of the defect. Even with two runs and ten pairs, the configured p95 evidence requirement remains at least 20 independent runs and 100 pairs. No latency budget is enabled or accepted.
 
-The C.5B execution and source integrity review are accepted. C.5B.1 closes only after the deterministic aggregation suite and regenerated hosted two-run artifact pass and the grouping metadata is reviewed. Accessibility certification (Phase 4.6.3) is authorized to proceed on this consolidated branch after this grouping correction; feature-contract and documentation audits remain later workstreams. Production virtualization remains **NO-GO**.
+The C.5B execution and source integrity review are accepted. C.5B.1's implementation is accepted provisionally; aggregate content sign-off is pending artifact inspection. No further replication runs are needed. Phase 4.6.3 accessibility work, Phase 4.7 feature-contract audit, and Phase 4.8 documentation reconciliation proceed on this consolidated branch. Production virtualization remains **NO-GO**.
+
+#### Hosted aggregation review update — 2026-10-23
+
+The connected GitHub review reported that cross-run analysis run [#39953485236](https://github.com/navidrezadoost/Smilodon/actions/runs/39953485236) completed successfully. Artifact retrieval was unavailable during that review, so successful workflow completion is not independent verification of the aggregate's contents. Acceptance expects exactly two valid source reports, one compatible hardware stratum, two independent workflow runs, ten measured pairs, all 24 raw attempts preserved, both exact source-memory measurements retained, zero integrity errors, the 16-GiB equivalence class, and an `inconclusive` report-only classification. These are expected fields, not independently inspected output values. The deterministic evaluator's 21/21 local tests and reported hosted workflow success provisionally accept the correction implementation; do not launch another replication run solely for this sign-off.
 
 ### Phase 4.6.3 — Accessibility certification (in progress)
 
@@ -497,4 +501,43 @@ Host `aria-labelledby` and `aria-describedby` ID references are intentionally no
 
 Local verification used the Node `v22.21.1` runtime embedded in VS Code because the shell has no `node` or `npm` command; it is supplementary and does not match the repository's pinned Node 20 CI environment. The focused accessibility contract/applier/component suites passed 63/63; the full core Vitest suite passed 548 tests with one skipped; root `tsc --noEmit` passed; the core Rollup build passed with the existing `eval` warning; and ESLint passed with zero errors and six existing warnings when generated Playwright reports/results were excluded. The newly added actual-component browser suite passed 9/9 on cached Chromium `151.0.7922.34` (Playwright cache revision 1234), not the pinned Chromium `147.0.7727.15` revision 1217. The cached Firefox revision 1497 is older than the package-required 1511 and stalled before reaching assertions; the local WebKit cache is also older than the package-required revision. No local result substitutes for pinned hosted browser verification.
 
-The connected GitHub integration exposes run/artifact reads but not `workflow_dispatch`, so the corrected C.5B.1 two-run aggregation has not yet been regenerated on GitHub. Dispatch `Phase 4 End-key Replication Analysis` from `codex/phase-4-release-readiness` with source IDs `[39945590885,39946677436]`, then review its single 16-GiB stratum, exact 4,096-byte source-memory range, two independent runs, ten measured pairs, and report-only inconclusive classification. The complete hosted accessibility and repository CI matrices are also pending. No accessible-name or keyboard behavior is fully release-certified until those checks and manual assistive-technology assessment are reviewed; production virtualization remains **NO-GO**.
+The 2026-10-23 accessibility, feature-contract, and documentation audit is recorded below. Hosted verification of the new Svelte/event regressions and accessibility browser cases remains pending, as does manual assistive-technology assessment. No accessible-name or keyboard behavior is fully release-certified until those checks and review are complete; production virtualization remains **NO-GO**.
+
+### Consolidated release-readiness update — 2026-10-23
+
+#### Phase 4.6.3 accessibility verification matrix
+
+| Requirement | Current evidence | Status |
+| --- | --- | --- |
+| Accessible name and description | Browser regression checks literal host `aria-label`/`aria-description` forwarding to the combobox and listbox. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. Cross-root host IDREFs remain unsupported. |
+| Invalid-state and validation announcement | `setError()`/`clearError()` checks `aria-invalid`, internal description association, live status text, and clearing behavior. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Listbox, active option, and `aria-activedescendant` | Role/name test, disabled-option navigation, Home/End and Escape cleanup assertions. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Keyboard focus and chip removal | Trigger and clear focus, renderer keyboard focus, chip removal focus to next chip, including when the popup is open. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Disabled options and dynamic filtering | Disabled item is skipped; open-popup chip-removal case filters to Banana and verifies selected/active state. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Repeated open/close | Browser case verifies Escape, repeated programmatic open/close, and listbox visibility. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Manual assistive technology | No current manual NVDA/JAWS/VoiceOver assessment recorded. | Pending; this is not WCAG certification. |
+
+#### Local focused verification on the consolidated branch
+
+The shell has no `node`/`npm` command; checks used the Node `v22.21.1` runtime embedded in VS Code, not the repository's pinned Node 20 CI runtime.
+
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Focused core selection/accessibility suites | PASS | 167 tests across six files (`select-selection`, component parity, accessibility integration/contracts/effects, and async authority). |
+| Adapter contracts | PASS, PARTIAL | 9 focused tests passed across React/Vue/Svelte/Vanilla; React shared contract runner reports 11/54 implemented with 43 pending. Some existing React tests still emit `act(...)` warnings. |
+| Root TypeScript | PASS | `tsc --noEmit` passed after replacing untyped generic `querySelector<T>` calls in new contract tests. |
+| Svelte package build | PASS | Vite build completed for the changed Svelte adapter. |
+| Scoped ESLint | PASS | Changed TypeScript source/tests passed with zero errors; `.svelte` source is not accepted by the root ESLint parser and was validated by the Svelte build instead. |
+| Core Rollup/declaration build | PASS WITH EXISTING WARNING | Build completed; Rollup reports the existing `eval` use in `packages/core/src/utils/security.ts`. |
+| Accessibility/basic-selection browser cases | PASS (SUPPLEMENTARY) | 19/19 passed on cached Chromium `151.0.7922.34`, Playwright cache revision `1234`. An isolated temporary browser-cache mapping was used because the package-pinned Chromium revision `1217` is unavailable locally. This is not pinned-browser certification. |
+| Pinned Chromium/Firefox/WebKit on this change | PENDING | Must run on the consolidated hosted PR. |
+
+These checks establish focused local source/contract evidence only. They do not replace the hosted CI matrix, complete adapter parity, manual assistive-technology review, or release certification.
+
+#### Phase 4.7/4.8 deliverables
+
+The feature-by-feature implementation, unit/contract, browser, unsupported-by-design, and follow-up classifications are in the [Phase 4 Feature-Contract Audit](./PHASE-4-FEATURE-CONTRACT-AUDIT.md). It records the missing `select` event and Svelte listener initialization defects and their regressions; it also documents the limited depth of current adapter contracts and the shared Vanilla-only framework E2E fixture.
+
+Documentation now distinguishes public incremental chunk rendering from private guarded viewport windowing; lists core `setError(message: string)` and `clearError(): void`; separates maintained APIs from legacy `NativeSelectElement` and unsupported Angular; and marks prior WCAG/AAA/VPAT and old performance records as historical, unverified material rather than current conformance or budget evidence. The long-form Vanilla guide is explicitly marked as mixed-era/legacy and points to the current API reference.
+
+Neither the public virtualization default nor a latency threshold or public API behavior was changed. C.5B remains report-only; final aggregate artifact content inspection is pending. Accessibility certification, complete adapter feature parity, production virtualization, and the proposed 100 ms End-key candidate remain unresolved/NO-GO.

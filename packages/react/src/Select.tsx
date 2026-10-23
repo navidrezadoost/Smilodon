@@ -98,10 +98,10 @@ export interface SelectComponentProps {
   /** Page size for infinite scroll */
   pageSize?: number;
 
-  /** Enable virtual scrolling for large lists */
+  /** Enable legacy chunked rendering for large flat lists; this does not window to the viewport. */
   virtualized?: boolean;
 
-  /** Estimated height of each item (for virtualization) */
+  /** Estimated height used by the guarded viewport-windowing test path. */
   estimatedItemHeight?: number;
 
   /** Maximum number of selections (for multiple mode) */
@@ -332,14 +332,14 @@ export interface SelectHandle {
 /**
  * Smilodon Select Component for React
  *
- * A production-ready, accessible select component with advanced features:
+ * A select component with the following implemented behavior groups:
  * - Single and multi-select modes
  * - Searchable with client or server-side filtering
  * - Infinite scroll and virtual scrolling for large datasets
  * - Grouped options
  * - Custom rendering
  * - Full keyboard navigation
- * - WCAG 2.1 AAA compliant
+ * - ARIA and keyboard behaviors implemented; complete accessibility certification pending
  *
  * @example
  * ```tsx

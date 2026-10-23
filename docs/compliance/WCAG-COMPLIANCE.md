@@ -1,6 +1,8 @@
 # WCAG 2.2 Level AA Accessibility Compliance
 ## Smilodon Component Library
 
+> **Historical draft — not a current conformance statement.** The assertions in this document have not been revalidated against the maintained `EnhancedSelect` API, current adapters, or the current browser matrix. Phase 4.6.3 accessibility certification and manual assistive-technology assessment are pending. Do not use the criterion statuses below as verified WCAG evidence.
+
 **Version:** 1.0.0  
 **Last Updated:** December 7, 2025  
 **Classification:** Public  
@@ -13,7 +15,7 @@
 
 This document provides comprehensive accessibility documentation for the Smilodon component library against Web Content Accessibility Guidelines (WCAG) 2.2 Level AA standards.
 
-**Conformance Status:** ⚠️ **In Progress** (Testing Phase)
+**Current Conformance Status:** Not established; historical criterion claims below are unverified.
 
 **Key Achievements:**
 - ✅ Full keyboard navigation (Tab, Arrow keys, Enter, Escape)
@@ -1650,11 +1652,9 @@ https://www.w3.org/WAI/ARIA/apg/patterns/listbox/
 
 ### Appendix C: Conformance Level Summary
 
-**WCAG 2.2 Level A:** ✅ **Compliant** (28/28 applicable criteria)  
-**WCAG 2.2 Level AA:** ⏳ **Testing** (22/22 criteria, 20 pass, 2 pending)  
-**WCAG 2.2 Level AAA:** ✅ **Enhanced Support** (4 AAA criteria met: 1.4.6 Contrast Enhanced, 2.4.8 Location, 2.5.5 Target Size, 2.5.6 Concurrent Inputs)
+**Current WCAG 2.2 Level A/AA/AAA conformance:** Not certified. Counts and assertions in this historical draft are not current verified results.
 
-**Overall Status:** 🟡 **Substantially Compliant** (AA testing in progress, AAA bonus compliance)
+**Overall Status:** Accessibility verification remains in progress; see [Phase 4 certification](../architecture/PHASE-4-CERTIFICATION.md).
 
 ---
 

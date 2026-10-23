@@ -1,6 +1,8 @@
 # @smilodon/react
 
-Production-ready, accessible Select component for React applications.
+Select component for React applications with keyboard and ARIA behaviors under active verification.
+
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -32,10 +34,10 @@ The complete guide includes:
 - ✅ **Single & Multi-select** - One prop to switch modes
 - ✅ **Searchable** - Built-in filtering with customizable behavior
 - ✅ **Infinite Scroll** - Handle massive datasets efficiently
-- ✅ **Virtual Scrolling** - Render only visible items for performance
+- ✅ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - ✅ **Grouped Options** - Organize items into categories
 - 🎨 **Dark Mode** - add `className="dark-mode"` or `data-theme="dark"` to the `<Select>` or any ancestor; styles are applied inside the shadow DOM via `:host-context`.
-- ✅ **Accessible** - WCAG 2.1 AAA compliant, full keyboard navigation
+- ✅ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
 - ✅ **Tiny Bundle** - Optimized for production
 
@@ -105,7 +107,7 @@ pnpm add @smilodon/react @smilodon/core
 1. Put the consuming component behind `'use client';`.
 2. Import `Select` directly from `@smilodon/react`.
 3. Keep large `items` arrays memoized.
-4. Prefer `virtualized` for large datasets and provide `estimatedItemHeight` when rows are visually consistent.
+4. `virtualized` enables incremental chunk rendering for large flat lists; it does not provide bounded DOM or viewport windowing.
 
 ```tsx
 'use client';
@@ -625,7 +627,7 @@ function LargeDatasetExample() {
       items={items}
       value={id}
       onChange={(val) => setId(val as string)}
-      virtualized // Enable virtual scrolling for performance
+      virtualized // Enable incremental chunk rendering; not viewport windowing
       placeholder="Select from 100K items..."
     />
   );
@@ -637,10 +639,10 @@ function LargeDatasetExample() {
 Now also supports the native `optionRenderer` hook (Option B) that returns an `HTMLElement` for maximum control (e.g., non-React DOM fragments). Pass `optionRenderer={(item, index, helpers) => { const el = document.createElement('div'); el.textContent = item.label; return el; }}` to mirror the Web Component API.
 
 #### Advanced scenarios (React)
-- **A11y-first**: provide `aria-labelledby`/`aria-describedby` on the wrapper, and announce changes:
+- **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary:
   ```tsx
-  <label id="user-label" htmlFor="user-picker">Pick a user</label>
-  <Select id="user-picker" aria-labelledby="user-label" onChange={(v, items) => {
+  <label htmlFor="user-picker">Pick a user</label>
+  <Select id="user-picker" aria-label="Pick a user" onChange={(v, items) => {
     console.log('Selected', items);
   }}/>
   ```
@@ -658,10 +660,10 @@ Now also supports the native `optionRenderer` hook (Option B) that returns an `H
     ref={selectRef}
   />
   ```
-- **Heavy lists (100k+)**: rely on virtualization with an accurate height:
+- **Heavy lists (100k+)**: `virtualized` does not guarantee bounded DOM; true viewport windowing is not a public production mode:
   ```tsx
   const big = useMemo(() => Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Row ${i}` })), []);
-  <Select items={big} virtualized estimatedItemHeight={44} />
+  <Select items={big} virtualized />
   ```
 
 **Use when**: You need rich, interactive option content with custom React components.
@@ -1100,7 +1102,7 @@ function EvolvingComponent() {
 
 **For Method 1**:
 - Use `useMemo` to memoize large item arrays
-- Enable `virtualized` prop for 1000+ items
+- The `virtualized` prop enables incremental chunk rendering, not viewport-windowed rendering.
 - Enable `infiniteScroll` for dynamic loading
 
 **For Method 2**:
@@ -1141,7 +1143,7 @@ function OptimizedExample() {
       value={value}
       onChange={(val) => setValue(val as string)}
       customRenderer={renderer}
-      virtualized // Enable virtual scrolling
+      virtualized // Enable incremental chunk rendering
       estimatedItemHeight={60}
     />
   );
@@ -1169,8 +1171,8 @@ function OptimizedExample() {
 | `errorMessage` | `string` | - | Error message to display |
 | `infiniteScroll` | `boolean` | `false` | Enable infinite scroll |
 | `pageSize` | `number` | `20` | Items per page (infinite scroll) |
-| `virtualized` | `boolean` | `false` | Enable virtual scrolling |
-| `estimatedItemHeight` | `number` | `48` | Item height for virtualization |
+| `virtualized` | `boolean` | `false` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
+| `estimatedItemHeight` | `number` | `48` | Estimate used only by the guarded viewport-windowing test path |
 | `maxSelections` | `number` | - | Max selections (multi-select) |
 | `toggleOnTriggerClick` | `boolean` | `true` | Allow repeated trigger clicks to toggle the dropdown |
 | `placement` | `string` | `"bottom-start"` | Dropdown placement |
@@ -1509,15 +1511,15 @@ enhanced-select {
 
 ## Accessibility
 
-This component is built with accessibility in mind:
+Implemented keyboard and ARIA behaviors include:
 
-- ✅ Full keyboard navigation (Arrow keys, Enter, Escape, Tab)
-- ✅ Screen reader support with ARIA attributes
+- ✅ Tested keyboard paths include Arrow keys, Enter, Escape, and Tab; this is not an exhaustive interaction certification
+- ✅ ARIA attributes and selected live-region announcements
 - ✅ Focus management
 - ✅ High contrast mode support
 - ✅ Reduced motion support
-- ✅ 44px minimum touch targets (WCAG 2.5.5)
-- ✅ WCAG 2.1 AAA compliant
+- Touch-target sizing is themeable; WCAG touch-target conformance has not been certified.
+- Cross-browser accessibility verification and manual assistive-technology assessment are still pending; this is not a WCAG conformance claim.
 
 ### Important: Passing inline functions as renderers
 
@@ -1535,7 +1537,7 @@ Adapters are designed to not loop even without memoization, but memoization stil
 
 ## Performance
 
-- Virtual scrolling for large datasets (1000+ items)
+- Incremental chunk rendering for large flat datasets; viewport windowing is not public/production-activated
 - Lazy loading with infinite scroll
 - Optimized re-renders with React.memo internally
 - Tree-shakeable exports

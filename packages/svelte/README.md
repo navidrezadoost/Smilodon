@@ -1,6 +1,8 @@
 # @smilodon/svelte
 
-Production-ready, accessible select component for Svelte applications. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
+Select component for Svelte applications with keyboard and ARIA behaviors under active verification. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
+
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -29,10 +31,10 @@ The complete guide includes:
 - New: `optionRenderer` prop (Option B) lets you return an `HTMLElement` for custom DOM-driven option layouts.
 
 ### Advanced scenarios (Svelte)
-- **A11y-first**:
+- **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary:
   ```svelte
-  <label id="city-label" for="city-picker">City</label>
-  <Select id="city-picker" aria-labelledby="city-label" />
+  <label for="city-picker">City</label>
+  <Select id="city-picker" aria-label="City" />
   ```
 - **Server-side lookup**:
   ```svelte
@@ -44,9 +46,9 @@ The complete guide includes:
     picker?.setItems(items);
   }
   ```
-- **Heavy lists (100k+)**:
+- **Large flat lists**: the public setting enables chunked rendering, not viewport windowing:
   ```svelte
-  <Select {items} virtualized estimatedItemHeight={44} />
+  <Select {items} virtualized />
   <script>
     export let items = Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Item ${i}` }));
   </script>
@@ -54,8 +56,8 @@ The complete guide includes:
 
 - ✨ **Single & Multi-Select** - Choose one or multiple options
 - 🔍 **Searchable** - Filter options with built-in or custom search
-- ♿ **Fully Accessible** - WCAG 2.1 AAA compliant
-- ⚡ **Virtual Scrolling** - Handle 100k+ options smoothly
+- ♿ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
+- ⚡ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - 📜 **Infinite Scroll** - Load data progressively
 - 👥 **Grouped Options** - Organize options into categories
 - 🎨 **Customizable** - Style with CSS variables or custom themes
@@ -417,7 +419,7 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 />
 ```
 
-### Virtual Scrolling (Large Datasets)
+### Incremental Chunk Rendering (Large Datasets)
 
 ```svelte
 <script lang="ts">
@@ -434,7 +436,7 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
   {items}
   virtualized
   searchable
-  placeholder="100k items with virtual scrolling..."
+  placeholder="100k items with incremental chunk rendering..."
 />
 ```
 
@@ -542,7 +544,7 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 | `error` | `boolean` | `false` | Show error state |
 | `infiniteScroll` | `boolean` | `false` | Enable infinite scroll |
 | `pageSize` | `number` | `50` | Items per page (infinite scroll) |
-| `virtualized` | `boolean` | `true` | Enable virtual scrolling |
+| `virtualized` | `boolean` | `true` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
 | `maxSelections` | `number` | `undefined` | Max selections (multi-select) |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `className` | `string` | `''` | Custom CSS class |
@@ -1100,7 +1102,7 @@ You can start with Method 1 and add Method 2 later as your UI evolves:
 
 **For Method 1**:
 - Use reactive statements (`$:`) to memoize large item arrays
-- Enable `virtualized` prop for 1000+ items
+- `virtualized` enables chunked rendering; it does not bound mounted DOM to the viewport.
 - Enable `infiniteScroll` for dynamic loading
 
 **For Method 2**:
@@ -1136,7 +1138,6 @@ You can start with Method 1 and add Method 2 later as your UI evolves:
   bind:value
   optionTemplate={renderer}
   virtualized
-  estimatedItemHeight={60}
 />
 ```
 
@@ -1179,10 +1180,10 @@ Adapters are designed to not loop even without memoization, but stability still 
 
 ## Accessibility
 
-This component is fully accessible and compliant with WCAG 2.1 AAA standards:
+Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming/description forwarding, and focus restoration. Cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
 
-- ✅ Keyboard navigation (Arrow keys, Enter, Escape, Tab)
-- ✅ Screen reader support (ARIA labels and live regions)
+- ✅ Selected keyboard navigation paths (not an exhaustive interaction certification)
+- ✅ ARIA naming and selected live-region announcements
 - ✅ Focus management
 - ✅ High contrast mode support
 - ✅ Reduced motion support

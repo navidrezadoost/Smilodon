@@ -50,7 +50,7 @@ Smilodon provides a complete select system for teams that need more than a style
 - Searchable lists
 - Grouped options
 - Infinite scroll and load-more flows
-- Virtualized rendering for large datasets
+- Incremental chunk rendering for large flat lists; true viewport-windowing remains guarded and is not a public production mode
 - Clear control for selected values and search text
 - Custom option rendering
 - Keyboard-first accessibility behavior
@@ -250,7 +250,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ### Intentionally not provided
 
-- Angular adapter support is not part of the maintained `1.9.2` package line.
+- There is no maintained or supported `@smilodon/angular` package.
 - Legacy browser shims are not a first-class target.
 - Server-rendered HTML replacement for the interactive control is not the primary design goal; adapters focus on safe client hydration around the custom element.
 
@@ -258,16 +258,16 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 
 ## Core capabilities
 
-All maintained adapters are designed to expose the same core behavior set wherever the host platform makes that practical.
+Maintained adapters wrap the shared runtime, but complete behavioral parity is still under audit. Adapter contracts and framework/browser evidence are tracked separately; a shared implementation does not by itself certify parity.
 
 | Capability area | Details                                                                                      |
 | --------------- | -------------------------------------------------------------------------------------------- |
 | Selection       | Single, multi, clearable selections, chip rendering, selection limits                        |
 | Search          | Local search, debounced remote search hooks, search event emission                           |
-| Data scale      | Virtualization for very large lists, incremental rendering, large-list stress handling       |
+| Data scale      | Incremental rendering for large flat lists; guarded viewport windowing remains test-only      |
 | Rendering       | Plain text, templated output, DOM renderers, framework renderers                             |
 | Grouping        | Flat items or grouped sections                                                               |
-| Accessibility   | ARIA listbox semantics, keyboard navigation, screen-reader announcements, touch targets      |
+| Accessibility   | Implemented ARIA/keyboard behaviors and live announcements; cross-browser and manual AT review pending |
 | Diagnostics     | `diagnostic` events, tracking buckets, capability reports                                    |
 | Runtime control | `open()`, `close()`, `clear()`, `setItems()`, `setGroupedItems()`, limitation policies       |
 | Styling         | Shared CSS custom properties, parts, dark mode hooks, high-contrast and reduced-motion hooks |
@@ -284,18 +284,19 @@ Representative use cases:
 
 ## Performance profile
 
-Smilodon is designed around keeping work proportional to what the user can actually see.
+Smilodon provides shared selection/rendering infrastructure with optional incremental chunking for large flat lists.
 
 ### Performance approach
 
-- Virtualization keeps DOM size close to visible rows plus buffer rows.
-- Search and filtering can move heavy work away from the main thread.
+- The public `EnhancedSelect` path chunks rendering of large flat lists but eventually mounts all results; it does not guarantee DOM proportional to the viewport.
+- Guarded viewport-windowing is exercised through a private test seam only and is not production-activated.
+- Search/filter behavior is configurable; no constant-time or off-main-thread performance guarantee is made here.
 - Selection and re-render behavior are normalized through the shared runtime.
-- Adapters avoid re-creating the full interaction model per framework.
+- Adapters share core behavior, but complete contract parity remains under audit.
 
-### Target profile
+### Historical target profile (not an accepted release budget)
 
-The performance docs and benchmarks are structured around these operating targets.
+The figures below are historical planning targets, not validated current performance budgets, CI gates, or release guarantees. Current evidence and report-only measurements are maintained in the [Phase 4 certification record](./docs/architecture/PHASE-4-CERTIFICATION.md).
 
 | Dataset size | Typical render target | Typical memory target | Scroll target |
 | ------------ | --------------------- | --------------------- | ------------- |
@@ -307,12 +308,13 @@ The performance docs and benchmarks are structured around these operating target
 
 ### Why performance is consistent across adapters
 
-The adapters are intentionally thin. The expensive work lives in the shared runtime, so React, Vue, Svelte, SolidJS, and Vanilla JS all benefit from the same virtualization, option management, diagnostics, and selection logic.
+The adapters share the same option management, diagnostics, and selection runtime. Their `virtualized` props request legacy chunked rendering, not viewport virtualization; complete adapter parity remains under audit.
 
 ### Performance support you can rely on
 
-- budget-oriented profiling in `scripts/perf.js`
-- documented tuning guidance in [docs/PERFORMANCE.md](./docs/PERFORMANCE.md)
+- historical profiles plus the report-only Phase 4 measurement harness
+- current report-only evidence in [docs/architecture/PHASE-4-CERTIFICATION.md](./docs/architecture/PHASE-4-CERTIFICATION.md)
+- legacy tuning notes in [docs/PERFORMANCE.md](./docs/PERFORMANCE.md), not release targets
 - repeatable manual measurement flow in [docs/PERFORMANCE-RUNBOOK.md](./docs/PERFORMANCE-RUNBOOK.md)
 - adapter/runtime capability notes in [docs/ADAPTER-CAPABILITY-MATRIX.md](./docs/ADAPTER-CAPABILITY-MATRIX.md)
 
