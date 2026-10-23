@@ -844,13 +844,13 @@ See [TESTING-ARCHITECTURE.md](./docs/TESTING-ARCHITECTURE.md) for complete testi
 
 ```
 npm registry
-├── @smilodon/core@1.9.3 (6.6 KB gzipped core runtime)
-├── @smilodon/react@1.9.3 (framework adapter)
-├── @smilodon/vue@1.9.3 (framework adapter)
-├── @smilodon/svelte@1.9.3 (framework adapter)
-├── @smilodon/solid@1.9.3 (framework adapter)
-├── @smilodon/react-native@1.9.3 (native bridge + web fallback)
-└── @smilodon/vanilla@1.9.3 (DOM helper layer)
+├── @smilodon/core@1.10.0 (core runtime)
+├── @smilodon/react@1.10.0 (framework adapter)
+├── @smilodon/vue@1.10.0 (framework adapter)
+├── @smilodon/svelte@1.10.0 (framework adapter)
+├── @smilodon/solid@1.10.0 (framework adapter)
+├── @smilodon/react-native@1.10.0 (native bridge + web fallback)
+└── @smilodon/vanilla@1.10.0 (DOM helper layer)
 ```
 
 ### CDN Strategy
@@ -859,13 +859,13 @@ npm registry
 <!-- Core component -->
 <script
   type="module"
-  src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.9.3/dist/index.js"
+  src="https://cdn.jsdelivr.net/npm/@smilodon/core@1.10.0/dist/index.js"
 ></script>
 
 <!-- Framework wrappers -->
 <script
   type="module"
-  src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.9.3/dist/index.js"
+  src="https://cdn.jsdelivr.net/npm/@smilodon/react@1.10.0/dist/index.js"
 ></script>
 ```
 
@@ -941,5 +941,5 @@ jobs:
 ---
 
 **Last Updated**: October 3, 2026
-**Version**: 1.9.3
+**Version**: 1.10.0
 **Maintainer**: Navid Rezadoost
