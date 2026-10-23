@@ -3,6 +3,7 @@ import { arch, cpus, freemem, platform, release, totalmem } from 'node:os';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { performance as hostPerformance } from 'node:perf_hooks';
 import process from 'node:process';
 import { devices, expect, test, type Browser, type Page } from '@playwright/test';
 
@@ -17,7 +18,7 @@ const MEASURED_PAIRS = positiveInteger(process.env.PHASE4_ENDKEY_REPETITIONS, 5)
 const OUTPUT_PATH = resolve(
   process.cwd(),
   process.env.PHASE4_ENDKEY_ATTRIBUTION_OUTPUT
-    ?? 'test-results/performance/phase-4.6.2c2-end-key-attribution.json',
+    ?? 'test-results/performance/phase-4.6.2c3b-frame-attribution.json',
 );
 const BROWSER_MANIFEST = JSON.parse(readFileSync(
   resolve(process.cwd(), 'node_modules/playwright-core/browsers.json'), 'utf8',
@@ -28,11 +29,41 @@ type Arm = 'minimal' | 'instrumented';
 
 interface FinalConfirmation {
   activeIndex: number;
+  activeKey: string | null;
   activeId: string;
+  targetKey: string | null;
   targetIndex: number;
   mountedCount: number;
   visible: boolean;
   now: number;
+}
+
+interface FrameEligibilityObservation {
+  frameNumber: number;
+  frameTimestamp: number;
+  observedAt: number;
+  targetMounted: boolean;
+  visible: boolean;
+  active: boolean;
+  ariaReferenced: boolean;
+  activeIndex: number | null;
+  activeKey: string | null;
+  targetKey: string | null;
+  activeId: string | null;
+  targetId: string | null;
+  mountedCount: number;
+}
+
+interface FrameObserverSnapshot {
+  status: 'observing' | 'observed' | 'timed-out' | 'cancelled';
+  armedAt: number;
+  stoppedAt: number | null;
+  targetMountedAt: number | null;
+  targetMountedId: string | null;
+  frameObservationCount: number;
+  firstEligibleFrameAt: number | null;
+  firstEligibleFrame: FrameEligibilityObservation | null;
+  lastFrameObservation: FrameEligibilityObservation | null;
 }
 
 function positiveInteger(raw: string | undefined, fallback: number): number {
@@ -140,6 +171,14 @@ function summarize(report: Record<string, any>) {
       instrumentedObservedEndToVisibleMs: values.instrumented.metrics.observedEndToVisibleMs,
       instrumentationOverheadMs: values.instrumented.metrics.observedEndToVisibleMs
         - values.minimal.metrics.observedEndToVisibleMs,
+      minimalFirstEligibleFrameLatencyMs: values.minimal.metrics.firstEligibleFrameLatencyMs,
+      instrumentedFirstEligibleFrameLatencyMs: values.instrumented.metrics.firstEligibleFrameLatencyMs,
+      firstEligibleFrameInstrumentationDifferenceMs: values.instrumented.metrics.firstEligibleFrameLatencyMs
+        - values.minimal.metrics.firstEligibleFrameLatencyMs,
+      minimalFirstFrameToPlaywrightConfirmationMs: values.minimal.metrics.firstFrameToPlaywrightConfirmationMs,
+      instrumentedFirstFrameToPlaywrightConfirmationMs: values.instrumented.metrics.firstFrameToPlaywrightConfirmationMs,
+      playwrightConfirmationInstrumentationDifferenceMs: values.instrumented.metrics.observedEndToVisibleMs
+        - values.minimal.metrics.observedEndToVisibleMs,
     }));
   const metric = (items: any[], selector: (item: any) => number | null) => describe(
     items.map(selector).filter((value): value is number => Number.isFinite(value)),
@@ -155,6 +194,14 @@ function summarize(report: Record<string, any>) {
       .filter((pair) => !paired.some((item) => item.pair === pair)),
     minimalObservedEndToVisibleMs: metric(minimal, (item) => item.metrics.observedEndToVisibleMs),
     instrumentedObservedEndToVisibleMs: metric(instrumented, (item) => item.metrics.observedEndToVisibleMs),
+    firstEligibleFrameLatencyMs: {
+      minimal: metric(minimal, (item) => item.metrics.firstEligibleFrameLatencyMs),
+      instrumented: metric(instrumented, (item) => item.metrics.firstEligibleFrameLatencyMs),
+    },
+    firstFrameToPlaywrightConfirmationMs: {
+      minimal: metric(minimal, (item) => item.metrics.firstFrameToPlaywrightConfirmationMs),
+      instrumented: metric(instrumented, (item) => item.metrics.firstFrameToPlaywrightConfirmationMs),
+    },
     instrumentedPhases: {
       eventToHandlerEntryMs: metric(instrumented, (item) => item.metrics.eventToHandlerEntryMs),
       handlerExecutionMs: metric(instrumented, (item) => item.metrics.handlerExecutionMs),
@@ -170,10 +217,15 @@ function summarize(report: Record<string, any>) {
       instrumented: metric(instrumented, (item) => item.metrics.eventToHandlerReturnMs),
     },
     instrumentationOverhead: {
-      definition: 'Paired instrumented observed event-to-visible-confirmation latency minus minimally instrumented observed latency; includes condition-polling and browser/Playwright observation overhead, and signed values are retained.',
+      definition: 'Paired instrumented Playwright-confirmed event-to-visible latency minus minimally instrumented Playwright-confirmed latency; includes condition-polling and browser/Playwright observation overhead, and signed values are retained.',
       pairedDifferencesMs: paired.map((item) => item.instrumentationOverheadMs),
       distribution: describe(paired.map((item) => item.instrumentationOverheadMs)),
       pairs: paired,
+    },
+    firstEligibleFrameInstrumentationDifference: {
+      definition: 'Paired instrumented firstEligibleFrameLatencyMs minus minimally instrumented firstEligibleFrameLatencyMs; signed differences are retained. The shared requestAnimationFrame observer itself is present in both arms.',
+      pairedDifferencesMs: paired.map((item) => item.firstEligibleFrameInstrumentationDifferenceMs),
+      distribution: describe(paired.map((item) => item.firstEligibleFrameInstrumentationDifferenceMs)),
     },
   };
 }
@@ -227,6 +279,7 @@ async function setupAttempt(page: Page, arm: Arm) {
       arm: instrumented ? 'instrumented' : 'minimal',
       inEndKey: false,
       eventCaptureAt: null,
+      endEventAt: null,
       endEventCount: 0,
       eventKey: null,
       eventTargetMatchesInput: null,
@@ -234,6 +287,11 @@ async function setupAttempt(page: Page, arm: Arm) {
       handlerKey: null,
       handlerExitAt: null,
       handlerReturnAt: null,
+      frameObserverArmedAt: null,
+      targetMountedAt: null,
+      firstEligibleFrameAt: null,
+      stableGeometryObservedAt: null,
+      playwrightConfirmedAt: null,
       layoutStableObservationAt: null,
       finalVisibleAriaObservationAt: null,
       dispatches: [],
@@ -249,6 +307,7 @@ async function setupAttempt(page: Page, arm: Arm) {
       if (event.key !== 'End') return;
       evidence.endEventCount += 1;
       evidence.eventCaptureAt = performance.now();
+      evidence.endEventAt = evidence.eventCaptureAt;
       evidence.eventKey = event.key;
       evidence.eventTargetMatchesInput = event.target === input;
       evidence.eventTimeStamp = event.timeStamp;
@@ -443,6 +502,7 @@ async function captureFailureEvidence(page: Page): Promise<Record<string, any> |
     return {
       browserPerformanceNowMs: performance.now(),
       evidence: win.__phase4EndKeyEvidence ?? null,
+      browserFrameObservation: win.__phase4EndKeyFrameObserver?.snapshot?.() ?? null,
       component: select ? {
         activeIndex: select._state?.activeIndex ?? null,
         targetKey: select._renderPlan?.filteredKeys?.at(-1) ?? null,
@@ -461,6 +521,143 @@ async function captureFailureEvidence(page: Page): Promise<Record<string, any> |
   }).catch(() => null);
 }
 
+async function armBrowserFrameObserver(page: Page, targetIndex: number) {
+  return page.evaluate(({ targetIndex, timeoutMs }) => {
+    const win = window as any;
+    const select = win.__phase4EndKeySelect;
+    const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
+    const evidence = win.__phase4EndKeyEvidence;
+    if (!select || !options || !evidence) throw new Error('Cannot arm frame observer before the select is ready.');
+    if (evidence.endEventCount !== 0 || evidence.eventCaptureAt !== null) {
+      throw new Error('Frame observer must be armed before the End-key event.');
+    }
+    if (options.querySelector(`[data-index="${targetIndex}"]`)) {
+      throw new Error('Frame observer requires the target option to be initially unmounted.');
+    }
+    if (win.__phase4EndKeyFrameObserver) throw new Error('Frame observer was already armed for this attempt.');
+
+    const armedAt = performance.now();
+    const record: FrameObserverSnapshot = {
+      status: 'observing',
+      armedAt,
+      stoppedAt: null,
+      targetMountedAt: null,
+      targetMountedId: null,
+      frameObservationCount: 0,
+      firstEligibleFrameAt: null,
+      firstEligibleFrame: null,
+      lastFrameObservation: null,
+    };
+    const targetSelector = `[data-index="${targetIndex}"]`;
+    const targetKey = select._renderPlan?.filteredKeys?.[targetIndex] ?? null;
+    let animationFrameId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      if (record.targetMountedAt !== null) return;
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (!(node instanceof Element)) continue;
+          const target = node.matches(targetSelector) ? node : node.querySelector(targetSelector);
+          if (!target) continue;
+          record.targetMountedAt = performance.now();
+          record.targetMountedId = target.id || null;
+          return;
+        }
+      }
+    });
+    mutationObserver.observe(select.shadowRoot, { childList: true, subtree: true });
+
+    const cleanup = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      mutationObserver.disconnect();
+    };
+    const finish = (status: FrameObserverSnapshot['status']) => {
+      if (record.status !== 'observing') return;
+      record.status = status;
+      record.stoppedAt = performance.now();
+      cleanup();
+    };
+    const inspectFrame = (frameTimestamp: number) => {
+      animationFrameId = null;
+      if (record.status !== 'observing') return;
+
+      const target = options.querySelector(targetSelector) as HTMLElement | null;
+      const input = select.shadowRoot.querySelector('input') as HTMLInputElement | null;
+      const activeId = input?.getAttribute('aria-activedescendant') ?? null;
+      const referencedOption = activeId ? select.shadowRoot.getElementById(activeId) : null;
+      const row = target?.getBoundingClientRect();
+      const viewportRect = options.getBoundingClientRect();
+      const viewportLeft = viewportRect.left + options.clientLeft;
+      const viewportTop = viewportRect.top + options.clientTop;
+      const viewportRight = viewportLeft + options.clientWidth;
+      const viewportBottom = viewportTop + options.clientHeight;
+      const visible = Boolean(row && row.width > 0 && row.height > 0
+        && row.right > viewportLeft && row.left < viewportRight
+        && row.bottom > viewportTop && row.top < viewportBottom);
+      const activeIndex = Number.isFinite(select._state?.activeIndex)
+        ? Number(select._state.activeIndex)
+        : null;
+      const activeKey = select._engine?.state?.activeKey ?? null;
+      const active = activeIndex === targetIndex && activeKey === targetKey;
+      const ariaReferenced = Boolean(target && activeId && referencedOption === target);
+      const observedAt = performance.now();
+      const observation: FrameEligibilityObservation = {
+        frameNumber: record.frameObservationCount + 1,
+        frameTimestamp,
+        observedAt,
+        targetMounted: target !== null,
+        visible,
+        active,
+        ariaReferenced,
+        activeIndex,
+        activeKey,
+        targetKey,
+        activeId,
+        targetId: target?.id || null,
+        mountedCount: options.querySelectorAll(':scope > [part="option"]').length,
+      };
+      record.frameObservationCount += 1;
+      record.lastFrameObservation = observation;
+
+      if (observation.targetMounted && visible && active && ariaReferenced) {
+        record.firstEligibleFrameAt = observedAt;
+        record.firstEligibleFrame = observation;
+        finish('observed');
+        return;
+      }
+      if (observedAt - armedAt >= timeoutMs) {
+        finish('timed-out');
+        return;
+      }
+      animationFrameId = requestAnimationFrame(inspectFrame);
+    };
+
+    animationFrameId = requestAnimationFrame(inspectFrame);
+    timeoutId = window.setTimeout(() => finish('timed-out'), timeoutMs);
+    win.__phase4EndKeyFrameObserver = {
+      record,
+      snapshot: () => ({ ...record }),
+      cancel: () => {
+        if (record.status === 'observing') finish('cancelled');
+        else cleanup();
+      },
+    };
+    return { armedAt, initialStatus: record.status };
+  }, { targetIndex, timeoutMs: TIMEOUT_MS });
+}
+
+async function cancelBrowserFrameObserver(page: Page) {
+  await page.evaluate(() => (window as any).__phase4EndKeyFrameObserver?.cancel?.()).catch(() => undefined);
+}
+
 async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean, orderIndex: number) {
   const startedAt = new Date().toISOString();
   const context = await browser.newContext({
@@ -473,26 +670,78 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
   let stage = 'playground setup';
   let errors: string[] = [];
   let warnings: string[] = [];
+  const playwrightPollObservations: Array<Record<string, any>> = [];
+  const pollCounts = new Map<string, number>();
+  const observePlaywrightPoll = async <T>(phase: string, read: () => Promise<T>): Promise<T> => {
+    const observationIndex = (pollCounts.get(phase) ?? 0) + 1;
+    pollCounts.set(phase, observationIndex);
+    const hostStartedAt = new Date().toISOString();
+    const hostStarted = hostPerformance.now();
+    try {
+      const result = await read();
+      const hostFinished = hostPerformance.now();
+      const hostFinishedAt = new Date().toISOString();
+      const resultRecord = result && typeof result === 'object'
+        ? result as unknown as Record<string, any>
+        : null;
+      playwrightPollObservations.push({
+        phase,
+        observationIndex,
+        hostStartedAt,
+        hostFinishedAt,
+        hostRoundTripMs: hostFinished - hostStarted,
+        browserObservedAtMs: resultRecord?.browserObservedAtMs
+          ?? resultRecord?.observedAt
+          ?? resultRecord?.now
+          ?? null,
+        outcome: 'observed',
+        result,
+      });
+      return result;
+    } catch (error) {
+      playwrightPollObservations.push({
+        phase,
+        observationIndex,
+        hostStartedAt,
+        hostFinishedAt: new Date().toISOString(),
+        hostRoundTripMs: hostPerformance.now() - hostStarted,
+        browserObservedAtMs: null,
+        outcome: 'error',
+        error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+      });
+      throw error;
+    }
+  };
   try {
     const browserDiagnostics = await setupAttempt(page, arm);
     errors = browserDiagnostics.errors;
     warnings = browserDiagnostics.warnings;
     stage = 'initial virtual window settlement';
-    await expect.poll(async () => page.evaluate((expectedCount) => {
-      const select = (window as any).__phase4EndKeySelect;
-      const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
-      return Boolean(select && options && select._renderPlan?.mode === 'virtual-window'
-        && select._renderPlan.filteredKeys.length === expectedCount
-        && options.querySelectorAll(':scope > [part="option"]').length > 0
-        && options.querySelectorAll(':scope > [part="option"]').length <= 64
-        && (select._lifecycleRafs?.size ?? 0) === 0);
-    }, ITEM_COUNT), { timeout: TIMEOUT_MS, intervals: [10, 20, 50, 100] }).toBe(true);
+    await expect.poll(async () => {
+      const observation = await observePlaywrightPoll('initial-virtual-window', () => page.evaluate((expectedCount) => {
+        const select = (window as any).__phase4EndKeySelect;
+        const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
+        const settled = Boolean(select && options && select._renderPlan?.mode === 'virtual-window'
+          && select._renderPlan.filteredKeys.length === expectedCount
+          && options.querySelectorAll(':scope > [part="option"]').length > 0
+          && options.querySelectorAll(':scope > [part="option"]').length <= 64
+          && (select._lifecycleRafs?.size ?? 0) === 0);
+        return { browserObservedAtMs: performance.now(), settled };
+      }, ITEM_COUNT));
+      return observation.settled;
+    }, { timeout: TIMEOUT_MS, intervals: [10, 20, 50, 100] }).toBe(true);
     stage = 'open and deterministic Home navigation';
     await page.evaluate(() => (window as any).__phase4EndKeySelect.open());
     const input = page.locator('#phase-4-endkey-attribution-select').locator('input');
     await input.focus();
     await input.press('Home');
-    await expect.poll(async () => page.evaluate(() => (window as any).__phase4EndKeySelect._state.activeIndex), {
+    await expect.poll(async () => {
+      const observation = await observePlaywrightPoll('home-active-state', () => page.evaluate(() => {
+        const select = (window as any).__phase4EndKeySelect;
+        return { browserObservedAtMs: performance.now(), activeIndex: select._state.activeIndex };
+      }));
+      return observation.activeIndex;
+    }, {
       timeout: TIMEOUT_MS,
       intervals: [10, 20, 50, 100],
     }).toBe(0);
@@ -506,49 +755,107 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
     expect(beforeEnd.activeIndex).toBe(0);
     expect(beforeEnd.targetMounted).toBe(false);
 
+    stage = 'arm browser requestAnimationFrame observer';
+    const frameObserverArm = await armBrowserFrameObserver(page, TARGET_INDEX);
+    await page.evaluate((armedAt) => {
+      (window as any).__phase4EndKeyEvidence.frameObserverArmedAt = armedAt;
+    }, frameObserverArm.armedAt);
     stage = 'End-key event and handler';
     await input.press('End');
+    stage = 'first eligible browser animation frame';
+    await expect.poll(async () => {
+      const observation = await observePlaywrightPoll('browser-frame-observer', () => page.evaluate(() => {
+        const observer = (window as any).__phase4EndKeyFrameObserver;
+        const snapshot = observer?.snapshot?.() as FrameObserverSnapshot | undefined;
+        return {
+          browserObservedAtMs: performance.now(),
+          status: snapshot?.status ?? 'missing',
+          terminal: !snapshot || snapshot.status !== 'observing',
+          targetMountedAt: snapshot?.targetMountedAt ?? null,
+          firstEligibleFrameAt: snapshot?.firstEligibleFrameAt ?? null,
+          frameObservationCount: snapshot?.frameObservationCount ?? 0,
+          lastFrameObservation: snapshot?.lastFrameObservation ?? null,
+        };
+      }));
+      return observation.terminal;
+    }, { timeout: TIMEOUT_MS, intervals: [5, 10, 20, 50] }).toBe(true);
+    const frameObserverSnapshot: FrameObserverSnapshot | null = await page.evaluate(() => {
+      const observer = (window as any).__phase4EndKeyFrameObserver;
+      return observer?.snapshot?.() ?? null;
+    });
+    if (frameObserverSnapshot === null) throw new Error('Browser requestAnimationFrame observer did not retain a result.');
+    await page.evaluate((snapshot) => {
+      const evidence = (window as any).__phase4EndKeyEvidence;
+      evidence.targetMountedAt = snapshot.targetMountedAt;
+      evidence.firstEligibleFrameAt = snapshot.firstEligibleFrameAt;
+      evidence.firstEligibleFrame = snapshot.firstEligibleFrame;
+      evidence.frameObserverStatus = snapshot.status;
+    }, frameObserverSnapshot);
+    expect(frameObserverSnapshot.status, 'bounded browser frame observer reached an eligible frame').toBe('observed');
+    expect(frameObserverSnapshot.armedAt).toBe(frameObserverArm.armedAt);
+    expect(frameObserverSnapshot.targetMountedAt).toEqual(expect.any(Number));
+    expect(frameObserverSnapshot.firstEligibleFrameAt).toEqual(expect.any(Number));
+    expect(frameObserverSnapshot.firstEligibleFrame?.targetMounted).toBe(true);
+    expect(frameObserverSnapshot.firstEligibleFrame?.visible).toBe(true);
+    expect(frameObserverSnapshot.firstEligibleFrame?.active).toBe(true);
+    expect(frameObserverSnapshot.firstEligibleFrame?.ariaReferenced).toBe(true);
+    expect(frameObserverSnapshot.firstEligibleFrame?.mountedCount).toBeLessThanOrEqual(64);
+    const targetMountedAt = frameObserverSnapshot.targetMountedAt;
+    const firstEligibleFrameAt = frameObserverSnapshot.firstEligibleFrameAt;
+    if (targetMountedAt === null || firstEligibleFrameAt === null) {
+      throw new Error('Eligible frame observation is missing its required mount/frame timestamp.');
+    }
     stage = 'stable rendered target geometry';
     let previousGeometry = '';
     let stablePolls = 0;
     let layoutObservationCount = 0;
-    let layoutStableAt: number | null = null;
+    let stableGeometryObservedAt: number | null = null;
     await expect.poll(async () => {
       layoutObservationCount += 1;
-      const observation = await page.evaluate((targetIndex) => {
-        const win = window as any;
-        const select = win.__phase4EndKeySelect;
-        const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
-        const target = options?.querySelector(`[data-index="${targetIndex}"]`) as HTMLElement | null;
-        if (!options || !target) return { mounted: false, signature: '', now: null };
-        const row = target.getBoundingClientRect();
-        const viewport = options.getBoundingClientRect();
-        const visible = row.height > 0 && row.bottom > viewport.top && row.top < viewport.bottom;
-        const signature = [row.top, row.bottom, row.width, row.height, options.scrollTop]
-          .map((value) => Math.round(value * 100) / 100).join(':');
-        return { mounted: true, visible, signature, now: performance.now() };
-      }, TARGET_INDEX);
-      if (!observation.mounted || !observation.visible) {
-        previousGeometry = '';
-        stablePolls = 0;
-        return false;
-      }
-      stablePolls = observation.signature === previousGeometry ? stablePolls + 1 : 1;
-      previousGeometry = observation.signature;
-      if (stablePolls >= 2) layoutStableAt = observation.now;
-      return stablePolls >= 2;
+      const observation = await observePlaywrightPoll('stable-geometry', async () => {
+        const browserObservation = await page.evaluate((targetIndex) => {
+          const win = window as any;
+          const select = win.__phase4EndKeySelect;
+          const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
+          const target = options?.querySelector(`[data-index="${targetIndex}"]`) as HTMLElement | null;
+          if (!options || !target) return { mounted: false, visible: false, signature: '', now: performance.now() };
+          const row = target.getBoundingClientRect();
+          const viewport = options.getBoundingClientRect();
+          const visible = row.height > 0 && row.bottom > viewport.top && row.top < viewport.bottom;
+          const signature = [row.top, row.bottom, row.width, row.height, options.scrollTop]
+            .map((value) => Math.round(value * 100) / 100).join(':');
+          return { mounted: true, visible, signature, now: performance.now() };
+        }, TARGET_INDEX);
+        if (!browserObservation.mounted || !browserObservation.visible) {
+          previousGeometry = '';
+          stablePolls = 0;
+        } else {
+          stablePolls = browserObservation.signature === previousGeometry ? stablePolls + 1 : 1;
+          previousGeometry = browserObservation.signature;
+        }
+        return {
+          ...browserObservation,
+          browserObservedAtMs: browserObservation.now,
+          stablePollCount: stablePolls,
+          stable: browserObservation.mounted && browserObservation.visible && stablePolls >= 2,
+        };
+      });
+      if (observation.stable) stableGeometryObservedAt = observation.now;
+      return observation.stable;
     }, { timeout: TIMEOUT_MS, intervals: [5, 10, 20, 50] }).toBe(true);
     await page.evaluate((observedAt) => {
-      (window as any).__phase4EndKeyEvidence.layoutStableObservationAt = observedAt;
-    }, layoutStableAt);
+      const evidence = (window as any).__phase4EndKeyEvidence;
+      evidence.stableGeometryObservedAt = observedAt;
+      evidence.layoutStableObservationAt = observedAt;
+    }, stableGeometryObservedAt);
 
     stage = 'final visible and ARIA target confirmation';
     let ariaConfirmationObservationCount = 0;
     await expect.poll(async () => {
       ariaConfirmationObservationCount += 1;
-      const observation = await page.evaluate((targetIndex) => {
+      const observation = await observePlaywrightPoll('final-visible-aria', () => page.evaluate((targetIndex) => {
         const win = window as any;
-        const select = (window as any).__phase4EndKeySelect;
+        const select = win.__phase4EndKeySelect;
         const inputElement = select?._input as HTMLInputElement | undefined;
         const options = select?.shadowRoot?.querySelector('.options-container') as HTMLElement | null;
         const activeId = inputElement?.getAttribute('aria-activedescendant') ?? null;
@@ -557,15 +864,23 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
         const viewport = options?.getBoundingClientRect();
         const visible = Boolean(row && viewport && row.height > 0
           && row.bottom > viewport.top && row.top < viewport.bottom);
+        const targetKey = select?._renderPlan?.filteredKeys?.[targetIndex] ?? null;
+        const activeKey = select?._engine?.state?.activeKey ?? null;
         const confirmed = select?._state?.activeIndex === targetIndex
+            && activeKey === targetKey
             && Number(target?.getAttribute('data-index')) === targetIndex
             && visible;
-        if (confirmed) win.__phase4EndKeyEvidence.finalVisibleAriaObservationAt = performance.now();
         const now = performance.now();
+        if (confirmed) {
+          win.__phase4EndKeyEvidence.finalVisibleAriaObservationAt = now;
+          win.__phase4EndKeyEvidence.playwrightConfirmedAt = now;
+        }
         if (confirmed && activeId && target) {
           win.__phase4EndKeyEvidence.finalVisibleAriaConfirmation = {
             activeIndex: Number(select._state.activeIndex),
+            activeKey,
             activeId,
+            targetKey,
             targetIndex: Number(target.getAttribute('data-index')),
             mountedCount: options?.querySelectorAll(':scope > [part="option"]').length ?? 0,
             visible,
@@ -575,13 +890,15 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
         return {
           confirmed,
           activeIndex: select?._state?.activeIndex ?? null,
+          activeKey,
           activeId,
+          targetKey,
           targetIndex: target ? Number(target.getAttribute('data-index')) : null,
           mountedCount: options?.querySelectorAll(':scope > [part="option"]').length ?? null,
           visible,
-          now,
+          browserObservedAtMs: now,
         };
-      }, TARGET_INDEX);
+      }, TARGET_INDEX));
       return observation.confirmed;
     }, { timeout: TIMEOUT_MS, intervals: [5, 10, 20, 50] }).toBe(true);
     const finalConfirmation: FinalConfirmation | null = await page.evaluate(() => {
@@ -606,6 +923,7 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
         clientHeight: options.clientHeight,
         scrollTop: options.scrollTop,
         activeIndex: select._state.activeIndex,
+        activeKey: select._engine?.state?.activeKey ?? null,
         targetKey: select._renderPlan.filteredKeys[select._renderPlan.filteredKeys.length - 1],
         itemCount: select._renderPlan.filteredKeys.length,
         renderCycleId: select._renderCycleId,
@@ -614,7 +932,7 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
       };
     });
     const evidence = browserEvidence.evidence;
-    const eventStart = evidence.eventCaptureAt;
+    const eventStart = evidence.endEventAt;
     const eventReturn = evidence.handlerReturnAt;
     const endKeyRender = evidence.renderCalls.at(-1) ?? null;
     const targetKey = browserEvidence.targetKey;
@@ -629,26 +947,42 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
       scrollToKeyCalculationMs: arm === 'instrumented' ? sumDuration(evidence.scrollToKeyCalls) : null,
       virtualizerWindowUpdateMs: arm === 'instrumented' ? sumDuration(evidence.windowUpdateCalls) : null,
       synchronousRenderRebuildMs: arm === 'instrumented' ? sumDuration(evidence.renderCalls) : null,
-      renderToStableLayoutMs: endKeyRender && Number.isFinite(layoutStableAt)
-        ? layoutStableAt! - endKeyRender.endedAt : null,
-      layoutStableFromEventMs: Number.isFinite(layoutStableAt) ? layoutStableAt! - eventStart : null,
+      renderToStableLayoutMs: endKeyRender && Number.isFinite(stableGeometryObservedAt)
+        ? stableGeometryObservedAt! - endKeyRender.endedAt : null,
+      layoutStableFromEventMs: Number.isFinite(stableGeometryObservedAt)
+        ? stableGeometryObservedAt! - eventStart : null,
+      firstEligibleFrameLatencyMs: Number.isFinite(firstEligibleFrameAt)
+        ? firstEligibleFrameAt - eventStart : null,
+      firstFrameToPlaywrightConfirmationMs: Number.isFinite(finalConfirmation.now)
+        && Number.isFinite(firstEligibleFrameAt)
+        ? finalConfirmation.now - firstEligibleFrameAt : null,
       observedEndToVisibleMs: finalConfirmation && Number.isFinite(finalConfirmation.now)
         ? finalConfirmation.now - eventStart : null,
     };
+    expect(frameObserverArm.armedAt).toBeLessThanOrEqual(evidence.endEventAt);
+    expect(targetMountedAt).toBeGreaterThanOrEqual(evidence.endEventAt);
+    expect(targetMountedAt).toBeLessThanOrEqual(firstEligibleFrameAt);
+    expect(firstEligibleFrameAt).toBeGreaterThanOrEqual(evidence.endEventAt);
     expect(browserEvidence.activeIndex).toBe(TARGET_INDEX);
+    expect(browserEvidence.activeKey).toBe(targetKey);
     expect(finalConfirmation.activeIndex).toBe(TARGET_INDEX);
+    expect(finalConfirmation.activeKey).toBe(targetKey);
+    expect(finalConfirmation.targetKey).toBe(targetKey);
     expect(finalConfirmation.activeId).toBeTruthy();
     expect(finalConfirmation.targetIndex).toBe(TARGET_INDEX);
     expect(finalConfirmation.visible).toBe(true);
     expect(browserEvidence.optionCount).toBeLessThanOrEqual(64);
     expect(browserEvidence.scrollHeight).toBeGreaterThan(browserEvidence.clientHeight);
     expect(evidence.eventCaptureAt).toEqual(expect.any(Number));
+    expect(evidence.endEventAt).toEqual(expect.any(Number));
     expect(evidence.endEventCount).toBe(1);
     expect(evidence.handlerReturnAt).toEqual(expect.any(Number));
     expect(evidence.eventKey).toBe('End');
     expect(evidence.eventTargetMatchesInput).toBe(true);
     expect(evidence.layoutStableObservationAt).toEqual(expect.any(Number));
+    expect(evidence.stableGeometryObservedAt).toEqual(expect.any(Number));
     expect(evidence.finalVisibleAriaObservationAt).toEqual(expect.any(Number));
+    expect(evidence.playwrightConfirmedAt).toEqual(expect.any(Number));
     if (arm === 'instrumented') {
       const handlerIntercepted = evidence.handlerKey === 'End'
         && Number.isFinite(evidence.handlerEntryAt)
@@ -705,6 +1039,12 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
       metrics,
       timestamps: {
         browserPerformanceNowMs: {
+          endEventAt: evidence.endEventAt,
+          handlerReturnAt: evidence.handlerReturnAt,
+          targetMountedAt: frameObserverSnapshot.targetMountedAt,
+          firstEligibleFrameAt: frameObserverSnapshot.firstEligibleFrameAt,
+          stableGeometryObservedAt,
+          playwrightConfirmedAt: finalConfirmation.now,
           endEventCapture: evidence.eventCaptureAt,
           componentHandlerEntry: evidence.handlerEntryAt,
           componentHandlerExit: evidence.handlerExitAt,
@@ -717,15 +1057,19 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
           attemptEndedAt: new Date().toISOString(),
           layoutPollObservations: layoutObservationCount,
           ariaPollObservations: ariaConfirmationObservationCount,
+          pollObservationCount: playwrightPollObservations.length,
+          pollObservations: playwrightPollObservations,
         },
       },
       correctness: {
         expectedTargetIndex: TARGET_INDEX,
         targetKey,
+        activeKey: browserEvidence.activeKey,
         endKeyEventCount: evidence.endEventCount,
         itemCount: browserEvidence.itemCount,
         activeIndex: browserEvidence.activeIndex,
         ariaTargetIndex: finalConfirmation?.targetIndex,
+        ariaTargetKey: finalConfirmation?.targetKey,
         ariaActiveDescendant: finalConfirmation?.activeId,
         targetVisible: finalConfirmation?.visible,
         mountedOptionCount: browserEvidence.optionCount,
@@ -738,6 +1082,7 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
         browserWarnings: warnings,
         instrumentationVerification: (browserEvidence as any).instrumentationVerification ?? null,
       },
+      browserFrameObservation: frameObserverSnapshot,
       instrumentation: arm === 'instrumented' ? evidence : null,
     };
   } catch (error) {
@@ -745,6 +1090,7 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
     const artifactDir = resolve(process.cwd(), 'test-results/performance/end-key-attribution');
     mkdirSync(artifactDir, { recursive: true });
     const screenshotPath = resolve(artifactDir, `pair-${pair}-${arm}-failure.png`);
+    await cancelBrowserFrameObserver(page);
     const evidence = await captureFailureEvidence(page);
     await page.screenshot({ path: screenshotPath, fullPage: true, timeout: 5_000 }).catch(() => undefined);
     const tracedReplay = await captureFailureReplay(browser, arm, pair, orderIndex).catch((replayError) => ({
@@ -766,16 +1112,24 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
       status: 'failed',
       startedAt,
       endedAt: new Date().toISOString(),
-      failure: { stage, error: message, screenshot: screenshotPath, evidence, tracedReplay },
+      failure: {
+        stage,
+        error: message,
+        screenshot: screenshotPath,
+        evidence,
+        playwrightPollObservations,
+        tracedReplay,
+      },
       browserErrors: errors,
       browserWarnings: warnings,
     };
   } finally {
+    await cancelBrowserFrameObserver(page);
     await context.close().catch(() => undefined);
   }
 }
 
-test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testInfo) => {
+test('Phase 4.6.2C.3B attributes 100k End-key latency to browser-frame and Playwright observations', async ({ browser }, testInfo) => {
   test.setTimeout(60 * 60 * 1000);
   const browserVersion = browser.version();
   const metadata = runnerMetadata(browserVersion);
@@ -784,8 +1138,8 @@ test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testI
     pair % 2 === 0 ? ['minimal', 'instrumented'] : ['instrumented', 'minimal']
   ));
   const report: Record<string, any> = {
-    schemaVersion: 1,
-    phase: '4.6.2C.2',
+    schemaVersion: 2,
+    phase: '4.6.2C.3B',
     completionStatus: 'in-progress',
     environment: metadata,
     protocol: {
@@ -802,16 +1156,24 @@ test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testI
       navigationSequence: ['create and configure EnhancedSelect', 'set 100000 deterministic items', 'open', 'focus input', 'Home', 'End'],
       renderMode: 'private guarded virtual-window test seam; public default unchanged',
       phaseBoundaries: {
+        endEventAt: 'Browser performance.now timestamp in the input capture listener for the single End keydown.',
         handlerEntry: 'Instrumented arm only: entry into the instance-wrapped component _handleKeydown for the single captured End key event targeting the input.',
         handlerExecution: 'Instrumented arm only: _handleKeydown entry through synchronous method return.',
+        handlerReturnAt: 'Browser performance.now timestamp in the input bubble listener after synchronous End-key target handlers return.',
         activeStateDispatch: 'Instrumented arm only: duration of _dispatchActiveKey, including engine effects and compatibility/ARIA synchronization; records before/after active indexes and target key.',
         windowCalculation: 'Instrumented arm only: Virtualizer.scrollToKey and updateWindow method durations during End dispatch, with returned target index and virtual window bounds.',
         targetMounting: 'Instrumented arm only: confirms the component materialization method returns true and both it and _renderOptions observe option 99,999 mounted in the reported virtual window.',
         synchronousRenderRebuild: 'Instrumented arm only: summed synchronous _renderOptions method duration; includes render bookkeeping as well as DOM creation/mounting.',
+        targetMountedAt: 'First MutationObserver callback timestamp that observes option 99,999 inserted beneath the component shadow root; this is an observed insertion timestamp, not a paint timestamp.',
+        firstEligibleFrameLatencyMs: 'endEventAt to the browser requestAnimationFrame callback that first observes the final option mounted, geometrically intersecting the list viewport, active by index and key, and referenced by aria-activedescendant. This is a frame observation, not paint or pixel-presentation time.',
         layoutSettlement: 'Target is mounted and visible with an unchanged bounding-box/scrollTop signature across two bounded expect.poll observations.',
-        finalVisibleAriaConfirmation: 'Observed confirmation: final active index is 99999, aria-activedescendant resolves to that option, and its rectangle intersects the 320px options viewport; poll/communication delay is included.',
+        stableGeometryObservedAt: 'Browser performance.now timestamp returned by the Playwright poll observation that completes the two-sample stable-geometry condition.',
+        playwrightConfirmedAt: 'Browser performance.now timestamp inside the successful Playwright poll evaluation confirming final active index/key, visible target, and valid aria-activedescendant; host round-trip timestamps are also retained for every poll observation.',
+        finalVisibleAriaConfirmation: 'Observed confirmation: final active index/key are 99999/option-99999, aria-activedescendant resolves to that option, and its rectangle intersects the 320px options viewport; poll/communication delay is included.',
       },
-      instrumentationComparison: 'Each paired arm uses identical deterministic data, browser revision, viewport, configuration, and open/focus/Home/End sequence. Arm order alternates by pair. Minimal instrumentation uses only common event-boundary listeners and condition polling; the instrumented arm additionally wraps the named private methods. Observed event-to-visible-confirmation latency includes poll cadence and browser/Playwright observation overhead. Paired latency difference is reported as diagnostic probe overhead, not subtracted from phase timings.',
+      instrumentationComparison: 'Each paired arm uses identical deterministic data, browser revision, viewport, configuration, and open/focus/Home/End sequence. Arm order alternates by pair. Both arms use the same browser-resident requestAnimationFrame/MutationObserver and Playwright polling observations; the instrumented arm additionally wraps the named private methods. Signed paired differences are reported for firstEligibleFrameLatencyMs and Playwright-confirmed observedEndToVisibleMs; instrumentation differences are diagnostics, not corrections subtracted from phase timings.',
+      pollObservationProtocol: 'Every expect.poll evaluation in a measured attempt records its phase, per-phase observation index, host start/end timestamps, host round-trip duration, browser performance.now timestamp when available, and observed result/outcome. The bounded frame observer stops after the first eligible callback or a 30-second timeout and is explicitly cancelled during attempt teardown.',
+      measurementTerminology: 'firstEligibleFrameLatencyMs ends at the first eligible requestAnimationFrame observation. It does not establish actual paint, compositing, or pixel presentation. playwrightConfirmedAt is a later Playwright condition-observation boundary and may include poll cadence and protocol/communication delay.',
       tracing: 'Disabled during timed attempts. If an arm fails, a separate unmeasured replay runs with Playwright tracing enabled; partial report, original failure screenshot/evidence, replay trace and screenshot, logs, and stage/error context are retained.',
       decisionUse: 'Diagnostic attribution only; no latency budget, pass threshold, runtime optimization, or production activation is applied.',
     },
@@ -839,7 +1201,7 @@ test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testI
       if (attempt.status !== 'complete') report.completionStatus = 'failed';
       writeReport(report);
       if (attempt.status !== 'complete') {
-        await testInfo.attach('phase-4.6.2c2-end-key-attribution.json', {
+        await testInfo.attach('phase-4.6.2c3b-frame-attribution.json', {
           path: OUTPUT_PATH,
           contentType: 'application/json',
         }).catch(() => undefined);
@@ -857,7 +1219,7 @@ test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testI
       incompletePairIndexes: report.summary.incompletePairIndexes,
     };
     writeReport(report);
-    await testInfo.attach('phase-4.6.2c2-end-key-attribution.json', {
+    await testInfo.attach('phase-4.6.2c3b-frame-attribution.json', {
       path: OUTPUT_PATH,
       contentType: 'application/json',
     }).catch(() => undefined);
@@ -865,7 +1227,7 @@ test('Phase 4.6.2C.2 attributes 100k End-key latency', async ({ browser }, testI
   }
   report.completionStatus = pinned ? 'complete-pinned-browser' : 'complete-non-pinned-diagnostic';
   writeReport(report);
-  await testInfo.attach('phase-4.6.2c2-end-key-attribution.json', {
+  await testInfo.attach('phase-4.6.2c3b-frame-attribution.json', {
     path: OUTPUT_PATH,
     contentType: 'application/json',
   });
