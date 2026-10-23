@@ -2,18 +2,22 @@
 
 React Native adapter for Smilodon.
 
-Accessibility and platform parity are not certified by the web-component browser matrix. Automated ARIA/keyboard coverage is in progress for the core component; React Native Web and native WebView behavior require separate platform verification. This is not a WCAG conformance claim.
+The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit. That does not certify the native WebView bridge or React Native Web as complete platform integrations, and it does not establish WCAG conformance. Manual native assistive-technology assessments (iOS VoiceOver and Android TalkBack) remain outstanding; Windows/NVDA and macOS/VoiceOver web assessments are also pending assignment.
 
 This package provides two implementations behind one import:
 
 - **Native mobile**: renders Smilodon inside a `react-native-webview` bridge
 - **Web**: mounts the same core custom element directly for React Native Web environments
 
-That split lets you keep one API surface while still using the DOM-based Smilodon core on native platforms.
+The package shares many props and callbacks across these paths, but it does not expose one identical runtime or imperative API surface. Native WebView and React Native Web behavior, event timing, styling, and accessibility require separate verification.
+
+Examples below the self-contained quick start that refer to `items`, `value`, `setValue`, or refs from outside their snippet are focused fragments; they assume those application values are declared in the host component.
 
 ## 📖 Documentation
 
 **Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
+
+For native setup, start with the [React Native-specific complete guide](./COMPLETE-GUIDE.md), then use the web framework guide only for the React Native Web/browser integration path.
 
 **Framework integration (Vue 3, Nuxt 4, React, SSR, Vite):** [`docs/FRAMEWORK-INTEGRATION.md`](../../docs/FRAMEWORK-INTEGRATION.md)
 
@@ -93,7 +97,7 @@ On web, the adapter:
 - loads the core custom element bundle directly,
 - creates an `enhanced-select` element in the DOM,
 - forwards props through `updateConfig()`, `setItems()`, and `setSelectedValues()`,
-- exposes the same imperative handle as the native variant.
+- exposes additional DOM-backed imperative methods beyond the native WebView handle (listed below).
 
 ## Important props
 
@@ -121,9 +125,11 @@ On web, the adapter:
 - `disabledOptionBehavior`
 - `showSelectedIndicator`
 
+The `virtualized` prop enables legacy incremental chunk rendering for large flat lists. It does not window rows to the viewport or guarantee bounded mounted DOM. Guarded viewport-windowing remains private and is not approved for production.
+
 ### Clear control visibility
 
-`clearable` does not reserve an empty action area. The control appears only when an enabled target—a selected value or search query—can be cleared, and the input/arrow layout returns to normal afterward. The native WebView and React Native Web paths share this behavior, including multi-select and RTL layouts.
+The shared core is intended not to reserve an empty action area for `clearable`. The control appears only when an enabled target—a selected value or search query—can be cleared, and the input/arrow layout returns to normal afterward. This behavior is implemented by the common runtime; exhaustive native WebView versus React Native Web parity for all selection, direction, and timing combinations has not been certified.
 
 ```tsx
 <Select
@@ -166,7 +172,7 @@ The React Native adapter accepts the same major runtime behavior groups as the s
 - `styles`
 - `config`
 
-These are merged into the bridge payload on native and forwarded through `updateConfig()` on React Native Web.
+These configuration groups are sent in the native bridge payload and forwarded through `updateConfig()` on React Native Web. Their presence in both type paths is not proof that all advanced behaviors are equivalent across platforms.
 
 ### Example: multi-select chip layout and icon styling
 
@@ -247,7 +253,7 @@ For React Native, prefer per-instance `config` and convenience props. The native
 - `containerStyle`
 - `selectStyle`
 
-`selectStyle` is forwarded into the embedded select element and is the main place to set Smilodon CSS variables from React Native.
+`containerStyle` uses React Native layout/style semantics for the host view. `selectStyle` is a separate map of CSS properties forwarded into the embedded select element and is the main place to set Smilodon CSS variables. These are different styling systems and should not be expected to accept the same values.
 
 ```tsx
 <Select
@@ -262,7 +268,19 @@ For React Native, prefer per-instance `config` and convenience props. The native
 
 ## Imperative handle
 
-The component exposes a `ref` handle with these methods:
+Native WebView and React Native Web expose different handles. The following table reflects the current source interfaces; method availability is not a certification of equal runtime behavior.
+
+| Method | Native WebView | React Native Web |
+| --- | --- | --- |
+| `open()`, `close()` | Yes | Yes |
+| `clear()`, `clearSearch()` | Yes | Yes |
+| `setItems()`, `setGroupedItems()`, `setValue()` | Yes | Yes |
+| `updateConfig()` | Yes | Yes |
+| `getSelectedItems()`, `getSelectedValues()` | Not exposed | Yes |
+| `setError()`, `clearError()` | Not exposed | Yes |
+| `setRequired()`, `validate()` | Not exposed | Yes |
+
+Do not assume browser DOM capabilities are available from the native WebView handle. The common native/Web imperative methods are:
 
 - `open()`
 - `close()`
@@ -287,11 +305,11 @@ const ref = useRef<SelectHandle>(null)
 </>
 ```
 
-React Native Web additionally benefits from the underlying DOM runtime, so web builds also inherit the same config parity behavior as the other web adapters.
+React Native Web additionally benefits from the underlying DOM runtime. It exposes the extra handle methods in the table below, but web-adapter behavior parity is not implied by the common props alone.
 
 ## Events
 
-The adapter forwards the core event model into React Native callbacks:
+The adapter implements forwarding of the core event model into React Native callbacks:
 
 - `onChange`
 - `onSelect`
@@ -303,7 +321,7 @@ The adapter forwards the core event model into React Native callbacks:
 - `onClear`
 - `onDiagnostic`
 
-For controlled usage, `onChange` is the main callback to mirror back into state.
+For controlled usage, `onChange` is the main callback to mirror back into state. Event ordering, bridge latency, error behavior, and timing have not been fully platform-certified as identical.
 
 ## Grouped items
 
@@ -351,9 +369,12 @@ Use these when you need runtime observability during QA or production debugging.
 - Native rendering depends on `WebView`, so your UX and performance characteristics are still ultimately powered by an embedded web runtime.
 - `selectStyle` customizes the internal select through CSS variables, not React Native style props.
 - Browser-only DOM hooks should not be assumed from native code; use the exported handle and callbacks instead.
+- The Phase 4 browser matrix does not exercise iOS/Android WebView or assistive technology; no native or React Native Web accessibility parity claim is made here.
 
 ## Related docs
 
 - [Root overview](../../README.md)
 - [Styling guide](../../docs/STYLING.md)
 - [Known limitations](../../docs/KNOWN-LIMITATIONS.md)
+- [Feature-contract audit](../../docs/architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md)
+- [Browser support policy](../../docs/compliance/BROWSER-SUPPORT.md)
