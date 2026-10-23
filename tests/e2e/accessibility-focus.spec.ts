@@ -118,6 +118,7 @@ test.describe('Accessibility focus intent integration', () => {
 
     await expect(input).toHaveAttribute('aria-invalid', 'true');
     await expect(input).toHaveAccessibleDescription('Choose a fruit before continuing.');
+    await expect(select.locator('[role="status"]')).toHaveText('Error: Choose a fruit before continuing.');
 
     await select.evaluate((element: any) => element.clearError());
     await expect(input).toHaveAttribute('aria-invalid', 'false');
@@ -188,5 +189,50 @@ test.describe('Accessibility focus intent integration', () => {
     await select.getByRole('button', { name: 'Remove Banana' }).press('Enter');
     await expect.poll(() => select.evaluate((element: any) => element.getSelectedValues())).toEqual([]);
     await expect(select.locator('[part="input"]')).toBeFocused();
+  });
+
+  test('keeps an open listbox coherent while keyboard chip removal moves focus', async ({ page }) => {
+    const select = page.locator('#accessibility-focus-select');
+    await select.evaluate(async (element: any) => {
+      element.updateConfig({ selection: { mode: 'multi', closeOnSelect: false }, searchable: true });
+      await element.setSelectedValues(['APL', 'BAN']);
+      element.open();
+    });
+
+    const input = select.locator('[part="input"]');
+    const listbox = select.getByRole('listbox');
+    const removeApple = select.getByRole('button', { name: 'Remove Apple' });
+    await expect(listbox).toBeVisible();
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+    await removeApple.focus();
+    await removeApple.press('Enter');
+
+    const removeBanana = select.getByRole('button', { name: 'Remove Banana' });
+    await expect.poll(() => select.evaluate((element: any) => element.getSelectedValues())).toEqual(['BAN']);
+    await expect(removeBanana).toBeFocused();
+    await expect(listbox).toBeVisible();
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+
+    await input.focus();
+    await input.fill('Ban');
+    const filteredOption = select.locator('[part="option"][data-value="BAN"]');
+    await expect(filteredOption).toBeVisible();
+    await expect(filteredOption).toHaveAttribute('aria-selected', 'true');
+    await input.press('Home');
+    const filteredOptionId = await filteredOption.getAttribute('id');
+    expect(filteredOptionId).toBeTruthy();
+    await expect(input).toHaveAttribute('aria-activedescendant', filteredOptionId!);
+
+    await input.fill('');
+    await input.press('Escape');
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => select.evaluate((element: any) => element.shadowRoot.activeElement === element._input)).toBe(true);
+    await select.evaluate((element: any) => element.open());
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+    await select.evaluate((element: any) => element.close());
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
+    await select.evaluate((element: any) => element.open());
+    await expect(listbox).toBeVisible();
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
   });
 });
