@@ -17,6 +17,33 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-23
+
+Minor release consolidating the shared selection engine, stable option identity, accessibility effects, and guarded large-list virtualization work across the maintained packages. Existing public rendering defaults are unchanged.
+
+### Added
+
+- Added a shared selection engine with explicit item adaptation, stable-key registry, selection policy, state selectors, event/effect contracts, and web accessibility effect handling; exported the supported engine contracts from `@smilodon/core`.
+- Added expanded keyboard, accessibility, selection-parity, identity, and actual-browser regression coverage across Chromium, Firefox, and WebKit.
+- Added reproducible performance, lifecycle, memory-observation, and controlled End-key attribution tooling with report-only results and preserved raw evidence.
+
+### Changed
+
+- Kept guarded viewport-windowing behind a private test seam. Public `EnhancedSelect` and adapter rendering defaults remain legacy full rendering with incremental chunking; viewport virtualization is not activated as a production mode.
+- Aligned `@smilodon/core` and all maintained adapters on version `1.10.0`; web and React Native adapters declare `@smilodon/core@^1.10.0` as a peer dependency.
+- Clarified public documentation and capability records to distinguish implemented behavior, tested scope, known limitations, and uncompleted certification.
+
+### Fixed
+
+- Restored the select event-to-adapter contract and corrected keyboard-active state synchronization found during cross-browser certification.
+- Hardened selection identity and accessibility-state synchronization while retaining the established compatibility projection for existing component behavior.
+
+### Validation and limitations
+
+- The release candidate's hosted automated CI, framework E2E suites, dedicated Phase 4 browser matrix, performance/lifecycle workflows, and controlled replication checks were reported passing for their documented scopes.
+- Manual Windows/NVDA and macOS/VoiceOver assessment remains pending assignment. Automated checks do not constitute WCAG conformance or manual screen-reader certification.
+- Performance thresholds remain report-only; guarded production virtualization remains **NO-GO**. Solid and React Native parity coverage gaps, historical geometry findings, and native observer ownership attribution remain documented limitations.
+
 ## [1.9.3] - 2026-10-03
 
 Patch release for lifecycle, memory, and adapter stability. Backward compatible with `1.9.2`.
