@@ -26,6 +26,15 @@ const EXPECTED_CHROMIUM = BROWSER_MANIFEST.browsers.find((item: any) => item.nam
 
 type Arm = 'minimal' | 'instrumented';
 
+interface FinalConfirmation {
+  activeIndex: number;
+  activeId: string;
+  targetIndex: number;
+  mountedCount: number;
+  visible: boolean;
+  now: number;
+}
+
 function positiveInteger(raw: string | undefined, fallback: number): number {
   const value = Number(raw);
   return Number.isSafeInteger(value) && value > 0 ? value : fallback;
@@ -534,7 +543,6 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
     }, layoutStableAt);
 
     stage = 'final visible and ARIA target confirmation';
-    let finalConfirmation: Record<string, any> | null = null;
     let ariaConfirmationObservationCount = 0;
     await expect.poll(async () => {
       ariaConfirmationObservationCount += 1;
@@ -553,6 +561,17 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
             && Number(target?.getAttribute('data-index')) === targetIndex
             && visible;
         if (confirmed) win.__phase4EndKeyEvidence.finalVisibleAriaObservationAt = performance.now();
+        const now = performance.now();
+        if (confirmed && activeId && target) {
+          win.__phase4EndKeyEvidence.finalVisibleAriaConfirmation = {
+            activeIndex: Number(select._state.activeIndex),
+            activeId,
+            targetIndex: Number(target.getAttribute('data-index')),
+            mountedCount: options?.querySelectorAll(':scope > [part="option"]').length ?? 0,
+            visible,
+            now,
+          };
+        }
         return {
           confirmed,
           activeIndex: select?._state?.activeIndex ?? null,
@@ -560,12 +579,22 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
           targetIndex: target ? Number(target.getAttribute('data-index')) : null,
           mountedCount: options?.querySelectorAll(':scope > [part="option"]').length ?? null,
           visible,
-          now: performance.now(),
+          now,
         };
       }, TARGET_INDEX);
-      if (observation.confirmed) finalConfirmation = observation;
       return observation.confirmed;
     }, { timeout: TIMEOUT_MS, intervals: [5, 10, 20, 50] }).toBe(true);
+    const finalConfirmation: FinalConfirmation | null = await page.evaluate(() => {
+      const win = window as Window & {
+        __phase4EndKeyEvidence?: {
+          finalVisibleAriaConfirmation?: FinalConfirmation;
+        };
+      };
+      return win.__phase4EndKeyEvidence?.finalVisibleAriaConfirmation ?? null;
+    });
+    if (finalConfirmation === null) {
+      throw new Error('Final visible and ARIA confirmation was not retained after successful polling.');
+    }
 
     const browserEvidence = await page.evaluate(() => {
       const win = window as any;
@@ -607,9 +636,10 @@ async function runArm(browser: Browser, arm: Arm, pair: number, warmup: boolean,
         ? finalConfirmation.now - eventStart : null,
     };
     expect(browserEvidence.activeIndex).toBe(TARGET_INDEX);
-    expect(finalConfirmation?.activeId).toBeTruthy();
-    expect(finalConfirmation?.targetIndex).toBe(TARGET_INDEX);
-    expect(finalConfirmation?.visible).toBe(true);
+    expect(finalConfirmation.activeIndex).toBe(TARGET_INDEX);
+    expect(finalConfirmation.activeId).toBeTruthy();
+    expect(finalConfirmation.targetIndex).toBe(TARGET_INDEX);
+    expect(finalConfirmation.visible).toBe(true);
     expect(browserEvidence.optionCount).toBeLessThanOrEqual(64);
     expect(browserEvidence.scrollHeight).toBeGreaterThan(browserEvidence.clientHeight);
     expect(evidence.eventCaptureAt).toEqual(expect.any(Number));
