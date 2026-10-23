@@ -6,6 +6,32 @@ import { Select } from '@smilodon/vue';
 import { basicItems } from './fixtures/test-data';
 
 describe('Vue Adapter Contract Tests', () => {
+  it('forwards option selection through the Vue select event with item and index', async () => {
+    const onSelect = vi.fn();
+    const Harness = defineComponent({
+      components: { Select },
+      setup() {
+        return { items: basicItems, onSelect };
+      },
+      template: '<Select :items="items" @select="onSelect" />',
+    });
+    const { container, unmount } = render(Harness);
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?._state?.loadedItems).toHaveLength(basicItems.length);
+    });
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    await waitFor(() => {
+      expect(onSelect).toHaveBeenCalledWith(basicItems[0], 0);
+    });
+    unmount();
+  });
+
   it('emits diagnostic event and exposes runtime control methods', async () => {
     const onNativeDiagnostic = vi.fn();
     let api: any = null;

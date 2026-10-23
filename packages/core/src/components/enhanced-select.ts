@@ -4169,8 +4169,26 @@ export class EnhancedSelect extends HTMLElement {
     this._requestSelectionReplacement(entries, opts?.reason ?? 'keyboard', 'select range');
     this._renderOptions();
     this._updateInputDisplay();
+    const target = this._getRecordByIndex(end);
+    const selectDetail = target ? this._getSelectEventDetail(target) : null;
+    if (selectDetail) this._emit('select', selectDetail);
     this._emitChange();
     this._announce(`${this._state.selectedIndices.size} items selected`);
+    if (selectDetail) this._config.callbacks.onSelect?.(selectDetail);
+  }
+
+  private _getSelectEventDetail(record: ItemRecord<unknown, SelectKey>): SelectEventsDetailMap['select'] {
+    const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
+    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
+
+    return {
+      item: record.item,
+      index: record.index,
+      value: getValue(record.item),
+      label: getLabel(record.item),
+      selected: this._engine.state.selectedKeys.has(record.key),
+      multi: this._config.selection.mode === 'multi',
+    };
   }
 
   private _setInitialActiveOption(): void {
@@ -4264,11 +4282,11 @@ export class EnhancedSelect extends HTMLElement {
     this._rangeAnchorIndex = index;
     
     this._updateInputDisplay();
+    const selectDetail = this._getSelectEventDetail(record);
+    this._emit('select', selectDetail);
     this._emitChange();
-    
-    const getValue = this._config.serverSide.getValueFromItem || ((item) => (item as any)?.value ?? item);
-    const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
-    const label = getLabel(item);
+
+    const label = selectDetail.label;
     if (this._config.selection.mode === 'single') {
       this._announce(`Selected ${label}`);
     } else {
@@ -4277,13 +4295,7 @@ export class EnhancedSelect extends HTMLElement {
       this._announce(`${action} ${label}. ${selectedCount} selected`);
     }
     
-    this._config.callbacks.onSelect?.({
-      item: item,
-      index,
-      value: getValue(item),
-      label: getLabel(item),
-      selected: this._state.selectedIndices.has(index),
-    });
+    this._config.callbacks.onSelect?.(selectDetail);
   }
 
   private _handleOptionRemove(index: number, key?: SelectKey): void {
