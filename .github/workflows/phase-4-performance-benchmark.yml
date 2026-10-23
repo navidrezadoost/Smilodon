@@ -28,6 +28,28 @@ defaults:
     shell: bash
 
 jobs:
+  baseline-statistics-evaluation:
+    name: Reproduce pinned baseline analysis (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test evaluator and benchmark-summary logic
+        run: |
+          npm run test:benchmark:phase4
+          node --test tests/performance/evaluate-phase-4-performance.test.mjs
+
+      - name: Regenerate checked-in analysis
+        run: node scripts/evaluate-phase-4-performance.mjs
+
+      - name: Verify deterministic report output
+        run: git diff --exit-code -- tests/performance/results/phase-4.6.2c-evaluation.json
+
   chromium-browser-benchmark:
     name: Chromium browser performance baseline (Node 20)
     runs-on: ubuntu-latest
