@@ -206,7 +206,7 @@ function validateSourceReport(report, { expectedCommit } = {}) {
     }
 
     const browserTimes = attempt.timestamps?.browserPerformanceNowMs;
-    const orderedTimes = [
+    const causalTimes = [
       browserTimes?.endEventAt,
       browserTimes?.handlerReturnAt,
       browserTimes?.targetMountedAt,
@@ -214,9 +214,24 @@ function validateSourceReport(report, { expectedCommit } = {}) {
       browserTimes?.stableGeometryObservedAt,
       browserTimes?.playwrightConfirmedAt,
     ];
-    add(orderedTimes.every(Number.isFinite), `attempt ${id} lacks finite browser timestamps`);
-    if (orderedTimes.every(Number.isFinite)) {
-      add(orderedTimes.every((time, index) => index === 0 || time >= orderedTimes[index - 1]), `attempt ${id} browser timestamps are not monotonic`);
+    add(causalTimes.every(Number.isFinite), `attempt ${id} lacks finite browser timestamps`);
+    if (causalTimes.every(Number.isFinite)) {
+      const {
+        endEventAt,
+        handlerReturnAt,
+        targetMountedAt,
+        firstEligibleFrameAt,
+        stableGeometryObservedAt,
+        playwrightConfirmedAt,
+      } = browserTimes;
+      // DOM mounting may occur synchronously inside the End-key handler. Validate
+      // the actual causal edges without imposing an ordering between those events.
+      add(handlerReturnAt >= endEventAt, `attempt ${id} handler return precedes the End-key event`);
+      add(targetMountedAt >= endEventAt, `attempt ${id} target mounting precedes the End-key event`);
+      add(firstEligibleFrameAt >= handlerReturnAt, `attempt ${id} first eligible frame precedes handler return`);
+      add(firstEligibleFrameAt >= targetMountedAt, `attempt ${id} first eligible frame precedes target mounting`);
+      add(stableGeometryObservedAt >= firstEligibleFrameAt, `attempt ${id} stable geometry precedes the first eligible frame`);
+      add(playwrightConfirmedAt >= stableGeometryObservedAt, `attempt ${id} Playwright confirmation precedes stable geometry`);
       add(sameNumber(frame?.firstEligibleFrameAt, browserTimes.firstEligibleFrameAt), `attempt ${id} frame-observer timestamp does not match the retained browser timestamp`);
       add(sameNumber(observation?.observedAt, browserTimes.firstEligibleFrameAt), `attempt ${id} first-frame observation time is inconsistent`);
       add(sameNumber(metrics?.eventToHandlerReturnMs, browserTimes.handlerReturnAt - browserTimes.endEventAt), `attempt ${id} handler-return metric does not match its timestamps`);
