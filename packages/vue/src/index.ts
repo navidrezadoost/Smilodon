@@ -3,7 +3,7 @@
  * 
  * Vue 3 adapter for Smilodon Select Component
  * 
- * A production-ready, accessible select component for Vue 3 applications.
+ * Select component for Vue 3 applications; accessibility certification is pending.
  * 
  * @example
  * ```vue

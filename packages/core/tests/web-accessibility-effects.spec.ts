@@ -20,6 +20,7 @@ function comboboxEffect(overrides: Partial<Extract<AccessibilityEffect, { type: 
     labelledBy: [],
     describedBy: [],
     ariaLabel: null,
+    ariaDescription: null,
     ...overrides,
   };
 }
@@ -32,6 +33,16 @@ describe('web accessibility effect applier', () => {
 
     expect(combobox.getAttribute('role')).toBe('combobox');
     expect(combobox.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('applies and clears an explicit combobox description', () => {
+    const combobox = document.createElement('input');
+
+    applyAccessibilityEffects([comboboxEffect({ ariaDescription: 'Choose a fruit.' })], { combobox });
+    expect(combobox.getAttribute('aria-description')).toBe('Choose a fruit.');
+
+    applyAccessibilityEffects([comboboxEffect({ ariaDescription: null })], { combobox });
+    expect(combobox.hasAttribute('aria-description')).toBe(false);
   });
 
   it('applies autocomplete list and none values', () => {

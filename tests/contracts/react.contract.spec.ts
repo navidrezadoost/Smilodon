@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@smilodon/core';
 import { Select } from '@smilodon/react';
@@ -45,7 +45,6 @@ const pendingTests = [
   'preventsInteractionWhenDisabled',
   'showsErrorStyling',
   'showsRequiredIndicator',
-  'emitsSelectEvent',
   'emitsOpenEvent',
   'emitsCloseEvent',
   'emitsLoadMoreEvent',
@@ -485,8 +484,32 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async emitsSelectEvent(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    try {
+      const onSelect = vi.fn();
+      const { container } = this._renderSelect({ items: reactItems, onSelect });
+      const element = container.querySelector('enhanced-select') as any;
+
+      await waitFor(() => {
+        expect(element?._state?.loadedItems).toHaveLength(reactItems.length);
+      });
+      element.open();
+
+      const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+      expect(option).toBeTruthy();
+      act(() => {
+        option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+      });
+
+      await waitFor(() => {
+        expect(onSelect).toHaveBeenCalledWith(reactItems[0], 0);
+      });
+
+      this._cleanupAfterTest();
+      return { success: true };
+    } catch (error) {
+      this._cleanupAfterTest();
+      return { success: false, error: String(error) };
+    }
   }
   
   async emitsOpenEvent(): Promise<ContractTestResult> {
@@ -644,6 +667,32 @@ describe('React Adapter Contract Tests', () => {
     expect(hasOpenEventDiagnostic).toBe(true);
 
     unmount();
+  });
+
+  it('forwards selection, syncs controlled values, and removes its listener on unmount', async () => {
+    const onSelect = vi.fn();
+    const props = { items: reactItems, value: '1', onSelect };
+    const { container, rerender, unmount } = render(createElement(Select, props));
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+
+    rerender(createElement(Select, { ...props, value: '2' }));
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['2']));
+
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    act(() => {
+      option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    });
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(reactItems[0], 0));
+
+    unmount();
+    element.dispatchEvent(new CustomEvent('select', {
+      detail: { item: reactItems[1], index: 1, value: '2', label: 'Banana', selected: true },
+    }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it('exposes capability, limitation and tracking controls via ref handle', async () => {

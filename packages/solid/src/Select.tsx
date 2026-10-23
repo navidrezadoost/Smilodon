@@ -91,6 +91,7 @@ export interface SelectProps {
   error?: boolean
   infiniteScroll?: boolean
   pageSize?: number
+  /** Legacy chunked rendering for large flat lists; not viewport-windowed rendering. */
   virtualized?: boolean
   maxSelections?: number
   selectionConfig?: Partial<SelectionConfig>

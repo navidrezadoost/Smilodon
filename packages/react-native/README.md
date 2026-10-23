@@ -2,6 +2,8 @@
 
 React Native adapter for Smilodon.
 
+Accessibility and platform parity are not certified by the web-component browser matrix. Automated ARIA/keyboard coverage is in progress for the core component; React Native Web and native WebView behavior require separate platform verification. This is not a WCAG conformance claim.
+
 This package provides two implementations behind one import:
 
 - **Native mobile**: renders Smilodon inside a `react-native-webview` bridge

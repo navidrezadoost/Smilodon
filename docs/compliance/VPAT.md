@@ -1,21 +1,21 @@
 # Voluntary Product Accessibility Template® (VPAT®)
 ## WCAG Edition
 
+> **Draft only — not a verified VPAT or current conformance report.** The statuses and testing-method claims in this historical document are unverified for the maintained component and must not be used as procurement or compliance evidence. Phase 4.6.3 and manual assistive-technology assessment are pending.
+
 **Version:** 2.5  
 **Product Name:** Smilodon Component Library  
 **Product Version:** 1.0.0  
 **Report Date:** December 7, 2025  
-**Product Description:** Zero-dependency, accessible, high-performance select component for web applications. Supports React, Vue, Svelte, Angular, and Vanilla JS.  
+**Product Description:** Select component library. Maintained adapters include React, Vue, Svelte, Solid, and Vanilla; Angular is unsupported.
 **Contact Information:** accessibility@smilodon.dev  
-**Evaluation Methods:** Automated testing (axe, WAVE, Pa11y, Lighthouse), Manual testing (NVDA, VoiceOver), Code review
+**Evaluation Methods:** Historical draft listed automated and manual methods; current execution evidence has not been verified.
 
 ---
 
 ## Conformance Level
 
-**WCAG 2.2 Level A:** **Supports** (28/28 applicable criteria)  
-**WCAG 2.2 Level AA:** **Substantially Supports** (20/22 criteria - 2 pending external testing)  
-**WCAG 2.2 Level AAA:** **Enhanced Support** (Exceeds AAA requirements for 1.4.6 Contrast Enhanced, 2.4.8 Location, 2.5.5 Target Size, 2.5.6 Concurrent Inputs)
+**Current WCAG 2.2 Level A/AA/AAA conformance:** Not established or certified. Criterion statuses below are retained for historical context only and have not been revalidated.
 
 ---
 

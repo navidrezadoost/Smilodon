@@ -290,9 +290,9 @@ export interface GlobalSelectConfig {
   searchable?: boolean;
   /** Placeholder text */
   placeholder?: string;
-  /** Virtualization */
+  /** Legacy chunked rendering toggle for large flat EnhancedSelect lists; not viewport windowing. */
   virtualize?: boolean;
-  /** Estimated item height for virtualization */
+  /** Estimated row height used by the guarded EnhancedSelect viewport-windowing test path. */
   estimatedItemHeight?: number;
 }
 

@@ -1,14 +1,14 @@
 <!--
   Smilodon Select Component for Svelte
   
-  A production-ready, accessible select component with advanced features:
+  A select component with the following implemented behavior groups:
   - Single and multi-select modes
   - Searchable with client or server-side filtering
   - Infinite scroll and virtual scrolling for large datasets
   - Grouped options
   - Custom rendering
   - Full keyboard navigation
-  - WCAG 2.1 AAA compliant
+  - ARIA and keyboard behaviors implemented; complete accessibility certification pending
   
   @example
   <Select
@@ -30,7 +30,7 @@
 </script>
 
 <script lang="ts">
-  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import { onMount, createEventDispatcher } from 'svelte';
   import type {
     SelectEventDetail,
     OpenEventDetail,
@@ -63,6 +63,7 @@
   export let error: boolean = false;
   export let infiniteScroll: boolean = false;
   export let pageSize: number = 50;
+  // Legacy chunked rendering for large flat lists; not viewport-windowed rendering.
   export let virtualized: boolean = true;
   export let maxSelections: number | undefined = undefined;
   export let selectionConfig: Partial<SelectionConfig> | undefined = undefined;
@@ -105,7 +106,8 @@
     diagnostic: DiagnosticEventDetail;
   }>();
 
-  let selectRef: HTMLElement;
+  let selectRef: HTMLElement | undefined;
+  let nativeListenersReady = false;
   let internalValue: string | number | (string | number)[] | undefined = defaultValue;
 
   // Stable wrapper to handle optionRenderer updates without triggering infinite loops
@@ -175,6 +177,36 @@
   function handleDiagnostic(e: Event) {
     const customEvent = e as CustomEvent<DiagnosticEventDetail>;
     dispatch('diagnostic', customEvent.detail);
+  }
+
+  function listenForSelectEvents(element: HTMLElement) {
+    selectRef = element;
+    element.addEventListener('select', handleSelect as EventListener);
+    element.addEventListener('change', handleChange as EventListener);
+    element.addEventListener('open', handleOpen as EventListener);
+    element.addEventListener('close', handleClose as EventListener);
+    element.addEventListener('search', handleSearch as EventListener);
+    element.addEventListener('loadMore', handleLoadMore as EventListener);
+    element.addEventListener('create', handleCreate as EventListener);
+    element.addEventListener('clear', handleClear as EventListener);
+    element.addEventListener('diagnostic', handleDiagnostic as EventListener);
+    nativeListenersReady = true;
+
+    return {
+      destroy() {
+        element.removeEventListener('select', handleSelect as EventListener);
+        element.removeEventListener('change', handleChange as EventListener);
+        element.removeEventListener('open', handleOpen as EventListener);
+        element.removeEventListener('close', handleClose as EventListener);
+        element.removeEventListener('search', handleSearch as EventListener);
+        element.removeEventListener('loadMore', handleLoadMore as EventListener);
+        element.removeEventListener('create', handleCreate as EventListener);
+        element.removeEventListener('clear', handleClear as EventListener);
+        element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
+        if (selectRef === element) selectRef = undefined;
+        nativeListenersReady = false;
+      },
+    };
   }
 
   function updateConfig() {
@@ -283,58 +315,30 @@
       (element as any).setSelectedValues(values);
     }
 
-    // Add event listeners
-    element.addEventListener('select', handleSelect as EventListener);
-    element.addEventListener('change', handleChange as EventListener);
-    element.addEventListener('open', handleOpen as EventListener);
-    element.addEventListener('close', handleClose as EventListener);
-    element.addEventListener('search', handleSearch as EventListener);
-    element.addEventListener('loadMore', handleLoadMore as EventListener);
-    element.addEventListener('create', handleCreate as EventListener);
-    element.addEventListener('clear', handleClear as EventListener);
-    element.addEventListener('diagnostic', handleDiagnostic as EventListener);
-
     updateConfig();
   });
 
-  onDestroy(() => {
-    if (!selectRef) return;
-
-    const element = selectRef;
-
-    // Remove event listeners
-    element.removeEventListener('select', handleSelect as EventListener);
-    element.removeEventListener('change', handleChange as EventListener);
-    element.removeEventListener('open', handleOpen as EventListener);
-    element.removeEventListener('close', handleClose as EventListener);
-    element.removeEventListener('search', handleSearch as EventListener);
-    element.removeEventListener('loadMore', handleLoadMore as EventListener);
-    element.removeEventListener('create', handleCreate as EventListener);
-    element.removeEventListener('clear', handleClear as EventListener);
-    element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
-  });
-
   // Reactive updates
-  $: if (selectRef && items) {
+  $: if (nativeListenersReady && selectRef && items) {
     if (typeof (selectRef as any).setItems === 'function') {
       (selectRef as any).setItems(items);
     }
   }
 
-  $: if (selectRef && groupedItems) {
+  $: if (nativeListenersReady && selectRef && groupedItems) {
     if (typeof (selectRef as any).setGroupedItems === 'function') {
       (selectRef as any).setGroupedItems(groupedItems);
     }
   }
 
-  $: if (selectRef && currentValue !== undefined) {
+  $: if (nativeListenersReady && selectRef && currentValue !== undefined) {
     if (typeof (selectRef as any).setSelectedValues === 'function') {
       const values = Array.isArray(currentValue) ? currentValue : [currentValue];
       (selectRef as any).setSelectedValues(values);
     }
   }
 
-  $: if (selectRef) {
+  $: if (nativeListenersReady && selectRef) {
     if (placeholder) selectRef.setAttribute('placeholder', placeholder);
     if (disabled) {
       selectRef.setAttribute('disabled', '');
@@ -373,7 +377,7 @@
     (selectRef as any).classMap = classMap;
   }
 
-  $: if (selectRef) {
+  $: if (nativeListenersReady && selectRef) {
     updateConfig();
   }
 
@@ -460,6 +464,7 @@
 </script>
 
 <enhanced-select
+  use:listenForSelectEvents
   bind:this={selectRef}
   class={className}
   {style}

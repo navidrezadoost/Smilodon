@@ -6,6 +6,59 @@ import { Select } from '@smilodon/svelte';
 import { basicItems } from './fixtures/test-data';
 
 describe('Svelte Adapter Contract Tests', () => {
+  it('forwards option selection through the Svelte select event with item and index', async () => {
+    const { component, container, unmount } = render(Select as any, {
+      props: { items: basicItems },
+    });
+    const element = container.querySelector('enhanced-select') as any;
+    const onSelect = vi.fn();
+    const nativeSelect = vi.fn();
+    element.addEventListener('select', (event: Event) => nativeSelect((event as CustomEvent).detail));
+    component.$on('select', (event: CustomEvent) => onSelect(event.detail));
+
+    await waitFor(() => {
+      expect(element?._state?.loadedItems).toHaveLength(basicItems.length);
+    });
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    await waitFor(() => {
+      expect(nativeSelect).toHaveBeenCalledWith(expect.objectContaining({ item: basicItems[0], index: 0 }));
+    });
+    await waitFor(() => {
+      expect(onSelect).toHaveBeenCalledWith({ item: basicItems[0], index: 0 });
+    });
+    unmount();
+  });
+
+  it('forwards selection, syncs the controlled value, and removes its listener on unmount', async () => {
+    const { component, container, unmount } = render(Select as any, {
+      props: { items: basicItems, value: '1' },
+    });
+    const element = container.querySelector('enhanced-select') as any;
+    const onSelect = vi.fn();
+    component.$on('select', (event: CustomEvent) => onSelect(event.detail));
+
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+
+    component.$set({ value: '2' });
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['2']));
+
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith({ item: basicItems[0], index: 0 }));
+
+    unmount();
+    element.dispatchEvent(new CustomEvent('select', {
+      detail: { item: basicItems[1], index: 1, value: '2', label: 'Banana', selected: true },
+    }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it('emits diagnostic events and supports runtime tracking/limitations APIs', async () => {
     const { component, container, unmount } = render(Select as any, {
       props: {

@@ -1,7 +1,7 @@
 /**
  * @smilodon/svelte - Svelte wrapper for Smilodon Select
  * 
- * A production-ready, accessible select component for Svelte applications.
+ * Select component for Svelte applications; accessibility certification is pending.
  * 
  * @packageDocumentation
  */

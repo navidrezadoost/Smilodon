@@ -1,6 +1,8 @@
 # @smilodon/react-native - Complete Guide
 
-**Production-ready, accessible Select component for React Native and React Native Web applications**
+**Select component for React Native and React Native Web applications**
+
+> Accessibility and platform parity are not certified by the web-component browser matrix. Automated ARIA/keyboard coverage is in progress for the core component; React Native Web and native WebView behavior require separate platform verification. This is not a WCAG conformance claim.
 
 This guide covers the React Native adapter in detail: installation, native and web setup, architecture, styling, data flow, diagnostics, performance, and troubleshooting. It is written to answer simple, medium, advanced, and production-level questions in one place.
 

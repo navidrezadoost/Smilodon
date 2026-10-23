@@ -12,6 +12,25 @@ import {
 import { basicItems } from './fixtures/test-data';
 
 describe('Vanilla Adapter Contract Tests', () => {
+  it('forwards option selection through the vanilla helper callback with item and index', async () => {
+    const onSelect = vi.fn();
+    const element = createSelect({ items: basicItems, onSelect }) as any;
+    document.body.appendChild(element);
+
+    await waitFor(() => {
+      expect(element?._state?.loadedItems).toHaveLength(basicItems.length);
+    });
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    await waitFor(() => {
+      expect(onSelect).toHaveBeenCalledWith(basicItems[0], 0);
+    });
+    element.remove();
+  });
+
   it('supports diagnostic events and runtime limitation/tracking controls', async () => {
     const onDiagnostic = vi.fn();
 

@@ -1,5 +1,7 @@
 # Enhanced Select Component - Implementation Summary
 
+> Historical implementation summary, not a current feature contract. Some bullets and examples below describe intended or superseded behavior (including automatic page caching and viewport virtualization). Use [Known Limitations](./KNOWN-LIMITATIONS.md), [API Reference](./API-REFERENCE.md), and the [Phase 4 feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) as the current sources of support status.
+
 ## 🎯 Overview
 
 This implementation provides a **fully-featured, framework-agnostic select component** with high cohesion and low coupling architecture. The component system solves complex real-world scenarios while maintaining simplicity and performance.

@@ -1,6 +1,6 @@
 # Enhanced Select Component
 
-A highly configurable, framework-agnostic select component with advanced features including infinite scroll, multi-select, server-side selection, and full customization.
+A configurable, framework-agnostic select component with single and multi-selection, host-controlled data loading, server-side selected-item lookup, and customizable rendering.
 
 ## Features
 
@@ -9,12 +9,11 @@ A highly configurable, framework-agnostic select component with advanced feature
 ✅ **Multi & Single Select**: Configurable selection modes with validation
 ✅ **Global Configuration**: Define defaults globally, override at component level
 ✅ **Full Customization**: Every visual detail is customizable via CSS variables and inline styles
-✅ **Infinite Scroll**: Built-in pagination with caching and preloading
-✅ **Load More**: Incremental loading with customizable batch sizes
+✅ **Load More**: Manual or observer-triggered requests for additional host-provided data
 ✅ **Busy State**: Loading indicators with minimum display time to prevent flashing
 ✅ **Server-Side Selection**: Solve the challenge of pre-selecting items not yet loaded
 ✅ **Scroll to Selected**: Auto-scroll to selected items on open/close
-✅ **Keyboard Navigation**: Full a11y support with ARIA attributes
+✅ **Keyboard Navigation**: ARIA semantics and keyboard interaction are implemented; accessibility certification is still in progress
 ✅ **Remove Options**: Multi-select with removable chips
 ✅ **Search/Filter**: Optional searchable dropdown
 ✅ **Callbacks**: Rich event system with user-defined callbacks
@@ -247,12 +246,6 @@ configureSelect({
   // Infinite scroll
   infiniteScroll: {
     enabled: true,
-    pageSize: 20,
-    initialPage: 1,
-    cachePages: true,
-    maxCachedPages: 10,
-    preloadAdjacent: true,
-    scrollRestoration: 'auto',
   },
   
   // Callbacks
@@ -270,10 +263,10 @@ configureSelect({
   enabled: true,
   searchable: true,
   placeholder: 'Select an option...',
-  virtualize: true,
-  estimatedItemHeight: 48,
 });
 ```
+
+Data fetching, pagination, request cancellation, and page caching belong to the host application. In the current public `EnhancedSelect` path, `virtualize` controls legacy chunked rendering for large flat lists; it does not enable viewport-windowed virtualization. See [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## Component-Level Configuration
 
@@ -494,9 +487,6 @@ When a selected item is on a page that hasn't been loaded yet:
   config={{
     infiniteScroll: {
       enabled: true,
-      pageSize: 20,
-      cachePages: true,
-      scrollRestoration: 'auto', // Automatically scrolls to selected
     },
     serverSide: {
       enabled: true,
@@ -523,7 +513,7 @@ When a selected item is on a page that hasn't been loaded yet:
 2. These items are added to the internal state
 3. When dropdown opens, it scrolls to the selected item
 4. The selected item is rendered even if its page isn't loaded
-5. Page caching ensures performance
+5. The host application owns page caching, pagination, request cancellation, and replacing/appending items. The component emits `loadMore` requests but does not fetch or cache pages itself.
 
 ### Scenario 3: Multi-Select with Remove Buttons
 
@@ -577,7 +567,7 @@ When a selected item is on a page that hasn't been loaded yet:
 | `onOpen` | `() => void` | Called when dropdown opens |
 | `onClose` | `() => void` | Called when dropdown closes |
 | `onSearch` | `(query) => void` | Called when search query changes |
-| `onLoadMore` | `(page) => void` | Called when more items are loaded |
+| `onLoadMore` | `(page) => void` | Called when the component requests that the host load more items |
 | `onError` | `(error) => void` | Called on error |
 
 ### Component Methods
@@ -586,12 +576,15 @@ When a selected item is on a page that hasn't been loaded yet:
 |--------|-------------|
 | `getSelectedItems()` | Get currently selected items |
 | `getSelectedValues()` | Get currently selected values |
-| `setSelectedValues(values)` | Set selected items by value |
+| `setSelectedValues(values: unknown[])` | Set selected items by value; returns a promise and may fetch missing selected items when server-side lookup is configured |
 | `clear()` | Clear all selections |
-| `open()` | Open dropdown |
-| `close()` | Close dropdown |
-| `updateConfig(config)` | Update configuration |
-| `setItems(items)` | Set items to display |
+| `clearSearch()` | Clear the search query |
+| `open()` / `close()` | Open or close the dropdown |
+| `updateConfig(config: Partial<GlobalSelectConfig>)` | Update configuration |
+| `setItems(items: unknown[])` | Replace the displayed item set |
+| `setGroupedItems(groups: GroupedItem[])` | Replace the displayed groups |
+| `setError(message: string)` / `clearError()` | Set or clear the internal validation error and its combobox description |
+| `setRequired(required: boolean)` / `validate()` | Set required state and validate the current selection |
 
 ## TypeScript Support
 
@@ -610,21 +603,20 @@ const config: GlobalSelectConfig = {
 };
 ```
 
-## Performance
+## Large-list rendering status
 
-- **Virtualization**: Only renders visible items
-- **Page Caching**: LRU cache for loaded pages
-- **Debounced Search**: Prevents excessive filtering
-- **Lazy Loading**: Load items on demand
-- **Efficient DOM Updates**: Minimal re-renders
+The public `virtualize` setting currently enables incremental chunk rendering on large flat lists; it does not keep only the viewport and overscan rows mounted. True viewport-windowed `virtual-window` rendering is guarded by a private test seam and is not a supported or production-certified public mode. The public default remains the legacy rendering path. Do not infer bounded DOM or production virtualization support from `virtualize: true`; see [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](./architecture/PHASE-4-CERTIFICATION.md).
+
+The component provides search/load-more events, busy-state presentation, and item-update methods. Data fetching, request cancellation, pagination, and page caching remain host responsibilities.
 
 ## Accessibility
 
-- Full keyboard navigation (Arrow keys, Enter, Escape, Home, End)
-- ARIA attributes for screen readers
-- Focus management
-- Live region announcements
-- Type-ahead search
+- The internal combobox and popup listbox receive their accessible name from the host's `aria-label`; the combobox's literal description comes from `aria-description`.
+- `setError(message)` marks the combobox invalid and associates the message with it; `clearError()` removes that error description.
+- Keyboard interaction includes Arrow keys, Enter, Escape, Home, and End, with focus normally remaining on the combobox input. Removing a selected chip by keyboard moves focus to the next available remove control.
+- Selection, result-count, and validation announcements use a polite live region.
+- Host `aria-labelledby` and `aria-describedby` references are not forwarded across the component's shadow-root boundary. Use the literal host attributes above; error descriptions are linked internally.
+- Automated accessibility checks are being expanded and still require pinned Chromium/Firefox/WebKit verification. Manual screen-reader and assistive-technology assessment has not been completed. This is not a WCAG conformance claim.
 
 ## Browser Support
 

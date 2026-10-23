@@ -2,13 +2,15 @@
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/navidrezadoost/smilodon/main/.github/logo.jpg" alt="Smilodon Logo" width="220" style="border-radius:16px;" />
-  <p><strong>High-performance native select component with extreme-scale virtualization</strong></p>
+  <p><strong>Custom select component with typed selection, rendering, and adapter APIs</strong></p>
   <p>
     <a href="https://www.npmjs.com/package/@smilodon/core"><img src="https://img.shields.io/npm/v/@smilodon/core.svg" alt="npm version"></a>
     <a href="https://github.com/navidrezadoost/smilodon"><img src="https://img.shields.io/github/stars/navidrezadoost/smilodon.svg" alt="GitHub stars"></a>
     <a href="https://github.com/navidrezadoost/smilodon/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@smilodon/core.svg" alt="license"></a>
   </p>
 </div>
+
+> **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
 ## 📖 Documentation
 
@@ -42,9 +44,11 @@ The complete guide includes:
 
 ## Why Smilodon?
 
-Smilodon is a Web Component that renders **1,000,000+ items at 60 FPS** with constant DOM size, sub-millisecond search, and zero framework lock-in. Built for extreme-scale data applications where legacy libraries crash or lag.
+Smilodon is a Web Component-based select with framework adapters and a typed imperative API. `EnhancedSelect` can render large flat lists in chunks, but the public `virtualize` setting does not bound final DOM size; viewport-windowed rendering remains guarded and unactivated.
 
 ### Performance Comparison
+
+> **Historical comparison — unverified.** The measurements and competitor claims below lack a reproducible current benchmark protocol and are not release evidence or performance guarantees. See the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md) for current report-only measurements.
 
 | Library | 10K Items | 100K Items | 1M Items | Memory | FPS |
 |---------|-----------|------------|----------|---------|-----|
@@ -122,16 +126,16 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 ## Key Features
 
 ### 🚀 Extreme Performance
-- **Constant DOM**: Only 10-15 elements rendered regardless of dataset size
+- **Chunked large-list rendering**: Reduces the size of an individual render task; it does not guarantee constant DOM or viewport-bounded mounting.
 - **Work Stealing**: Background search workers with automatic cancellation
 - **Sub-millisecond Search**: Fenwick tree indexing for O(log n) queries
-- **60 FPS Scrolling**: Hardware-accelerated virtualization
+- **Separate legacy virtualizer**: `NativeSelectElement` has its own compatibility implementation; do not infer its behavior from `EnhancedSelect`.
 
 ### 🎯 Production Ready
 - **TypeScript First**: Complete type definitions included
 - **Zero Dependencies**: 6.6 KB gzipped runtime
 - **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JS
-- **Accessibility**: WCAG 2.2 AA compliant with ARIA 1.2
+- **Accessibility**: ARIA and keyboard behavior is implemented; cross-browser and manual assistive-technology certification remains pending.
 - **Full keyboard navigation**: Enter/Space, Arrows, Home/End, PageUp/Down, Escape
 - **Multi-select modes**: wrap, horizontal, vertical, both (with drag-scroll)
 
@@ -744,7 +748,7 @@ enhanced-select.dark-mode {
 
 ### Keyboard Navigation & Accessibility
 
-Smilodon provides full keyboard accessibility (WCAG 2.2 AA compliant):
+The component implements keyboard interaction paths including:
 
 | Key | Action |
 |-----|--------|
