@@ -517,7 +517,7 @@ Host `aria-labelledby` and `aria-describedby` ID references are intentionally no
 
 Local verification used the Node `v22.21.1` runtime embedded in VS Code because the shell has no `node` or `npm` command; it is supplementary and does not match the repository's pinned Node 20 CI environment. The focused accessibility contract/applier/component suites passed 63/63; the full core Vitest suite passed 548 tests with one skipped; root `tsc --noEmit` passed; the core Rollup build passed with the existing `eval` warning; and ESLint passed with zero errors and six existing warnings when generated Playwright reports/results were excluded. The newly added actual-component browser suite passed 9/9 on cached Chromium `151.0.7922.34` (Playwright cache revision 1234), not the pinned Chromium `147.0.7727.15` revision 1217. The cached Firefox revision 1497 is older than the package-required 1511 and stalled before reaching assertions; the local WebKit cache is also older than the package-required revision. No local result substitutes for pinned hosted browser verification.
 
-The 2026-10-23 accessibility, feature-contract, and documentation audit is recorded below. Hosted verification of the new Svelte/event regressions and accessibility browser cases remains pending, as does manual assistive-technology assessment. No accessible-name or keyboard behavior is fully release-certified until those checks and review are complete; production virtualization remains **NO-GO**.
+The 2026-10-23 accessibility, feature-contract, and documentation audit is recorded below. The new Svelte/event regressions and accessibility browser cases passed in the hosted PR and post-merge matrices recorded in Phase 4.9B. Manual assistive-technology assessment remains pending, so these results do not establish WCAG conformance or full release certification; production virtualization remains **NO-GO**.
 
 ### Consolidated release-readiness update — 2026-10-23
 
@@ -525,12 +525,12 @@ The 2026-10-23 accessibility, feature-contract, and documentation audit is recor
 
 | Requirement | Current evidence | Status |
 | --- | --- | --- |
-| Accessible name and description | Browser regression checks literal host `aria-label`/`aria-description` forwarding to the combobox and listbox. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. Cross-root host IDREFs remain unsupported. |
-| Invalid-state and validation announcement | `setError()`/`clearError()` checks `aria-invalid`, internal description association, live status text, and clearing behavior. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
-| Listbox, active option, and `aria-activedescendant` | Role/name test, disabled-option navigation, Home/End and Escape cleanup assertions. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
-| Keyboard focus and chip removal | Trigger and clear focus, renderer keyboard focus, chip removal focus to next chip, including when the popup is open. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
-| Disabled options and dynamic filtering | Disabled item is skipped; open-popup chip-removal case filters to Banana and verifies selected/active state. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
-| Repeated open/close | Browser case verifies Escape, repeated programmatic open/close, and listbox visibility. | Passed on cached Chromium 151 (supplementary); pinned cross-browser verification pending. |
+| Accessible name and description | Browser regression checks literal host `aria-label`/`aria-description` forwarding to the combobox and listbox. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix. Cross-root host IDREFs remain unsupported; manual AT review is pending. |
+| Invalid-state and validation announcement | `setError()`/`clearError()` checks `aria-invalid`, internal description association, live status text, and clearing behavior. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix; manual AT review is pending. |
+| Listbox, active option, and `aria-activedescendant` | Role/name test, disabled-option navigation, Home/End and Escape cleanup assertions. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix; manual AT review is pending. |
+| Keyboard focus and chip removal | Trigger and clear focus, renderer keyboard focus, chip removal focus to next chip, including when the popup is open. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix; manual AT review is pending. |
+| Disabled options and dynamic filtering | Disabled item is skipped; open-popup chip-removal case filters to Banana and verifies selected/active state. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix; manual AT review is pending. |
+| Repeated open/close | Browser case verifies Escape, repeated programmatic open/close, and listbox visibility. | Passed in PR #41's pinned Chromium/Firefox/WebKit matrix and the post-merge Phase 4 matrix; manual AT review is pending. |
 | Manual assistive technology | No current manual NVDA/JAWS/VoiceOver assessment recorded. | Pending; this is not WCAG certification. |
 
 #### Local focused verification on the consolidated branch
@@ -546,9 +546,9 @@ The shell has no `node`/`npm` command; checks used the Node `v22.21.1` runtime e
 | Scoped ESLint | PASS | Changed TypeScript source/tests passed with zero errors; `.svelte` source is not accepted by the root ESLint parser and was validated by the Svelte build instead. |
 | Core Rollup/declaration build | PASS WITH EXISTING WARNING | Build completed; Rollup reports the existing `eval` use in `packages/core/src/utils/security.ts`. |
 | Accessibility/basic-selection browser cases | PASS (SUPPLEMENTARY) | 19/19 passed on cached Chromium `151.0.7922.34`, Playwright cache revision `1234`. An isolated temporary browser-cache mapping was used because the package-pinned Chromium revision `1217` is unavailable locally. This is not pinned-browser certification. |
-| Pinned Chromium/Firefox/WebKit on this change | PENDING | Must run on the consolidated hosted PR. |
+| Pinned Chromium/Firefox/WebKit on this change | HOSTED PASS | Local cached browser binaries did not match the pinned revisions; PR #41 and post-merge Phase 4 subsequently passed the pinned three-engine matrix (see Phase 4.9B below). |
 
-These checks establish focused local source/contract evidence only. They do not replace the hosted CI matrix, complete adapter parity, manual assistive-technology review, or release certification.
+These checks establish focused local source/contract evidence only. The hosted PR and post-merge matrices subsequently passed as recorded in Phase 4.9B; neither replaces complete adapter parity, manual assistive-technology review, or release certification.
 
 #### Phase 4.7/4.8 deliverables
 
@@ -559,6 +559,8 @@ Documentation now distinguishes public incremental chunk rendering from private 
 Neither the public virtualization default nor a latency threshold or public API behavior was changed. The corrected C.5B.1 aggregate was inspected and accepted as a bounded integrity pilot; latency remains report-only. Accessibility certification, complete adapter feature parity, production virtualization, and the proposed 100 ms End-key candidate remain unresolved/NO-GO.
 
 ### Phase 4.9A — Consolidated release-candidate preflight, 2026-10-23
+
+This section is a point-in-time preflight record from before hosted verification; the subsequent PR and post-merge outcomes are recorded in Phase 4.9B.
 
 The preflight ran on `codex/phase-4-release-readiness` using the VS Code-bundled Node `v22.21.1` because shell `node` and `npm` commands are unavailable. Dependencies already present in `node_modules` were used; `npm ci` and the repository-pinned Node 20 runtime were not locally exercised. Local results are supplementary to hosted CI.
 
@@ -572,13 +574,44 @@ The preflight ran on `codex/phase-4-release-readiness` using the VS Code-bundled
 | ESLint | PASS WITH EXISTING WARNINGS | Exact `eslint .` command: 0 errors, 6 existing warnings. Added `.eslintignore` entries for generated `playwright-report/` and `test-results/` so local diagnostics are not linted as source. |
 | Workspace build | PASS WITH EXISTING TOOL WARNINGS | All eight workspace build scripts completed using their installed Rollup/Vite/TypeScript/Vue/Svelte tools; this manually reproduced the scripts because npm is unavailable. Existing Rollup `eval`, React `use client`/sourcemap, and playground `eval` warnings remain. The React Native build refreshed its generated embedded core bundle; native bridge behavior remains unverified. |
 | Browser matrix discovery | PASS | The Phase 4 workflow now invokes virtualization, accessibility-focus, and basic-selection specs in each engine job. Playwright lists 24 tests per engine (72 Chromium/Firefox/WebKit project entries). This confirms discovery/configuration only, not browser execution. |
-| Pinned Chromium/Firefox/WebKit execution | PENDING | Must be verified by the consolidated hosted PR using the lockfile-pinned browser builds. Local cached browser binaries do not match the required pinned revisions. |
+| Pinned Chromium/Firefox/WebKit execution | HOSTED PASS | Local cached browser binaries did not match the pinned revisions; PR #41 and post-merge Phase 4 subsequently passed the pinned three-engine matrix (see Phase 4.9B below). |
 | Manual keyboard-only and assistive-technology assessment | PENDING | No human AT session was performed. Record the real OS/device, browser/version, screen reader/version, test build/commit, and observed naming, validation, active-option, selection, and chip-removal behavior before release sign-off. Automated ARIA tests are not a substitute. |
 
 #### Accessibility assessment status
 
-Automated browser assertions cover accessible naming/description, validation state and message association, active-option/`aria-activedescendant` integrity, keyboard focus, selection state, disabled-option navigation, and chip removal. The cross-browser workflow is prepared to run these cases together with the selection-event-order regression; hosted pinned results remain pending. Manual screen-reader review has not been carried out and no platform observations or defect dispositions are claimed. Host `aria-labelledby`/`aria-describedby` ID references across the shadow boundary remain an explicit limitation. Accessibility is therefore **not certified**.
+Automated browser assertions cover accessible naming/description, validation state and message association, active-option/`aria-activedescendant` integrity, keyboard focus, selection state, disabled-option navigation, and chip removal. These scenarios passed in the PR #41 and post-merge pinned three-engine matrices recorded in Phase 4.9B. Manual screen-reader review has not been carried out and no platform observations or defect dispositions are claimed. Host `aria-labelledby`/`aria-describedby` ID references across the shadow boundary remain an explicit limitation. Accessibility is therefore **not certified**.
 
 #### Consolidated release gate
 
-The local source/unit/contract/type/lint/build checks are complete, with the counts and qualifications above. The corrected C.5B.1 aggregate has independent content sign-off in this record, and the feature-contract audit remains at [PHASE-4-FEATURE-CONTRACT-AUDIT.md](./PHASE-4-FEATURE-CONTRACT-AUDIT.md). The single consolidated PR still needs its complete hosted Actions matrix and human assistive-technology evidence before merge approval. Preserve the historical spacer-geometry diagnostic and unresolved native observer ownership as open historical limitations. Release of currently implemented functionality and activation of guarded viewport virtualization remain separate decisions; production viewport virtualization remains **NO-GO**.
+At this preflight snapshot, the consolidated PR still needed its hosted Actions matrix and human assistive-technology evidence before merge approval. The PR and post-merge automated results are documented in Phase 4.9B; the manual assessment remains outstanding. The corrected C.5B.1 aggregate has independent content sign-off in this record, and the feature-contract audit remains at [PHASE-4-FEATURE-CONTRACT-AUDIT.md](./PHASE-4-FEATURE-CONTRACT-AUDIT.md). Preserve the historical spacer-geometry diagnostic and unresolved native observer ownership as open historical limitations. Release of currently implemented functionality and activation of guarded viewport virtualization remain separate decisions; production viewport virtualization remains **NO-GO**.
+
+### Phase 4.9B — Post-merge closure and accessibility sign-off, 2026-10-23
+
+PR #41 was merged at `79ae3721a51cd6eaa4e012fef8c18009aed2c2d8` from validated head `f1572bc1b4419c4dfe4668c1181e47e357d440b1`. The reviewer verified all 23 PR checks passed: Tests 11/11, CI 1/1, Controlled Replication 3/3, Performance Baseline 4/4, and Phase 4 Certification 4/4, including Chromium, Firefox, and WebKit. See the [PR](https://github.com/navidrezadoost/Smilodon/pull/41) and its [Phase 4 Certification](https://github.com/navidrezadoost/Smilodon/actions/runs/39964038502), [Tests](https://github.com/navidrezadoost/Smilodon/actions/runs/39964038526), [CI](https://github.com/navidrezadoost/Smilodon/actions/runs/39964038599), [Performance Baseline](https://github.com/navidrezadoost/Smilodon/actions/runs/39964038541), and [Controlled Replication](https://github.com/navidrezadoost/Smilodon/actions/runs/39964038414) runs. This is acceptance of the automated checks for their tested scope only.
+
+The merge occurred before the required PR checks had all completed. Their eventual green result does not remove that process-control exception. Require branch protection or repository rulesets to block future merges until required checks and reviews have completed. PR #41's generic title and empty description are metadata defects, not runtime defects; metadata editing was unavailable through the connected integration and may be corrected separately.
+
+#### Post-merge checks on `main`
+
+The terminal status was independently checked against merge commit `79ae3721a51cd6eaa4e012fef8c18009aed2c2d8` at 2026-10-23 14:42 UTC:
+
+| Workflow | Run | Status at check | Evidence |
+| --- | --- | --- | --- |
+| CI | [39964651634](https://github.com/navidrezadoost/Smilodon/actions/runs/39964651634) | **Passed, 1/1** | `build-and-test` succeeded. |
+| Tests | [39964651725](https://github.com/navidrezadoost/Smilodon/actions/runs/39964651725) | **Passed, 11/11** | Unit tests, four adapter contract jobs, four framework E2E jobs, Critical Path E2E, and Test Summary all succeeded. |
+| Phase 4 Certification | [39964651676](https://github.com/navidrezadoost/Smilodon/actions/runs/39964651676) | **Passed, 4/4** | Regression/lint/build and guarded virtualization/accessibility/selection scenarios passed on Chromium, Firefox, and WebKit. |
+
+All three post-merge workflows completed successfully on the merge commit. No job failed, so there was no failure log or failure artifact to classify. The browser installation steps that had remained in progress eventually completed and the dependent tests passed. This closes the automated post-merge gate for the tested scope; it does not replace manual assistive-technology review or authorize production virtualization.
+
+#### Manual assistive-technology assessment — pending assignment
+
+No tester or verified test environment is currently assigned. An accessibility QA engineer or experienced assistive-technology user should perform and document both planned assessments:
+
+| Priority | Platform | Assignment status |
+| --- | --- | --- |
+| Primary | Windows 11 with NVDA and Firefox or Chrome | Pending tester and environment assignment. |
+| Secondary | macOS with VoiceOver and Safari | Pending tester and environment assignment. |
+
+For each session, record the exact OS/device, browser and screen-reader versions, build/commit, date, tester, observations, defects, and dispositions. Exercise accessible name/description, popup and listbox announcements, active-option and `aria-activedescendant` changes during keyboard navigation, disabled-option skipping, filtering, validation/error announcement and clearing, single/multiple selection, chip removal and focus restoration, and repeated open/close. Include keyboard-only observations and distinguish screen-reader behavior from visual/browser assertions. Do not claim WCAG conformance until the human assessment is completed and its findings are reviewed. Host `aria-labelledby`/`aria-describedby` references across the shadow boundary remain a documented limitation.
+
+The PR and post-merge automated accessibility scenarios passed in Chromium, Firefox, and WebKit; this does not establish manual AT compatibility or broad accessibility conformance. Solid and React Native adapter parity remain uncertified, historical geometry/native-observer attribution limitations remain documented, and benchmark latency targets remain report-only. Automated post-merge closure is complete, but public production virtualization remains **NO-GO** pending manual AT assessment and the separately governed release-activation decision.
