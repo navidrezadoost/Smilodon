@@ -5,13 +5,15 @@ Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon
 > Large-list status: the helper's public `virtualized` option maps to legacy chunked rendering for large flat lists; it does not window rows to the viewport. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 > Current API: use the [API reference](../../docs/API-REFERENCE.md) and the package's exported TypeScript declarations. The long-form guide below contains legacy `NativeSelect` examples and is not a current API inventory.
+>
+> **Registration prerequisite:** import `@smilodon/core` before calling `createSelect()` or `initSelect()`. The Vanilla helper creates an `enhanced-select` element and immediately calls its imperative methods; it does not wait for custom-element registration/upgrade. For an existing host, await `customElements.whenDefined('enhanced-select')` before `initSelect()`.
 
 ## Features
 
 - ✨ **Simple API** - Easy-to-use helper functions for vanilla JS
 - 🔍 **Zero Dependencies** - Only requires @smilodon/core
-- ♿ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
-- ⚡ **Tiny Bundle** - < 1KB gzipped
+- ♿ **Accessibility behaviors** - The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit. This does not certify every Vanilla integration, minimum browser versions, or WCAG conformance; manual assistive-technology assessment remains pending.
+- ⚡ **Bundle size** - Size depends on the selected package entry, dependency graph, and bundler output. No current version-specific gzipped-size measurement is claimed here.
 - 🔧 **TypeScript** - Full type safety included
 - 📦 **Tree-Shakeable** - Import only what you need
 - 🎯 **Web Standards** - Built on native Web Components
@@ -35,6 +37,7 @@ npm install @smilodon/vanilla @smilodon/core
 ### Using the Helper Function
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -55,6 +58,14 @@ document.body.appendChild(select);
 ### Direction and option-state controls
 
 ```typescript
+import '@smilodon/core';
+import { createSelect } from '@smilodon/vanilla';
+
+const items = [
+  { value: 'a', label: 'Alpha' },
+  { value: 'b', label: 'Beta' },
+];
+
 const select = createSelect({
   items,
   direction: 'rtl',
@@ -88,6 +99,7 @@ Use these when you want advanced core features without writing the whole `update
 - `config`
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -124,6 +136,14 @@ const select = createSelect({
 #### Full `config` passthrough
 
 ```typescript
+import '@smilodon/core';
+import { createSelect } from '@smilodon/vanilla';
+
+const items = [
+  { value: 'react', label: 'React' },
+  { value: 'vue', label: 'Vue' },
+];
+
 const select = createSelect({
   items,
   multiple: true,
@@ -158,7 +178,10 @@ const select = createSelect({
 #### Global defaults from `@smilodon/vanilla`
 
 ```typescript
+import '@smilodon/core';
 import { configureSelect, createSelect } from '@smilodon/vanilla';
+
+const items = [{ value: 'react', label: 'React' }];
 
 configureSelect({
   searchable: true,
@@ -187,14 +210,25 @@ In addition to `open()`, `close()`, `clear()`, `setItems()`, and `setGroupedItem
 - `clearError(element)`
 - `setRequired(element, required)`
 - `validate(element)`
+- `getCapabilities(element)` and `getKnownLimitations(element)`
+- `getTrackingSnapshot(element)`, `clearTracking(element, source?)`, and `setLimitationPolicies(element, policies)`
+- `getValue(element)` and `setValue(element, value)`
+- global `configureSelect(config)`, `resetSelectConfig()`, and `selectConfig`
 
 ```typescript
+import '@smilodon/core';
 import {
+  createSelect,
   clearSearch,
   updateConfig,
   setError,
   validate,
 } from '@smilodon/vanilla';
+
+const select = createSelect({
+  items: [{ value: 'choice', label: 'Choice' }],
+});
+document.body.appendChild(select);
 
 clearSearch(select);
 updateConfig(select, { selection: { showSelectedIndicator: false } });
@@ -208,33 +242,44 @@ console.log(validate(select));
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <title>Smilodon Vanilla example</title>
+</head>
+<body>
+  <div id="app">
+    <enhanced-select placeholder="Select a language..."></enhanced-select>
+  </div>
   <script type="module">
     import '@smilodon/core';
     import { initSelect } from '@smilodon/vanilla';
 
-    const select = document.querySelector('enhanced-select');
-    
+    await customElements.whenDefined('enhanced-select');
+    const select = document.querySelector<HTMLElement>('enhanced-select');
+    if (!select) throw new Error('Expected an enhanced-select element');
+
     initSelect(select, {
       items: [
         { value: 'js', label: 'JavaScript' },
         { value: 'ts', label: 'TypeScript' },
         { value: 'py', label: 'Python' },
       ],
-      value: 'js'
+      value: 'js',
+      searchable: true,
+      placeholder: 'Select a language...'
     });
   </script>
-</head>
-<body>
-  <enhanced-select placeholder="Select a language..."></enhanced-select>
 </body>
 </html>
 ```
 
 ## Examples
 
+Every standalone helper example below imports `@smilodon/core` before calling `createSelect()`. In an application, one core side-effect import at the browser entry point is sufficient. When initializing an existing host with `initSelect()`, wait for `customElements.whenDefined('enhanced-select')` as shown above.
+
 ### Searchable Select
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -248,12 +293,13 @@ const select = createSelect({
   onChange: (value) => console.log('Country:', value)
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Multi-Select
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -269,12 +315,15 @@ const select = createSelect({
   }
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Grouped Options
 
+Vanilla's adapter input intentionally uses `{ group, items }`. The core runtime's `setGroupedItems()` contract uses `{ label, options }`; the helper converts the Vanilla shape to the core shape internally. Use the Vanilla shape with `createSelect()` / helper `setGroupedItems()` and the core shape only when calling the core element directly.
+
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -297,43 +346,53 @@ const select = createSelect({
   onChange: (value) => console.log('Food:', value)
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Infinite Scroll
 
 ```typescript
+import '@smilodon/core';
 import { createSelect, setItems } from '@smilodon/vanilla';
 
-let items = generateItems(1, 50);
-let page = 1;
+const pageSize = 50;
+const total = 500;
+let items = makeItems(1, pageSize);
+let loading = false;
 
 const select = createSelect({
   items,
   infiniteScroll: true,
-  pageSize: 50,
+  pageSize,
   placeholder: 'Scroll to load more...',
-  onLoadMore: (pageNum) => {
-    page++;
-    const newItems = generateItems(page * 50 + 1, (page + 1) * 50);
-    items = [...items, ...newItems];
+  onLoadMore: () => {
+    if (loading || items.length >= total) return;
+
+    loading = true;
+    const start = items.length + 1;
+    const count = Math.min(pageSize, total - items.length);
+    items = [...items, ...makeItems(start, count)];
     setItems(select, items);
+    loading = false;
   }
 });
 
-function generateItems(start, end) {
-  return Array.from({ length: end - start + 1 }, (_, i) => ({
+function makeItems(start: number, count: number) {
+  return Array.from({ length: count }, (_, i) => ({
     value: start + i,
     label: `Item ${start + i}`,
   }));
 }
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
+
+For remote data, keep the in-flight flag set until the request settles, detect the server's end-of-data response, and report/retry failures in the host application. The helper invokes `onLoadMore`; it does not own the data source or deduplicate asynchronous requests for you.
 
 ### Incremental Chunk Rendering (Large Flat Lists)
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 // Generate a large flat item set
@@ -349,35 +408,54 @@ const select = createSelect({
   placeholder: 'Large item list'
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Server-Side Search
 
 ```typescript
+import '@smilodon/core';
 import { createSelect, setItems } from '@smilodon/vanilla';
+
+let searchRequest = 0;
+let activeController: AbortController | undefined;
 
 const select = createSelect({
   searchable: true,
   placeholder: 'Type to search...',
   onSearch: async (query) => {
+    const requestId = ++searchRequest;
+    activeController?.abort();
+
     if (!query) {
       setItems(select, []);
       return;
     }
 
-    const response = await fetch(`/api/search?q=${query}`);
-    const data = await response.json();
-    setItems(select, data.results);
+    const controller = new AbortController();
+    activeController = controller;
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+      const data = await response.json();
+      if (requestId === searchRequest) setItems(select, data.results);
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError') && requestId === searchRequest) {
+        console.error('Unable to search options', error);
+      }
+    }
   }
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Programmatic Control
 
 ```typescript
+import '@smilodon/core';
 import { createSelect, getValue, setValue, clear, open, close } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -389,26 +467,32 @@ const select = createSelect({
 });
 
 // Add to DOM
-document.getElementById('app').appendChild(select);
+const buttons = Object.entries({ open: 'Open', close: 'Close', set: 'Set value', get: 'Get value', clear: 'Clear' }).map(([id, label]) => {
+  const button = document.createElement('button');
+  button.id = `btn-${id}`;
+  button.textContent = label;
+  return button;
+});
+document.body.append(select, ...buttons);
 
 // Programmatic API
-document.getElementById('btn-open').addEventListener('click', () => {
+document.getElementById('btn-open')!.addEventListener('click', () => {
   open(select);
 });
 
-document.getElementById('btn-close').addEventListener('click', () => {
+document.getElementById('btn-close')!.addEventListener('click', () => {
   close(select);
 });
 
-document.getElementById('btn-set').addEventListener('click', () => {
+document.getElementById('btn-set')!.addEventListener('click', () => {
   setValue(select, 'published');
 });
 
-document.getElementById('btn-get').addEventListener('click', () => {
+document.getElementById('btn-get')!.addEventListener('click', () => {
   console.log('Current value:', getValue(select));
 });
 
-document.getElementById('btn-clear').addEventListener('click', () => {
+document.getElementById('btn-clear')!.addEventListener('click', () => {
   clear(select);
 });
 ```
@@ -416,6 +500,7 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 ### Clear Control (Reset Selection/Search)
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
@@ -442,11 +527,15 @@ document.body.appendChild(select);
 
 Styling hooks: `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*` CSS variables.
 
-The default `hideWhenEmpty: true` behavior means an empty clearable select reserves no action-area space. A selection or enabled search query reveals the button and coordinated input/arrow layout; clearing both restores the normal layout. This applies to single, multi-select, LTR, and RTL modes.
+The shared runtime's default `hideWhenEmpty: true` behavior means an empty clearable select reserves no action-area space. A selection or enabled search query reveals the button and coordinated input/arrow layout; clearing both restores the normal layout for single/multi-select and LTR/RTL configurations. This describes the runtime behavior, not exhaustive Vanilla integration certification.
 
 Use full config passthrough when a permanently visible disabled-when-empty action is intentional:
 
 ```typescript
+import '@smilodon/core';
+import { createSelect } from '@smilodon/vanilla';
+
+const items = [{ value: 'selected', label: 'Selected item' }];
 const select = createSelect({
   items,
   clearable: true,
@@ -459,10 +548,14 @@ const select = createSelect({
 ### With Event Listeners
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
-  items: [...],
+  items: [
+    { value: 'first', label: 'First option' },
+    { value: 'second', label: 'Second option' },
+  ],
   onChange: (value, items) => {
     console.log('Value changed:', value);
     console.log('Selected items:', items);
@@ -481,16 +574,19 @@ const select = createSelect({
   }
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ### Custom Styling
 
 ```typescript
+import '@smilodon/core';
 import { createSelect } from '@smilodon/vanilla';
 
 const select = createSelect({
-  items: [...],
+  items: [
+    { value: 'custom', label: 'Custom styled option' },
+  ],
   className: 'my-custom-select',
   style: {
     width: '300px',
@@ -498,7 +594,7 @@ const select = createSelect({
   }
 });
 
-document.getElementById('app').appendChild(select);
+document.body.appendChild(select);
 ```
 
 ```css
@@ -536,7 +632,10 @@ Creates and returns a new select element.
 | `maxSelections` | `number` | `undefined` | Max selections |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `className` | `string` | `''` | Custom CSS class |
-| `style` | `CSSStyleDeclaration` | `{}` | Inline styles |
+| `style` | `Partial<CSSStyleDeclaration>` | `{}` | Inline host-element styles |
+| `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, `config` | core configuration types | - | Shared runtime configuration groups |
+| `direction`, `removeButtonIcon`, `disabledOptionBehavior`, `showSelectedIndicator` | documented values/configs | - | Direction, chip, and option-state settings |
+| `clearable`, `clearSelectionOnClear`, `clearSearchOnClear`, `clearAriaLabel`, `clearIcon` | booleans / strings | - | Clear-control configuration |
 | `onChange` | `(value, items) => void` | `undefined` | Change callback |
 | `onSelect` | `(item, index) => void` | `undefined` | Select callback |
 | `onOpen` | `() => void` | `undefined` | Open callback |
@@ -544,6 +643,9 @@ Creates and returns a new select element.
 | `onSearch` | `(query) => void` | `undefined` | Search callback |
 | `onLoadMore` | `(page) => void` | `undefined` | Load more callback |
 | `onCreate` | `(value) => void` | `undefined` | Create callback |
+| `onClear` | `(detail) => void` | `undefined` | Clear result callback |
+| `onDiagnostic` | `(detail) => void` | `undefined` | Diagnostic callback |
+| `trackingEnabled`, `trackEvents`, `trackStyling`, `trackLimitations`, `emitDiagnostics`, `trackingMaxEntries`, `limitationPolicies`, `autoMitigateRuntimeModeSwitch` | tracking/policy types | - | Diagnostic and limitation controls |
 
 **Returns:** `HTMLElement`
 
@@ -552,8 +654,8 @@ Creates and returns a new select element.
 Initialize an existing select element in the DOM.
 
 **Parameters:**
-- `element: HTMLElement` - The select element
-- `options: { items?, groupedItems?, value? }` - Initialization options
+- `element: HTMLElement` - An `enhanced-select` host whose custom-element definition has already loaded and upgraded.
+- `options` - `initSelect` accepts `items`, Vanilla-shaped `groupedItems`, `value`, `multiple`, `searchable`, `placeholder`, `disabled`, `infiniteScroll`, `pageSize`, `virtualized`, `maxSelections`, `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, `config`, `clearable`, `clearSelectionOnClear`, `clearSearchOnClear`, `clearAriaLabel`, and `clearIcon`. It does not accept the callbacks, `className`, `style`, or diagnostics options available on `createSelect`.
 
 ### `getValue(element)`
 
@@ -633,6 +735,8 @@ enhanced-select {
 ```
 
 ## Browser Support
+
+The versions listed below are repository compatibility targets, not browser versions certified by the current Phase 4 matrix. The completed scoped matrix uses current pinned Chromium, Firefox, and WebKit builds; see the [browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) for declared targets.
 
 - Chrome/Edge 90+
 - Firefox 88+

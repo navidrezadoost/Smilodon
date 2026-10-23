@@ -1,8 +1,8 @@
 # @smilodon/svelte
 
-Select component for Svelte applications with keyboard and ARIA behaviors under active verification. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
+Select component for Svelte applications. The shared core has scoped automated Phase 4 browser coverage; exhaustive Svelte integration parity and manual assistive-technology certification remain unverified. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
-> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not establish exhaustive Svelte integration parity, minimum-browser-version support, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -14,12 +14,14 @@ Select component for Svelte applications with keyboard and ARIA behaviors under 
 
 👉 **[Complete Svelte Guide](./COMPLETE-GUIDE.md)** 👈
 
+The Quick Start and examples with a complete `<script>` block are intended to stand alone. Short renderer, accessibility, and troubleshooting examples are explicitly identified as fragments when they rely on surrounding component state.
+
 The complete guide includes:
 - ✅ Complete styling token coverage for colors, layout, chips, motion, and accessibility
 - ✅ Svelte-specific patterns (reactive statements, stores, bind:value)
 - ✅ Complete API reference with TypeScript types
 - ✅ Svelte stores integration (writable, derived)
-- ✅ Custom renderers returning HTML strings
+- ✅ DOM option renderers returning `HTMLElement` values; do not return HTML strings
 - ✅ Theme examples with :global() styling
 - ✅ Advanced patterns (Context API, reactive dependencies)
 - ✅ Troubleshooting and accessibility information
@@ -28,40 +30,35 @@ The complete guide includes:
 
 ## Features
 
-- New: `optionRenderer` prop (Option B) lets you return an `HTMLElement` for custom DOM-driven option layouts.
+- `optionRenderer` is the Svelte adapter's DOM renderer prop and must return an `HTMLElement`. There is no HTML-string template prop on this adapter.
 
 ### Advanced scenarios (Svelte)
-- **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary:
+- **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary. A neighboring external label is not proof of native label association:
   ```svelte
   <label for="city-picker">City</label>
   <Select id="city-picker" aria-label="City" />
   ```
 - **Server-side lookup**:
   ```svelte
-  <Select bind:this={picker} searchable on:search={(e) => load(e.detail.query)} />
-
-  async function load(q) {
-    const res = await fetch(`/api/cities?q=${encodeURIComponent(q)}`);
-    const items = await res.json();
-    picker?.setItems(items);
-  }
+  <!-- Fragment: assumes items and handleSearch are declared in this component. -->
+  <Select {items} searchable on:search={handleSearch} />
   ```
 - **Large flat lists**: the public setting enables chunked rendering, not viewport windowing:
   ```svelte
-  <Select {items} virtualized />
   <script>
     export let items = Array.from({ length: 100_000 }, (_, i) => ({ value: i, label: `Item ${i}` }));
   </script>
+  <Select {items} virtualized />
   ```
 
 - ✨ **Single & Multi-Select** - Choose one or multiple options
 - 🔍 **Searchable** - Filter options with built-in or custom search
-- ♿ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
+- ♿ **Accessibility behaviors** - Shared-core scenarios passed in the scoped Chromium/Firefox/WebKit Phase 4 matrix; exhaustive Svelte adapter parity, manual AT, and WCAG conformance are not established
 - ⚡ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - 📜 **Infinite Scroll** - Load data progressively
 - 👥 **Grouped Options** - Organize options into categories
 - 🎨 **Customizable** - Style with CSS variables or custom themes
-- 📦 **Tiny Bundle** - ~2KB gzipped
+- 📦 **Bundle guidance** - No version-specific bundle-size measurement is claimed; measure your published entry and bundler output if size is a release requirement
 - 🔧 **TypeScript** - Full type safety included
 
 ## Installation
@@ -72,7 +69,7 @@ npm install @smilodon/svelte @smilodon/core
 
 ## SvelteKit / SSR Notes
 
-The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`, so it is safe to use in SvelteKit pages as long as imperative browser-only code stays inside lifecycle hooks.
+The adapter imports the core package and performs imperative element work from its browser lifecycle. This helps avoid server-only DOM access, but does not by itself certify SSR/hydration behavior across all SvelteKit versions, render modes, or bundler configurations.
 
 ### Recommended pattern
 
@@ -97,6 +94,7 @@ The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`,
 - Avoid direct `window`, `document`, or custom-element access outside `onMount()`.
 - Use `bind:value` for regular selection flow and exported instance methods for imperative control.
 - Prefer `optionRenderer` when you need DOM-driven custom options and plain markup when you do not.
+- If your SSR/hydration setup reports mismatches, keep this interactive control behind the framework's client-only lifecycle boundary and verify the exact production build mode.
 
 ## Quick Start
 
@@ -145,7 +143,7 @@ The Svelte adapter waits for `enhanced-select` to be defined during `onMount()`,
 
 Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
 
-An empty clearable field reserves no clear-button space by default. The control and its coordinated input/arrow spacing appear when a selected value or enabled search query can be cleared, then disappear once both targets are empty. The same rule applies to single, multi-select, LTR, and RTL layouts.
+An empty clearable field reserves no clear-button space by default. The control and its coordinated input/arrow spacing appear when a selected value or enabled search query can be cleared, then disappear once both targets are empty. This describes the shared runtime's intended behavior across single/multi-select and LTR/RTL configurations, not exhaustive Svelte integration certification.
 
 Use full config passthrough when a permanently visible disabled-when-empty action is required:
 
@@ -324,7 +322,7 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
     { value: 'mx', label: 'Mexico' },
   ];
 
-  let country;
+  let country: string | number = '';
 </script>
 
 <Select
@@ -347,7 +345,7 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
     { value: 'py', label: 'Python' },
   ];
 
-  let languages = [];
+  let languages: Array<string | number> = [];
 </script>
 
 <Select
@@ -360,28 +358,30 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 
 ### Grouped Options
 
+Svelte uses the core grouped-data contract `{ label, options }`. This differs from the Vanilla helper contract `{ group, items }`; do not copy the Vanilla shape into a Svelte `groupedItems` prop.
+
 ```svelte
 <script lang="ts">
   import { Select } from '@smilodon/svelte';
 
   const groupedItems = [
     {
-      group: 'Fruits',
-      items: [
+      label: 'Fruits',
+      options: [
         { value: 'apple', label: 'Apple' },
         { value: 'banana', label: 'Banana' },
       ],
     },
     {
-      group: 'Vegetables',
-      items: [
+      label: 'Vegetables',
+      options: [
         { value: 'carrot', label: 'Carrot' },
         { value: 'potato', label: 'Potato' },
       ],
     },
   ];
 
-  let food;
+  let food: string | number = '';
 </script>
 
 <Select {groupedItems} bind:value={food} />
@@ -393,17 +393,25 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 <script lang="ts">
   import { Select } from '@smilodon/svelte';
 
-  let items = generateItems(1, 50);
-  let page = 1;
+  const pageSize = 50;
+  const total = 500;
+  let items = makeItems(1, pageSize);
+  let loading = false;
+  const loadedPages = new Set<number>([1]);
 
-  function handleLoadMore() {
-    page++;
-    const newItems = generateItems(page * 50 + 1, (page + 1) * 50);
-    items = [...items, ...newItems];
+  function handleLoadMore(event: CustomEvent<{ page: number }>) {
+    const requestedPage = event.detail.page;
+    if (loading || loadedPages.has(requestedPage) || items.length >= total) return;
+    loading = true;
+    const start = items.length + 1;
+    const count = Math.min(pageSize, total - items.length);
+    items = [...items, ...makeItems(start, count)];
+    loadedPages.add(requestedPage);
+    loading = false;
   }
 
-  function generateItems(start, end) {
-    return Array.from({ length: end - start + 1 }, (_, i) => ({
+  function makeItems(start: number, count: number) {
+    return Array.from({ length: count }, (_, i) => ({
       value: start + i,
       label: `Item ${start + i}`,
     }));
@@ -413,11 +421,13 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 <Select
   {items}
   infiniteScroll
-  pageSize={50}
+  pageSize={pageSize}
   on:loadMore={handleLoadMore}
   placeholder="Scroll to load more..."
 />
 ```
+
+This local example guards synchronous repeated callbacks and fills consecutive item ranges (1–50, 51–100, and so on). For remote pagination, keep the guard active until the request settles, handle errors and server end-of-data, and track pages so duplicate events cannot append the same page twice. The component forwards a `loadMore` event; the host owns data transport and state.
 
 ### Incremental Chunk Rendering (Large Datasets)
 
@@ -444,25 +454,42 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 
 ```svelte
 <script lang="ts">
-  import { Select } from '@smilodon/svelte';
+  import { Select, type SelectItem } from '@smilodon/svelte';
+  import { onDestroy } from 'svelte';
 
-  let items = [];
+  let items: SelectItem[] = [];
   let isLoading = false;
+  let searchError = '';
+  let controller: AbortController | undefined;
+  let requestId = 0;
 
-  async function handleSearch(event) {
+  async function handleSearch(event: CustomEvent<{ query: string }>) {
     const query = event.detail.query;
+    const id = ++requestId;
+    controller?.abort();
     
     if (!query) {
       items = [];
+      isLoading = false;
+      searchError = '';
       return;
     }
 
+    const current = new AbortController();
+    controller = current;
     isLoading = true;
-    const response = await fetch(`/api/search?q=${query}`);
-    const data = await response.json();
-    items = data.results;
-    isLoading = false;
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: current.signal });
+      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+      const data = await response.json() as { results: SelectItem[] };
+      if (id === requestId) { items = data.results; searchError = ''; }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError') && id === requestId) searchError = String(error);
+    } finally {
+      if (id === requestId) isLoading = false;
+    }
   }
+  onDestroy(() => controller?.abort());
 </script>
 
 <Select
@@ -471,9 +498,15 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
   on:search={handleSearch}
   placeholder="Type to search..."
 />
+{#if isLoading}<p role="status">Searching…</p>{/if}
+{#if searchError}<p role="alert">{searchError}</p>{/if}
 ```
 
+The `search` callback can fire rapidly while typing. Cancellation plus a request sequence check prevents a slower old response from replacing newer results. Render `isLoading` and `searchError` in the host UI as needed; Smilodon does not own the network request.
+
 ### Controlled Component
+
+Use `bind:value` when the Svelte component's two-way binding is the intended state contract. Use explicit `value` plus `on:change` when the parent/store owns updates, and pass a changed value back to the component. `defaultValue` is for an initial value that the component then manages; do not mix these models in one example.
 
 ```svelte
 <script lang="ts">
@@ -485,11 +518,12 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
     { value: 'archived', label: 'Archived' },
   ];
 
-  let status = 'draft';
+  let status: string | number = 'draft';
 
-  function handleChange(event) {
+  function handleChange(event: CustomEvent<{ value: string | number | (string | number)[] }>) {
     console.log('Status changed:', event.detail.value);
-    status = event.detail.value;
+    const next = event.detail.value;
+    status = Array.isArray(next) ? next[0] ?? '' : next;
   }
 </script>
 
@@ -510,15 +544,15 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 <script lang="ts">
   import { Select } from '@smilodon/svelte';
 
-  let selectRef;
-  const items = [...];
+  let selectRef: { open: () => void; clear: () => void } | undefined;
+  const items = [{ value: 'alpha', label: 'Alpha' }];
 
   function programmaticOpen() {
-    selectRef.open();
+    selectRef?.open();
   }
 
   function programmaticClear() {
-    selectRef.clear();
+    selectRef?.clear();
   }
 </script>
 
@@ -549,6 +583,10 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
 | `className` | `string` | `''` | Custom CSS class |
 | `style` | `string` | `''` | Custom inline styles |
+| `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, `config` | core configuration types | - | Shared runtime configuration groups |
+| `optionRenderer` | `(item, index, helpers) => HTMLElement` | - | DOM option renderer; must return an element, not an HTML string |
+| `clearable`, `clearSelectionOnClear`, `clearSearchOnClear`, `clearAriaLabel`, `clearIcon` | booleans / strings | - | Clear-control configuration |
+| `trackingEnabled`, `trackEvents`, `trackStyling`, `trackLimitations`, `emitDiagnostics`, `trackingMaxEntries`, `limitationPolicies`, `autoMitigateRuntimeModeSwitch` | documented tracking/limitation types | - | Runtime diagnostics and limitation policies |
 
 ## Events
 
@@ -561,6 +599,8 @@ The Svelte component exports additional runtime helpers beyond `open()` and `cle
 | `search` | `{ query }` | Search query changed |
 | `loadMore` | `{ page }` | Load more requested |
 | `create` | `{ value }` | New item creation |
+| `clear` | `{ clearedSelection, clearedSearch }` | Clear control used |
+| `diagnostic` | Diagnostic detail | Runtime diagnostics enabled |
 
 ## Methods
 
@@ -574,6 +614,14 @@ Access these methods using `bind:this`:
 | `clear()` | `() => void` | Clear selection |
 | `setItems()` | `(items: SelectItem[]) => void` | Update items |
 | `setGroupedItems()` | `(groups: GroupedItem[]) => void` | Update grouped items |
+| `clearSearch()` | `() => void` | Clear the search query |
+| `updateCoreConfig()` | `(config: Partial<GlobalSelectConfig>) => void` | Apply core runtime configuration |
+| `setError()` / `clearError()` | message / no arguments | Set or clear validation error state |
+| `setRequiredState()` | `(required: boolean) => void` | Change required state |
+| `validate()` | `() => boolean` | Validate current state |
+| `getCapabilities()` / `getKnownLimitations()` | reports | Read capabilities and current limitations |
+| `getTrackingSnapshot()` / `clearTracking(source?)` | snapshot / source | Inspect or clear tracking data |
+| `setLimitationPolicies()` | `(policies) => void` | Set limitation-handling policies |
 
 ## Types
 
@@ -587,8 +635,8 @@ interface SelectItem {
 }
 
 interface GroupedItem {
-  group: string;
-  items: SelectItem[];
+  label: string;
+  options: SelectItem[];
 }
 ```
 
@@ -607,7 +655,7 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
 - ✅ Auto-conversion from strings/numbers
 - ✅ Perfect for basic dropdowns
 - ✅ Works seamlessly with Svelte stores
-- ✅ Extremely performant (millions of items)
+- ✅ Suitable for host-managed datasets whose scale has been measured in the target application; no millions-of-items or constant-DOM guarantee is made
 - ✅ Built-in search and filtering
 - ✅ Full TypeScript type safety
 
@@ -732,7 +780,7 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
 
 ### Method 2: Component-Driven (Custom Renderers) 🎨
 
-**Use when**: You need rich, interactive option content with custom HTML/styling.
+**Use when**: You need richer text, images, icons, badges, or multi-line option content with custom styling. The option remains one listbox option: do not put nested buttons, links, or other independently interactive controls inside it.
 
 **Advantages**:
 - ✅ Full control over option rendering
@@ -743,7 +791,7 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
 - ✅ Works with Svelte stores
 - ✅ Perfect for complex UIs (user cards, product listings, etc.)
 
-**How it works**: Provide an `optionTemplate` function that returns HTML string for each option.
+**How it works**: Provide the exported `optionRenderer` prop and return an `HTMLElement` for each option. Build nodes with DOM APIs and put labels or other untrusted data in `textContent`; the Svelte adapter does not accept HTML strings as renderer output.
 
 **Examples**:
 
@@ -765,21 +813,25 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
     { value: 'rs', label: 'Rust', icon: '🦀', description: 'Systems programming language' }
   ];
 
-  const languageRenderer = (item: Language, index: number) => `
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <span style="font-size: 24px;">${item.icon}</span>
-      <div>
-        <div style="font-weight: 600;">${item.label}</div>
-        <div style="font-size: 12px; color: #6b7280;">${item.description}</div>
-      </div>
-    </div>
-  `;
+  const languageRenderer = (item: Language, index: number): HTMLElement => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px';
+    const icon = document.createElement('span');
+    icon.style.fontSize = '24px'; icon.textContent = item.icon;
+    const content = document.createElement('div');
+    const title = document.createElement('strong'); title.textContent = item.label;
+    const description = document.createElement('small');
+    description.style.cssText = 'display:block;font-size:12px;color:#6b7280';
+    description.textContent = item.description;
+    content.append(title, description); row.append(icon, content);
+    return row;
+  };
 </script>
 
 <Select
   items={languages}
   bind:value={lang}
-  optionTemplate={languageRenderer}
+  optionRenderer={languageRenderer}
   placeholder="Select a language..."
 />
 ```
@@ -821,33 +873,28 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
     }
   ];
 
-  const userRenderer = (item: User) => `
-    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
-      <img
-        src="${item.avatar}"
-        alt="${item.label}"
-        style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
-      />
-      <div style="flex: 1;">
-        <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
-        <div style="font-size: 13px; color: #6b7280;">${item.email}</div>
-      </div>
-      <span style="
-        padding: 4px 8px;
-        background: ${item.role === 'Admin' ? '#dbeafe' : '#f3f4f6'};
-        color: ${item.role === 'Admin' ? '#1e40af' : '#374151'};
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-      ">${item.role}</span>
-    </div>
-  `;
+  const userRenderer = (item: User): HTMLElement => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:4px 0';
+    const image = document.createElement('img');
+    // Only use avatar URLs from a trusted/validated source.
+    image.src = item.avatar; image.alt = ''; image.setAttribute('aria-hidden', 'true');
+    image.style.cssText = 'width:40px;height:40px;border-radius:50%;object-fit:cover';
+    const details = document.createElement('div'); details.style.flex = '1';
+    const name = document.createElement('strong'); name.style.color = '#1f2937'; name.textContent = item.label;
+    const email = document.createElement('div'); email.style.cssText = 'font-size:13px;color:#6b7280'; email.textContent = item.email;
+    details.append(name, email);
+    const role = document.createElement('span'); role.textContent = item.role;
+    role.style.cssText = `padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;background:${item.role === 'Admin' ? '#dbeafe' : '#f3f4f6'};color:${item.role === 'Admin' ? '#1e40af' : '#374151'}`;
+    row.append(image, details, role);
+    return row;
+  };
 </script>
 
 <Select
   items={users}
   bind:value={userId}
-  optionTemplate={userRenderer}
+  optionRenderer={userRenderer}
   placeholder="Select a user..."
 />
 ```
@@ -892,40 +939,36 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
     }
   ];
 
-  const productRenderer = (item: Product) => `
-    <div style="display: flex; align-items: center; gap: 12px; opacity: ${item.stock === 0 ? '0.5' : '1'};">
-      <img
-        src="${item.image}"
-        alt="${item.label}"
-        style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb;"
-      />
-      <div style="flex: 1;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
-          ${item.badge ? `
-            <span style="
-              padding: 2px 6px;
-              background: ${item.badge === 'Best Seller' ? '#dcfce7' : '#fee2e2'};
-              color: ${item.badge === 'Best Seller' ? '#166534' : '#991b1b'};
-              border-radius: 4px;
-              font-size: 10px;
-              font-weight: 600;
-            ">${item.badge}</span>
-          ` : ''}
-        </div>
-        <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 16px; font-weight: 700; color: #059669;">$${item.price.toFixed(2)}</span>
-          <span style="font-size: 12px; color: #6b7280;">${item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}</span>
-        </div>
-      </div>
-    </div>
-  `;
+  const productRenderer = (item: Product): HTMLElement => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:12px;opacity:${item.stock === 0 ? '0.5' : '1'}`;
+    const image = document.createElement('img');
+    // Only use image URLs from a trusted/validated source.
+    image.src = item.image; image.alt = ''; image.setAttribute('aria-hidden', 'true');
+    image.style.cssText = 'width:60px;height:60px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb';
+    const content = document.createElement('div'); content.style.flex = '1';
+    const heading = document.createElement('div'); heading.style.cssText = 'display:flex;align-items:center;gap:8px';
+    const title = document.createElement('strong'); title.style.color = '#1f2937'; title.textContent = item.label;
+    heading.append(title);
+    if (item.badge) {
+      const badge = document.createElement('span'); badge.textContent = item.badge;
+      badge.style.cssText = `padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:${item.badge === 'Best Seller' ? '#dcfce7' : '#fee2e2'};color:${item.badge === 'Best Seller' ? '#166534' : '#991b1b'}`;
+      heading.append(badge);
+    }
+    const metadata = document.createElement('div');
+    metadata.style.cssText = 'margin-top:4px;display:flex;justify-content:space-between;align-items:center';
+    const price = document.createElement('strong'); price.style.cssText = 'font-size:16px;color:#059669'; price.textContent = `$${item.price.toFixed(2)}`;
+    const stock = document.createElement('span'); stock.style.cssText = 'font-size:12px;color:#6b7280';
+    stock.textContent = item.stock > 0 ? `${item.stock} in stock` : 'Out of stock';
+    metadata.append(price, stock); content.append(heading, metadata); row.append(image, content);
+    return row;
+  };
 </script>
 
 <Select
   items={products}
   bind:value={productId}
-  optionTemplate={productRenderer}
+  optionRenderer={productRenderer}
   placeholder="Select a product..."
 />
 ```
@@ -962,42 +1005,28 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
     'low': '#10b981'
   };
 
-  const taskRenderer = (item: Task) => {
+  const taskRenderer = (item: Task): HTMLElement => {
     const status = statusConfig[item.status];
-    return `
-      <div style="display: flex; align-items: center; gap: 10px; padding: 4px 0;">
-        <div style="
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: ${status.bg};
-          color: ${status.color};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        ">${status.icon}</div>
-        <div style="flex: 1;">
-          <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
-            Assigned to ${item.assignee}
-          </div>
-        </div>
-        <div style="
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: ${priorityColors[item.priority]};
-        " title="${item.priority} priority"></div>
-      </div>
-    `;
+    const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:4px 0';
+    const icon = document.createElement('div'); icon.textContent = status.icon;
+    icon.style.cssText = `width:24px;height:24px;border-radius:50%;background:${status.bg};color:${status.color};display:flex;align-items:center;justify-content:center;font-weight:bold`;
+    const details = document.createElement('div'); details.style.flex = '1';
+    const title = document.createElement('strong'); title.style.color = '#1f2937'; title.textContent = item.label;
+    const assignee = document.createElement('div'); assignee.style.cssText = 'font-size:12px;color:#6b7280;margin-top:2px';
+    assignee.textContent = `Assigned to ${item.assignee}`;
+    details.append(title, assignee);
+    const priority = document.createElement('span');
+    priority.title = `${item.priority} priority`;
+    priority.style.cssText = `width:8px;height:8px;border-radius:50%;background:${priorityColors[item.priority]}`;
+    row.append(icon, details, priority);
+    return row;
   };
 </script>
 
 <Select
   items={tasks}
   bind:value={taskId}
-  optionTemplate={taskRenderer}
+  optionRenderer={taskRenderer}
   placeholder="Select a task..."
 />
 ```
@@ -1021,21 +1050,24 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
     { value: 'angular', label: 'Angular', color: 'red', count: 420 }
   ];
 
-  const tagRenderer = (item: Tag) => `
-    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="width: 12px; height: 12px; border-radius: 50%; background: ${item.color};"></span>
-        <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
-      </div>
-      <span style="font-size: 14px; color: #6b7280;">${item.count} posts</span>
-    </div>
-  `;
+  const tagRenderer = (item: Tag): HTMLElement => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px';
+    const details = document.createElement('div'); details.style.cssText = 'display:flex;align-items:center;gap:8px';
+    const marker = document.createElement('span');
+    marker.style.cssText = `width:12px;height:12px;border-radius:50%;background:${item.color}`;
+    const label = document.createElement('strong'); label.style.color = '#1f2937'; label.textContent = item.label;
+    const count = document.createElement('span'); count.style.cssText = 'font-size:14px;color:#6b7280';
+    count.textContent = `${item.count} posts`;
+    details.append(marker, label); row.append(details, count);
+    return row;
+  };
 </script>
 
 <Select
   items={tags}
   bind:value={$tag}
-  optionTemplate={tagRenderer}
+  optionRenderer={tagRenderer}
   placeholder="Select a tag..."
 />
 ```
@@ -1044,20 +1076,20 @@ Smilodon Svelte provides **two powerful approaches** for defining select options
 
 | Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
 |---------|------------------------|---------------------------|
-| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
-| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
-| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
-| **Svelte Integration** | ⭐⭐⭐ Seamless | ⭐⭐⭐ Seamless |
-| **Store Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
-| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
+| **Setup** | Pass an array of option data | Provide a renderer callback |
+| **Rendering behavior** | Shared runtime renders option labels | Adapter uses the documented HTMLElement renderer |
+| **Customization** | Data-driven labels and state | Custom non-interactive content; nested controls are not promised |
+| **Svelte integration** | Bound values and Svelte component events | Same adapter API with custom DOM-rendered content |
+| **Reactive state** | Bind or control the value using the documented contract | Renderer output follows the adapter's renderer lifecycle |
+| **TypeScript** | Typed item data and props | Typed renderer callback and props |
+| **Very large datasets** | No 1M-item certification or performance comparison is claimed | No 1M-item certification or performance comparison is claimed |
+| **Choosing a method** | Direct for simple options | Use when custom content is required |
 
 **Best Practices**:
 
 ✅ **Use Method 1 (Object Arrays) when**:
 - You need simple text-based options
-- Performance is critical (millions of items)
+- You have a large dataset and will profile the workload and use host-managed pagination or search where appropriate; no millions-of-items guarantee is made
 - You want minimal code
 - Built-in search/filter is sufficient
 - Working with external APIs returning plain data
@@ -1080,28 +1112,34 @@ You can start with Method 1 and add Method 2 later as your UI evolves:
 
   let value = '';
 
-  // Start simple
-  const items = ['Option 1', 'Option 2', 'Option 3'];
+  // Start simple with the documented SelectItem shape
+  const items = [
+    { value: 'one', label: 'Option 1' },
+    { value: 'two', label: 'Option 2' },
+    { value: 'three', label: 'Option 3' },
+  ];
 
   // Later, add custom rendering without changing items
-  const customRenderer = (item: any, index: number) => `
-    <div style="padding: 8px; background: ${index % 2 ? '#f9fafb' : 'white'};">
-      <strong>${item.label || item}</strong>
-    </div>
-  `;
+  const optionRenderer = (item: (typeof items)[number], index: number): HTMLElement => {
+    const row = document.createElement('div');
+    row.style.cssText = `padding:8px;background:${index % 2 ? '#f9fafb' : 'white'}`;
+    const label = document.createElement('strong'); label.textContent = item.label;
+    row.append(label);
+    return row;
+  };
 </script>
 
 <Select
   items={items}
   bind:value
-  optionTemplate={customRenderer}
+  optionRenderer={optionRenderer}
 />
 ```
 
 ### Performance Tips
 
 **For Method 1**:
-- Use reactive statements (`$:`) to memoize large item arrays
+- Use reactive statements (`$:`) only when their dependencies and recomputation behavior are understood; `$:` is not a general-purpose memoization mechanism
 - `virtualized` enables chunked rendering; it does not bound mounted DOM to the viewport.
 - Enable `infiniteScroll` for dynamic loading
 
@@ -1109,7 +1147,7 @@ You can start with Method 1 and add Method 2 later as your UI evolves:
 - Keep renderer function pure (no side effects)
 - Avoid heavy computations in renderer
 - Cache renderer functions when possible
-- Use template literals for cleaner HTML strings
+- Use DOM APIs and `textContent` in `optionRenderer`; do not interpolate option data into HTML strings
 
 ```svelte
 <script lang="ts">
@@ -1117,26 +1155,29 @@ You can start with Method 1 and add Method 2 later as your UI evolves:
 
   let value = '';
 
-  // Memoize items with reactive statement
-  $: items = Array.from({ length: 10000 }, (_, i) => ({
+  // Stable example data. A Svelte reactive declaration is not a general-purpose memoization cache.
+  const items = Array.from({ length: 10000 }, (_, i) => ({
     value: i.toString(),
     label: `Item ${i + 1}`,
     description: `Description for item ${i + 1}`
   }));
 
   // Pure renderer function
-  const renderer = (item: any, index: number) => `
-    <div>
-      <div style="font-weight: 600;">${item.label}</div>
-      <div style="font-size: 12px; color: #666;">${item.description}</div>
-    </div>
-  `;
+  const renderer = (item: (typeof items)[number]): HTMLElement => {
+    const row = document.createElement('div');
+    const title = document.createElement('strong'); title.textContent = item.label;
+    const description = document.createElement('div');
+    description.style.cssText = 'font-size:12px;color:#666';
+    description.textContent = item.description;
+    row.append(title, description);
+    return row;
+  };
 </script>
 
 <Select
   items={items}
   bind:value
-  optionTemplate={renderer}
+  optionRenderer={renderer}
   virtualized
 />
 ```
@@ -1163,14 +1204,16 @@ enhanced-select {
 
 ### Important: Passing inline functions as renderers
 
-If you define `optionRenderer` or `customRenderer` inline (like function inside template), it may cause unnecessary re-creation.
+If you define `optionRenderer` inline in a template, it may cause unnecessary replacement of generated option content. A stable function reference is usually easier to reason about.
 
 **Highly recommended:** For best performance and to avoid potential issues, always use stable function references:
 
 ```svelte
 <script>
-  let myRenderer = (item, index, helpers) => {
-    return document.createElement('div');
+  const myRenderer = (item, index, helpers) => {
+    const element = document.createElement('div');
+    element.textContent = item.label;
+    return element;
   };
   // or define outside reactive blocks
 </script>
@@ -1180,7 +1223,7 @@ Adapters are designed to not loop even without memoization, but stability still 
 
 ## Accessibility
 
-Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming/description forwarding, and focus restoration. Cross-browser verification and manual assistive-technology assessment remain pending; this is not a WCAG conformance claim.
+Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming/description forwarding, and focus restoration. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit. This does not establish exhaustive Svelte adapter parity, minimum-browser-version compatibility, or WCAG conformance. Manual Windows/NVDA and macOS/VoiceOver assessments remain pending.
 
 - ✅ Selected keyboard navigation paths (not an exhaustive interaction certification)
 - ✅ ARIA naming and selected live-region announcements
@@ -1190,9 +1233,7 @@ Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming
 
 ## Browser Support
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
+The browser versions listed in repository policy are compatibility targets, not proof that every minimum-version integration has passed certification. The completed Phase 4 browser matrix uses current pinned Chromium, Firefox, and WebKit builds; consult the [browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) for declared compatibility and support details.
 - Opera 76+
 
 ## License
