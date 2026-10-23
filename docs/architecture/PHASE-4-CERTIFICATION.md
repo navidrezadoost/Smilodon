@@ -4,7 +4,7 @@
 
 Phase 4.6.1 functional CI certification is accepted based on the reported results for [PR #29](https://github.com/navidrezadoost/Smilodon/pull/29), reported merged at `8b86ad6`. The review reports 16/16 successful checks, including unit and contract suites, all four framework E2E suites, keyboard navigation, the dedicated Chromium/Firefox/WebKit matrix, TypeScript, lint, build, and the independent CI geometry check. Independent GitHub verification was unavailable during review, so both the merge details and check results are recorded as review-reported.
 
-The earlier spacer-geometry failures did not recur in the reported PR #29 run. Their historical root cause is still undetermined; retain the strict geometry assertion and its failure diagnostics. Phase 4.6.2A browser baselining is authorized. Guarded virtualization remains test-only and public production activation remains **NO-GO**.
+The earlier spacer-geometry failures did not recur in the reported PR #29 run. Their historical root cause is still undetermined; retain the strict geometry assertion and its failure diagnostics. Phase 4.6.2A is accepted as benchmark evidence. Phase 4.6.2B functional lifecycle cleanup is accepted based on the reported pinned-Chromium PR #32 run (`27a9f451`); memory-retention attribution remains open under authorized Phase 4.6.2B.2 diagnostics. Guarded virtualization remains test-only and public production activation remains **NO-GO**.
 
 The implementation baseline accepted for certification is Phase 4.5.3, commit `500731b`.
 
@@ -223,4 +223,38 @@ The complete local matrix passed on Node `20.20.2`, Playwright `1.59.1`, Manjaro
 | 10,000 | 100 | +66,912 bytes | +24,500 / +35,536 / +51,344 bytes | Diagnostic growth; deterministic resource and DOM checks returned to baseline. |
 | 100,000 | 10 | +12,212 bytes | +5,660 bytes | Diagnostic growth; no resource or DOM retention observed. |
 
-The mirrored-stylesheet cache was measured at `0/32` entries at every local checkpoint, so it does not explain these particular heap deltas. Those deltas remain un-attributed diagnostics, not leak findings: the report applies no heap threshold, and a positive CDP heap value alone cannot establish a retained reference path. The raw local report is generated under the ignored `test-results/performance/lifecycle/` directory; hosted artifacts are the review evidence of record. The pinned-browser PR run and existing required checks remain pending. No production runtime refactor, accessibility approval, Phase 4.6.2C budget approval, or activation authorization is implied; production remains **NO-GO**.
+The mirrored-stylesheet cache was measured at `0/32` entries at every local checkpoint, so it does not explain those heap deltas. The deltas remain diagnostic rather than leak findings: no heap threshold is applied, and positive CDP heap values alone do not establish a retained reference path. PR #32's hosted pinned-browser lifecycle run and required checks were subsequently accepted as documented in the opening status; Phase 4.6.2B.2 separately investigates the residual heap signal. No production runtime refactor, accessibility approval, Phase 4.6.2C budget approval, or activation authorization is implied; production remains **NO-GO**.
+
+## Phase 4.6.2B.2 — Memory-retention attribution
+
+The diagnostic suite is isolated in `tests/performance/phase-4-lifecycle-attribution.spec.ts` and is included by the lifecycle Playwright configuration. It does not change component code, production defaults, or public APIs. The existing 210-cycle functional stress test remains unchanged and runs in the same lifecycle job.
+
+For each of 1,000 and 10,000 deterministic options, the suite executes two independent browser-context sessions for each of three arms: an allocation/DOM negative control without an `EnhancedSelect`, the component without resource instrumentation, and the same component workload with counter-only scroll-listener/`ResizeObserver` instrumentation. Every session runs 10 warm-up cycles followed by 100 measured cycles; it records four successive 25-cycle heap windows from the post-warm-up baseline. The 10k workload applies the same `Option 999` → `Option 9999` → clear filter sequence in both component arms and allocation control. Renderer replacement is exercised once during 1k warm-up, matching the separate lifecycle functional coverage rather than repeating renderer/style setup on every measured cycle.
+
+The report records JavaScript heap separately from CDP DOM node/listener counts, deep open-shadow DOM counts, `EnhancedSelect._instances`, item-registry cardinalities at disconnect, component-owned cleanup fields, renderer connect/disconnect counts, instrumentation-map size and active resource counters, and mirrored stylesheet-cache occupancy. A test-only sentinel is attached to each component host; after cleanup, captured heap graphs count sentinel instances and record a shortest strong retaining path when one is reachable. The instrumented arm's intentional root is also recorded explicitly as `window.__phase4AttributionProbe.stateById → counter-only records`; those records contain IDs and counters, never host references. Heap deltas have no threshold and do not fail the job by themselves. Reports with retained markers are labeled `completed-with-findings`, so diagnostic evidence is preserved without treating a measurement as a runtime defect.
+
+The lifecycle artifact now includes `phase-4.6.2b2-attribution.json` and raw Chrome DevTools `.heapsnapshot` files captured after warm-up and after cleanup for the first repeat of each arm/workload. The JSON includes browser revision/version, executable override, Node/Playwright versions, OS/CPU/memory/runner metadata, commit and working-tree state, per-window deltas, candidate object counts, and sample retaining paths. CI uses the repository-pinned Playwright Chromium; local `PHASE4_ATTRIBUTION_*` controls support reduced harness smoke runs and are not certification evidence. The existing job uploads the entire lifecycle artifact directory, including profiles and failure diagnostics.
+
+#### Local non-pinned attribution run
+
+The complete two-repeat local protocol passed its deterministic cleanup checks on Node `20.20.2`, Playwright `1.59.1`, Manjaro `6.12.94-1`, and cached Chromium `143.0.7499.4` (revision `1200`), rather than the pinned Chromium `147.0.7727.15` (revision `1217`). It completed 12 isolated sessions. In all component sessions, deep document DOM counts returned to their pre-warm-up baseline, `_instances` and connected host counts were zero at cleanup, active listener/observer counters were zero, renderer connections balanced, and the mirrored stylesheet cache remained `0/32`. The instrumented arm intentionally retained 110 numeric-ID counter records after its 10 warm-up plus 100 measured cycles; no active resource count remained.
+
+The post-warm-up heap windows did not show a consistent monotonic slope. At 1k, both no-probe repeats showed a similar pattern of approximately `+63 KiB`, `+40 KiB`, `+46 KiB`, then `+37 KiB` per 25-cycle window; the instrumented repeats were of comparable magnitude. At 10k, the two arms and repeats had noisier early windows, including both positive and negative intervals, with later windows ranging roughly from `+11 KiB` to `+147 KiB`. Final component-arm post-GC deltas ranged from about `+174 KiB` to `+270 KiB`, while the allocation-control deltas ranged from about `−60 KiB` to `+26 KiB`. These small-sample local readings are descriptive only and do not establish a leak or a plateau.
+
+The four component profiles each found one test sentinel on the final measured cycle. Its shortest strong path was:
+
+```text
+Chromium C++ Persistent root
+  → detached native <input>
+  → its ShadowRoot
+  → detached <enhanced-select id="phase4-attribution-…-109">
+  → Phase4RetentionSentinel
+```
+
+The same one-marker path appeared in the no-probe and instrumented arms at both sizes, while the allocation controls had no sentinel. The component host/list/resource counters were otherwise at baseline, and focus had been handed back to `body` before teardown. The snapshot therefore establishes a repeatable browser-level root to one detached host, but it does not yet identify whether that C++ persistent root is caused by Chromium/Playwright inspection, a browser lifecycle reference, or component-owned behavior. The earlier snapshot experiments also exposed Playwright's trace `Streamer._staleStyleSheets` path retaining stylesheet wrappers; the suite now limits renderer replacement to warm-up and reports that tooling root separately. Do not modify production rendering in response to these paths without pinned-runner reproduction and attribution.
+
+**B.2 status:** diagnostic implementation and local harness validation are complete; pinned Chromium 147 runs and review of their raw profiles are pending. Memory attribution remains open. Phase 4.6.2C and accessibility certification remain pending, and production activation remains **NO-GO**.
+
+#### Separate CI maintenance follow-up
+
+The Node.js 20 GitHub Action-runtime and `ubuntu-latest` image-transition warnings are tracked separately from lifecycle attribution. They are maintenance follow-ups, not evidence against the successful PR #32 browser certification and not a reason to broaden this diagnostic change.
