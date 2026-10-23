@@ -157,7 +157,7 @@ function withInputDirectory(callback) {
   const root = mkdtempSync(join(tmpdir(), 'phase4-c5a-'));
   const inputDirectory = join(root, 'sources');
   mkdirSync(inputDirectory, { recursive: true });
-  const writeReport = (report, folder = String(report.replication.replicationId)) => {
+  const writeReport = (report, folder = `${report.replication.workflowRunId}-${report.replication.replicationId}`) => {
     const directory = join(inputDirectory, folder);
     mkdirSync(directory, { recursive: true });
     writeFileSync(join(directory, REPORT_NAME), `${JSON.stringify(report)}\n`);
@@ -244,9 +244,98 @@ test('aggregates one source artifact from each explicitly selected workflow run'
       bootstrapReplicates: 100,
     });
     assert.equal(result.integrity.validForAnalysis, true);
+    assert.equal(result.integrity.discoveredSourceCount, 2);
+    assert.equal(result.integrity.validSourceCount, 2);
+    assert.deepEqual(result.integrity.errors, []);
+    assert.ok(result.sources.every((source) => source.validationErrors.length === 0));
     assert.deepEqual(result.integrity.missingWorkflowRunIds, []);
     assert.equal(result.strata[0].independentWorkflowRunCount, 2);
     assert.equal(result.strata[0].completeMeasuredPairCount, 10);
+  });
+});
+
+test('accepts target mounting during the End-key handler', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.targetMountedAt = times.handlerReturnAt - 0.05;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, true);
+    assert.deepEqual(result.sources[0].validationErrors, []);
+  });
+});
+
+test('rejects target mounting before the End-key event', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.targetMountedAt = times.endEventAt - 0.01;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, false);
+    assert.ok(result.sources[0].validationErrors.some((error) => /target mounting precedes the End-key event/.test(error)));
+  });
+});
+
+test('rejects first-frame eligibility before target mounting', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.targetMountedAt = times.firstEligibleFrameAt + 0.01;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, false);
+    assert.ok(result.sources[0].validationErrors.some((error) => /first eligible frame precedes target mounting/.test(error)));
+  });
+});
+
+test('rejects first-frame eligibility before handler return', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.handlerReturnAt = times.firstEligibleFrameAt + 0.01;
+    attempt.metrics.eventToHandlerReturnMs = times.handlerReturnAt - times.endEventAt;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, false);
+    assert.ok(result.sources[0].validationErrors.some((error) => /first eligible frame precedes handler return/.test(error)));
+  });
+});
+
+test('keeps geometry stabilization and Playwright confirmation causally ordered', () => {
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.stableGeometryObservedAt = times.firstEligibleFrameAt - 0.01;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, false);
+    assert.ok(result.sources[0].validationErrors.some((error) => /stable geometry precedes the first eligible frame/.test(error)));
+  });
+
+  withInputDirectory(({ inputDirectory, writeReport }) => {
+    const report = makeReport();
+    const attempt = report.attempts[1];
+    const times = attempt.timestamps.browserPerformanceNowMs;
+    times.playwrightConfirmedAt = times.stableGeometryObservedAt - 0.01;
+    attempt.metrics.firstFrameToPlaywrightConfirmationMs = times.playwrightConfirmedAt - times.firstEligibleFrameAt;
+    attempt.metrics.observedEndToVisibleMs = times.playwrightConfirmedAt - times.endEventAt;
+    writeReport(report);
+
+    const result = aggregate(inputDirectory, 1);
+    assert.equal(result.integrity.validForAnalysis, false);
+    assert.ok(result.sources[0].validationErrors.some((error) => /Playwright confirmation precedes stable geometry/.test(error)));
   });
 });
 
@@ -354,12 +443,12 @@ test('classifies an explicit threshold as unsupported when the clustered interva
 test('classifies an overlapping run-cluster confidence interval as inconclusive', () => {
   withInputDirectory(({ inputDirectory, writeReport }) => {
     for (let index = 1; index <= 20; index += 1) {
-      writeReport(makeReport({ replicationId: index, latency: index <= 15 ? 90 : 110 }));
+      writeReport(makeReport({ replicationId: index, latency: index <= 18 ? 90 : 110 }));
     }
     const result = aggregate(inputDirectory, 20, { thresholdMs: 100 });
     const metric = result.strata[0].metrics.firstEligibleFrameLatencyMs;
     assert.equal(metric.classification.classification, 'inconclusive');
-    assert.ok(metric.runClusteredConfidenceInterval.lower <= 100);
-    assert.ok(metric.runClusteredConfidenceInterval.upper > 100);
+    assert.equal(metric.runClusteredConfidenceInterval.lower, 90);
+    assert.equal(metric.runClusteredConfidenceInterval.upper, 110);
   });
 });
