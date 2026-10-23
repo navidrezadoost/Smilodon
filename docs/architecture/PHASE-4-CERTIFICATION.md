@@ -4,7 +4,7 @@
 
 Phase 4.6.1 functional CI certification is accepted based on the reported results for [PR #29](https://github.com/navidrezadoost/Smilodon/pull/29), reported merged at `8b86ad6`. The review reports 16/16 successful checks, including unit and contract suites, all four framework E2E suites, keyboard navigation, the dedicated Chromium/Firefox/WebKit matrix, TypeScript, lint, build, and the independent CI geometry check. Independent GitHub verification was unavailable during review, so both the merge details and check results are recorded as review-reported.
 
-The earlier spacer-geometry failures did not recur in the reported PR #29 run. Their historical root cause is still undetermined; retain the strict geometry assertion and its failure diagnostics. Phase 4.6.2A is accepted as benchmark evidence. Phase 4.6.2B functional lifecycle cleanup is accepted based on the reported pinned-Chromium PR #32 run (`27a9f451`); memory-retention attribution remains open under authorized Phase 4.6.2B.2 diagnostics. Guarded virtualization remains test-only and public production activation remains **NO-GO**.
+The earlier spacer-geometry failures did not recur in the reported PR #29 run. Their historical root cause is still undetermined; retain the strict geometry assertion and its failure diagnostics. Phase 4.6.2A is accepted as benchmark evidence. Phase 4.6.2B lifecycle certification is accepted with a memory-attribution limitation: pinned Chromium showed no progressive leak in the tested cycles, but ownership and post-disposal lifetime of eight observer-named native candidates remain unresolved. Phase 4.6.2C statistical performance-budget evaluation is recorded below; proposed latency targets remain report-only and are not certified release gates. Guarded virtualization remains test-only and public production activation remains **NO-GO**.
 
 The implementation baseline accepted for certification is Phase 4.5.3, commit `500731b`.
 
@@ -125,7 +125,7 @@ These are proposed review targets, not accepted release gates. First collect rep
 
 | Class | Proposed criterion | Rationale |
 | --- | --- | --- |
-| Hard correctness | All seeded scroll targets resolve visibly; the final End-key active descendant resolves to the final option; filtering `Option 999` returns 11 options; no JavaScript/test errors. | A fast benchmark that compares different data or silently misses an option is invalid. |
+| Hard correctness | All seeded scroll targets resolve visibly; the final End-key active descendant resolves to the final option; filtering `Option 999` returns the fixture-derived 11 matches at 10k or 111 matches at 100k; no JavaScript/test errors. | A fast benchmark that compares different data or silently misses an option is invalid. |
 | Hard virtualization invariant | `virtual-window` mounts no more than 64 option hosts at each dataset size. | Bounds option DOM against the fixed 320 px viewport plus overscan without asserting constant total memory. |
 | Performance target | Virtual mode's registration-to-initial-window p95 ≤ 500 ms (1k), 1.5 s (10k), and 5 s (100k). | Allows linear registry construction while setting a clear upper bound on initial usable output. |
 | Performance target | First visible option after open p95 ≤ 150 ms at each size. | Aims for prompt interaction while excluding dataset construction from open latency. |
@@ -181,7 +181,7 @@ At 100k, `legacy-full` was censored during `initial render settle` at the config
 
 These are report-only results from one hosted run with five repetitions per feasible workload, not accepted performance budgets or a production-readiness decision. The 100k virtual first-visible p95 (`151.8 ms`) and pooled random-seek p95 (`51.63 ms`) are slightly above the currently proposed `150 ms` and `50 ms` targets, respectively; proposed targets remain non-gating and require review across repeated pinned runs. Phase 4.6.2A.1 does not authorize lifecycle stress or production activation; production remains **NO-GO**.
 
-Phase 4.6.2B's lifecycle and memory certification is now authorized and implemented on a separate branch; hosted execution and review remain pending. Phase 4.6.2C's final release budgets remain future certification work. Accessibility certification and manual assistive-technology assessment also remain pending. Production activation remains **NO-GO** until performance, memory/lifecycle, accessibility, and release gates are separately reviewed.
+Phase 4.6.2B's hosted lifecycle certification is accepted with the residual memory-attribution limitation recorded below. Phase 4.6.2C has analyzed two pinned-browser baselines, but no latency target is yet approved for release enforcement. Accessibility certification and manual assistive-technology assessment remain pending. Production activation remains **NO-GO** until performance, memory/lifecycle, accessibility, and release gates are separately reviewed.
 
 ## Phase 4.6.2A.2 — Test isolation and stress timing decision
 
@@ -223,7 +223,7 @@ The complete local matrix passed on Node `20.20.2`, Playwright `1.59.1`, Manjaro
 | 10,000 | 100 | +66,912 bytes | +24,500 / +35,536 / +51,344 bytes | Diagnostic growth; deterministic resource and DOM checks returned to baseline. |
 | 100,000 | 10 | +12,212 bytes | +5,660 bytes | Diagnostic growth; no resource or DOM retention observed. |
 
-The mirrored-stylesheet cache was measured at `0/32` entries at every local checkpoint, so it does not explain those heap deltas. The deltas remain diagnostic rather than leak findings: no heap threshold is applied, and positive CDP heap values alone do not establish a retained reference path. PR #32's hosted pinned-browser lifecycle run and required checks were subsequently accepted as documented in the opening status; Phase 4.6.2B.2 separately investigates the residual heap signal. No production runtime refactor, accessibility approval, Phase 4.6.2C budget approval, or activation authorization is implied; production remains **NO-GO**.
+The mirrored-stylesheet cache was measured at `0/32` entries at every local checkpoint, so it does not explain those heap deltas. The deltas remain diagnostic rather than leak findings: no heap threshold is applied, and positive CDP heap values alone do not establish a retained reference path. PR #32's hosted pinned-browser lifecycle run and required checks were subsequently accepted as documented in the opening status; Phase 4.6.2B.2 then investigated the residual heap signal. This local diagnostic did not authorize a runtime refactor or production activation; production remains **NO-GO**.
 
 ## Phase 4.6.2B.2 — Memory-retention attribution
 
@@ -253,8 +253,87 @@ Chromium C++ Persistent root
 
 The same one-marker path appeared in the no-probe and instrumented arms at both sizes, while the allocation controls had no sentinel. The component host/list/resource counters were otherwise at baseline, and focus had been handed back to `body` before teardown. The snapshot therefore establishes a repeatable browser-level root to one detached host, but it does not yet identify whether that C++ persistent root is caused by Chromium/Playwright inspection, a browser lifecycle reference, or component-owned behavior. The earlier snapshot experiments also exposed Playwright's trace `Streamer._staleStyleSheets` path retaining stylesheet wrappers; the suite now limits renderer replacement to warm-up and reports that tooling root separately. Do not modify production rendering in response to these paths without pinned-runner reproduction and attribution.
 
-**B.2 status:** diagnostic implementation and local harness validation are complete; pinned Chromium 147 runs and review of their raw profiles are pending. Memory attribution remains open. Phase 4.6.2C and accessibility certification remain pending, and production activation remains **NO-GO**.
+#### Hosted pinned-Chromium attribution decision
+
+The hosted attribution matrix completed all 12 sessions on Chromium `147.0.7727.15`, revision `1217`. Each session ran 10 warm-up and 100 measured cycles. DOM, instance, and observable resource counters returned to baseline; final 25-cycle heap-window changes were approximately `+1.7–3.8 KB`. The detached-host sentinel seen in the earlier non-pinned local profiles did not reproduce. Eight `ResizeObserver`-named candidate objects remained constant across measured cycles. Their retaining path included a Chromium C++ persistent root, Blink `ScriptState`, and `ResizeObserverSize`; object ownership and behavior after page/browser-context disposal were not established.
+
+**B.2 status:** lifecycle cleanup is accepted for the tested workloads; no progressive leak was demonstrated. This is not proof that every object is released or that the component is entirely leak-free. Preserve the eight-candidate observation and its unresolved ownership/post-disposal lifetime. It does not currently justify a production correction or block report-only performance-budget analysis. Accessibility work remains pending and production activation remains **NO-GO**.
 
 #### Separate CI maintenance follow-up
 
 The Node.js 20 GitHub Action-runtime and `ubuntu-latest` image-transition warnings are tracked separately from lifecycle attribution. They are maintenance follow-ups, not evidence against the successful PR #32 browser certification and not a reason to broaden this diagnostic change.
+
+## Phase 4.6.2C — Statistical performance-budget evaluation
+
+### Inputs and reproducibility
+
+This evaluation analyzes two hosted reports from the `Phase 4 Performance Baseline` workflow:
+
+| Run | Hosted run and report commit | Runner image / CPU | Browser protocol | Source |
+| --- | --- | --- | --- | --- |
+| `39720037312` | [run #39720037312](https://github.com/navidrezadoost/Smilodon/actions/runs/39720037312), `5d3da775d0b2ef8c7eccb7be29c82c2ae909d374` | `ubuntu24` image `20261018.339.1`; AMD EPYC 7763; Linux `7.0.0-1017-azure` | Node `20.20.2`, Playwright `1.59.1`, Chromium `147.0.7727.15` / revision `1217`; one warm-up plus five measured repetitions | [Raw report](../../tests/performance/results/phase-4.6.2c-run-39720037312.json) |
+| `39905911387` | [run #39905911387](https://github.com/navidrezadoost/Smilodon/actions/runs/39905911387), report commit `89203b6ab3bb0da130bea725823ffc866b54a6f4` (PR validation merge ref) | `ubuntu24` image `20261012.334.1`; AMD EPYC 9V74; Linux `6.17.0-1022-azure` | Node `20.20.2`, Playwright `1.59.1`, Chromium `147.0.7727.15` / revision `1217`; one warm-up plus five measured repetitions | [Raw report](../../tests/performance/results/phase-4.6.2c-run-39905911387.json) |
+
+Both used a 1280×800 viewport, 1× device scale factor, 320 px list viewport, and calibrated 40 px option hosts. The runner images, kernel versions, and CPU models differ, so each run is summarized independently; their samples are not pooled into one purportedly controlled runner distribution. The full original reports, including per-trial and per-interaction measurements, protocol, environment metadata, censored attempts, and browser diagnostics, are committed above. Their SHA-256 digests are recorded in [`phase-4.6.2c-evaluation.json`](../../tests/performance/results/phase-4.6.2c-evaluation.json).
+
+Reproduce the analysis and its deterministic tests with Node 20 or later:
+
+```sh
+node scripts/evaluate-phase-4-performance.mjs
+node --test tests/performance/evaluate-phase-4-performance.test.mjs
+```
+
+The evaluator uses nearest-rank empirical percentiles (matching the benchmark harness), sample variance/standard deviation (`n−1`), and Tukey 1.5×IQR outlier flags using nearest-rank quartiles. It retains flagged values and never removes them. For per-trial distributions with `n=5`, nearest-rank p95 and p99 are both the maximum; they are descriptive maxima, not statistically reliable population-tail estimates. Pooled scroll events are reported separately from the five per-trial percentile values; events within a trial are clustered and are not independent hosted-run repetitions. Warm-ups are excluded from numeric estimates. The machine-readable evaluation keeps each run separate and includes raw per-trial values, raw interaction arrays, dispersion, outlier flags, correctness results, decision rationale, and the full 100k legacy censor records.
+
+Examples of Tukey-flagged per-trial observations, retained without trimming, include the 1k run-2 registration-to-hidden-settle sample at `111.92 ms` (sample SD `25.00 ms`), the 1k run-1 first-visible sample at `49.35 ms` (sample SD `9.52 ms`), and the 1k run-2 registration-to-interactive sample at `144.39 ms` (sample SD `25.88 ms`). These flags identify observations for review; with five samples they do not establish erroneous measurements or a stable outlier process.
+
+### Virtual-window observations
+
+The following cells show `median / per-run p95` in milliseconds. With five measured repetitions, p95 is the maximum of those five values. End-key latency is one observation per trial. Operations have different start/end boundaries and must not be compared as interchangeable user-visible latency.
+
+| Run | Items | Registration → hidden window | Registration → interactive | First visible after open | Open → render settled | End key → target visible |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 39720037312 | 1,000 | 61.29 / 64.68 | 102.44 / 123.60 | 30.25 / 49.35 | 77.69 / 92.60 | 32.53 / 40.18 |
+| 39720037312 | 10,000 | 77.44 / 82.41 | 129.12 / 130.70 | 36.28 / 37.67 | 79.85 / 94.54 | 45.78 / 49.64 |
+| 39720037312 | 100,000 | 185.24 / 193.67 | 347.91 / 356.51 | 150.37 / 151.76 | 195.16 / 208.64 | 194.68 / 201.39 |
+| 39905911387 | 1,000 | 58.51 / 111.92 | 89.35 / 144.39 | 20.73 / 27.88 | 61.66 / 62.23 | 21.57 / 24.85 |
+| 39905911387 | 10,000 | 68.91 / 86.18 | 108.14 / 126.36 | 30.15 / 31.30 | 77.97 / 83.02 | 35.56 / 42.72 |
+| 39905911387 | 100,000 | 145.75 / 157.03 | 279.52 / 289.23 | 122.50 / 123.49 | 162.02 / 163.23 | 157.33 / 164.98 |
+
+The evaluator also retains direct `setItems()` call duration and browser-side dataset-generation timing; neither is substituted for registration-to-render settlement. `registration → interactive` includes opening and waiting for a visible row. `first visible after open` begins immediately before `open()` and ends at the first row intersecting the list viewport. `open → render settled` waits for the mode-specific full rendered-window condition. End-key timing starts at the keyboard event timestamp and ends only once the final active row is mounted and visible; handler-only latency is recorded separately.
+
+| Run | Items | Random-access pooled p95 / p99 | Per-trial random-access p95 distribution, median / p95 | Filter-to-visible p95 | 10k sustained update pooled p95 | Max mounted options | Post-cleanup JS heap delta, median / p95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 39720037312 | 1,000 | 16.82 / 19.04 | 16.77 / 16.83 | — | — | 12 | 1,611,504 / 1,611,832 B |
+| 39720037312 | 10,000 | 16.79 / 17.54 | 16.79 / 17.40 | 22.07 ms | 0.075 ms | 12 | 3,653,268 / 3,653,692 B |
+| 39720037312 | 100,000 | 51.63 / 82.78 | 51.38 / 51.97 | 59.13 ms | — | 12 | 21,839,284 / 21,839,960 B |
+| 39905911387 | 1,000 | 17.13 / 17.76 | 16.70 / 17.72 | — | — | 12 | 1,611,440 / 1,623,060 B |
+| 39905911387 | 10,000 | 16.73 / 17.79 | 16.74 / 17.02 | 25.51 ms | 0.045 ms | 12 | 3,652,272 / 3,654,268 B |
+| 39905911387 | 100,000 | 40.83 / 64.47 | 40.31 / 43.48 | 48.43 ms | — | 12 | 21,839,536 / 21,841,372 B |
+
+Random-access “scroll” is a deterministic synthetic seek: the harness assigns `scrollTop` to a seeded target offset, dispatches `scroll`, and waits for the indexed option to mount and intersect the viewport. It is not a wheel/inertial-scroll measurement, nor a public `scrollToIndex` API. The 10k sustained workload performs 100 monotonic eight-row updates per trial and paces updates by animation frames; it is reported separately from random seeks. Filter timing starts at the input event and ends when the expected fixture-derived result count and first matching row are rendered and visible. CDP heap deltas measure Chromium JavaScript heap after data/component cleanup and forced GC, not browser-process or system memory and not component-attributed bytes.
+
+### Correctness and diagnostic observations
+
+Across both runs, all 1,700 seeded random-access targets resolved visibly, all 30 final End-key targets matched the final active index, and all 20 filter-result checks returned the fixture-derived counts (11 at 10k, 111 at 100k). The maximum mounted virtual option count was 12, below the existing 64-option invariant. No page errors, page-console warning/error events, or captured page/CDP `ResizeObserver` warnings were reported. These correctness checks remain hard invariants; they are independent of latency-budget decisions.
+
+At 100k, the random-access frame sampler recorded intervals above 33 ms for about 99% of observed intervals in both runs, while intervals above 50 ms were about 6.01% and 4.44%, respectively—below the proposed 10% investigation trigger for >50 ms. The >33 ms frequency is still a notable diagnostic observation; it is not a frame-rate guarantee or a test failure. At 1k and 10k, no sampled random-access frame interval exceeded either 33 ms or 50 ms. The 10k sustained workload recorded no >33 ms or >50 ms intervals in either run.
+
+The largest post-cleanup retained JavaScript heap delta was 21,841,372 bytes (about 20.83 MiB), below the proposed 32 MiB absolute component of the diagnostic warning heuristic. Heap results are stable within each workload across repetitions, but positive values and growth with dataset size do not identify a component-owned retaining path. Keep heap data diagnostic and separate from the Phase 4.6.2B native-root attribution issue.
+
+Both 100k `legacy-full` feasibility probes were censored at the bounded 15,000 ms initial-render-settle limit (15,671 ms and 15,644 ms elapsed including teardown). Each was classified `legacy-scalability-censored`; the one feasibility probe produced no numeric latency, and the planned legacy warm-up plus five measurements were skipped. The censored cases remain explicit in the machine-readable report and are not zeros, successes, or comparison samples. The 1k/10k legacy control data is retained in the raw reports and evaluation.
+
+### Candidate budget decisions — report-only
+
+| Proposed metric | Evidence and decision | Recommendation |
+| --- | --- | --- |
+| Registration → initial hidden window p95: ≤500 ms (1k), ≤1.5 s (10k), ≤5 s (100k) | Both runs are comfortably within all three proposed bounds. | Retain as a provisional candidate; evidence supports it, but `n=5` per run does not justify a certified population p95 or CI gate. |
+| First visible after open p95: ≤150 ms at each size | 1k and 10k meet the proposal in both runs. At 100k, results are 151.76 ms and 123.495 ms. The 1.76 ms exceedance is not reproduced; runner images and CPUs differ, and per-run p95 is the maximum of five trials. | Keep 150 ms unchanged as a candidate. Do not certify it at 100k; obtain more controlled pinned-runner repeats. Do not raise the limit to force a pass. |
+| End key → visible target p95 ≤100 ms; p99 ≤250 ms | The p95 candidate is met at 1k/10k but is exceeded at 100k in both runs (201.39 ms and 164.98 ms). Every observed value is below 250 ms, but five trials cannot certify a p99. | Keep the 100 ms p95 as an unmet 100k candidate; do not relax it or optimize without authorization. Treat 250 ms p99 as observed-within-target only, not certified. |
+| Random-access target-visibility p95 ≤50 ms; p99 ≤100 ms | Pooled 100k p95 differs across runs: 51.63 ms versus 40.83 ms; 1k/10k pass. Both runs' pooled p99 values are below 100 ms. Pooled events are nested within five trials and the operation is synthetic programmatic access, not user wheel scrolling. | Retain provisionally with the precise synthetic operation name. The 100k p95 is runner-sensitive/inconclusive; no target revision or gate is justified. Reconfirm the interaction contract and repeat on controlled runners before certification. |
+| Filter-to-visible result p95: ≤250 ms (10k), ≤1 s (100k) | Both runs are well inside the proposals: 10k p95 22.07/25.51 ms; 100k p95 59.13/48.43 ms. | Retain as a candidate supported by this baseline; keep report-only pending formal approval and additional hosted evidence. |
+| Full open → render settled | Captured separately, but no numerical target was previously proposed. | Diagnostic only. Do not substitute first-visible latency for full settlement. |
+| 10k sustained-scroll update latency | 500 pooled updates per run have p95 0.075 ms and 0.045 ms; the test's per-trial p95 distribution is also retained. No release target was proposed for this synthetic workload. | Diagnostic only; not a user input/frame-time guarantee. |
+| Heap/frame observations | Heap remains below the proposed 32 MiB warning level in these trials. 100k >50 ms frame intervals remain below the proposed 10% trigger, while >33 ms intervals are frequent. | Diagnostics only; report and investigate, with no automatic failure or leak conclusion. |
+
+No proposed latency target was promoted to a certified release budget. The existing performance workflow now tests the evaluator and checks deterministic regeneration of the checked-in analysis; it does not enforce any latency threshold. Existing correctness expectations remain distinct and mandatory. Future performance enforcement requires an explicitly approved measurement contract, adequate repeated pinned-runner samples, and a documented budget decision. Phase 4.6.2C produces an evidence-backed proposal, not authorization for optimization, production defaults/API changes, lifecycle-criterion relaxation, or public virtualization activation. Phase 4.6.3 accessibility certification remains pending; production remains **NO-GO**.
