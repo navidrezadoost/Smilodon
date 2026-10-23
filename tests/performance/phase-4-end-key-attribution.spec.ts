@@ -7,6 +7,8 @@ import { performance as hostPerformance } from 'node:perf_hooks';
 import process from 'node:process';
 import { devices, expect, test, type Browser, type Page } from '@playwright/test';
 
+type Arm = 'minimal' | 'instrumented';
+
 const ITEM_COUNT = 100_000;
 const VIEWPORT = { width: 1280, height: 800 };
 const LIST_HEIGHT = 320;
@@ -15,6 +17,17 @@ const TARGET_INDEX = ITEM_COUNT - 1;
 const TIMEOUT_MS = 30_000;
 const WARMUP_PAIRS = nonNegativeInteger(process.env.PHASE4_ENDKEY_WARMUPS, 1);
 const MEASURED_PAIRS = positiveInteger(process.env.PHASE4_ENDKEY_REPETITIONS, 5);
+const STARTING_ARM: Arm = (() => {
+  const configuredArm = process.env.PHASE4_ENDKEY_START_ORDER;
+  if (configuredArm === 'minimal' || configuredArm === 'instrumented') return configuredArm;
+  const workflowRunId = process.env.GITHUB_RUN_ID;
+  const replicationId = process.env.PHASE4_ENDKEY_REPLICATION_ID;
+  if (workflowRunId && /^\d+$/.test(workflowRunId) && replicationId && /^\d+$/.test(replicationId)) {
+    const parity = (Number(workflowRunId.slice(-1)) + Number(replicationId)) % 2;
+    return parity === 0 ? 'minimal' : 'instrumented';
+  }
+  return 'minimal';
+})();
 const OUTPUT_PATH = resolve(
   process.cwd(),
   process.env.PHASE4_ENDKEY_ATTRIBUTION_OUTPUT
@@ -24,8 +37,6 @@ const BROWSER_MANIFEST = JSON.parse(readFileSync(
   resolve(process.cwd(), 'node_modules/playwright-core/browsers.json'), 'utf8',
 ));
 const EXPECTED_CHROMIUM = BROWSER_MANIFEST.browsers.find((item: any) => item.name === 'chromium');
-
-type Arm = 'minimal' | 'instrumented';
 
 interface FinalConfirmation {
   activeIndex: number;
@@ -1135,17 +1146,29 @@ test('Phase 4.6.2C.3B attributes 100k End-key latency to browser-frame and Playw
   const metadata = runnerMetadata(browserVersion);
   const pinned = browserVersion === EXPECTED_CHROMIUM?.browserVersion;
   const pairOrders = Array.from({ length: WARMUP_PAIRS + MEASURED_PAIRS }, (_, pair) => (
-    pair % 2 === 0 ? ['minimal', 'instrumented'] : ['instrumented', 'minimal']
+    pair % 2 === 0
+      ? [STARTING_ARM, STARTING_ARM === 'minimal' ? 'instrumented' : 'minimal']
+      : [STARTING_ARM === 'minimal' ? 'instrumented' : 'minimal', STARTING_ARM]
   ));
   const report: Record<string, any> = {
     schemaVersion: 2,
     phase: '4.6.2C.3B',
     completionStatus: 'in-progress',
     environment: metadata,
+    replication: {
+      workflowRunId: process.env.GITHUB_RUN_ID ?? null,
+      workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+      workflowSha: process.env.GITHUB_SHA ?? null,
+      replicationId: process.env.PHASE4_ENDKEY_REPLICATION_ID ?? null,
+      sourceRunKey: process.env.GITHUB_RUN_ID && process.env.GITHUB_RUN_ATTEMPT && process.env.PHASE4_ENDKEY_REPLICATION_ID
+        ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT}.${process.env.PHASE4_ENDKEY_REPLICATION_ID}`
+        : null,
+    },
     protocol: {
       warmupPairs: WARMUP_PAIRS,
       measuredPairs: MEASURED_PAIRS,
       arms: ['minimal', 'instrumented'],
+      startingArm: STARTING_ARM,
       pairOrders,
       viewport: { ...VIEWPORT, deviceScaleFactor: 1 },
       listViewportHeight: LIST_HEIGHT,
