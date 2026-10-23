@@ -1,8 +1,8 @@
 # @smilodon/react
 
-Select component for React applications with keyboard and ARIA behaviors under active verification.
+Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
-> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -33,13 +33,17 @@ The complete guide includes:
 - ✅ **Controlled & Uncontrolled** - Works both ways, your choice
 - ✅ **Single & Multi-select** - One prop to switch modes
 - ✅ **Searchable** - Built-in filtering with customizable behavior
-- ✅ **Infinite Scroll** - Handle massive datasets efficiently
+- ✅ **Infinite Scroll** - Emit host-managed load-more requests; this adapter does not own data transport, deduplication, or server pagination
 - ✅ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - ✅ **Grouped Options** - Organize items into categories
 - 🎨 **Dark Mode** - add `className="dark-mode"` or `data-theme="dark"` to the `<Select>` or any ancestor; styles are applied inside the shadow DOM via `:host-context`.
-- ✅ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
+- ✅ **Accessibility behaviors** - Shared-core scenarios passed in the scoped Chromium/Firefox/WebKit Phase 4 matrix; exhaustive React integration, manual AT, and WCAG conformance are not established
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
-- ✅ **Tiny Bundle** - Optimized for production
+- ✅ **Bundle guidance** - No version-specific bundle measurement is claimed; measure the published package output in your own bundler if bundle size is a release requirement
+
+The Quick Start examples are self-contained. Longer feature snippets below are focused examples rather than one compilable module; names explicitly described as application-provided (for example, API endpoints or fetch functions) must be supplied by the host app. The package's [Complete React Guide](./COMPLETE-GUIDE.md) provides broader patterns and should be read with the same public-API and limitation notes above.
+
+In focused JSX examples, `items`, `groups`, `bigItems`, and similar values are component-local application data unless the snippet declares them; imports and hook state should be added in the containing component as needed.
 
 ## Infinite Render Loop: Root-Cause Review (No External Dependencies)
 
@@ -196,7 +200,7 @@ Use the built-in clear control in the input area and style it freely:
 
 Available parts for advanced styling: `::part(clear-button)`, `::part(clear-icon)`.
 
-By default, an empty clearable select does not reserve clear-button space. The button and adjusted input/arrow layout appear after a value is selected or, when search clearing is enabled, after search text is entered. They disappear again when both targets are empty. This applies to single, multi-select, LTR, and RTL layouts.
+By default, an empty clearable select does not reserve clear-button space. The button and adjusted input/arrow layout appear after a value is selected or, when search clearing is enabled, after search text is entered. They disappear again when both targets are empty. This describes intended shared-runtime behavior across single/multi-select and LTR/RTL configurations; it is not exhaustive React integration certification.
 
 For a permanently visible disabled-when-empty control, use the full core configuration:
 
@@ -310,10 +314,16 @@ function MultiSelectExample() {
 ### Searchable Select
 
 ```tsx
+import { useState } from 'react';
 import { Select } from '@smilodon/react';
 
 function SearchableExample() {
   const [value, setValue] = useState('');
+  const countries = [
+    { value: 'us', label: 'United States' },
+    { value: 'ca', label: 'Canada' },
+    { value: 'mx', label: 'Mexico' },
+  ];
 
   return (
     <Select
@@ -385,29 +395,63 @@ You can supply a `groupHeaderRenderer` to render arbitrary React content for the
 ### Infinite Scroll
 
 ```tsx
+import { useRef, useState } from 'react';
 import { Select } from '@smilodon/react';
 
 function InfiniteScrollExample() {
-  const [items, setItems] = useState(initialItems);
+  const pageSize = 20;
+  // Page 1 is already loaded; the component's first load-more event requests page 2.
+  const [items, setItems] = useState(
+    Array.from({ length: pageSize }, (_, index) => ({
+      value: String(index + 1),
+      label: `Item ${index + 1}`,
+    }))
+  );
   const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+  const [loadingPages, setLoadingPages] = useState<number[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const inFlight = useRef(new Set<number>());
+  const loadedPages = useRef(new Set<number>());
 
   const handleLoadMore = async (page: number) => {
-    const newItems = await fetchItems(page);
-    setItems([...items, ...newItems]);
+    if (!hasMore || inFlight.current.has(page) || loadedPages.current.has(page)) return;
+    inFlight.current.add(page);
+    setLoadingPages((previous) => [...previous, page]);
+    try {
+      const response = await fetch(`/api/items?page=${page}`);
+      if (!response.ok) throw new Error(`Page request failed: ${response.status}`);
+      const newItems = await response.json() as Array<{ value: string; label: string }>;
+      setItems((previous) => [...previous, ...newItems]);
+      loadedPages.current.add(page);
+      if (newItems.length < pageSize) setHasMore(false);
+      setError('');
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      inFlight.current.delete(page);
+      setLoadingPages((previous) => previous.filter((entry) => entry !== page));
+    }
   };
 
   return (
-    <Select
-      items={items}
-      value={value}
-      onChange={(val) => setValue(val as string)}
-      infiniteScroll
-      pageSize={20}
-      onLoadMore={handleLoadMore}
-    />
+    <>
+      <Select
+        items={items}
+        value={value}
+        onChange={(val) => setValue(val as string)}
+        infiniteScroll
+        pageSize={pageSize}
+        onLoadMore={handleLoadMore}
+      />
+      {loadingPages.length > 0 && <p role="status">Loading more options…</p>}
+      {error && <p role="alert">{error}</p>}
+    </>
   );
 }
 ```
+
+The adapter calls `onLoadMore(page)` but does not await the returned Promise. The application owns transport, duplicate-page guards, loading/error UI, and server end-of-data detection; keep that logic in the host component even if the callback is declared `async`.
 
 ### Large Lists (Performance Baseline)
 
@@ -417,43 +461,57 @@ For high-volume datasets, start with the built-in lightweight option rendering a
 <Select
   items={bigItems}
   virtualized
-  estimatedItemHeight={40}
   searchable
 />
 ```
 
 Notes:
-- Keep `estimatedItemHeight` close to real row height.
+- `estimatedItemHeight` is an exposed prop for the guarded viewport-windowing test path; it is not a production tuning control while viewport-windowing remains private.
 - Complex `optionRenderer` DOM can add interaction cost on large lists; profile before shipping.
 
 ### With Validation
 
 ```tsx
 import { Select } from '@smilodon/react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 function ValidationExample() {
   const [value, setValue] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const items = [
+    { value: 'small', label: 'Small' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'large', label: 'Large' },
+  ];
 
-  const handleChange = (val: string | number) => {
-    setValue(val as string);
-    if (!val) {
-      setError('This field is required');
-    } else {
-      setError('');
-    }
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitted(true);
+    const message = value ? '' : 'This field is required';
+    setError(message);
+    if (!message) console.log('Submit value:', value);
   };
 
   return (
-    <Select
-      items={items}
-      value={value}
-      onChange={handleChange}
-      required
-      error={!!error}
-      errorMessage={error}
-      placeholder="Required field"
-    />
+    <form onSubmit={handleSubmit} noValidate>
+      <Select
+        items={items}
+        value={value}
+        onChange={(next) => {
+          const selected = Array.isArray(next) ? next[0] : next;
+          setValue(selected == null ? '' : String(selected));
+          if (submitted) setError(selected == null ? 'This field is required' : '');
+        }}
+        required
+        error={!!error}
+        errorMessage={error}
+        placeholder="Required field"
+      />
+      {error && <p role="alert">{error}</p>}
+      <button type="submit">Submit</button>
+    </form>
   );
 }
 ```
@@ -461,10 +519,14 @@ function ValidationExample() {
 ### Using Ref for Imperative Actions
 
 ```tsx
-import { Select, SelectHandle } from '@smilodon/react';
-import { useRef } from 'react';
+import { Select, type SelectHandle } from '@smilodon/react';
+import { useRef, useState } from 'react';
 
 function RefExample() {
+  const items = [
+    { value: 'alpha', label: 'Alpha' },
+    { value: 'beta', label: 'Beta' },
+  ];
   const selectRef = useRef<SelectHandle>(null);
   const [value, setValue] = useState('');
 
@@ -506,7 +568,7 @@ Smilodon React provides **two powerful approaches** for defining select options,
 - ✅ Auto-conversion from strings/numbers
 - ✅ Perfect for basic dropdowns
 - ✅ Works seamlessly with React state
-- ✅ Extremely performant (millions of items)
+- ✅ Can render the datasets exercised in your application; no millions-of-items or constant-DOM guarantee is made
 - ✅ Built-in search and filtering
 - ✅ Full TypeScript type safety
 
@@ -641,24 +703,43 @@ Now also supports the native `optionRenderer` hook (Option B) that returns an `H
 #### Advanced scenarios (React)
 - **Accessibility labels**: use a literal `aria-label` for the internal combobox; host IDREF attributes are not forwarded across the shadow boundary:
   ```tsx
-  <label htmlFor="user-picker">Pick a user</label>
+  <span>Pick a user</span>
   <Select id="user-picker" aria-label="Pick a user" onChange={(v, items) => {
     console.log('Selected', items);
   }}/>
   ```
-- **Server-side lookup**: debounce and push items into the web component:
+- **Server-side lookup**: cancellation and request sequencing prevent an old response from overwriting newer results; the host also handles HTTP and transport errors:
   ```tsx
-  const fetchUsers = useMemo(() => debounce(async (q) => {
-    const res = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
-    const items = await res.json();
-    selectRef.current?.setItems(items);
-  }, 200), []);
+  import { useEffect, useRef, useState } from 'react';
+  import { Select, type SelectItem } from '@smilodon/react';
 
-  <Select
-    searchable
-    onSearch={(q) => fetchUsers(q)}
-    ref={selectRef}
-  />
+  function RemoteSearchExample() {
+    const [items, setItems] = useState<SelectItem[]>([]);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const requestId = useRef(0);
+    const controller = useRef<AbortController | null>(null);
+    useEffect(() => () => controller.current?.abort(), []);
+    async function handleSearch(query: string) {
+      const id = ++requestId.current;
+      controller.current?.abort();
+      if (!query) { setItems([]); setError(''); setLoading(false); return; }
+      const current = new AbortController(); controller.current = current;
+      setLoading(true);
+      setError('');
+      try {
+        const response = await fetch(`/api/users?q=${encodeURIComponent(query)}`, { signal: current.signal });
+        if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+        const next = await response.json() as SelectItem[];
+        if (id === requestId.current) { setItems(next); setError(''); }
+      } catch (reason) {
+        if (!(reason instanceof DOMException && reason.name === 'AbortError') && id === requestId.current) setError(String(reason));
+      } finally {
+        if (id === requestId.current) setLoading(false);
+      }
+    }
+    return <><Select items={items} searchable onSearch={handleSearch} />{loading && <p role="status">Searching…</p>}{error && <p role="alert">{error}</p>}</>;
+  }
   ```
 - **Heavy lists (100k+)**: `virtualized` does not guarantee bounded DOM; true viewport windowing is not a public production mode:
   ```tsx
@@ -666,24 +747,26 @@ Now also supports the native `optionRenderer` hook (Option B) that returns an `H
   <Select items={big} virtualized />
   ```
 
-**Use when**: You need rich, interactive option content with custom React components.
+**Use when**: You need rich option content composed with React. Each rendered row remains one listbox option; arbitrary nested buttons, links, or other separately interactive controls are not a supported assumption.
 
 **Advantages**:
 - ✅ Full control over option rendering
-- ✅ Render any React component
+- ✅ Render React-node content through the adapter's custom renderer
 - ✅ Rich content (images, icons, badges, multi-line text)
 - ✅ Custom styling with CSS-in-JS or Tailwind
-- ✅ Interactive elements within options
+- ✅ Rich non-interactive option content; keep selection and keyboard interaction on the option itself
 - ✅ Conditional rendering based on item data
-- ✅ Access to React hooks and context
+- ✅ Renderer lifecycle and context boundaries are documented below
 - ✅ Perfect for complex UIs (user cards, product listings, etc.)
 
 **How it works**: Provide a `customRenderer` function that returns `React.ReactNode` for each option.
 
+The adapter renders returned content in separate React roots and schedules cleanup when renderer content is replaced or the adapter unmounts. The `customRenderer` callback itself is not a React component and must not call hooks. A component returned by the callback may use its own hooks, but it does not inherit context providers above `<Select>` because its root is separate.
+
 **Examples**:
 
 ```tsx
-import { Select, SelectItem } from '@smilodon/react';
+import { Select, type SelectItem } from '@smilodon/react';
 import { useState } from 'react';
 
 // Example 1: Simple custom template with icons
@@ -975,6 +1058,7 @@ function TaskSelect() {
 
 // Example 5: Using Tailwind CSS (if available)
 // Note: Tailwind/CSS classes in customRenderer are supported inside Select options.
+// Map dynamic values to literal class names so Tailwind's static scanner can include them.
 // Core mirrors document stylesheets into shadow DOM for custom option rendering.
 interface Tag extends SelectItem {
   color: string;
@@ -983,6 +1067,12 @@ interface Tag extends SelectItem {
 
 function TailwindExample() {
   const [tag, setTag] = useState('');
+
+  const colorClasses: Record<string, string> = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    red: 'bg-red-500',
+  } as const;
 
   const tags: Tag[] = [
     { value: 'react', label: 'React', color: 'blue', count: 1250 },
@@ -998,7 +1088,7 @@ function TailwindExample() {
       customRenderer={(item: Tag) => (
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full bg-${item.color}-500`} />
+            <span className={`w-3 h-3 rounded-full ${colorClasses[item.color]}`} />
             <span className="font-semibold text-gray-900">{item.label}</span>
           </div>
           <span className="text-sm text-gray-500">{item.count} posts</span>
@@ -1041,20 +1131,20 @@ function ComponentExample() {
 
 | Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
 |---------|------------------------|---------------------------|
-| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
-| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
-| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
-| **React Integration** | ⭐⭐⭐ Seamless | ⭐⭐⭐ Seamless |
-| **Component Reuse** | ⭐ Limited | ⭐⭐⭐ Full |
-| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
-| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
+| **Setup** | Pass an array of option data | Provide a renderer callback |
+| **Rendering behavior** | Shared runtime renders option labels | Adapter renders React-node option content |
+| **Customization** | Data-driven labels and state | Custom non-interactive content; nested controls are not promised |
+| **React integration** | Controlled/uncontrolled values and callbacks | Same adapter API with custom-rendered content |
+| **Component reuse** | Reuse data definitions | Return components; separate-root context limits apply |
+| **TypeScript** | Typed item data and props | Typed renderer callback and props |
+| **Very large datasets** | No 1M-item certification or performance comparison is claimed | No 1M-item certification or performance comparison is claimed |
+| **Choosing a method** | Direct for simple options | Use when custom content is required |
 
 **Best Practices**:
 
 ✅ **Use Method 1 (Object Arrays) when**:
 - You need simple text-based options
-- Performance is critical (millions of items)
+- You have a large dataset and will profile the workload and use host-managed search or pagination where appropriate; no millions-of-items guarantee is made
 - You want minimal code
 - Built-in search/filter is sufficient
 - Working with external APIs returning plain data
@@ -1143,8 +1233,7 @@ function OptimizedExample() {
       value={value}
       onChange={(val) => setValue(val as string)}
       customRenderer={renderer}
-      virtualized // Enable incremental chunk rendering
-      estimatedItemHeight={60}
+      virtualized // Enable incremental chunk rendering, not viewport windowing
     />
   );
 }
@@ -1172,12 +1261,20 @@ function OptimizedExample() {
 | `infiniteScroll` | `boolean` | `false` | Enable infinite scroll |
 | `pageSize` | `number` | `20` | Items per page (infinite scroll) |
 | `virtualized` | `boolean` | `false` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
-| `estimatedItemHeight` | `number` | `48` | Estimate used only by the guarded viewport-windowing test path |
+| `estimatedItemHeight` | `number` | `48` | Exposed estimate used only by the guarded viewport-windowing test path; not a production tuning control |
 | `maxSelections` | `number` | - | Max selections (multi-select) |
 | `toggleOnTriggerClick` | `boolean` | `true` | Allow repeated trigger clicks to toggle the dropdown |
 | `placement` | `string` | `"bottom-start"` | Dropdown placement |
 | `className` | `string` | - | Custom CSS class |
 | `style` | `CSSProperties` | - | Inline styles |
+| `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, `config` | core configuration types | - | Shared runtime configuration groups |
+| `optionRenderer` | `(item, index, helpers) => HTMLElement` | - | DOM renderer; return safe DOM nodes and retain the single-option interaction model |
+| `customRenderer` | `(item, index) => React.ReactNode` | - | React-node option content; nested interactive controls are not promised |
+| `groupHeaderRenderer` | `(group, index) => React.ReactNode` | - | React-node grouped-header content |
+| `clearable`, `clearSelectionOnClear`, `clearSearchOnClear`, `clearAriaLabel`, `clearIcon` | booleans / strings | - | Clear-control configuration |
+| `onClear` | `(detail) => void` | - | Reports which selection/search state was cleared |
+| `onDiagnostic` | `(detail) => void` | - | Runtime diagnostic callback |
+| `trackingEnabled`, `trackEvents`, `trackStyling`, `trackLimitations`, `emitDiagnostics`, `trackingMaxEntries`, `limitationPolicies`, `autoMitigateRuntimeModeSwitch` | documented tracking/limitation types | - | Runtime tracking and limitation-policy configuration |
 | `onChange` | `(value, items) => void` | - | Selection change callback |
 | `onSelect` | `(item, index) => void` | - | Item select callback |
 | `onOpen` | `() => void` | - | Dropdown open callback |
@@ -1483,6 +1580,11 @@ interface SelectHandle {
   clearError: () => void;
   setRequired: (required: boolean) => void;
   validate: () => boolean;
+  getCapabilities: () => SelectCapabilitiesReport | undefined;
+  getKnownLimitations: () => LimitationState[];
+  getTrackingSnapshot: () => TrackingSnapshot;
+  clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => void;
+  setLimitationPolicies: (policies: LimitationPolicyMap) => void;
 }
 ```
 
@@ -1519,7 +1621,7 @@ Implemented keyboard and ARIA behaviors include:
 - ✅ High contrast mode support
 - ✅ Reduced motion support
 - Touch-target sizing is themeable; WCAG touch-target conformance has not been certified.
-- Cross-browser accessibility verification and manual assistive-technology assessment are still pending; this is not a WCAG conformance claim.
+- The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit. This does not establish every React integration pattern, minimum-browser-version compatibility, or WCAG conformance. Manual Windows/NVDA and macOS/VoiceOver assessments remain pending.
 
 ### Important: Passing inline functions as renderers
 
@@ -1539,24 +1641,20 @@ Adapters are designed to not loop even without memoization, but memoization stil
 
 - Incremental chunk rendering for large flat datasets; viewport windowing is not public/production-activated
 - Lazy loading with infinite scroll
-- Optimized re-renders with React.memo internally
+- React state and renderer stability guidance; the adapter does not promise an internal `React.memo` wrapper
 - Tree-shakeable exports
-- Minimal bundle size impact
+- Bundle output depends on the consuming app and bundler; no version-specific size claim is made here
 
 ## Browser Support
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- iOS Safari 14+
-- Samsung Internet 14+
+The minimum versions listed by repository policy are compatibility targets, not versions proven by the current Phase 4 matrix. The completed automated matrix uses current pinned Chromium, Firefox, and WebKit builds; consult the [browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) for declared compatibility details.
 
 ## TypeScript
 
 Full TypeScript support with comprehensive type definitions included.
 
 ```tsx
-import { Select, SelectProps, SelectHandle, SelectItem } from '@smilodon/react';
+import { Select, type SelectProps, type SelectHandle, type SelectItem, type GroupedItem, type GlobalSelectConfig, type SelectCapabilitiesReport, type LimitationState, type TrackingSnapshot, type LimitationPolicyMap } from '@smilodon/react';
 ```
 
 ## License
