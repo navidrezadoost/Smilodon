@@ -1,8 +1,8 @@
 # @smilodon/vue
 
-Select component for Vue 3 applications with keyboard and ARIA behaviors under active verification.
+Select component for Vue 3 applications. Its underlying shared core has scoped automated Phase 4 browser coverage; complete Vue/Nuxt integration parity and manual assistive-technology certification remain unverified.
 
-> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. Accessibility verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
+> Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core's scoped Phase 4 automated browser matrix passed in Chromium, Firefox, and WebKit; this does not certify every Vue/Nuxt integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
 
@@ -24,6 +24,8 @@ The complete guide includes:
 - ✅ Advanced patterns (dependent selects, async onMounted)
 - ✅ Troubleshooting and accessibility information
 
+The Quick Start and examples with complete `<script setup>` blocks are intended to stand alone. Longer tutorial excerpts may be focused fragments; when they use host-owned `items`, `value`, or request functions, provide those declarations in the surrounding Vue component.
+
 ---
 
 ## Features
@@ -36,15 +38,37 @@ The complete guide includes:
   <label for="team-picker">Team</label>
   <Select id="team-picker" aria-label="Team" />
   ```
-- **Server-side lookup**: fetch on `search` and call `setItems` on the element ref:
+- **Server-side lookup**: the host owns transport, loading/error state, stale-request protection, and `setItems`; a minimal race-safe pattern is:
   ```vue
-  <Select ref="picker" searchable @search="onSearch" />
-  
-  const onSearch = async (query) => {
-    const res = await fetch(`/api/teams?q=${encodeURIComponent(query)}`);
-    const items = await res.json();
-    (picker.value as any)?.setItems(items);
-  };
+  <script setup lang="ts">
+  import { ref } from 'vue';
+  import { Select } from '@smilodon/vue';
+  import type { SelectItem } from '@smilodon/core';
+  const items = ref<SelectItem[]>([]);
+  const loading = ref(false);
+  const searchError = ref('');
+  let requestId = 0;
+  let controller: AbortController | undefined;
+  async function onSearch(query: string) {
+    const id = ++requestId;
+    controller?.abort();
+    if (!query) { items.value = []; loading.value = false; searchError.value = ''; return; }
+    const current = new AbortController(); controller = current; loading.value = true;
+    try {
+      const response = await fetch(`/api/teams?q=${encodeURIComponent(query)}`, { signal: current.signal });
+      if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+      const result = await response.json() as SelectItem[];
+      if (id === requestId) { items.value = result; searchError.value = ''; }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError') && id === requestId) searchError.value = String(error);
+    } finally { if (id === requestId) loading.value = false; }
+  }
+  </script>
+  <template>
+    <Select :items="items" searchable @search="onSearch" />
+    <p v-if="loading" role="status">Searching…</p>
+    <p v-if="searchError" role="alert">{{ searchError }}</p>
+  </template>
   ```
 - **Large flat lists**: the public setting enables chunked rendering, not viewport windowing:
   ```vue
@@ -56,14 +80,14 @@ The complete guide includes:
 - ✅ **Fully Typed** - Complete TypeScript support with detailed type definitions
 - ✅ **Single & Multi-select** - One prop to switch modes
 - ✅ **Searchable** - Built-in filtering with customizable behavior
-- ✅ **Infinite Scroll** - Handle massive datasets efficiently
+- ✅ **Infinite Scroll** - Emit load-more requests so the host can page data; the adapter does not implement transport or automatically deduplicate async requests
 - ✅ **Large-list chunk rendering** - Incrementally render large flat lists; not viewport windowing
 - ✅ **Grouped Options** - Organize items into categories
 - 🎨 **Dark Mode** - apply `class="dark-mode"` or `data-theme="dark"` to the component or an ancestor; styles are scoped inside the shadow DOM.
-- ✅ **Accessibility behaviors** - ARIA semantics and keyboard navigation are implemented; cross-browser and manual assistive-technology certification is pending
+- ✅ **Accessibility behaviors** - Shared-core scenarios passed in the scoped Chromium/Firefox/WebKit Phase 4 matrix; exhaustive Vue/Nuxt parity, manual AT, and WCAG conformance are not established
 - ✅ **Flexible Input** - Accepts SelectItem objects, string arrays, or number arrays
 - ✅ **Customizable** - Custom renderers, styles, and behaviors
-- ✅ **Tiny Bundle** - Optimized for production
+- ✅ **Bundle guidance** - No version-specific bundle-size claim is made; measure the emitted artifact for your app and bundler if bundle budget matters
 
 ## Installation
 
@@ -86,6 +110,8 @@ pnpm add @smilodon/vue @smilodon/core
 ## Nuxt Integration
 
 Nuxt works well with `@smilodon/vue`, but the underlying `enhanced-select` custom element must be treated as a custom element by the Vue compiler.
+
+The compiler setting below prevents Vue from treating the core host tag as an unresolved Vue component; it does not itself register the custom element or certify SSR/hydration behavior. The Vue adapter waits for the core element upgrade from its browser mount lifecycle. Keep imperative DOM work client-only, verify the integration in the Nuxt version/build mode you ship, and use `<ClientOnly>` when your application needs to avoid rendering this interactive control during SSR.
 
 ### `nuxt.config.ts`
 
@@ -190,7 +216,7 @@ const items = [
 
 Styling hooks: `::part(clear-button)` and `::part(clear-icon)` plus `--select-clear-*` CSS tokens.
 
-An empty clearable field reserves no clear-button space by default. Selecting a value—or typing search text when search clearing is enabled—reveals the button and adjusts the input, separator, and arrow as one layout. Clearing all enabled targets restores the normal layout in single, multi-select, LTR, and RTL modes.
+An empty clearable field reserves no clear-button space by default. Selecting a value—or typing search text when search clearing is enabled—reveals the button and adjusts the input, separator, and arrow as one layout. Clearing all enabled targets restores the shared runtime's intended layout across single/multi-select and LTR/RTL configurations; this is not exhaustive Vue integration certification.
 
 Use the full core config only when the action should remain visible but disabled while empty:
 
@@ -560,7 +586,7 @@ const largeDataset: SelectItem[] = Array.from({ length: 1000 }, (_, i) => ({
     v-model="selectedValue"
     placeholder="Select from 1000 items..."
     searchable
-    :virtualScroll="true"
+    virtualized
   />
   
   <div v-if="selectedValue">
@@ -601,27 +627,41 @@ const colors = [
 ### Searchable with Server-Side Filtering
 
 ```vue
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { onUnmounted, ref } from 'vue';
 import { Select } from '@smilodon/vue';
 
+type Item = { value: string; label: string };
 const value = ref('');
-const items = ref([]);
+const items = ref<Item[]>([]);
 const isLoading = ref(false);
+const searchError = ref('');
+let requestId = 0;
+let controller: AbortController | undefined;
+onUnmounted(() => controller?.abort());
 
-async function handleSearch(query) {
+async function handleSearch(query: string) {
+  const id = ++requestId;
+  controller?.abort();
   if (!query) {
     items.value = [];
+    isLoading.value = false;
+    searchError.value = '';
     return;
   }
-  
+  const current = new AbortController();
+  controller = current;
   isLoading.value = true;
+  searchError.value = '';
   try {
-    const response = await fetch(`/api/search?q=${query}`);
-    const data = await response.json();
-    items.value = data.results;
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: current.signal });
+    if (!response.ok) throw new Error(`Search failed: ${response.status}`);
+    const data = await response.json() as { results: Item[] };
+    if (id === requestId) { items.value = data.results; searchError.value = ''; }
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === 'AbortError') && id === requestId) searchError.value = String(error);
   } finally {
-    isLoading.value = false;
+    if (id === requestId) isLoading.value = false;
   }
 }
 </script>
@@ -634,6 +674,8 @@ async function handleSearch(query) {
     placeholder="Search..."
     @search="handleSearch"
   />
+  <p v-if="isLoading" role="status">Searching…</p>
+  <p v-if="searchError" role="alert">{{ searchError }}</p>
 </template>
 ```
 
@@ -723,19 +765,37 @@ const groups = [/* ... */];
 ### Infinite Scroll
 
 ```vue
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import { Select } from '@smilodon/vue';
 
+type Item = { value: string; label: string };
 const value = ref('');
-const items = ref([]);
-const currentPage = ref(1);
+const items = ref<Item[]>([]);
+const pageSize = 50;
+const total = 500;
+const loading = ref(false);
+const hasMore = ref(true);
+const loadError = ref('');
+const loadedPages = new Set<number>();
 
-async function loadMore(page) {
-  const response = await fetch(`/api/items?page=${page}`);
-  const newItems = await response.json();
-  items.value = [...items.value, ...newItems];
-  currentPage.value = page;
+async function loadMore(page: number) {
+  if (loading.value || loadedPages.has(page) || !hasMore.value) return;
+  loading.value = true;
+  try {
+    const response = await fetch(`/api/items?page=${page}`);
+    if (!response.ok) throw new Error(`Page request failed: ${response.status}`);
+    const newItems = await response.json() as Item[];
+    items.value = [...items.value, ...newItems];
+    loadedPages.add(page);
+    hasMore.value = newItems.length === pageSize && items.value.length < total;
+    loadError.value = '';
+  } catch (error) {
+    loadError.value = String(error);
+    console.error('Unable to load more options', error);
+  } finally {
+    loading.value = false;
+  }
 }
 
 // Load initial page
@@ -747,9 +807,11 @@ onMounted(() => loadMore(1));
     :items="items"
     v-model="value"
     infiniteScroll
-    :pageSize="50"
+    :pageSize="pageSize"
     @loadMore="loadMore"
   />
+  <p v-if="loading" role="status">Loading more options…</p>
+  <p v-if="loadError" role="alert">{{ loadError }}</p>
 </template>
 ```
 
@@ -844,7 +906,7 @@ Smilodon Vue provides **two powerful approaches** for defining select options, e
 - ✅ Auto-conversion from strings/numbers
 - ✅ Perfect for basic dropdowns
 - ✅ Works seamlessly with Vue reactivity
-- ✅ Extremely performant (millions of items)
+- ✅ Can render datasets whose size has been measured in the target application; no millions-of-items or constant-DOM guarantee is made
 - ✅ Built-in search and filtering
 - ✅ Full TypeScript type safety
 
@@ -1008,7 +1070,8 @@ const items = computed(() =>
 ```vue
 <script setup lang="ts">
 import { ref, h } from 'vue';
-import { Select, SelectItem } from '@smilodon/vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
 // Example 1: Simple custom template with icons
 interface Language extends SelectItem {
@@ -1048,7 +1111,8 @@ const languageRenderer = (item: Language, index: number) => {
 ```vue
 <script setup lang="ts">
 import { ref, h } from 'vue';
-import { Select, SelectItem } from '@smilodon/vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
 // Example 2: User selection with avatars
 interface User extends SelectItem {
@@ -1121,7 +1185,8 @@ const userRenderer = (item: User) => {
 ```vue
 <script setup lang="ts">
 import { ref, h } from 'vue';
-import { Select, SelectItem } from '@smilodon/vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
 // Example 3: Product selection with images and pricing
 interface Product extends SelectItem {
@@ -1208,7 +1273,8 @@ const productRenderer = (item: Product) => {
 ```vue
 <script setup lang="ts">
 import { ref, h } from 'vue';
-import { Select, SelectItem } from '@smilodon/vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
 // Example 4: Status indicators with conditional styling
 interface Task extends SelectItem {
@@ -1284,9 +1350,10 @@ const taskRenderer = (item: Task) => {
 ```vue
 <script setup lang="ts">
 import { ref, h } from 'vue';
-import { Select, SelectItem } from '@smilodon/vue';
+import { Select } from '@smilodon/vue';
+import type { SelectItem } from '@smilodon/core';
 
-// Example 5: Using HTML string (simpler alternative)
+// Example 5: DOM-driven option content (the declared optionRenderer contract)
 interface Tag extends SelectItem {
   color: string;
   count: number;
@@ -1300,17 +1367,24 @@ const tags: Tag[] = [
   { value: 'angular', label: 'Angular', color: 'red', count: 420 }
 ];
 
-// Using HTML string renderer (returned from custom prop)
-const tagRenderer = (item: Tag) => {
-  return `
-    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="width: 12px; height: 12px; border-radius: 50%; background: ${item.color};"></span>
-        <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
-      </div>
-      <span style="font-size: 14px; color: #6b7280;">${item.count} posts</span>
-    </div>
-  `;
+// Build nodes with DOM APIs and assign untrusted text with textContent; do not
+// interpolate item data into HTML strings.
+const tagRenderer = (item: Tag): HTMLElement => {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px';
+  const details = document.createElement('div');
+  details.style.cssText = 'display:flex;align-items:center;gap:8px';
+  const color = document.createElement('span');
+  color.style.cssText = `width:12px;height:12px;border-radius:50%;background:${item.color}`;
+  const label = document.createElement('strong');
+  label.style.color = '#1f2937';
+  label.textContent = item.label;
+  const count = document.createElement('span');
+  count.style.cssText = 'font-size:14px;color:#6b7280';
+  count.textContent = `${item.count} posts`;
+  details.append(color, label);
+  row.append(details, count);
+  return row;
 };
 </script>
 
@@ -1318,7 +1392,7 @@ const tagRenderer = (item: Tag) => {
   <Select
     :items="tags"
     v-model="tag"
-    :option-template="tagRenderer"
+    :option-renderer="tagRenderer"
     placeholder="Select a tag..."
   />
 </template>
@@ -1328,20 +1402,20 @@ const tagRenderer = (item: Tag) => {
 
 | Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
 |---------|------------------------|---------------------------|
-| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
-| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
-| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
-| **Vue Integration** | ⭐⭐⭐ Seamless | ⭐⭐⭐ Seamless |
-| **Reactivity** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
-| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
+| **Setup** | Pass an array of option data | Provide a renderer callback |
+| **Rendering behavior** | Shared runtime renders option labels | Adapter accepts the documented Vue VNode renderer |
+| **Customization** | Data-driven labels and state | Custom non-interactive content; nested controls are not promised |
+| **Vue integration** | Controlled/bound values and component events | Same adapter API with custom-rendered content |
+| **Reactivity** | Item/value changes use adapter props | Renderer output follows the adapter's renderer lifecycle |
+| **TypeScript** | Typed item data and props | Typed renderer callback and props |
+| **Very large datasets** | No 1M-item certification or performance comparison is claimed | No 1M-item certification or performance comparison is claimed |
+| **Choosing a method** | Direct for simple options | Use when custom content is required |
 
 **Best Practices**:
 
 ✅ **Use Method 1 (Object Arrays) when**:
 - You need simple text-based options
-- Performance is critical (millions of items)
+- You have a large dataset and will profile the specific workload and use host-managed search/pagination where appropriate; no millions-of-items guarantee is made
 - You want minimal code
 - Built-in search/filter is sufficient
 - Working with external APIs returning plain data
@@ -1431,10 +1505,11 @@ const renderer = (item: any, index: number) => {
     v-model="value"
     :custom-renderer="renderer"
     virtualized
-    :estimated-item-height="60"
   />
 </template>
 ```
+
+`estimatedItemHeight` is not a declared Vue adapter prop. Do not add it to Vue examples as a production tuning control; the core's estimate is an internal/guarded-path detail.
 
 ---
 
@@ -1459,6 +1534,13 @@ const renderer = (item: any, index: number) => {
 | `virtualized` | `boolean` | `true` | Enable legacy chunked rendering for large flat lists; not viewport windowing |
 | `maxSelections` | `number` | - | Maximum selections (for multi-select) |
 | `placement` | `'bottom' \| 'top' \| 'auto'` | `'auto'` | Dropdown placement |
+| `selectionConfig`, `multiSelectDisplay`, `scrollToSelected`, `styles`, `config` | core configuration types | - | Shared runtime configuration groups |
+| `optionRenderer` | `(item, index, helpers) => HTMLElement` | - | DOM-driven option renderer; create nodes safely and return an HTMLElement |
+| `customRenderer` | `(item, index) => VNode` | - | Vue VNode renderer created with `h()` |
+| `groupHeaderRenderer` | `(group, index) => VNode` | - | Vue VNode group-header renderer |
+| `removeButtonIcon`, `disabledOptionBehavior`, `showSelectedIndicator`, `direction`, `classMap` | documented config types | - | Selection, direction, and option-state customization |
+| `clearable`, `clearSelectionOnClear`, `clearSearchOnClear`, `clearAriaLabel`, `clearIcon` | booleans / strings | - | Clear-control configuration |
+| `trackingEnabled`, `trackEvents`, `trackStyling`, `trackLimitations`, `emitDiagnostics`, `trackingMaxEntries`, `limitationPolicies`, `autoMitigateRuntimeModeSwitch` | documented tracking/limitation types | - | Runtime diagnostics and limitation policies |
 | `className` | `string` | - | Custom CSS class |
 | `style` | `object` | - | Custom inline styles |
 
@@ -1474,6 +1556,8 @@ const renderer = (item: any, index: number) => {
 | `search` | `query: string` | Emitted when search query changes |
 | `loadMore` | `page: number` | Emitted when more items requested |
 | `create` | `value: string` | Emitted when user creates new item |
+| `clear` | `{ clearedSelection, clearedSearch }` | Emitted when the clear control is used |
+| `diagnostic` | Diagnostic detail object | Emitted when runtime diagnostics are enabled |
 
 ### Exposed Methods (Template Ref)
 
@@ -1485,6 +1569,14 @@ const renderer = (item: any, index: number) => {
 | `setItems(items)` | Set items programmatically |
 | `setGroupedItems(groups)` | Set grouped items programmatically |
 | `clear()` | Clear selection |
+| `getSelectedItems()` / `getSelectedValues()` | Read selected items or values |
+| `clearSearch()` | Clear the current search query |
+| `updateConfig(config)` | Apply partial core config at runtime |
+| `setError(message)` / `clearError()` | Set or clear validation error state |
+| `setRequired(required)` / `validate()` | Change required state or validate |
+| `getCapabilities()` / `getKnownLimitations()` | Read runtime capability and limitation reports |
+| `getTrackingSnapshot()` / `clearTracking(source?)` | Inspect or clear diagnostic tracking buckets |
+| `setLimitationPolicies(policies)` | Set runtime limitation policies |
 
 ### Types
 
@@ -1498,8 +1590,8 @@ interface SelectItem {
 }
 
 interface GroupedItem {
-  groupLabel: string;
-  items: SelectItem[];
+  label: string;
+  options: SelectItem[];
 }
 ```
 
@@ -1542,7 +1634,7 @@ Implemented behavior includes selected Arrow/Enter/Escape/Tab paths, ARIA naming
 - ✅ ARIA naming and descriptions support literal host `aria-label` / `aria-description`; host ID references are not forwarded across the shadow boundary
 - ✅ Focus restoration behavior is covered in focused tests
 - ✅ High-contrast styling hooks are available; conformance is not certified
-- Cross-browser accessibility verification and manual assistive-technology assessment are still pending; this is not a WCAG conformance claim.
+- The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit. This does not establish exhaustive Vue/Nuxt integration parity, minimum-browser-version support, manual assistive-technology usability, or WCAG conformance. Manual Windows/NVDA and macOS/VoiceOver assessments remain pending.
 
 ### Important: Passing inline functions as renderers
 
@@ -1570,6 +1662,8 @@ Adapters are designed to not loop even without memoization, but stability still 
 - Optimized re-renders with computed values
 
 ## Browser Support
+
+The current Phase 4 matrix uses pinned Chromium, Firefox, and WebKit builds; it does not certify every Vue/Nuxt integration or repository minimum version. See the [browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) for declared compatibility targets.
 
 - Chrome/Edge (latest)
 - Firefox (latest)

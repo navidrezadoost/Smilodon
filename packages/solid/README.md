@@ -4,7 +4,7 @@ SolidJS adapter for Smilodon's core custom-element select engine.
 
 This package gives Solid applications a wrapper around the shared `enhanced-select` runtime. Its public `virtualized` option enables legacy chunked rendering for large flat lists, not viewport-windowed rendering; true viewport virtualization remains guarded and is not a supported production mode.
 
-Accessibility verification is in progress. Selected ARIA and keyboard behaviors have automated coverage, but cross-browser verification and manual assistive-technology assessment are pending; this is not a WCAG conformance claim.
+The shared `EnhancedSelect` runtime passed its scoped Phase 4 automated accessibility scenarios in Chromium, Firefox, and WebKit. Solid-specific adapter parity and browser integration are not comprehensively certified, and manual Windows/NVDA and macOS/VoiceOver assessments remain pending. This is not a WCAG conformance claim.
 
 ## 📖 Documentation
 
@@ -15,6 +15,8 @@ Accessibility verification is in progress. Selected ARIA and keyboard behaviors 
 **For comprehensive documentation covering installation, setup, controlled and uncontrolled usage, renderers, performance, SSR posture, diagnostics, and troubleshooting:**
 
 👉 **[Complete SolidJS Guide](./COMPLETE-GUIDE.md)** 👈
+
+The Quick Start and examples with a local component/data declaration are standalone. Short prop snippets that depend on the surrounding Solid component are marked as fragments and should be placed inside that component.
 
 The complete guide includes:
 - ✅ Solid-specific setup and custom-element lifecycle guidance
@@ -71,19 +73,29 @@ render(() => <App />, document.getElementById('app')!)
 
 ## Clear control visibility
 
-With `clearable`, an empty field reserves no space for the clear action. The button and its input/arrow spacing appear only when a selected value or enabled search query can be cleared, then disappear after both targets are empty. This behavior covers single and multi-select as well as LTR and RTL layouts.
+With `clearable`, the shared core is intended not to reserve empty space for the clear action. The button and its input/arrow spacing appear only when a selected value or enabled search query can be cleared, then disappear after both targets are empty. The runtime behavior supports single/multi-select and LTR/RTL configuration; this description is not a claim of exhaustive Solid-specific parity certification.
 
 ```tsx
-<Select
-  items={items}
-  value={value()}
-  onChange={setValue}
-  searchable
-  clearable
-  clearSelectionOnClear
-  clearSearchOnClear
-  onClear={(detail) => console.log(detail)}
-/>
+import { createSignal } from 'solid-js'
+import { Select } from '@smilodon/solid'
+
+function ClearControlExample() {
+  const [value, setValue] = createSignal<string | number>('')
+  const items = [{ value: 'alpha', label: 'Alpha' }]
+
+  return (
+    <Select
+      items={items}
+      value={value()}
+      onChange={(next) => setValue(next as string)}
+      searchable
+      clearable
+      clearSelectionOnClear
+      clearSearchOnClear
+      onClear={(detail) => console.log(detail)}
+    />
+  )
+}
 ```
 
 To keep a disabled clear action visible while empty, pass `config={{ clearControl: { hideWhenEmpty: false } }}`. Style through `::part(clear-button)`, `::part(clear-icon)`, and `--select-clear-*`; avoid permanent input padding.
@@ -95,15 +107,23 @@ To keep a disabled clear action visible while empty, pass `config={{ clearContro
 Use `value` plus `onChange` when your store or signal owns the selection.
 
 ```tsx
-const [value, setValue] = createSignal<Array<string | number>>([])
+import { createSignal } from 'solid-js'
+import { Select } from '@smilodon/solid'
 
-<Select
-  items={items}
-  value={value()}
-  onChange={(next) => setValue(next as Array<string | number>)}
-  multiple
-  searchable
-/>
+function ControlledSelect() {
+  const [value, setValue] = createSignal<Array<string | number>>([])
+  const items = [{ value: 'alpha', label: 'Alpha' }, { value: 'beta', label: 'Beta' }]
+
+  return (
+    <Select
+      items={items}
+      value={value()}
+      onChange={(next) => setValue(next as Array<string | number>)}
+      multiple
+      searchable
+    />
+  )
+}
 ```
 
 ### Uncontrolled
@@ -111,11 +131,16 @@ const [value, setValue] = createSignal<Array<string | number>>([])
 Use `defaultValue` when the component should manage its own internal state after initial mount.
 
 ```tsx
-<Select
-  items={items}
-  defaultValue="banana"
-  searchable
-/>
+import { Select } from '@smilodon/solid'
+
+function UncontrolledSelect() {
+  const items = [
+    { value: 'alpha', label: 'Alpha' },
+    { value: 'beta', label: 'Beta' },
+  ]
+
+  return <Select items={items} defaultValue="alpha" searchable />
+}
 ```
 
 ## Grouped data
@@ -123,14 +148,20 @@ Use `defaultValue` when the component should manage its own internal state after
 You can supply either `groupedItems` directly or pass flat `items` with a `group` property.
 
 ```tsx
-<Select
-  items={[
-    { value: 'tehran', label: 'Tehran', group: 'Asia' },
-    { value: 'tokyo', label: 'Tokyo', group: 'Asia' },
-    { value: 'berlin', label: 'Berlin', group: 'Europe' },
-  ]}
-  searchable
-/>
+import { Select } from '@smilodon/solid'
+
+function GroupedDataExample() {
+  return (
+    <Select
+      items={[
+        { value: 'tehran', label: 'Tehran', group: 'Asia' },
+        { value: 'tokyo', label: 'Tokyo', group: 'Asia' },
+        { value: 'berlin', label: 'Berlin', group: 'Europe' },
+      ]}
+      searchable
+    />
+  )
+}
 ```
 
 If you already have grouped data, pass `groupedItems` and optionally render headers with `groupHeaderRenderer`.
@@ -138,8 +169,11 @@ If you already have grouped data, pass `groupedItems` and optionally render head
 ## Direction and option-state controls
 
 ```tsx
+import { Select } from '@smilodon/solid'
+
+// Fragment: place this Select expression in a component's returned JSX.
 <Select
-  items={items}
+  items={[{ value: 'tehran', label: 'Tehran' }, { value: 'tokyo', label: 'Tokyo' }]}
   direction="rtl"
   removeButtonIcon="−"
   disabledOptionBehavior={{ hoverable: true, focusable: true, selectable: false }}
@@ -154,7 +188,7 @@ If you already have grouped data, pass `groupedItems` and optionally render head
 
 ## Core config parity and global defaults
 
-The Solid adapter now exposes the shared core configuration model through both convenience props and a full `config` prop.
+The Solid adapter accepts the shared core configuration model through convenience props and a full `config` prop. These declarations establish supported inputs, not exhaustive behavioral parity: adapter contract and browser coverage remain incomplete. See the [feature-contract audit](../../docs/architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) for current verification boundaries.
 
 ### Convenience props
 
@@ -211,6 +245,11 @@ function HorizontalChipExample() {
 ### Full `config` passthrough
 
 ```tsx
+import { Select } from '@smilodon/solid'
+
+const items = [{ value: 'alpha', label: 'Alpha' }]
+
+// Fragment: place this Select expression in a component's returned JSX.
 <Select
   items={items}
   multiple
@@ -268,8 +307,11 @@ configureSelect({
 Use `customRenderer` when you want JSX-based option content driven by Solid rendering.
 
 ```tsx
+import { Select } from '@smilodon/solid'
+
+// Fragment: place this Select expression in a component's returned JSX.
 <Select
-  items={items}
+  items={[{ value: 'alpha', label: 'Alpha' }]}
   customRenderer={(item) => (
     <div style={{ display: 'flex', 'justify-content': 'space-between' }}>
       <span>{item.label}</span>
@@ -279,19 +321,46 @@ Use `customRenderer` when you want JSX-based option content driven by Solid rend
 />
 ```
 
+The adapter mounts this JSX through Solid's renderer and retains a disposer for replacement and teardown. Renderer roots are cleaned up by the adapter when its corresponding content is replaced or the component is disposed. This lifecycle handling is implementation behavior, not a claim that every Solid renderer edge case has contract coverage. Keep each option semantically one selectable option; do not place nested interactive controls inside its listbox option content.
+
 ### `optionRenderer`
 
 Use `optionRenderer` when you want to return an `HTMLElement` directly.
 
 ```tsx
+import { Select } from '@smilodon/solid'
+
+// Fragment: place this Select expression in a component's returned JSX.
 <Select
-  items={items}
-  optionRenderer={(item, index, helpers) => {
+  items={[{ value: 'alpha', label: 'Alpha' }]}
+  optionRenderer={(item, index) => {
     const el = document.createElement('div')
     el.textContent = `${index + 1}. ${item.label}`
-    el.onclick = () => helpers?.onSelect(item, index)
     return el
   }}
+/>
+```
+
+The renderer supplies option content only. Leave click, keyboard, and selection handling to the shared select runtime instead of adding another click handler to the returned node.
+
+### `groupHeaderRenderer`
+
+Group headers can be rendered with Solid JSX. The adapter mounts each returned JSX root and disposes the prior root when it is replaced and when the component is cleaned up.
+
+```tsx
+import { Select } from '@smilodon/solid'
+
+// Fragment: place this Select expression in a component's returned JSX.
+const groupedItems = [
+  { label: 'Frontend', options: [{ value: 'solid', label: 'SolidJS' }] },
+  { label: 'Backend', options: [{ value: 'node', label: 'Node.js' }] },
+]
+
+<Select
+  groupedItems={groupedItems}
+  groupHeaderRenderer={(group) => (
+    <div class="group-title">{group.label}</div>
+  )}
 />
 ```
 
@@ -300,59 +369,56 @@ Use `optionRenderer` when you want to return an `HTMLElement` directly.
 The Solid adapter uses a callback `ref` rather than React-style `useRef` forwarding.
 
 ```tsx
-let api
+import { createSignal } from 'solid-js'
+import { Select, type SelectHandle } from '@smilodon/solid'
 
-<Select
-  items={items}
-  ref={(handle) => {
-    api = handle
-  }}
-/>
+function ImperativeExample() {
+  const [api, setApi] = createSignal<SelectHandle | undefined>()
 
-<button onClick={() => api?.open()}>Open</button>
-<button onClick={() => api?.clear()}>Clear</button>
+  return (
+    <>
+      <Select
+        items={[{ value: 'a', label: 'Alpha' }]}
+        ref={(handle) => setApi(handle)}
+      />
+      <button type="button" onClick={() => api()?.open()}>Open</button>
+      <button type="button" onClick={() => api()?.clear()}>Clear</button>
+    </>
+  )
+}
 ```
 
-Available handle methods include:
+The callback handle is made available after the wrapper has upgraded and mounted the custom element; guard calls until the handle exists.
 
-- `focus()`
-- `open()`
-- `close()`
-- `getSelectedItems()`
-- `getSelectedValues()`
-- `setItems()`
-- `setGroupedItems()`
-- `clear()`
-- `clearSearch()`
-- `updateConfig()`
-- `setError()`
-- `clearError()`
-- `setRequired()`
-- `validate()`
-- `getCapabilities()`
-- `getKnownLimitations()`
-- `getTrackingSnapshot()`
-- `clearTracking()`
-- `setLimitationPolicies()`
+The handle provides:
 
-Example:
+- `focus()`, `open()`, `close()`
+- `getSelectedItems()`, `getSelectedValues()`
+- `setItems()`, `setGroupedItems()`, `clear()`, `clearSearch()`
+- `updateConfig()`, `setError()`, `clearError()`, `setRequired()`, `validate()`
+- `getCapabilities()`, `getKnownLimitations()`, `getTrackingSnapshot()`, `clearTracking()`, `setLimitationPolicies()`
+
+### Host-owned async data
+
+The examples below are separate components; do not use a module-level untyped handle variable. The `SelectHandle` type is exported by the adapter and the callback is invoked after custom-element setup.
 
 ```tsx
-let api
+import { createSignal } from 'solid-js'
+import { Select, type SelectHandle } from '@smilodon/solid'
 
-<Select
-  items={items}
-  ref={(handle) => {
-    api = handle
-  }}
-/>
-
-<button onClick={() => api?.clearSearch()}>Clear Search</button>
-<button onClick={() => api?.updateConfig({ selection: { showSelectedIndicator: false } })}>
-  Hide Indicator
-</button>
-<button onClick={() => api?.setError('Selection required')}>Set Error</button>
-<button onClick={() => console.log(api?.validate())}>Validate</button>
+function MoreImperativeActions() {
+  const [api, setApi] = createSignal<SelectHandle | undefined>()
+  const items = [{ value: 'required', label: 'Required choice' }]
+  return (
+    <>
+      <Select items={items} ref={(handle) => setApi(handle)} required />
+      <button type="button" onClick={() => api()?.clearSearch()}>Clear Search</button>
+      <button type="button" onClick={() => api()?.updateConfig({ selection: { showSelectedIndicator: false } })}>Hide Indicator</button>
+      <button type="button" onClick={() => api()?.setError('Selection required')}>Set Error</button>
+      <button type="button" onClick={() => console.log(api()?.validate())}>Validate</button>
+    </>
+  )
+}
 ```
 
 ## Diagnostics and limitation policies
@@ -360,6 +426,11 @@ let api
 Like the audited web adapters, Solid can emit diagnostic payloads and expose runtime capability reports.
 
 ```tsx
+import { Select } from '@smilodon/solid'
+
+const items = [{ value: 'alpha', label: 'Alpha' }]
+
+// Fragment: place this Select expression in a component's returned JSX.
 <Select
   items={items}
   trackingEnabled
@@ -394,7 +465,7 @@ Common hooks:
 - `virtualized` enables chunked rendering, not viewport-windowed rendering or bounded DOM.
 - Provide stable `items` references when possible.
 - Use `optionRenderer` carefully for very large datasets; heavier DOM per row increases layout cost.
-- Prefer flat text or lightweight JSX for the fastest scrolling path.
+- Prefer flat text or lightweight JSX when minimizing per-row DOM and layout complexity matters; profile the actual workload rather than assuming a fixed speed advantage.
 
 ## Related docs
 
@@ -402,3 +473,4 @@ Common hooks:
 - [Core styling guide](../../docs/STYLING.md)
 - [Known limitations](../../docs/KNOWN-LIMITATIONS.md)
 - [Performance guide](../../docs/PERFORMANCE.md)
+- [Browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) (declared compatibility targets are distinct from versions exercised by the current test matrix)
