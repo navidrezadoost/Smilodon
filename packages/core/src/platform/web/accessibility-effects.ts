@@ -52,6 +52,7 @@ function applyCombobox<TKey extends SelectKey>(
   setIdListAttribute(combobox, 'aria-labelledby', effect.labelledBy);
   setIdListAttribute(combobox, 'aria-describedby', effect.describedBy);
   setOptionalAttribute(combobox, 'aria-label', effect.ariaLabel);
+  setOptionalAttribute(combobox, 'aria-description', effect.ariaDescription);
 
   const activeOption = effect.activeKey == null
     ? null

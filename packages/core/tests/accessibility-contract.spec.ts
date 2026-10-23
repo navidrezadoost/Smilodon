@@ -78,6 +78,7 @@ describe('accessibility state contract', () => {
         labelledBy: ['group-label', 'field-label'],
         describedBy: ['help-text'],
         ariaLabel: 'Choose a city',
+        ariaDescription: 'Results are limited to active locations',
       },
       validation: {
         required: false,
@@ -92,6 +93,7 @@ describe('accessibility state contract', () => {
       labelledBy: ['field-label', 'group-label'],
       describedBy: ['help-text', 'error-text'],
       ariaLabel: 'Choose a city',
+      ariaDescription: 'Results are limited to active locations',
     });
   });
 

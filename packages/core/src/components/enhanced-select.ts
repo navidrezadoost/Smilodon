@@ -77,6 +77,10 @@ interface EnhancedSelectRenderPlan {
 }
 
 export class EnhancedSelect extends HTMLElement {
+  static get observedAttributes(): string[] {
+    return ['aria-label', 'aria-description'];
+  }
+
   /** live set of all connected instances; used to auto-close siblings */
   private static _instances: Set<EnhancedSelect> = new Set();
   private static readonly _MIRRORED_STYLES_SCOPE_CLASS = 'smilodon-mirrored-styles-scope';
@@ -97,6 +101,7 @@ export class EnhancedSelect extends HTMLElement {
   private _loadMoreTrigger?: HTMLElement;
   private _busyBucket?: HTMLElement;
   private _liveRegion?: HTMLElement;
+  private _errorDescription?: HTMLElement;
   private _state: SelectState;
   private _engine: SelectEngineBridge = new SelectEngineBridge();
   private _virtualizationScope: VirtualizationScope<SelectKey> = {
@@ -315,6 +320,7 @@ export class EnhancedSelect extends HTMLElement {
     this._dropdown = this._createDropdown();
     this._optionsContainer = this._createOptionsContainer();
     this._liveRegion = this._createLiveRegion();
+    this._errorDescription = this._createErrorDescription();
     
     // Initialize styles BEFORE assembling DOM (order matters in shadow DOM)
     this._initializeStyles();
@@ -346,6 +352,7 @@ export class EnhancedSelect extends HTMLElement {
     
     // Sync direction attribute (must be in connectedCallback, not constructor)
     this._syncDirectionConfig();
+    this._syncComboboxAccessibility();
 
     if (this._optionRenderer || this._classMap || this._groupHeaderRenderer) {
       this._setGlobalStylesMirroring(true);
@@ -367,6 +374,12 @@ export class EnhancedSelect extends HTMLElement {
     if (this._config.callbacks.onOpen) {
       this._config.callbacks.onOpen();
     }
+  }
+
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (oldValue === newValue || (name !== 'aria-label' && name !== 'aria-description')) return;
+    this._syncComboboxAccessibility();
+    if (name === 'aria-label') this._syncListboxAccessibility();
   }
 
   disconnectedCallback(): void {
@@ -1705,6 +1718,13 @@ export class EnhancedSelect extends HTMLElement {
     return liveRegion;
   }
 
+  private _createErrorDescription(): HTMLElement {
+    const description = document.createElement('div');
+    description.id = `${this._uniqueId}-error`;
+    description.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;';
+    return description;
+  }
+
   private _createArrowContainer(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'dropdown-arrow-container';
@@ -1762,6 +1782,9 @@ export class EnhancedSelect extends HTMLElement {
     
     if (this._liveRegion) {
       this._shadow.appendChild(this._liveRegion);
+    }
+    if (this._errorDescription) {
+      this._shadow.appendChild(this._errorDescription);
     }
     
     
@@ -3497,6 +3520,12 @@ export class EnhancedSelect extends HTMLElement {
       searchable: this._config.searchable,
       readonly: !this._config.searchable,
       invalid: this._hasError,
+      label: {
+        ariaLabel: this.getAttribute('aria-label')?.trim() || null,
+        ariaDescription: this.getAttribute('aria-description')?.trim() || null,
+      },
+      errorMessage: this._errorMessage,
+      errorDescriptionId: this._hasError && this._errorMessage ? this._errorDescription?.id ?? null : null,
     });
     const effects = computeAccessibilityEffects(accessibilityState, {
       controlsId: this._dropdown?.id || null,
@@ -3517,7 +3546,7 @@ export class EnhancedSelect extends HTMLElement {
     if (!this._dropdown || !this._engine || !this._state) return;
 
     const derivedState = deriveAccessibilityState(this._engine.state, {
-      label: { labelId: this._input?.id ?? null },
+      label: { ariaLabel: this.getAttribute('aria-label')?.trim() || null },
     });
     const accessibilityState = {
       ...derivedState,
@@ -4264,6 +4293,15 @@ export class EnhancedSelect extends HTMLElement {
       : selected.key === key);
     if (!entry) return;
     const item = entry.item;
+    const activeElement = this._shadow.activeElement;
+    const focusedBadge = activeElement instanceof HTMLButtonElement
+      && activeElement.getAttribute('part') === 'chip-remove'
+      ? activeElement.closest('.selection-badge')
+      : null;
+    const hadFocusedChipRemove = focusedBadge !== null;
+    const focusedBadgeIndex = focusedBadge
+      ? Array.from(this._inputContent.querySelectorAll('.selection-badge')).indexOf(focusedBadge)
+      : -1;
     const option = this._itemRegistry.keyToRecord.has(entry.key)
       ? this._getOptionElementByIndex(entry.index)
       : null;
@@ -4290,6 +4328,16 @@ export class EnhancedSelect extends HTMLElement {
     this._updateInputDisplay();
     this._renderOptions();
     this._emitChange();
+
+    if (hadFocusedChipRemove && this.isConnected) {
+      const removeButtons = this._inputContent.querySelectorAll<HTMLButtonElement>('[part="chip-remove"]');
+      if (removeButtons.length > 0) {
+        const nextFocusIndex = Math.min(Math.max(focusedBadgeIndex, 0), removeButtons.length - 1);
+        removeButtons[nextFocusIndex].focus();
+      } else {
+        this._applyFocusIntent('input', 'selected-chip-removed');
+      }
+    }
     
     const config = option && 'getConfig' in option && typeof (option as SelectOption).getConfig === 'function'
       ? (option as SelectOption).getConfig()
@@ -5064,6 +5112,7 @@ export class EnhancedSelect extends HTMLElement {
   setError(message: string): void {
     this._hasError = true;
     this._errorMessage = message;
+    if (this._errorDescription) this._errorDescription.textContent = message;
     this._syncComboboxAccessibility();
     this._announce(`Error: ${message}`);
   }
@@ -5074,6 +5123,7 @@ export class EnhancedSelect extends HTMLElement {
   clearError(): void {
     this._hasError = false;
     this._errorMessage = '';
+    if (this._errorDescription) this._errorDescription.textContent = '';
     this._syncComboboxAccessibility();
   }
 
