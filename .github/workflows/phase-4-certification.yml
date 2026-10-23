@@ -134,11 +134,14 @@ jobs:
       - name: Build component packages
         run: npm run build
 
-      - name: Run actual-component certification scenarios
+      - name: Run actual-component, accessibility, and selection scenarios
         run: |
           set -o pipefail
           mkdir -p test-results/phase-4
-          npx playwright test tests/e2e/phase-4-virtualization-certification.spec.ts \
+          npx playwright test \
+            tests/e2e/phase-4-virtualization-certification.spec.ts \
+            tests/e2e/accessibility-focus.spec.ts \
+            tests/e2e/scenarios/basic-selection.spec.ts \
             --project=${{ matrix.browser }} --retries=1 2>&1 | tee test-results/phase-4/${{ matrix.browser }}.log
 
       - name: Preserve browser diagnostics

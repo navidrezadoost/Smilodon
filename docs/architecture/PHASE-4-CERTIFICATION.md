@@ -466,7 +466,7 @@ C.5B is authorized as an aggregation pilot, not as the full statistical study. T
 
 The `Phase 4 End-key Replication Analysis` workflow then receives the selected source workflow run IDs as a JSON array. Review its raw source and aggregate artifact for one complete report per independent run, zero integrity/validation errors, preserved warm-ups and all raw attempts, identical commit and compatibility profile, independent run count equal to selected run count, five measured pairs per source, and correct stratification. The expected outcome is a reproducible report-only analysis with wide/inconclusive uncertainty at this small sample size; no threshold is supplied and no latency budget is accepted. This pilot validates cross-run retrieval, provenance, stratification, and clustering only. It does not authorize the proposed 100-pair p95 or 300-pair p99 study.
 
-The bounded source dispatches completed and their initial cross-run artifact exposed an overly granular RAM identity rule; the evidence and authorized correction are recorded below. The later hosted aggregation result is recorded in the dated follow-up; its artifact content still needs review.
+The bounded source dispatches completed and their initial cross-run artifact exposed an overly granular RAM identity rule; the evidence and authorized correction are recorded below. The corrected hosted aggregation result is recorded in the dated follow-up and was subsequently inspected for content (see the artifact sign-off below).
 
 ### Phase 4.6.2C.5B — Hosted controlled replication result
 
@@ -487,11 +487,27 @@ Memory is the only runner field treated by this equivalence rule. Platform, kern
 
 New deterministic tests cover the two pilot RAM values grouping into one stratum while preserving both exact byte counts, materially different 8-GiB and 32-GiB capacities staying separate, and the existing mixed-CPU/image separation gate. The suite passed locally: 21/21 tests. The original analysis artifact is preserved as evidence of the defect. Even with two runs and ten pairs, the configured p95 evidence requirement remains at least 20 independent runs and 100 pairs. No latency budget is enabled or accepted.
 
-The C.5B execution and source integrity review are accepted. C.5B.1's implementation is accepted provisionally; aggregate content sign-off is pending artifact inspection. No further replication runs are needed. Phase 4.6.3 accessibility work, Phase 4.7 feature-contract audit, and Phase 4.8 documentation reconciliation proceed on this consolidated branch. Production virtualization remains **NO-GO**.
+The C.5B execution and source integrity review are accepted. C.5B.1's implementation was accepted provisionally; its aggregate content sign-off is recorded below after artifact inspection. No further replication runs are needed. Phase 4.6.3 accessibility work, Phase 4.7 feature-contract audit, and Phase 4.8 documentation reconciliation proceed on this consolidated branch. Production virtualization remains **NO-GO**.
 
 #### Hosted aggregation review update — 2026-10-23
 
-The connected GitHub review reported that cross-run analysis run [#39953485236](https://github.com/navidrezadoost/Smilodon/actions/runs/39953485236) completed successfully. Artifact retrieval was unavailable during that review, so successful workflow completion is not independent verification of the aggregate's contents. Acceptance expects exactly two valid source reports, one compatible hardware stratum, two independent workflow runs, ten measured pairs, all 24 raw attempts preserved, both exact source-memory measurements retained, zero integrity errors, the 16-GiB equivalence class, and an `inconclusive` report-only classification. These are expected fields, not independently inspected output values. The deterministic evaluator's 21/21 local tests and reported hosted workflow success provisionally accept the correction implementation; do not launch another replication run solely for this sign-off.
+The initial connected GitHub review reported that cross-run analysis run [#39953485236](https://github.com/navidrezadoost/Smilodon/actions/runs/39953485236) completed successfully, but artifact retrieval was unavailable then. The later artifact-content review below supersedes that limitation; no additional replication run was needed.
+
+#### C.5B.1 corrected aggregate — artifact-content sign-off, 2026-10-23
+
+I downloaded and inspected the `phase-4-endkey-replication-analysis-39953485236` artifact (artifact ID `12501452051`, SHA-256 `4631ed13300dcdce79d54b1c053c821de783a0fe441f7acb2bdfe8a1198a381a`) from [analysis run #39953485236](https://github.com/navidrezadoost/Smilodon/actions/runs/39953485236). All four workflow jobs passed. The aggregate records two discovered and two valid source reports, zero rejected reports, zero validation/integrity errors, no missing or duplicate run IDs, and one compatible hardware stratum.
+
+Both source reports use clean commit `f02c219a5997b18ab0afb5a262583c1ad8835a90`, Node `20.20.2`, Playwright `1.59.1`, pinned Chromium `147.0.7727.15` (revision `1217`), a 1280×800 viewport, a 320 px list viewport, and the identical deterministic 100,000-option fixture (`40 px` rows; SHA-256 `8af62649687989e4457926bea5f5bf1dd8a0a6676d833362ec29a696256048ca`). Both ran on AMD EPYC 7763, 4-vCPU `ubuntu24` image `20261012.334.1`. Their exact memory reports differ by 4,096 bytes and are retained in the aggregate; both map to the policy's 16-GiB class. Starting arms are opposite (`minimal` in run `39945590885`, `instrumented` in run `39946677436`), and pair order alternates in each report.
+
+The two reports retain all 24 complete arm attempts: one warm-up pair and five measured pairs per run. Every measured attempt has one End-key event, the correct final active target and ARIA reference, a visible target, mounted-option count below the existing ceiling, an observed eligible browser frame, and no browser errors. Instrumented attempts have all required handler, state-transition, target-window, materialization, and render interception checks. Thus the corrected artifact satisfies the pilot's provenance, integrity, paired-protocol, and correctness checks.
+
+| Diagnostic metric | Minimal arm p50 / p95 (ms) | Instrumented arm p50 / p95 (ms) | Both arms p50 / p95 (ms) |
+| --- | ---: | ---: | ---: |
+| First eligible browser frame | 63.495 / 71.060 | 62.295 / 66.610 | — |
+| End event to Playwright visible/ARIA confirmation | 201.805 / 232.780 | 212.300 / 218.175 | — |
+| First eligible frame to Playwright confirmation | — | — | 142.190 / 166.225 |
+
+The first-frame metric is a `requestAnimationFrame` eligibility observation, not proof of paint or pixel presentation. The later Playwright confirmation includes stable-layout polling and communication overhead. The pilot therefore observes first-frame eligibility below 100 ms, while its confirmation metric remains above 100 ms; neither result accepts, rejects, or reassigns the report-only candidate. Only two independent runs and ten measured pairs are available versus the study plan of at least 20 runs and 100 pairs. All classifications remain `inconclusive`, with no threshold configured. C.5B.1 aggregate content is accepted for this bounded integrity pilot only; it is not a population latency certification or performance budget.
 
 ### Phase 4.6.3 — Accessibility certification (in progress)
 
@@ -540,4 +556,29 @@ The feature-by-feature implementation, unit/contract, browser, unsupported-by-de
 
 Documentation now distinguishes public incremental chunk rendering from private guarded viewport windowing; lists core `setError(message: string)` and `clearError(): void`; separates maintained APIs from legacy `NativeSelectElement` and unsupported Angular; and marks prior WCAG/AAA/VPAT and old performance records as historical, unverified material rather than current conformance or budget evidence. The long-form Vanilla guide is explicitly marked as mixed-era/legacy and points to the current API reference.
 
-Neither the public virtualization default nor a latency threshold or public API behavior was changed. C.5B remains report-only; final aggregate artifact content inspection is pending. Accessibility certification, complete adapter feature parity, production virtualization, and the proposed 100 ms End-key candidate remain unresolved/NO-GO.
+Neither the public virtualization default nor a latency threshold or public API behavior was changed. The corrected C.5B.1 aggregate was inspected and accepted as a bounded integrity pilot; latency remains report-only. Accessibility certification, complete adapter feature parity, production virtualization, and the proposed 100 ms End-key candidate remain unresolved/NO-GO.
+
+### Phase 4.9A — Consolidated release-candidate preflight, 2026-10-23
+
+The preflight ran on `codex/phase-4-release-readiness` using the VS Code-bundled Node `v22.21.1` because shell `node` and `npm` commands are unavailable. Dependencies already present in `node_modules` were used; `npm ci` and the repository-pinned Node 20 runtime were not locally exercised. Local results are supplementary to hosted CI.
+
+| Gate | Local result | Exact evidence and caveat |
+| --- | --- | --- |
+| Vitest discovery self-test | PASS | 2/2 Node built-in tests passed. |
+| Complete core unit suite | PASS | 25 files; 549 passed, 1 skipped, 0 failed. |
+| Complete adapter contract suite | PASS WITH DECLARED GAPS | 4 files; 12 passed, 43 skipped, 0 failed. The skipped tests are the existing unimplemented React shared-contract cases. |
+| New real-wrapper smoke tests | PASS | React, Vue, and Svelte each pass selection-event forwarding, controlled-value synchronization, and post-unmount listener-cleanup assertions after package builds. This does not establish full adapter parity. |
+| Root TypeScript check | PASS | `tsc --noEmit`, exit 0. |
+| ESLint | PASS WITH EXISTING WARNINGS | Exact `eslint .` command: 0 errors, 6 existing warnings. Added `.eslintignore` entries for generated `playwright-report/` and `test-results/` so local diagnostics are not linted as source. |
+| Workspace build | PASS WITH EXISTING TOOL WARNINGS | All eight workspace build scripts completed using their installed Rollup/Vite/TypeScript/Vue/Svelte tools; this manually reproduced the scripts because npm is unavailable. Existing Rollup `eval`, React `use client`/sourcemap, and playground `eval` warnings remain. The React Native build refreshed its generated embedded core bundle; native bridge behavior remains unverified. |
+| Browser matrix discovery | PASS | The Phase 4 workflow now invokes virtualization, accessibility-focus, and basic-selection specs in each engine job. Playwright lists 24 tests per engine (72 Chromium/Firefox/WebKit project entries). This confirms discovery/configuration only, not browser execution. |
+| Pinned Chromium/Firefox/WebKit execution | PENDING | Must be verified by the consolidated hosted PR using the lockfile-pinned browser builds. Local cached browser binaries do not match the required pinned revisions. |
+| Manual keyboard-only and assistive-technology assessment | PENDING | No human AT session was performed. Record the real OS/device, browser/version, screen reader/version, test build/commit, and observed naming, validation, active-option, selection, and chip-removal behavior before release sign-off. Automated ARIA tests are not a substitute. |
+
+#### Accessibility assessment status
+
+Automated browser assertions cover accessible naming/description, validation state and message association, active-option/`aria-activedescendant` integrity, keyboard focus, selection state, disabled-option navigation, and chip removal. The cross-browser workflow is prepared to run these cases together with the selection-event-order regression; hosted pinned results remain pending. Manual screen-reader review has not been carried out and no platform observations or defect dispositions are claimed. Host `aria-labelledby`/`aria-describedby` ID references across the shadow boundary remain an explicit limitation. Accessibility is therefore **not certified**.
+
+#### Consolidated release gate
+
+The local source/unit/contract/type/lint/build checks are complete, with the counts and qualifications above. The corrected C.5B.1 aggregate has independent content sign-off in this record, and the feature-contract audit remains at [PHASE-4-FEATURE-CONTRACT-AUDIT.md](./PHASE-4-FEATURE-CONTRACT-AUDIT.md). The single consolidated PR still needs its complete hosted Actions matrix and human assistive-technology evidence before merge approval. Preserve the historical spacer-geometry diagnostic and unresolved native observer ownership as open historical limitations. Release of currently implemented functionality and activation of guarded viewport virtualization remain separate decisions; production viewport virtualization remains **NO-GO**.

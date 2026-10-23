@@ -32,6 +32,30 @@ describe('Vue Adapter Contract Tests', () => {
     unmount();
   });
 
+  it('forwards selection, syncs the controlled model, and removes its listener on unmount', async () => {
+    const onSelect = vi.fn();
+    const props = { items: basicItems, modelValue: '1', onSelect };
+    const { container, rerender, unmount } = render(Select, { props });
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+
+    await rerender({ ...props, modelValue: '2' });
+    await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['2']));
+
+    element.open();
+    const option = element.shadowRoot?.querySelector('[part="option"][data-index="0"]') as HTMLElement | null;
+    expect(option).toBeTruthy();
+    option!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(basicItems[0], 0));
+
+    unmount();
+    element.dispatchEvent(new CustomEvent('select', {
+      detail: { item: basicItems[1], index: 1, value: '2', label: 'Banana', selected: true },
+    }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it('emits diagnostic event and exposes runtime control methods', async () => {
     const onNativeDiagnostic = vi.fn();
     let api: any = null;
