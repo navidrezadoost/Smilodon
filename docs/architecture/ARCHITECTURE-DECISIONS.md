@@ -1,6 +1,6 @@
 # Architecture Decisions — Smilodon 1.x Modernization
 
-Status snapshot: approved direction for continued 1.x development, based on the v1.10.0 tree at `b0216e6ed7356cfb2e8236767cd3694061449c79` (2026-10-24). Phase 1 characterization, the Phase 2A search/pagination contract, and Phase 2B/2C internal coordinator work are closed. Phase 2D's bounded cursor policy and integration-readiness design are accepted in [Phase 2D — Integration Readiness and Resource Policy](./PHASE-2D-INTEGRATION-READINESS.md). Phase 2E is authorized for private, test-gated core-component integration only. Public completion/config APIs, adapter integration, package/version changes, and production viewport virtualization remain unauthorized.
+Status snapshot: approved direction for continued 1.x development, based on the v1.10.0 tree at `b0216e6ed7356cfb2e8236767cd3694061449c79` (2026-10-24). Phase 1 characterization, the Phase 2A search/pagination contract, and Phase 2B/2C internal coordinator work are closed. Phase 2D's bounded cursor policy and integration-readiness design are accepted in [Phase 2D — Integration Readiness and Resource Policy](./PHASE-2D-INTEGRATION-READINESS.md). The private Phase 2E core integration is implemented locally, but its required pinned-browser verification is pending; see [Phase 2E — Private Core Acknowledged Integration](./PHASE-2E-CORE-INTEGRATION.md). Public completion/config APIs, adapter integration, package/version changes, and production viewport virtualization remain unauthorized.
 
 ## Accepted decisions
 
@@ -33,7 +33,7 @@ The engine owns semantic decisions and stable selection identity. Renderers own 
 
 ## Named search and pagination workstream
 
-Phase 0 recorded the current behavior and Phase 1 characterized gaps. Phase 2A closed the contract design; Phase 2B/2C implemented and hardened only the transport-neutral internal coordinator. Phase 2D accepted the internal resource policy and integration-readiness contract. Phase 2E authorizes only a private, test-gated `EnhancedSelect` integration; it does not authorize a public completion/config API or adapter changes. The approved contract covers:
+Phase 0 recorded the current behavior and Phase 1 characterized gaps. Phase 2A closed the contract design; Phase 2B/2C implemented and hardened only the transport-neutral internal coordinator. Phase 2D accepted the internal resource policy and integration-readiness contract. Phase 2E has a private, test-gated `EnhancedSelect` integration under local verification; it does not authorize a public completion/config API or adapter changes. Its browser gate remains pending as recorded in [the Phase 2E integration report](./PHASE-2E-CORE-INTEGRATION.md). The approved contract covers:
 
 1. Static item lists, client-side search, and optional local progressive loading.
 2. Host-backed server search with configurable page size and page- or cursor-based pagination.
@@ -52,7 +52,7 @@ Compatibility rule: extend current event/callback contracts additively and keep 
 | Topic | Current evidence / question | Required next step |
 | --- | --- | --- |
 | Search E2E validity | Search implementation filters loaded items, while several skipped E2E tests say filtering is absent | Replace stale skip commentary with active exact-result tests; do not infer implementation absence from the comments |
-| Acknowledged coordinator integration | Phase 2A approved protocol behavior; Phase 2B/2C delivered an internal DOM-independent coordinator; Phase 2D specifies finite cursor limits, readiness, projection, and sentinel integration | Phase 2E authorizes private core integration with projection/browser tests. Public API and adapter integration still require separate authorization and compatibility evidence |
+| Acknowledged coordinator integration | Phase 2A approved protocol behavior; Phase 2B/2C delivered an internal DOM-independent coordinator; Phase 2D specifies finite cursor limits, readiness, projection, and sentinel integration; private Phase 2E integration is implemented locally | Complete pinned Chromium/Firefox/WebKit verification and review the final diff before closing Phase 2E. Public API and adapter integration still require separate authorization and compatibility evidence |
 | Global function config | Config clone uses JSON serialization despite function-valued callbacks/resolvers | Reproduce through `configureSelect` and instance construction; treat as risk until confirmed |
 | Renderer security/CSP | Security helpers exist and historical docs contain caveats about HTML sanitization and dynamic evaluation | Audit current safe defaults, CSP behavior, and supported trusted-HTML contract before making security claims |
 | Form and shadow-root labels | External IDREF forwarding into internal shadow control is documented as unsupported | Decide whether an interoperable solution is required; do not promise cross-root IDREF behavior without browser proof |
