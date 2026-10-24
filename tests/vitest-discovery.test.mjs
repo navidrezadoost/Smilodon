@@ -35,6 +35,26 @@ test('core Vitest config discovers core suites and excludes Playwright suites', 
   }
 });
 
+test('data-loading coordinator suite is discovered by its DOM-free Node config', async () => {
+  const vitest = await createVitest('test', {
+    config: path.resolve(root, 'packages/core/vitest.data-loading.config.ts'),
+    root,
+    run: false,
+    watch: false,
+  });
+
+  try {
+    const discovered = await vitest.globTestFiles();
+    const files = discovered
+      .map(([, file]) => path.relative(root, file).split(path.sep).join('/'))
+      .sort();
+
+    assert.deepEqual(files, ['packages/core/tests/data-loading/request-coordinator.spec.ts']);
+  } finally {
+    await vitest.close();
+  }
+});
+
 test('Playwright config independently discovers the browser performance benchmark', () => {
   const result = spawnSync(process.execPath, [
     path.resolve(root, 'node_modules/playwright/cli.js'),
