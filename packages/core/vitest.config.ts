@@ -10,6 +10,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
+      'packages/core/tests/data-loading/**/*.spec.ts',
       '**/tests/e2e/**',
       '**/tests/contracts/**',
     ],
