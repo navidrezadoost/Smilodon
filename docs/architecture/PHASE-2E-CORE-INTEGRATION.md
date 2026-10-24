@@ -19,7 +19,7 @@ The integration is limited to `packages/core/src/components/enhanced-select.ts` 
 
 ## Local verification
 
-Node.js 20.20.2 is available from the local NVM installation. The final local verification record is:
+The previously reported local verification was run with Node.js 20.20.2 from the local NVM installation. Node.js/npm are unavailable in the current execution environment, so the correction on this branch has not been run locally. The earlier local verification record is:
 
 | Gate | Result | Notes |
 | --- | --- | --- |
