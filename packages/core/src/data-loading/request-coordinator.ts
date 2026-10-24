@@ -350,8 +350,7 @@ export class DataRequestCoordinator {
   private lastCommittedPage: number | undefined;
   private nextEligiblePosition: PagePosition;
   private committedCursors = new Set<PageCursor>();
-  private invalidatedRequests = new Map<DataRequestId, QueryGeneration>();
-  private settledRequests = new Set<DataRequestId>();
+  private invalidatedRequests = new Set<DataRequestId>();
   private generationHasAcceptedResult = false;
   private needsInitialRemoteSearch: boolean;
   private retryAvailable = false;
@@ -583,7 +582,6 @@ export class DataRequestCoordinator {
     const generation = completion.queryGeneration as number;
     if (this.active?.request.requestId !== requestId) {
       if (this.invalidatedRequests.has(requestId)) return 'stale';
-      if (this.settledRequests.has(requestId)) return 'unknown-request';
       return 'unknown-request';
     }
     if (generation !== this.active.request.queryGeneration || this.active.phase !== 'loading') return 'invalid';
@@ -656,7 +654,6 @@ export class DataRequestCoordinator {
     if (cursorToCommit !== undefined) this.committedCursors.add(cursorToCommit);
     if (status === 'succeeded' || status === 'exhausted') this.generationHasAcceptedResult = true;
     this.active = null;
-    this.settledRequests.add(requestId);
     this.status = status;
     return 'accepted';
   }
@@ -731,7 +728,7 @@ export class DataRequestCoordinator {
   private invalidateActive(reason: DataRequestCancelNotification['reason']): DataCoordinatorAction | null {
     if (!this.active) return null;
     const { request } = this.active;
-    this.invalidatedRequests.set(request.requestId, request.queryGeneration);
+    this.invalidatedRequests.add(request.requestId);
     this.active = null;
     this.status = 'cancelled';
     const notification = Object.freeze({
