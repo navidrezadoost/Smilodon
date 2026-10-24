@@ -12,12 +12,21 @@ export type DataRequestProtocol = 'legacy' | 'acknowledged';
 export type DataSearchMode = 'local' | 'remote' | 'hybrid';
 export type DataPaginationMode = 'page' | 'cursor';
 
+const DEFAULT_MAX_CURSOR_PAGES = 256;
+const HARD_MAX_CURSOR_PAGES = 4_096;
+const DEFAULT_MAX_CURSOR_TOKEN_BYTES = 1_024;
+const HARD_MAX_CURSOR_TOKEN_BYTES = 4_096;
+
 export interface DataLoadingConfig {
   protocol?: DataRequestProtocol;
   searchMode?: DataSearchMode;
   paginationMode?: DataPaginationMode;
   firstPage?: number;
   fetchLimit?: number;
+  /** Internal acknowledged-cursor policy; not a public component option yet. */
+  maxCursorPages?: number;
+  /** UTF-8 bytes per opaque cursor; internal until component integration is authorized. */
+  maxCursorTokenBytes?: number;
 }
 
 export interface DataCoordinatorConfig {
@@ -101,7 +110,7 @@ export type DataRequestCompletion =
       reason?: 'host-cancelled';
     }>;
 
-export type DataRequestCompletionResult = 'accepted' | 'stale' | 'unknown-request' | 'invalid';
+export type DataRequestCompletionResult = 'accepted' | 'stale' | 'unknown-request' | 'invalid' | 'resource-limit';
 
 export type DataCoordinatorStatus =
   | 'idle'
@@ -111,7 +120,21 @@ export type DataCoordinatorStatus =
   | 'empty'
   | 'exhausted'
   | 'failed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'resource-limited';
+
+export type DataCoordinatorResourceLimit =
+  | Readonly<{
+      reason: 'cursor-depth';
+      maxCursorPages: number;
+      requestId?: DataRequestId;
+    }>
+  | Readonly<{
+      reason: 'cursor-token-size';
+      maxCursorTokenBytes: number;
+      actualCursorTokenBytes: number;
+      requestId: DataRequestId;
+    }>;
 
 export type DataCoordinatorAction =
   | Readonly<{ type: 'request'; request: DataRequest }>
@@ -133,6 +156,8 @@ export interface ResolvedDataCoordinatorConfig {
   readonly firstPage: number;
   readonly initialPage: number;
   readonly fetchLimit?: number;
+  readonly maxCursorPages: number;
+  readonly maxCursorTokenBytes: number;
 }
 
 export interface DataRequestCoordinatorOptions {
@@ -156,6 +181,8 @@ export interface DataCoordinatorSnapshot {
   readonly lastCommittedPage?: number;
   readonly nextEligiblePosition: PagePosition;
   readonly error: DataRequestError | null;
+  /** A bounded-resource outcome; never aliases server exhaustion. */
+  readonly resourceLimit: DataCoordinatorResourceLimit | null;
   readonly sentinelBlocked: boolean;
   readonly sentinelIntersecting: boolean;
 }
@@ -169,6 +196,13 @@ interface InternalRequest {
   phase: 'requested' | 'loading';
 }
 
+interface ParsedRequestId {
+  readonly instanceId: number;
+  readonly queryGeneration: number;
+  readonly sequence: number;
+  readonly check: string;
+}
+
 interface ConfigValidationInput {
   protocol: unknown;
   searchMode: unknown;
@@ -176,6 +210,8 @@ interface ConfigValidationInput {
   firstPage: unknown;
   initialPage: unknown;
   fetchLimit: unknown;
+  maxCursorPages: unknown;
+  maxCursorTokenBytes: unknown;
   pageSize: unknown;
 }
 
@@ -197,6 +233,53 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
 
 function isCursor(value: unknown): value is PageCursor {
   return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
+}
+
+/** Count UTF-8 bytes without depending on DOM APIs or Node Buffer. */
+function cursorTokenByteLength(cursor: PageCursor): number {
+  const token = String(cursor);
+  let bytes = 0;
+  for (const character of token) {
+    const codePoint = character.codePointAt(0) as number;
+    if (codePoint <= 0x7f) bytes += 1;
+    else if (codePoint <= 0x7ff) bytes += 2;
+    else if (codePoint <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function parseRequestId(value: string): ParsedRequestId | null {
+  const match = /^data-(\d+)-generation-(\d+)-request-(\d+)-([a-z0-9]+)$/.exec(value);
+  if (!match) return null;
+  const [, instanceText, generationText, sequenceText, check] = match;
+  const instanceId = Number(instanceText);
+  const queryGeneration = Number(generationText);
+  const sequence = Number(sequenceText);
+  if (
+    !Number.isSafeInteger(instanceId) || instanceId < 1 ||
+    !Number.isSafeInteger(queryGeneration) || queryGeneration < 0 ||
+    !Number.isSafeInteger(sequence) || sequence < 1
+  ) return null;
+  return Object.freeze({ instanceId, queryGeneration, sequence, check });
+}
+
+function requestIdCheck(
+  secret: string,
+  instanceId: number,
+  queryGeneration: number,
+  sequence: number,
+): string {
+  // A compact keyed check distinguishes IDs actually minted by this instance
+  // from arbitrary strings without retaining a registry of historical IDs.
+  let hash = 14695981039346656037n;
+  const mask = (1n << 64n) - 1n;
+  const input = `${secret}:${instanceId}:${queryGeneration}:${sequence}`;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= BigInt(input.charCodeAt(index));
+    hash = (hash * 1099511628211n) & mask;
+  }
+  return hash.toString(36);
 }
 
 function isQueryMode(value: unknown): value is DataSearchMode {
@@ -234,6 +317,12 @@ function configInput(config: DataCoordinatorConfig = {}): ConfigValidationInput 
     firstPage: dataLoading.firstPage === undefined ? 1 : dataLoading.firstPage,
     initialPage: infiniteScroll.initialPage === undefined ? 1 : infiniteScroll.initialPage,
     fetchLimit: dataLoading.fetchLimit,
+    maxCursorPages: dataLoading.maxCursorPages === undefined
+      ? DEFAULT_MAX_CURSOR_PAGES
+      : dataLoading.maxCursorPages,
+    maxCursorTokenBytes: dataLoading.maxCursorTokenBytes === undefined
+      ? DEFAULT_MAX_CURSOR_TOKEN_BYTES
+      : dataLoading.maxCursorTokenBytes,
     pageSize: infiniteScroll.pageSize,
   };
 }
@@ -279,6 +368,15 @@ export function validateDataCoordinatorConfig(config: DataCoordinatorConfig = {}
   if (input.fetchLimit !== undefined && !isPositiveSafeInteger(input.fetchLimit)) {
     add('dataLoading.fetchLimit', 'must be a positive safe integer when supplied');
   }
+  if (!isPositiveSafeInteger(input.maxCursorPages) || input.maxCursorPages > HARD_MAX_CURSOR_PAGES) {
+    add('dataLoading.maxCursorPages', `must be a positive safe integer no greater than ${HARD_MAX_CURSOR_PAGES}`);
+  }
+  if (!isPositiveSafeInteger(input.maxCursorTokenBytes) || input.maxCursorTokenBytes > HARD_MAX_CURSOR_TOKEN_BYTES) {
+    add(
+      'dataLoading.maxCursorTokenBytes',
+      `must be a positive safe integer no greater than ${HARD_MAX_CURSOR_TOKEN_BYTES}`,
+    );
+  }
   if (input.pageSize !== undefined && !isPositiveSafeInteger(input.pageSize)) {
     add('infiniteScroll.pageSize', 'must be a positive safe integer when supplied');
   }
@@ -308,6 +406,8 @@ export function validateDataCoordinatorConfig(config: DataCoordinatorConfig = {}
       firstPage: input.firstPage as number,
       initialPage: input.initialPage as number,
       fetchLimit: resolvedFetchLimit,
+      maxCursorPages: input.maxCursorPages as number,
+      maxCursorTokenBytes: input.maxCursorTokenBytes as number,
     }),
   });
 }
@@ -336,6 +436,7 @@ function mergeCoordinatorConfig(
  */
 export class DataRequestCoordinator {
   private readonly instanceId = ++coordinatorInstanceSequence;
+  private readonly requestIdSecret = Math.random().toString(36).slice(2) || '0';
   private requestSequence = 0;
   private rawConfig: DataCoordinatorConfig;
   private config: ResolvedDataCoordinatorConfig;
@@ -349,14 +450,18 @@ export class DataRequestCoordinator {
   private status: DataCoordinatorStatus = 'idle';
   private lastCommittedPage: number | undefined;
   private nextEligiblePosition: PagePosition;
+  /**
+   * Exact cycle detection for the current pagination epoch. One cursor is
+   * retained per accepted advancement; there is intentionally no LRU eviction.
+   */
   private committedCursors = new Set<PageCursor>();
-  private invalidatedRequests = new Set<DataRequestId>();
   private generationHasAcceptedResult = false;
   private needsInitialRemoteSearch: boolean;
   private retryAvailable = false;
   private retryPosition: PagePosition | undefined;
   private retryKind: DataRequest['kind'] | undefined;
   private error: DataRequestError | null = null;
+  private resourceLimit: DataCoordinatorResourceLimit | null = null;
   private sentinelBlocked = false;
   private sentinelIntersecting = false;
 
@@ -395,6 +500,7 @@ export class DataRequestCoordinator {
       lastCommittedPage: this.lastCommittedPage,
       nextEligiblePosition: nextPosition,
       error: this.error ? Object.freeze({ ...this.error }) : null,
+      resourceLimit: this.resourceLimit,
       sentinelBlocked: this.sentinelBlocked,
       sentinelIntersecting: this.sentinelIntersecting,
     });
@@ -447,6 +553,7 @@ export class DataRequestCoordinator {
     this.retryPosition = undefined;
     this.retryKind = undefined;
     this.committedCursors.clear();
+    this.resourceLimit = null;
     this.sentinelBlocked = false;
 
     if (this.isRemoteMode()) {
@@ -493,6 +600,7 @@ export class DataRequestCoordinator {
     this.rawConfig = copyCoordinatorConfig(candidate);
     this.config = next;
     if (!protocolChanged) {
+      this.refreshCursorDepthLimit();
       return Object.freeze({ status: 'accepted', actions: immutableActions([]) });
     }
 
@@ -508,6 +616,7 @@ export class DataRequestCoordinator {
     this.retryPosition = undefined;
     this.retryKind = undefined;
     this.committedCursors.clear();
+    this.resourceLimit = null;
     this.sentinelBlocked = false;
     this.hasMore = this.isRemoteMode() ? false : this.hasMore;
     this.lastCommittedPage = this.config.paginationMode === 'page' && !this.isRemoteMode()
@@ -531,10 +640,24 @@ export class DataRequestCoordinator {
     if (trigger === 'sentinel' && this.sentinelBlocked) return immutableActions([]);
     if (!this.hasMore && !this.retryAvailable) return immutableActions([]);
 
-    if (trigger === 'manual') this.sentinelBlocked = false;
     const position = this.retryAvailable && this.retryPosition
       ? this.retryPosition
       : this.nextEligiblePosition;
+    if (
+      this.config.paginationMode === 'cursor' &&
+      position.mode === 'cursor' &&
+      position.ordinal > this.config.maxCursorPages
+    ) {
+      this.resourceLimit = Object.freeze({
+        reason: 'cursor-depth',
+        maxCursorPages: this.config.maxCursorPages,
+      });
+      this.status = 'resource-limited';
+      this.sentinelBlocked = true;
+      return immutableActions([]);
+    }
+
+    if (trigger === 'manual') this.sentinelBlocked = false;
     const retryKind = this.retryAvailable ? this.retryKind : undefined;
     this.retryAvailable = false;
     this.retryPosition = undefined;
@@ -553,6 +676,7 @@ export class DataRequestCoordinator {
       this.sentinelBlocked = false;
       return immutableActions([]);
     }
+    if (this.sentinelIntersecting) return immutableActions([]);
     this.sentinelIntersecting = true;
     return this.requestLoadMore('sentinel');
   }
@@ -568,9 +692,14 @@ export class DataRequestCoordinator {
       }
       const cancellation = this.invalidateActive('disconnected');
       if (cancellation) actions.push(cancellation);
+      this.resourceLimit = null;
       this.status = 'cancelled';
       this.sentinelBlocked = true;
+      // Encode invalidation in the generation, so late completions are stale
+      // without retaining one request ID per cancellation.
+      this.queryGeneration += 1;
     }
+    this.sentinelIntersecting = false;
     this.connected = false;
     return immutableActions(actions);
   }
@@ -581,13 +710,25 @@ export class DataRequestCoordinator {
     const requestId = completion.requestId as string;
     const generation = completion.queryGeneration as number;
     if (this.active?.request.requestId !== requestId) {
-      if (this.invalidatedRequests.has(requestId)) return 'stale';
-      return 'unknown-request';
+      return this.classifyInactiveRequest(requestId, generation);
     }
     if (generation !== this.active.request.queryGeneration || this.active.phase !== 'loading') return 'invalid';
 
     const validation = this.validateCompletionPayload(completion, this.active.request);
-    if (!validation.valid) return 'invalid';
+    if (!validation.valid) {
+      if (validation.resourceLimit === 'cursor-token-size') {
+        const cursor = completion.nextCursor as PageCursor;
+        const actualCursorTokenBytes = cursorTokenByteLength(cursor);
+        this.resourceLimit = Object.freeze({
+          reason: 'cursor-token-size',
+          maxCursorTokenBytes: this.config.maxCursorTokenBytes,
+          actualCursorTokenBytes,
+          requestId,
+        });
+        return 'resource-limit';
+      }
+      return 'invalid';
+    }
 
     const request = this.active.request;
     const status = completion.status as DataRequestCompletion['status'];
@@ -603,6 +744,7 @@ export class DataRequestCoordinator {
     let nextError: DataRequestError | null = null;
     let nextSentinelBlocked = false;
     let cursorToCommit: PageCursor | undefined;
+    let nextResourceLimit: DataCoordinatorResourceLimit | null = null;
 
     if (status === 'succeeded') {
       const advances = this.advanceFrom(request, completion as Record<string, unknown>);
@@ -641,6 +783,20 @@ export class DataRequestCoordinator {
       nextSentinelBlocked = true;
     }
 
+    if (
+      this.config.paginationMode === 'cursor' &&
+      nextHasMore &&
+      nextPosition.mode === 'cursor' &&
+      nextPosition.ordinal > this.config.maxCursorPages
+    ) {
+      nextResourceLimit = Object.freeze({
+        reason: 'cursor-depth',
+        maxCursorPages: this.config.maxCursorPages,
+        requestId,
+      });
+      nextSentinelBlocked = true;
+    }
+
     // Commit only after identity, generation, status, and every field validate.
     this.items = nextData;
     this.nextEligiblePosition = nextPosition;
@@ -650,11 +806,12 @@ export class DataRequestCoordinator {
     this.retryPosition = nextRetryPosition;
     this.retryKind = nextRetryKind;
     this.error = nextError;
+    this.resourceLimit = nextResourceLimit;
     this.sentinelBlocked = nextSentinelBlocked;
     if (cursorToCommit !== undefined) this.committedCursors.add(cursorToCommit);
     if (status === 'succeeded' || status === 'exhausted') this.generationHasAcceptedResult = true;
     this.active = null;
-    this.status = status;
+    this.status = nextResourceLimit ? 'resource-limited' : status;
     return 'accepted';
   }
 
@@ -678,9 +835,35 @@ export class DataRequestCoordinator {
     this.retryAvailable = false;
     this.retryPosition = undefined;
     this.retryKind = undefined;
+    this.resourceLimit = null;
     this.sentinelBlocked = false;
     this.error = null;
     if (clearItems) this.items = asFrozenItems([]);
+  }
+
+  /** Re-evaluate the local cursor cap without resetting accepted history. */
+  private refreshCursorDepthLimit(): void {
+    if (this.config.protocol !== 'acknowledged' || this.config.paginationMode !== 'cursor') return;
+    const position = this.retryAvailable && this.retryPosition
+      ? this.retryPosition
+      : this.nextEligiblePosition;
+    const overLimit = (this.hasMore || this.retryAvailable) &&
+      position.mode === 'cursor' && position.ordinal > this.config.maxCursorPages;
+
+    if (overLimit) {
+      this.resourceLimit = Object.freeze({
+        reason: 'cursor-depth',
+        maxCursorPages: this.config.maxCursorPages,
+      });
+      if (!this.active) this.status = 'resource-limited';
+      this.sentinelBlocked = true;
+      return;
+    }
+
+    if (this.resourceLimit?.reason === 'cursor-depth') {
+      this.resourceLimit = null;
+      if (!this.active && this.status === 'resource-limited') this.status = 'idle';
+    }
   }
 
   private createSearchRequest(position = this.nextEligiblePosition): DataRequest | null {
@@ -707,7 +890,13 @@ export class DataRequestCoordinator {
     const fetchLimit = this.config.fetchLimit;
     if (fetchLimit === undefined || this.active) return null;
     this.requestSequence += 1;
-    const requestId = `data-${this.instanceId}-request-${this.requestSequence}`;
+    const check = requestIdCheck(
+      this.requestIdSecret,
+      this.instanceId,
+      this.queryGeneration,
+      this.requestSequence,
+    );
+    const requestId = `data-${this.instanceId}-generation-${this.queryGeneration}-request-${this.requestSequence}-${check}`;
     const base: DataRequestBase = Object.freeze({
       requestId,
       queryGeneration: this.queryGeneration,
@@ -728,7 +917,6 @@ export class DataRequestCoordinator {
   private invalidateActive(reason: DataRequestCancelNotification['reason']): DataCoordinatorAction | null {
     if (!this.active) return null;
     const { request } = this.active;
-    this.invalidatedRequests.add(request.requestId);
     this.active = null;
     this.status = 'cancelled';
     const notification = Object.freeze({
@@ -737,6 +925,26 @@ export class DataRequestCoordinator {
       reason,
     });
     return Object.freeze({ type: 'cancel', notification });
+  }
+
+  private classifyInactiveRequest(
+    requestId: DataRequestId,
+    completionGeneration: QueryGeneration,
+  ): DataRequestCompletionResult {
+    const parsed = parseRequestId(requestId);
+    if (
+      !parsed ||
+      parsed.instanceId !== this.instanceId ||
+      parsed.check !== requestIdCheck(
+        this.requestIdSecret,
+        parsed.instanceId,
+        parsed.queryGeneration,
+        parsed.sequence,
+      ) ||
+      parsed.sequence > this.requestSequence
+    ) return 'unknown-request';
+    if (parsed.queryGeneration !== completionGeneration) return 'invalid';
+    return parsed.queryGeneration < this.queryGeneration ? 'stale' : 'unknown-request';
   }
 
   private hasValidCompletionEnvelope(completion: Record<string, unknown>): boolean {
@@ -752,7 +960,7 @@ export class DataRequestCoordinator {
   private validateCompletionPayload(
     completion: Record<string, unknown>,
     request: DataRequest,
-  ): { valid: true } | { valid: false } {
+  ): { valid: true } | { valid: false; resourceLimit?: 'cursor-token-size' } {
     const common = ['requestId', 'queryGeneration', 'status'];
     switch (completion.status) {
       case 'succeeded': {
@@ -762,11 +970,13 @@ export class DataRequestCoordinator {
           return { valid: false };
         }
         if (request.position.mode === 'cursor') {
-          if (
-            request.position.ordinal >= Number.MAX_SAFE_INTEGER ||
-            !isCursor(completion.nextCursor) ||
-            this.hasCommittedCursor(completion.nextCursor)
-          ) return { valid: false };
+          if (request.position.ordinal >= Number.MAX_SAFE_INTEGER || !isCursor(completion.nextCursor)) {
+            return { valid: false };
+          }
+          if (cursorTokenByteLength(completion.nextCursor) > this.config.maxCursorTokenBytes) {
+            return { valid: false, resourceLimit: 'cursor-token-size' };
+          }
+          if (this.hasCommittedCursor(completion.nextCursor)) return { valid: false };
         } else if ('nextCursor' in completion) {
           return { valid: false };
         } else if (request.position.page >= Number.MAX_SAFE_INTEGER) {
@@ -781,11 +991,13 @@ export class DataRequestCoordinator {
         if (completion.advance !== 'next' && completion.advance !== 'retry') return { valid: false };
         if (request.position.mode === 'cursor') {
           if (completion.advance === 'next') {
-            if (
-              request.position.ordinal >= Number.MAX_SAFE_INTEGER ||
-              !isCursor(completion.nextCursor) ||
-              this.hasCommittedCursor(completion.nextCursor)
-            ) return { valid: false };
+            if (request.position.ordinal >= Number.MAX_SAFE_INTEGER || !isCursor(completion.nextCursor)) {
+              return { valid: false };
+            }
+            if (cursorTokenByteLength(completion.nextCursor) > this.config.maxCursorTokenBytes) {
+              return { valid: false, resourceLimit: 'cursor-token-size' };
+            }
+            if (this.hasCommittedCursor(completion.nextCursor)) return { valid: false };
           } else if ('nextCursor' in completion) {
             return { valid: false };
           }
