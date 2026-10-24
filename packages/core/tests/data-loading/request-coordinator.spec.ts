@@ -90,6 +90,12 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
     expect(requestAction(remote.connect()).query).toBe('');
   });
 
+  it('allocates request IDs uniquely across coordinator instances', () => {
+    const first = requestAction(makeRemoteCoordinator().connect());
+    const second = requestAction(makeRemoteCoordinator().connect());
+    expect(first.requestId).not.toBe(second.requestId);
+  });
+
   it('starts one remote query at firstPage with an immutable per-request configuration snapshot', () => {
     const coordinator = makeRemoteCoordinator({ firstPage: 4, fetchLimit: 7, pageSize: 30, initialQuery: '  Ada  ' });
     const request = requestAction(coordinator.connect());
@@ -238,6 +244,7 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
     const first = requestAction(coordinator.setSentinelIntersecting(true));
     markLoading(coordinator, first);
     expect(coordinator.setSentinelIntersecting(true)).toEqual([]);
+    expect(coordinator.requestLoadMore()).toEqual([]);
     expect(coordinator.completeDataRequest(ack(first, {
       status: 'empty',
       hasMore: true,
@@ -315,6 +322,42 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
     expect(coordinator.getSnapshot()).toEqual(beforeMalformedCursor);
   });
 
+  it('keeps cursor position on empty retry and advances only after an explicit next cursor', () => {
+    const coordinator = makeRemoteCoordinator({ paginationMode: 'cursor' });
+    const first = requestAction(coordinator.connect());
+    markLoading(coordinator, first);
+
+    expect(coordinator.completeDataRequest(ack(first, {
+      status: 'empty',
+      hasMore: true,
+      advance: 'retry',
+    }))).toBe('accepted');
+    expect(coordinator.getSnapshot()).toMatchObject({
+      nextEligiblePosition: first.position,
+      sentinelBlocked: true,
+    });
+
+    coordinator.setSentinelIntersecting(false);
+    const retry = requestAction(coordinator.setSentinelIntersecting(true));
+    expect(retry.position).toEqual(first.position);
+    expect(retry.requestId).not.toBe(first.requestId);
+    markLoading(coordinator, retry);
+    expect(coordinator.completeDataRequest(ack(retry, {
+      status: 'empty',
+      hasMore: true,
+      advance: 'next',
+      nextCursor: 'cursor-next',
+    }))).toBe('accepted');
+    expect(coordinator.getSnapshot()).toMatchObject({
+      nextEligiblePosition: { mode: 'cursor', cursor: 'cursor-next', ordinal: 2 },
+      sentinelBlocked: true,
+    });
+
+    coordinator.setSentinelIntersecting(false);
+    const next = requestAction(coordinator.setSentinelIntersecting(true));
+    expect(next.position).toEqual({ mode: 'cursor', cursor: 'cursor-next', ordinal: 2 });
+  });
+
   it('validates completion identity and payload atomically and permits correction under the active ID', () => {
     const coordinator = makeRemoteCoordinator({ initialItems: ['old'] });
     const request = requestAction(coordinator.connect());
@@ -342,16 +385,26 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
       hasMore: false,
     }))).toBe('accepted');
     expect(coordinator.getSnapshot()).toMatchObject({ items: [], hasMore: false, busy: false, status: 'exhausted' });
+    const settledSnapshot = coordinator.getSnapshot();
     expect(coordinator.completeDataRequest(ack(request, {
       status: 'exhausted',
       items: ['late'],
       hasMore: false,
     }))).toBe('unknown-request');
+    expect(coordinator.getSnapshot()).toEqual(settledSnapshot);
   });
 
   it('rejects malformed error payloads atomically and accepts a corrected failure', () => {
-    const coordinator = makeRemoteCoordinator({ initialItems: ['accepted'] });
-    const request = requestAction(coordinator.connect());
+    const coordinator = makeRemoteCoordinator();
+    const search = requestAction(coordinator.connect());
+    markLoading(coordinator, search);
+    expect(coordinator.completeDataRequest(ack(search, {
+      status: 'succeeded',
+      items: ['accepted'],
+      hasMore: true,
+    }))).toBe('accepted');
+
+    const request = requestAction(coordinator.requestLoadMore());
     markLoading(coordinator, request);
     const before = coordinator.getSnapshot();
 
@@ -385,11 +438,13 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
     const second = requestAction(actions);
     expect(second.queryGeneration).toBeGreaterThan(first.queryGeneration);
     expect(second.query).toBe('new query');
+    const beforeStale = coordinator.getSnapshot();
     expect(coordinator.completeDataRequest(ack(first, {
       status: 'exhausted',
       items: ['stale'],
       hasMore: false,
     }))).toBe('stale');
+    expect(coordinator.getSnapshot()).toEqual(beforeStale);
     expect(coordinator.getSnapshot().activeRequest).toEqual(second);
   });
 
@@ -412,6 +467,13 @@ describe('DOM-independent acknowledged data-loading coordinator', () => {
     expect(reconnected.requestId).not.toBe(first.requestId);
     expect(reconnected.queryGeneration).toBeGreaterThan(first.queryGeneration);
     expect(reconnected.position).toEqual({ mode: 'page', page: 6 });
+    const beforeStale = coordinator.getSnapshot();
+    expect(coordinator.completeDataRequest(ack(first, {
+      status: 'exhausted',
+      items: ['late again'],
+      hasMore: false,
+    }))).toBe('stale');
+    expect(coordinator.getSnapshot()).toEqual(beforeStale);
   });
 
   it('does not auto-request a disconnected load-more position after reconnect', () => {
