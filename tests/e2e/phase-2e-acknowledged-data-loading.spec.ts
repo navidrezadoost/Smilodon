@@ -42,10 +42,21 @@ async function createPagedSelect(page: import('@playwright/test').Page) {
   return page.locator('#phase-2e-acknowledged-select');
 }
 
-async function scrollOptionsToEnd(select: import('@playwright/test').Locator): Promise<void> {
-  await select.evaluate((element: any) => {
+async function scrollOptionsToEnd(select: import('@playwright/test').Locator): Promise<boolean> {
+  return select.evaluate((element: any) => {
     const options = element.shadowRoot.querySelector('.options-container') as HTMLElement;
     options.scrollTop = options.scrollHeight;
+    const sentinel = element._loadMoreTrigger as HTMLElement | undefined;
+    if (!sentinel) return false;
+    const rootRect = options.getBoundingClientRect();
+    const sentinelRect = sentinel.getBoundingClientRect();
+    const viewportTop = rootRect.top + options.clientTop;
+    const viewportBottom = viewportTop + options.clientHeight;
+    return sentinelRect.height > 0
+      && sentinelRect.bottom > viewportTop
+      && sentinelRect.top < viewportBottom
+      && sentinelRect.right > rootRect.left + options.clientLeft
+      && sentinelRect.left < rootRect.left + options.clientLeft + options.clientWidth;
   });
 }
 
@@ -53,6 +64,39 @@ async function scrollOptionsToStart(select: import('@playwright/test').Locator):
   await select.evaluate((element: any) => {
     const options = element.shadowRoot.querySelector('.options-container') as HTMLElement;
     options.scrollTop = 0;
+  });
+}
+
+async function readSentinelState(select: import('@playwright/test').Locator): Promise<Record<string, unknown>> {
+  return select.evaluate((element: any) => {
+    const root = element._optionsContainer as HTMLElement;
+    const sentinel = element._loadMoreTrigger as HTMLElement | undefined;
+    const rootRect = root.getBoundingClientRect();
+    const sentinelRect = sentinel?.getBoundingClientRect();
+    const viewportTop = rootRect.top + root.clientTop;
+    const viewportBottom = viewportTop + root.clientHeight;
+    const sentinelInViewport = Boolean(
+      sentinelRect
+      && sentinelRect.height > 0
+      && sentinelRect.bottom > viewportTop
+      && sentinelRect.top < viewportBottom
+      && sentinelRect.right > rootRect.left + root.clientLeft
+      && sentinelRect.left < rootRect.left + root.clientLeft + root.clientWidth,
+    );
+
+    return {
+      ...element._dataRequestCoordinator.getSnapshot(),
+      layout: {
+        scrollTop: root.scrollTop,
+        scrollHeight: root.scrollHeight,
+        clientHeight: root.clientHeight,
+        sentinelInViewport,
+        sentinelTop: sentinelRect?.top ?? null,
+        sentinelBottom: sentinelRect?.bottom ?? null,
+        rootTop: viewportTop,
+        rootBottom: viewportBottom,
+      },
+    };
   });
 }
 
@@ -151,6 +195,18 @@ test.describe('Phase 2E acknowledged data-loading browser integration', () => {
     const cherryRequest = await page.evaluate(() => (window as any).__phase2eSearchEvents[2].request);
     const recovery = await page.evaluate(async (request) => {
       const element = document.querySelector('#phase-2e-remote-search-select') as any;
+      const readPresentation = () => {
+        const listbox = element.shadowRoot.querySelector('[role="listbox"]');
+        return {
+          options: Array.from(listbox.querySelectorAll('[role="option"]')).map((option: any) => ({
+            value: option.getAttribute('data-value'),
+            text: option.textContent?.trim(),
+          })),
+          searching: Boolean(listbox.querySelector('.searching-state')),
+          busy: listbox.getAttribute('aria-busy'),
+        };
+      };
+      const beforeFailure = readPresentation();
       element._failNextAcknowledgedProjectionForTest('before-publish');
       const result = await element._completeDataRequestForTest({
         requestId: request.requestId,
@@ -159,15 +215,20 @@ test.describe('Phase 2E acknowledged data-loading browser integration', () => {
         items: [{ id: 'cherry', value: 'cherry', label: 'Cherry' }],
         hasMore: false,
       });
+      const afterFailure = readPresentation();
       const beforeRetry = {
         result,
         pending: element._acknowledgedProjectionPending,
-        oldOptionPresent: Boolean(element.shadowRoot.querySelector('[data-value="banana"]')),
+        beforeFailure,
+        afterFailure,
       };
       await element._retryAcknowledgedProjectionForTest();
       return { ...beforeRetry, pendingAfterRetry: element._acknowledgedProjectionPending };
     }, cherryRequest);
-    expect(recovery).toEqual({ result: 'accepted', pending: true, oldOptionPresent: true, pendingAfterRetry: false });
+    expect(recovery.result).toBe('accepted');
+    expect(recovery.pending).toBe(true);
+    expect(recovery.afterFailure).toEqual(recovery.beforeFailure);
+    expect(recovery.pendingAfterRetry).toBe(false);
     await expect(select.locator('[data-value="cherry"]')).toBeVisible();
     expect(await select.evaluate((element: any) => element.getSelectedItems().map((item: any) => item.value))).toEqual(['chosen']);
 
@@ -271,7 +332,7 @@ test.describe('Phase 2E acknowledged data-loading browser integration', () => {
     const select = await createPagedSelect(page);
     const requestCount = () => page.evaluate(() => (window as any).__phase2eRequests.length);
 
-    await scrollOptionsToEnd(select);
+    expect(await scrollOptionsToEnd(select)).toBe(true);
     await expect.poll(requestCount, { timeout: 8_000 }).toBe(1);
     const first = await page.evaluate(() => (window as any).__phase2eRequests[0]);
     expect(first.request.position).toEqual({ mode: 'page', page: 2 });
@@ -293,35 +354,49 @@ test.describe('Phase 2E acknowledged data-loading browser integration', () => {
     }, first.request);
     expect(completionResult).toBe('accepted');
 
-    // The accepted replacement moves the sentinel below the preserved scroll
-    // position. A second request must wait for the list to reach it again.
+    // Require an observed, real exit before returning to the sentinel. This
+    // checks the coordinator's false->true rearm rather than relying on scroll
+    // preservation or an observer callback being delivered in a specific turn.
     await expect.poll(requestCount).toBe(1);
-    await scrollOptionsToEnd(select);
+    await scrollOptionsToStart(select);
+    await expect.poll(() => readSentinelState(select), { timeout: 8_000 }).toMatchObject({
+      sentinelIntersecting: false,
+      sentinelBlocked: false,
+      layout: { sentinelInViewport: false },
+    });
+    expect(await requestCount()).toBe(1);
+    expect(await scrollOptionsToEnd(select)).toBe(true);
     await expect.poll(requestCount, { timeout: 8_000 }).toBe(2);
+    expect((await readSentinelState(select)).sentinelIntersecting).toBe(true);
     const second = await page.evaluate(() => (window as any).__phase2eRequests[1]);
     expect(second.request.requestId).not.toBe(first.request.requestId);
     expect(second.request.position).toEqual({ mode: 'page', page: 3 });
 
-    await page.evaluate(() => (window as any).__phase2eSelect.remove());
+    await page.evaluate(() => {
+      (window as any).__phase2ePreviousObserver = (window as any).__phase2eSelect._intersectionObserver;
+      (window as any).__phase2eSelect.remove();
+    });
     await page.evaluate(() => {
       document.body.appendChild((window as any).__phase2eSelect);
     });
     await select.evaluate(async (element: any) => await element._setAcknowledgedDataLoadingReadyForTest());
     await select.evaluate((element: any) => element.open());
 
-    const sentinelSnapshot = () => select.evaluate((element: any) =>
-      element._dataRequestCoordinator.getSnapshot());
-    // Reconnect observes the still-visible sentinel, but an interrupted
-    // load-more is not replayed until a fresh exit/re-entry (or manual action).
-    await expect.poll(async () => (await sentinelSnapshot()).sentinelIntersecting, { timeout: 8_000 }).toBe(true);
+    // Disconnect closes the popup and reconnect re-renders at scrollTop 0, so
+    // the sentinel starts outside the list viewport. The cancelled page is not
+    // replayed there; a new physical scroll to it is the fresh trigger.
+    await expect.poll(() => readSentinelState(select), { timeout: 8_000 }).toMatchObject({
+      sentinelIntersecting: false,
+      sentinelBlocked: false,
+      layout: { sentinelInViewport: false },
+    });
     expect(await requestCount()).toBe(2);
-    expect((await sentinelSnapshot()).sentinelBlocked).toBe(true);
-
-    await scrollOptionsToStart(select);
-    await expect.poll(async () => (await sentinelSnapshot()).sentinelIntersecting, { timeout: 8_000 }).toBe(false);
-    expect((await sentinelSnapshot()).sentinelBlocked).toBe(false);
-    await scrollOptionsToEnd(select);
+    expect(await select.evaluate((element: any) =>
+      element._intersectionObserver !== (window as any).__phase2ePreviousObserver,
+    )).toBe(true);
+    expect(await scrollOptionsToEnd(select)).toBe(true);
     await expect.poll(requestCount, { timeout: 8_000 }).toBe(3);
+    expect((await readSentinelState(select)).sentinelIntersecting).toBe(true);
     const reconnected = await page.evaluate(() => (window as any).__phase2eRequests[2]);
     expect(reconnected.request.requestId).not.toBe(second.request.requestId);
     expect(reconnected.request.position).toEqual({ mode: 'page', page: 3 });
