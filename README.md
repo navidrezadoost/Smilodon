@@ -270,6 +270,7 @@ Maintained adapters wrap the shared runtime, but complete behavioral parity is s
 | Accessibility   | Implemented ARIA/keyboard behaviors and live announcements; cross-browser and manual AT review pending |
 | Diagnostics     | `diagnostic` events, tracking buckets, capability reports                                    |
 | Runtime control | `open()`, `close()`, `clear()`, `setItems()`, `setGroupedItems()`, limitation policies       |
+| Acknowledged data loading | Per-instance request identities and explicit host completion in the Phase 2F-D development candidate; adapter parity and release certification are pending |
 | Styling         | Shared CSS custom properties, parts, dark mode hooks, high-contrast and reduced-motion hooks |
 
 Representative use cases:
@@ -279,6 +280,37 @@ Representative use cases:
 - compliance and audit workflows
 - mobile management tooling via React Native
 - design systems that want one runtime across multiple frameworks
+
+## Acknowledged data loading (Phase 2F-D development candidate)
+
+The current isolated development candidate adds an opt-in, identity-based data-loading protocol to the core runtime and React adapter. This is not part of the published `1.10.0` packages. React documentation below describes the candidate API; equivalent Vue, Svelte, Solid, Vanilla, and React Native adapter APIs have not been implemented or certified in this workstream.
+
+The protocol is opt-in per instance. Omitting `config.dataLoading` preserves the legacy protocol and its existing callback behavior. The host application owns the network request and supplies its result through `completeDataRequest`; Smilodon does not provide a transport client or automatic retry policy.
+
+The following is a configuration fragment, not a complete component; the full React request/completion example is in the [React guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
+
+```tsx
+<Select
+  searchable
+  config={{
+    dataLoading: {
+      protocol: 'acknowledged',
+      searchMode: 'remote',
+      paginationMode: 'cursor',
+      fetchLimit: 50,
+    },
+  }}
+  onSearch={(query, _results, _count, request) => {
+    // `request` is present for acknowledged requests; see the React guide
+    // for completion, cancellation, and error-handling examples.
+    if (request) console.log(query, request.requestId, request.position);
+  }}
+/>
+```
+
+The request includes a request ID, query generation, query text, fetch limit, and page or cursor position. The host must echo the request ID and generation in its completion. Stale or unknown completions are rejected; an accepted response is projected separately, with projection outcome reported through `dataProjection`. Empty searches remain explicit requests, and a failed request does not trigger an automatic retry.
+
+Phase 2F-D is provisionally accepted as development-complete, excluding outstanding test certification. Firefox and WebKit verification, independent review, skipped-contract classification, and full C1–C8 acceptance remain incomplete. Do not treat this section as release approval or as a claim of full cross-browser compatibility. See [the React adapter guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate) and [the core API guide](./packages/core/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
 ---
 

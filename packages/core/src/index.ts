@@ -35,6 +35,8 @@ export * from './components/native-select.js';
 export * from './components/enhanced-select.js';
 export * from './components/select-option.js';
 export * from './config/global-config.js';
+export type * from './data-loading/public-types.js';
+export { validateDataLoadingConfig } from './data-loading/public-config.js';
 // Preserve the existing configuration type while exposing the engine policy separately.
 export type { SelectionConfig } from './config/global-config.js';
 export type { SelectionConfig as EngineSelectionConfig } from './engine/selection-policy.js';

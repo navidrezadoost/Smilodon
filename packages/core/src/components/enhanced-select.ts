@@ -6,8 +6,20 @@
  * Redesigned with formal elegance, refined microinteractions, and polished UX
  */
 
-import type { GlobalSelectConfig } from '../config/global-config';
+import type { CallbackConfig, GlobalSelectConfig } from '../config/global-config';
 import { selectConfig } from '../config/global-config';
+import { validateDataLoadingConfig } from '../data-loading/public-config.js';
+import type {
+  DataLoadingConfigErrorDetail,
+  DataLoadingStateSnapshot,
+  DataProjectionEventDetail,
+  DataRequestCancelNotification,
+  DataRequestCompletion,
+  DataRequestCompletionResult,
+  EnhancedSelectAcknowledgedSurface,
+  ResolvedDataLoadingConfig,
+  SelectInstanceConfig,
+} from '../data-loading/public-types.js';
 import type {
   SelectEventName,
   SelectEventsDetailMap,
@@ -90,9 +102,86 @@ interface AcknowledgedProjectionDiagnostic {
   message: string;
 }
 
-export class EnhancedSelect extends HTMLElement {
+const LEGACY_DATA_LOADING_CONFIG: ResolvedDataLoadingConfig = {
+  protocol: 'legacy',
+  searchMode: 'local',
+  paginationMode: 'page',
+  firstPage: 1,
+};
+
+const DATA_LOADING_CONFIG_FIELDS = ['protocol', 'searchMode', 'paginationMode', 'firstPage', 'fetchLimit'] as const;
+const INVALID_OBJECT_VALUE = Object.freeze({ kind: 'object' });
+const INVALID_ARRAY_VALUE = Object.freeze({ kind: 'array' });
+const INVALID_FUNCTION_VALUE = Object.freeze({ kind: 'function' });
+
+interface InvalidDataLoadingCandidateSignature {
+  readonly rootKind: string;
+  readonly rootValue: unknown;
+  readonly fieldValues: readonly unknown[];
+  readonly issues: readonly (readonly [string, string, string])[];
+}
+
+function invalidConfigValueSignature(value: unknown): unknown {
+  if (value === null || (typeof value !== 'object' && typeof value !== 'function')) return value;
+  if (typeof value === 'function') return INVALID_FUNCTION_VALUE;
+  return Array.isArray(value) ? INVALID_ARRAY_VALUE : INVALID_OBJECT_VALUE;
+}
+
+function createInvalidDataLoadingCandidateSignature(
+  candidate: unknown,
+  issues: readonly DataLoadingConfigErrorDetail['issues'][number][],
+): InvalidDataLoadingCandidateSignature {
+  const candidatePrototype = candidate !== null && typeof candidate === 'object'
+    ? Object.getPrototypeOf(candidate)
+    : undefined;
+  const isRecord = candidate !== null
+    && typeof candidate === 'object'
+    && !Array.isArray(candidate)
+    && (candidatePrototype === Object.prototype || candidatePrototype === null);
+  const recordCandidate = isRecord ? candidate as Record<string, unknown> : undefined;
+  const rootKind = isRecord
+    ? 'record'
+    : candidate === null
+      ? 'null'
+      : Array.isArray(candidate)
+        ? 'array'
+        : typeof candidate;
+
+  return {
+    rootKind,
+    rootValue: candidate === null || typeof candidate !== 'object' ? candidate : undefined,
+    // Compare at most five supported field values. Unknown fields are represented by their
+    // validation issues below; their values are invalid regardless of shape. Signature work is
+    // therefore independent of nested-value depth (and linear only in the already-built issue list).
+    fieldValues: recordCandidate
+      ? DATA_LOADING_CONFIG_FIELDS.map((field) => invalidConfigValueSignature(recordCandidate[field]))
+      : [],
+    issues: issues.map(({ path, code, message }) => [path, code, message] as const),
+  };
+}
+
+function invalidDataLoadingSignaturesEqual(
+  left: InvalidDataLoadingCandidateSignature,
+  right: InvalidDataLoadingCandidateSignature,
+): boolean {
+  if (left.rootKind !== right.rootKind || !Object.is(left.rootValue, right.rootValue)) return false;
+  if (left.fieldValues.length !== right.fieldValues.length || left.issues.length !== right.issues.length) return false;
+  for (let index = 0; index < left.fieldValues.length; index += 1) {
+    if (!Object.is(left.fieldValues[index], right.fieldValues[index])) return false;
+  }
+  for (let index = 0; index < left.issues.length; index += 1) {
+    const leftIssue = left.issues[index];
+    const rightIssue = right.issues[index];
+    if (leftIssue[0] !== rightIssue[0] || leftIssue[1] !== rightIssue[1] || leftIssue[2] !== rightIssue[2]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowledgedSurface {
   static get observedAttributes(): string[] {
-    return ['aria-label', 'aria-description'];
+    return ['aria-label', 'aria-description', 'aria-busy'];
   }
 
   /** live set of all connected instances; used to auto-close siblings */
@@ -105,6 +194,12 @@ export class EnhancedSelect extends HTMLElement {
   }>();
 
   private _config: GlobalSelectConfig;
+  private _dataLoadingConfig: ResolvedDataLoadingConfig = { ...LEGACY_DATA_LOADING_CONFIG };
+  private _dataLoadingConfigErrorCallback?: (detail: DataLoadingConfigErrorDetail) => void;
+  private _dataRequestCancelCallback?: (detail: DataRequestCancelNotification) => void;
+  private _dataProjectionCallback?: (detail: DataProjectionEventDetail) => void;
+  private _hasLastInvalidDataLoadingCandidate = false;
+  private _lastInvalidDataLoadingCandidate?: InvalidDataLoadingCandidateSignature;
   private _shadow: ShadowRoot;
   private _container: HTMLElement;
   private _inputContainer: HTMLElement;
@@ -161,12 +256,19 @@ export class EnhancedSelect extends HTMLElement {
   private _selectedRecordsByKey = new Map<SelectKey, ItemRecord<unknown, SelectKey>>();
   private _registryItemsRef: unknown[] = [];
   private _pageCache: PageCache = {};
-  // Acknowledged data loading is intentionally private and is only activated
-  // through the test seam below. Legacy mode remains the default path.
+  // One coordinator owns both acknowledged and legacy-adjacent lifecycle state;
+  // the public protocol remains explicitly opt-in and legacy remains default.
   private _dataRequestCoordinator: DataRequestCoordinator | null = null;
   private _acknowledgedSearchMode: DataSearchMode | null = null;
   private _acknowledgedReady = false;
+  private _acknowledgedDeferredStart = false;
+  private _hasEverConnected = false;
+  private _acknowledgedStartTask: Promise<void> | null = null;
+  private _clearAcknowledgedCoordinatorAfterProjection = false;
+  private _acknowledgedConfigUpdatePending = false;
+  private _acknowledgedDeferredModeChange = false;
   private _acknowledgedProjectionPending = false;
+  private _acknowledgedProjectionSettling = false;
   private _acknowledgedPendingSearchQuery: string | null = null;
   private _acknowledgedProjectionFailureStageForTest: 'before-publish' | 'after-publish' | null = null;
   private _acknowledgedProjectionRunning = false;
@@ -174,6 +276,8 @@ export class EnhancedSelect extends HTMLElement {
   private _acknowledgedProjectionScrollTop = 0;
   private _acknowledgedLastRequest: DataRequest | null = null;
   private _acknowledgedProjectionCommitsPosition = false;
+  private _acknowledgedProjectionRequest: DataRequest | null = null;
+  private _acknowledgedProjectionAttempt = 0;
   private _acknowledgedProjectionDiagnostic: AcknowledgedProjectionDiagnostic | null = null;
   private _resizeObserver?: ResizeObserver;
   private _intersectionObserver?: IntersectionObserver;
@@ -367,6 +471,7 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this._hasEverConnected = true;
     // register instance
     EnhancedSelect._instances.add(this);
     this._runEngineEffects(this._engine.dispatch({ type: 'CONNECT' }));
@@ -386,8 +491,8 @@ export class EnhancedSelect extends HTMLElement {
     this._syncDirectionConfig();
     this._syncComboboxAccessibility();
 
-    if (this._dataRequestCoordinator) {
-      // Acknowledged dispatch remains behind the explicit private readiness
+    if (this._dataRequestCoordinator || this._dataLoadingConfig.protocol === 'acknowledged') {
+      // Acknowledged dispatch remains behind the explicit readiness
       // gate; reconnect only restores observer ownership here.
       this._initializeObservers();
     }
@@ -412,10 +517,20 @@ export class EnhancedSelect extends HTMLElement {
     if (this._config.callbacks.onOpen) {
       this._config.callbacks.onOpen();
     }
+
+    if (this._acknowledgedDeferredStart) {
+      this._acknowledgedDeferredStart = false;
+      this.startDataLoading();
+    }
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
-    if (oldValue === newValue || (name !== 'aria-label' && name !== 'aria-description')) return;
+    if (oldValue === newValue) return;
+    if (name === 'aria-busy') {
+      this._syncListboxAccessibility();
+      return;
+    }
+    if (name !== 'aria-label' && name !== 'aria-description') return;
     this._syncComboboxAccessibility();
     if (name === 'aria-label') this._syncListboxAccessibility();
   }
@@ -3501,11 +3616,14 @@ export class EnhancedSelect extends HTMLElement {
       this._intersectionObserver = undefined;
     }
 
-    if (this._dataRequestCoordinator && !this._acknowledgedReady) return;
+    if (this._dataLoadingConfig.protocol === 'acknowledged'
+      && (!this._dataRequestCoordinator || !this._acknowledgedReady)) return;
 
     // Intersection observer for infinite scroll
     if (this._config.infiniteScroll.enabled) {
-      const acknowledged = Boolean(this._dataRequestCoordinator);
+      const acknowledged = Boolean(
+        this._dataRequestCoordinator && this._dataLoadingConfig.protocol === 'acknowledged',
+      );
       if (acknowledged && typeof IntersectionObserver === 'undefined') return;
 
       let observer: IntersectionObserver;
@@ -3520,7 +3638,7 @@ export class EnhancedSelect extends HTMLElement {
                   this._dataRequestCoordinator?.setSentinelIntersecting(false);
                   return;
                 }
-                if (this._acknowledgedProjectionPending) return;
+                if (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling) return;
                 const actions = this._dataRequestCoordinator?.setSentinelIntersecting(true) ?? [];
                 this._dispatchAcknowledgedActions(actions);
                 return;
@@ -3627,7 +3745,12 @@ export class EnhancedSelect extends HTMLElement {
     const accessibilityState = {
       ...derivedState,
       // The component's existing busy lifecycle is not yet mirrored to engine dataStatus.
-      busy: this._state.isBusy,
+      // Host presentation busy is additive only for the accepted acknowledged
+      // protocol; legacy host attributes remain inert for listbox semantics.
+      busy: this._state.isBusy || (
+        this._dataLoadingConfig.protocol === 'acknowledged'
+        && this.getAttribute('aria-busy') === 'true'
+      ),
     };
     const effects = computeAccessibilityEffects(accessibilityState, {
       controlsId: this._dropdown.id || null,
@@ -3923,8 +4046,7 @@ export class EnhancedSelect extends HTMLElement {
   private _handleSearch(query: string): void {
     if (
       this._dataRequestCoordinator
-      && this._isAcknowledgedRemoteSearch()
-      && this._acknowledgedProjectionPending
+      && (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling)
     ) {
       // Keep the committed query/generation stable until the accepted snapshot
       // has been projected. Coalesce input as a latest-wins intent and dispatch
@@ -3935,8 +4057,34 @@ export class EnhancedSelect extends HTMLElement {
       return;
     }
 
+    if (
+      this._dataLoadingConfig.protocol === 'acknowledged'
+      && (this._dataLoadingConfig.searchMode === 'remote' || this._dataLoadingConfig.searchMode === 'hybrid')
+    ) {
+      this._state.searchQuery = query;
+      this._syncClearControlState();
+      this._state.lastNotifiedQuery = query;
+      this._state.lastNotifiedResultCount = 0;
+      if (this._dataRequestCoordinator) {
+        const actions = this._dataRequestCoordinator.setQuery(query);
+        if (this._acknowledgedReady) this._dispatchAcknowledgedActions(actions);
+        else this._renderOptions();
+      } else if (!this._state.isOpen) {
+        this._handleOpen();
+      } else {
+        this._renderOptions();
+      }
+      return;
+    }
+
     this._state.searchQuery = query;
     this._syncClearControlState();
+
+    if (this._dataLoadingConfig.protocol === 'acknowledged' && this._dataRequestCoordinator) {
+      // Local acknowledged search has no remote request, but pagination still
+      // belongs to the coordinator's current query generation.
+      this._dispatchAcknowledgedActions(this._dataRequestCoordinator.setQuery(query));
+    }
 
     if (query.length > 0) {
       this._perfMark('smilodon-search-input-last');
@@ -3950,23 +4098,6 @@ export class EnhancedSelect extends HTMLElement {
       clearTimeout(this._searchTimeout);
     }
 
-    if (this._dataRequestCoordinator && this._isAcknowledgedRemoteSearch()) {
-      const snapshot = this._dataRequestCoordinator.getSnapshot();
-      if (query === snapshot.query) return;
-
-      const actions = this._dataRequestCoordinator.setQuery(query);
-      this._state.lastNotifiedQuery = query;
-      this._state.lastNotifiedResultCount = 0;
-      if (this._acknowledgedReady) {
-        this._dispatchAcknowledgedActions(actions);
-      } else {
-        // Prop/query changes before readiness are coalesced by the coordinator;
-        // connect() will dispatch only the latest query once listeners exist.
-        this._renderOptions();
-      }
-      return;
-    }
-    
     // Search immediately - no debouncing for better responsiveness
     // Users expect instant feedback as they type
     this._state.isSearching = false;
@@ -4629,8 +4760,20 @@ export class EnhancedSelect extends HTMLElement {
   }
 
   private async _loadMoreItems(trigger: 'manual' | 'sentinel' = 'manual'): Promise<void> {
+    if (this._dataLoadingConfig.protocol === 'acknowledged') {
+      if (
+        !this._dataRequestCoordinator
+        || !this._acknowledgedReady
+        || this._acknowledgedProjectionPending
+        || this._acknowledgedProjectionSettling
+      ) return;
+      const actions = this._dataRequestCoordinator.requestLoadMore(trigger);
+      this._dispatchAcknowledgedActions(actions);
+      return;
+    }
+
     if (this._dataRequestCoordinator) {
-      if (!this._acknowledgedReady || this._acknowledgedProjectionPending) return;
+      if (!this._acknowledgedReady || this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling) return;
       const actions = this._dataRequestCoordinator.requestLoadMore(trigger);
       this._dispatchAcknowledgedActions(actions);
       return;
@@ -5103,11 +5246,65 @@ export class EnhancedSelect extends HTMLElement {
   /**
    * Update component configuration
    */
-  updateConfig(config: Partial<GlobalSelectConfig>): void {
+  updateConfig(config: SelectInstanceConfig): void {
     this._invalidateGuardedMeasurements();
     const previousMode = this._config.selection.mode;
     const previousEnabled = this._config.enabled;
-    this._config = this._mergeConfig(this._config, config);
+    const previousDataLoadingConfig = this._dataLoadingConfig;
+
+    const { dataLoading, callbacks, ...legacyConfig } = config;
+    const legacyUpdate = { ...legacyConfig } as Partial<GlobalSelectConfig>;
+    let configErrorDetail: DataLoadingConfigErrorDetail | undefined;
+
+    if (callbacks !== undefined && callbacks !== null) {
+      const callbackInput = callbacks as typeof callbacks & {
+        onDataLoadingConfigError?: ((detail: DataLoadingConfigErrorDetail) => void) | undefined;
+      };
+      if (Object.prototype.hasOwnProperty.call(callbackInput, 'onDataLoadingConfigError')) {
+        this._dataLoadingConfigErrorCallback = callbackInput.onDataLoadingConfigError;
+      }
+      if (Object.prototype.hasOwnProperty.call(callbackInput, 'onDataRequestCancel')) {
+        this._dataRequestCancelCallback = callbackInput.onDataRequestCancel;
+      }
+      if (Object.prototype.hasOwnProperty.call(callbackInput, 'onDataProjection')) {
+        this._dataProjectionCallback = callbackInput.onDataProjection;
+      }
+      const legacyCallbacks = { ...callbackInput };
+      delete legacyCallbacks.onDataLoadingConfigError;
+      delete legacyCallbacks.onDataRequestCancel;
+      delete legacyCallbacks.onDataProjection;
+      legacyUpdate.callbacks = legacyCallbacks as Partial<CallbackConfig>;
+    }
+
+    this._config = this._mergeConfig(this._config, legacyUpdate);
+
+    if (dataLoading !== undefined) {
+      const dataLoadingPrototype = dataLoading !== null && typeof dataLoading === 'object'
+        ? Object.getPrototypeOf(dataLoading)
+        : undefined;
+      const candidate = dataLoadingPrototype === Object.prototype || dataLoadingPrototype === null
+        ? { ...this._dataLoadingConfig, ...dataLoading }
+        : dataLoading;
+      const validation = validateDataLoadingConfig(candidate);
+
+      if (validation.valid) {
+        this._dataLoadingConfig = validation.value;
+        this._hasLastInvalidDataLoadingCandidate = false;
+        this._lastInvalidDataLoadingCandidate = undefined;
+      } else {
+        const candidateSignature = createInvalidDataLoadingCandidateSignature(candidate, validation.issues);
+        if (
+          !this._hasLastInvalidDataLoadingCandidate ||
+          !this._lastInvalidDataLoadingCandidate ||
+          !invalidDataLoadingSignaturesEqual(this._lastInvalidDataLoadingCandidate, candidateSignature)
+        ) {
+          this._hasLastInvalidDataLoadingCandidate = true;
+          this._lastInvalidDataLoadingCandidate = candidateSignature;
+          configErrorDetail = { issues: validation.issues };
+        }
+      }
+    }
+
     this._rebuildItemRegistry();
     if (previousEnabled !== this._config.enabled) {
       if (!this._config.enabled && this._state.isOpen) {
@@ -5176,6 +5373,300 @@ export class EnhancedSelect extends HTMLElement {
       this._syncMultiSelectDisplayConfig();
       this._syncClearControlState();
       this._updateInputDisplay();
+    }
+
+    this._acknowledgedSearchMode = this._dataLoadingConfig.searchMode;
+    if (this._dataLoadingConfig.protocol === 'legacy') this._acknowledgedDeferredStart = false;
+    const coordinator = this._dataRequestCoordinator;
+    const switchesToLegacy = previousDataLoadingConfig.protocol === 'acknowledged'
+      && this._dataLoadingConfig.protocol === 'legacy';
+    const acknowledgedModeChanged = previousDataLoadingConfig.protocol !== this._dataLoadingConfig.protocol
+      || previousDataLoadingConfig.searchMode !== this._dataLoadingConfig.searchMode
+      || previousDataLoadingConfig.paginationMode !== this._dataLoadingConfig.paginationMode;
+
+    if (coordinator && switchesToLegacy) {
+      if (this._acknowledgedReady && !this._acknowledgedProjectionPending && !this._acknowledgedProjectionSettling) {
+        const update = coordinator.updateConfig(this._createCoordinatorConfig());
+        if (update.status === 'accepted') this._dispatchAcknowledgedActions(update.actions);
+      }
+      this._acknowledgedReady = false;
+      this._dispatchAcknowledgedActions(coordinator.disconnect());
+      if (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling) {
+        this._clearAcknowledgedCoordinatorAfterProjection = true;
+      } else {
+        this._dataRequestCoordinator = null;
+        this._acknowledgedSearchMode = null;
+        this._state.isBusy = false;
+        this._state.isSearching = false;
+        this._syncListboxAccessibility();
+        this._renderOptions();
+      }
+    } else if (coordinator && this._dataLoadingConfig.protocol === 'acknowledged') {
+      this._clearAcknowledgedCoordinatorAfterProjection = false;
+      if (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling) {
+        this._acknowledgedConfigUpdatePending = true;
+        this._acknowledgedDeferredModeChange ||= acknowledgedModeChanged;
+      } else if (this._acknowledgedReady) {
+        const update = coordinator.updateConfig(this._createCoordinatorConfig());
+        if (update.status === 'accepted') {
+          this._dispatchAcknowledgedActions(update.actions);
+          const snapshot = coordinator.getSnapshot();
+          this._state.isBusy = snapshot.busy;
+          this._state.isSearching = snapshot.activeRequest?.kind === 'search';
+          this._syncListboxAccessibility();
+          if (update.actions.every((action) => action.type !== 'request')) this._renderOptions();
+        }
+      }
+    }
+
+    if (configErrorDetail) {
+      this._emit('dataLoadingConfigError', configErrorDetail);
+      try {
+        this._dataLoadingConfigErrorCallback?.(configErrorDetail);
+      } catch (error) {
+        this._handleError(error as Error);
+      }
+    }
+  }
+
+  /** Open the acknowledged request lifecycle after the host has installed listeners. */
+  startDataLoading(): void {
+    const projectionRecoveryOnly = Boolean(
+      this._dataRequestCoordinator && this._acknowledgedProjectionPending,
+    );
+    if (this._dataLoadingConfig.protocol !== 'acknowledged' && !projectionRecoveryOnly) return;
+
+    if (this._dataLoadingConfig.protocol === 'acknowledged' && !this._ensureDataRequestCoordinator()) return;
+    if (!this.isConnected) {
+      if (!this._hasEverConnected) this._acknowledgedDeferredStart = true;
+      return;
+    }
+    if (this._acknowledgedReady) return;
+    if (this._acknowledgedStartTask) {
+      // A reconnect can arrive while the previous readiness task is still
+      // unwinding an interrupted render. Preserve the restart request so the
+      // accepted projection is recovered as soon as that task settles.
+      this._acknowledgedDeferredStart = true;
+      return;
+    }
+
+    const task = this._startAcknowledgedDataLoading();
+    this._acknowledgedStartTask = task;
+    void task.finally(() => {
+      if (this._acknowledgedStartTask !== task) return;
+      this._acknowledgedStartTask = null;
+      if (this._acknowledgedDeferredStart && this.isConnected) {
+        this._acknowledgedDeferredStart = false;
+        this.startDataLoading();
+      }
+    }).catch((error) => this._handleError(error as Error));
+  }
+
+  /** Return detached coordinator state without exposing its canonical item storage. */
+  getDataLoadingState(): DataLoadingStateSnapshot {
+    const coordinator = this._dataRequestCoordinator;
+    if (!coordinator) {
+      const isRemote = this._dataLoadingConfig.searchMode === 'remote'
+        || this._dataLoadingConfig.searchMode === 'hybrid';
+      const nextEligiblePosition = this._dataLoadingConfig.paginationMode === 'cursor'
+        ? { mode: 'cursor' as const, ordinal: 1 }
+        : {
+          mode: 'page' as const,
+          page: isRemote
+            ? this._dataLoadingConfig.firstPage
+            : (this._config.infiniteScroll.initialPage ?? 1) + 1,
+        };
+      return {
+        status: 'idle',
+        connected: this.isConnected,
+        busy: false,
+        projectionPending: false,
+        queryGeneration: 0,
+        activeRequest: null,
+        hasMore: this._dataLoadingConfig.protocol === 'acknowledged'
+          && !isRemote
+          && (this._config.infiniteScroll.enabled || this._config.loadMore.enabled),
+        nextEligiblePosition,
+        error: null,
+        resourceLimit: null,
+      };
+    }
+
+    const snapshot = coordinator.getSnapshot();
+    const activeRequest = snapshot.activeRequest
+      ? {
+        ...snapshot.activeRequest,
+        position: { ...snapshot.activeRequest.position },
+      } as DataRequest
+      : null;
+    return {
+      status: snapshot.status,
+      connected: snapshot.connected,
+      busy: snapshot.busy || this._acknowledgedProjectionPending,
+      projectionPending: this._acknowledgedProjectionPending,
+      queryGeneration: snapshot.queryGeneration,
+      activeRequest,
+      hasMore: snapshot.hasMore,
+      nextEligiblePosition: { ...snapshot.nextEligiblePosition },
+      error: snapshot.error ? { ...snapshot.error } : null,
+      resourceLimit: snapshot.resourceLimit ? { ...snapshot.resourceLimit } : null,
+    };
+  }
+
+  /** Synchronously accept/classify a host completion; DOM projection proceeds asynchronously. */
+  completeDataRequest(completion: DataRequestCompletion): DataRequestCompletionResult {
+    const coordinator = this._dataRequestCoordinator;
+    if (!coordinator) {
+      const candidate = completion as unknown;
+      if (
+        candidate === null
+        || typeof candidate !== 'object'
+        || !('requestId' in candidate)
+        || typeof candidate.requestId !== 'string'
+        || candidate.requestId.length === 0
+        || !('queryGeneration' in candidate)
+        || !Number.isSafeInteger(candidate.queryGeneration)
+        || (candidate.queryGeneration as number) < 0
+        || !('status' in candidate)
+        || typeof candidate.status !== 'string'
+        || !['succeeded', 'empty', 'exhausted', 'failed', 'cancelled'].includes(candidate.status)
+      ) return 'invalid';
+      return 'unknown-request';
+    }
+
+    const snapshotBefore = coordinator.getSnapshot();
+    const completionRecord = completion && typeof completion === 'object'
+      ? completion as unknown as Record<string, unknown>
+      : null;
+    const activeRequest = snapshotBefore.activeRequest;
+    const request = activeRequest
+      && completionRecord?.requestId === activeRequest.requestId
+      && completionRecord?.queryGeneration === activeRequest.queryGeneration
+      ? activeRequest
+      : null;
+    const status = completionRecord?.status;
+    const advancesPosition = status === 'succeeded'
+      || status === 'exhausted'
+      || (status === 'empty' && completionRecord?.advance === 'next');
+    const result = coordinator.completeDataRequest(completion);
+
+    if (result === 'accepted' && request) {
+      this._acknowledgedLastRequest = request;
+      this._acknowledgedProjectionRequest = request;
+      this._acknowledgedProjectionAttempt = 0;
+      this._acknowledgedProjectionCommitsPosition = advancesPosition;
+      void this._projectAcknowledgedSnapshot(
+        coordinator.getSnapshot(),
+        request,
+        advancesPosition,
+      );
+    } else if (result === 'resource-limit') {
+      const resourceLimit = coordinator.getSnapshot().resourceLimit;
+      this._emit('diagnostic', {
+        timestamp: Date.now(),
+        source: 'event',
+        name: 'acknowledgedDataLoadingResourceLimit',
+        detail: resourceLimit,
+      });
+    }
+
+    return result;
+  }
+
+  private _createCoordinatorConfig(): DataCoordinatorConfig {
+    return {
+      dataLoading: { ...this._dataLoadingConfig },
+      infiniteScroll: {
+        pageSize: this._config.infiniteScroll.pageSize,
+        initialPage: this._config.infiniteScroll.initialPage,
+      },
+    };
+  }
+
+  private _ensureDataRequestCoordinator(): DataRequestCoordinator | null {
+    if (!this._dataRequestCoordinator) {
+      const isRemote = this._dataLoadingConfig.searchMode === 'remote'
+        || this._dataLoadingConfig.searchMode === 'hybrid';
+      try {
+        this._dataRequestCoordinator = new DataRequestCoordinator({
+          config: this._createCoordinatorConfig(),
+          initialQuery: this._state.searchQuery,
+          initialItems: this._state.loadedItems,
+          hasMore: !isRemote && (this._config.infiniteScroll.enabled || this._config.loadMore.enabled),
+        });
+      } catch (error) {
+        const detail: DataLoadingConfigErrorDetail = {
+          issues: [{
+            path: 'dataLoading',
+            code: 'invalid-value',
+            message: `Acknowledged data loading could not start: ${error instanceof Error ? error.message : String(error)}`,
+          }],
+        };
+        this._emit('dataLoadingConfigError', detail);
+        try {
+          this._dataLoadingConfigErrorCallback?.(detail);
+        } catch (callbackError) {
+          this._handleError(callbackError as Error);
+        }
+        return null;
+      }
+    }
+    this._acknowledgedSearchMode = this._dataLoadingConfig.searchMode;
+    return this._dataRequestCoordinator;
+  }
+
+  private async _startAcknowledgedDataLoading(): Promise<void> {
+    const coordinator = this._dataRequestCoordinator;
+    const projectionRecoveryOnly = Boolean(coordinator && this._acknowledgedProjectionPending);
+    if (
+      !coordinator
+      || (this._dataLoadingConfig.protocol !== 'acknowledged' && !projectionRecoveryOnly)
+      || !this.isConnected
+    ) return;
+    if (this._acknowledgedReady) return;
+
+    if (this._acknowledgedProjectionPending) {
+      const interruptedProjection = this._acknowledgedProjectionTask;
+      if (interruptedProjection) await interruptedProjection;
+      if (!this.isConnected) return;
+      if (this._acknowledgedProjectionPending) {
+        await this._retryAcknowledgedProjection();
+      }
+      if (!this.isConnected || this._acknowledgedProjectionPending) return;
+    }
+
+    if (
+      this._dataLoadingConfig.protocol !== 'acknowledged'
+      || !this._dataRequestCoordinator
+    ) return;
+
+    if (this._acknowledgedPendingSearchQuery !== null) {
+      this._state.searchQuery = this._acknowledgedPendingSearchQuery;
+      this._input.value = this._acknowledgedPendingSearchQuery;
+      this._acknowledgedPendingSearchQuery = null;
+    }
+
+    const configUpdate = coordinator.updateConfig(this._createCoordinatorConfig());
+    if (configUpdate.status !== 'accepted') {
+      this._acknowledgedReady = false;
+      return;
+    }
+    this._acknowledgedConfigUpdatePending = false;
+    this._acknowledgedDeferredModeChange = false;
+    this._clearAcknowledgedCoordinatorAfterProjection = false;
+
+    this._acknowledgedReady = true;
+    this._initializeObservers();
+    const configActions = configUpdate.actions;
+    this._dispatchAcknowledgedActions(configActions);
+    const connectionActions = coordinator.connect(this._state.searchQuery);
+    this._dispatchAcknowledgedActions(connectionActions);
+    if (configActions.length === 0 && connectionActions.length === 0) this._renderOptions();
+    const readyRenderCycleId = this._renderCycleId;
+    const readyRenderCompleted = await this._waitForRenderCycle(readyRenderCycleId);
+    if (!readyRenderCompleted) {
+      this._acknowledgedReady = false;
+      throw new Error('Acknowledged readiness render was superseded before completion');
     }
   }
 
@@ -5560,13 +6051,6 @@ export class EnhancedSelect extends HTMLElement {
     return true;
   }
 
-  private _isAcknowledgedRemoteSearch(): boolean {
-    return Boolean(
-      this._dataRequestCoordinator
-      && (this._acknowledgedSearchMode === 'remote' || this._acknowledgedSearchMode === 'hybrid'),
-    );
-  }
-
   /** Test-only activation seam; deliberately absent from public config/types. */
   private _enableAcknowledgedDataLoadingForTest(
     config: DataCoordinatorConfig,
@@ -5575,6 +6059,14 @@ export class EnhancedSelect extends HTMLElement {
     if (this._dataRequestCoordinator) {
       throw new Error('Acknowledged data loading is already enabled for this test instance');
     }
+    const dataLoading = config.dataLoading;
+    this._dataLoadingConfig = {
+      protocol: dataLoading?.protocol ?? 'acknowledged',
+      searchMode: dataLoading?.searchMode ?? 'local',
+      paginationMode: dataLoading?.paginationMode ?? 'page',
+      firstPage: dataLoading?.firstPage ?? 1,
+      ...(dataLoading?.fetchLimit === undefined ? {} : { fetchLimit: dataLoading.fetchLimit }),
+    };
     this._acknowledgedSearchMode = config.dataLoading?.searchMode ?? 'local';
     this._dataRequestCoordinator = new DataRequestCoordinator({
       config,
@@ -5626,6 +6118,11 @@ export class EnhancedSelect extends HTMLElement {
     for (const action of actions) {
       if (action.type === 'cancel') {
         this._dispatchAcknowledgedEvent('dataRequestCancel', action.notification);
+        try {
+          this._dataRequestCancelCallback?.(action.notification);
+        } catch (error) {
+          this._handleError(error as Error);
+        }
         continue;
       }
 
@@ -5687,26 +6184,9 @@ export class EnhancedSelect extends HTMLElement {
 
   /** Test-only completion seam; accepted snapshots are projected from coordinator state. */
   private async _completeDataRequestForTest(completion: unknown): Promise<string> {
-    const coordinator = this._dataRequestCoordinator;
-    if (!coordinator) throw new Error('Acknowledged data loading is not enabled for this test instance');
-
-    const completionRecord = completion && typeof completion === 'object'
-      ? completion as Record<string, unknown>
-      : null;
-    const requestId = typeof completionRecord?.requestId === 'string' ? completionRecord.requestId : null;
-    const request = requestId && this._acknowledgedLastRequest?.requestId === requestId
-      ? this._acknowledgedLastRequest
-      : null;
-    const status = completionRecord?.status;
-    const advancesPosition = status === 'succeeded'
-      || status === 'exhausted'
-      || (status === 'empty' && completionRecord?.advance === 'next');
-    const result = coordinator.completeDataRequest(completion);
+    const result = this.completeDataRequest(completion as DataRequestCompletion);
     if (result !== 'accepted') return result;
-
-    this._acknowledgedLastRequest = request;
-    this._acknowledgedProjectionCommitsPosition = advancesPosition;
-    await this._projectAcknowledgedSnapshot(coordinator.getSnapshot(), request, advancesPosition);
+    await this._acknowledgedProjectionTask;
     return result;
   }
 
@@ -5716,10 +6196,14 @@ export class EnhancedSelect extends HTMLElement {
 
   /** Retries only from the canonical accepted coordinator snapshot, never a host payload. */
   private _retryAcknowledgedProjectionForTest(): Promise<void> {
+    return this._retryAcknowledgedProjection();
+  }
+
+  private _retryAcknowledgedProjection(): Promise<void> {
     if (!this._dataRequestCoordinator || !this._acknowledgedProjectionPending) return Promise.resolve();
     return this._projectAcknowledgedSnapshot(
       this._dataRequestCoordinator.getSnapshot(),
-      this._acknowledgedLastRequest,
+      this._acknowledgedProjectionRequest ?? this._acknowledgedLastRequest,
       this._acknowledgedProjectionCommitsPosition,
     );
   }
@@ -5733,6 +6217,8 @@ export class EnhancedSelect extends HTMLElement {
       return this._acknowledgedProjectionTask ?? Promise.resolve();
     }
 
+    this._acknowledgedProjectionRequest = request ?? this._acknowledgedProjectionRequest;
+    this._acknowledgedProjectionAttempt += 1;
     this._acknowledgedProjectionPending = true;
     const items = Array.from(snapshot.items);
     let stagedRegistry: ItemRegistry<unknown, SelectKey>;
@@ -5747,6 +6233,7 @@ export class EnhancedSelect extends HTMLElement {
         throw new Error('Injected acknowledged projection failure before publication');
       }
     } catch (error) {
+      this._syncListboxAccessibility();
       this._recordAcknowledgedProjectionFailure(snapshot, request, error);
       return Promise.resolve();
     }
@@ -5811,7 +6298,26 @@ export class EnhancedSelect extends HTMLElement {
       this._state.preserveScrollPosition = false;
       this._acknowledgedProjectionPending = false;
       this._acknowledgedProjectionDiagnostic = null;
-      this._dispatchPendingAcknowledgedSearchIntent();
+      this._acknowledgedProjectionSettling = true;
+      try {
+        this._dispatchDataProjectionNotification({
+          requestId: this._acknowledgedProjectionRequest?.requestId ?? request?.requestId ?? 'unknown',
+          queryGeneration: this._acknowledgedProjectionRequest?.queryGeneration ?? snapshot.queryGeneration,
+          attempt: this._acknowledgedProjectionAttempt,
+          status: 'complete',
+        });
+      } finally {
+        this._acknowledgedProjectionSettling = false;
+      }
+      if (this._clearAcknowledgedCoordinatorAfterProjection) {
+        this._dataRequestCoordinator = null;
+        this._acknowledgedSearchMode = null;
+        this._clearAcknowledgedCoordinatorAfterProjection = false;
+        this._acknowledgedProjectionRequest = null;
+      } else {
+        this._acknowledgedProjectionRequest = null;
+      }
+      this._finishAcknowledgedProjectionSettlement();
     } catch (error) {
       if (published) {
         if (this.isConnected) this._state.isBusy = true;
@@ -5830,8 +6336,8 @@ export class EnhancedSelect extends HTMLElement {
   ): void {
     const message = error instanceof Error ? error.message : String(error);
     const diagnostic = {
-      requestId: request?.requestId ?? 'unknown',
-      queryGeneration: snapshot.queryGeneration,
+      requestId: this._acknowledgedProjectionRequest?.requestId ?? request?.requestId ?? 'unknown',
+      queryGeneration: this._acknowledgedProjectionRequest?.queryGeneration ?? snapshot.queryGeneration,
       message,
     };
     this._acknowledgedProjectionDiagnostic = diagnostic;
@@ -5841,6 +6347,24 @@ export class EnhancedSelect extends HTMLElement {
       name: 'acknowledgedProjectionFailed',
       detail: diagnostic,
     });
+    if (diagnostic.requestId !== 'unknown') {
+      this._dispatchDataProjectionNotification({
+        requestId: diagnostic.requestId,
+        queryGeneration: diagnostic.queryGeneration,
+        attempt: this._acknowledgedProjectionAttempt,
+        status: 'failed',
+        error: { message },
+      });
+    }
+  }
+
+  private _dispatchDataProjectionNotification(detail: DataProjectionEventDetail): void {
+    this._dispatchAcknowledgedEvent('dataProjection', detail);
+    try {
+      this._dataProjectionCallback?.(detail);
+    } catch (error) {
+      this._handleError(error as Error);
+    }
   }
 
   private _dispatchPendingAcknowledgedSearchIntent(): void {
@@ -5849,6 +6373,63 @@ export class EnhancedSelect extends HTMLElement {
 
     this._acknowledgedPendingSearchQuery = null;
     this._handleSearch(query);
+  }
+
+  /** Apply config/query changes coalesced while an accepted snapshot projected. */
+  private _finishAcknowledgedProjectionSettlement(): void {
+    const coordinator = this._dataRequestCoordinator;
+    const query = this._acknowledgedPendingSearchQuery;
+
+    if (this._dataLoadingConfig.protocol !== 'acknowledged' || !coordinator) {
+      this._acknowledgedConfigUpdatePending = false;
+      this._acknowledgedDeferredModeChange = false;
+      if (this._dataLoadingConfig.protocol === 'legacy' && query !== null && this.isConnected) {
+        this._acknowledgedPendingSearchQuery = null;
+        this._handleSearch(query);
+      } else {
+        this._dispatchPendingAcknowledgedSearchIntent();
+      }
+      return;
+    }
+
+    if (!this.isConnected || !this._acknowledgedReady) return;
+
+    if (this._acknowledgedConfigUpdatePending) {
+      const requiresSingleLatestQueryRequest = this._acknowledgedDeferredModeChange && query !== null;
+      if (requiresSingleLatestQueryRequest) {
+        // Apply the mode transition while disconnected, set the latest query,
+        // then reconnect once. This prevents an intermediate request for the
+        // pre-projection query from escaping before the coalesced latest one.
+        this._dispatchAcknowledgedActions(coordinator.disconnect());
+      }
+
+      const update = coordinator.updateConfig(this._createCoordinatorConfig());
+      if (update.status !== 'accepted') {
+        this._acknowledgedReady = false;
+        return;
+      }
+      this._acknowledgedConfigUpdatePending = false;
+      this._acknowledgedDeferredModeChange = false;
+
+      if (requiresSingleLatestQueryRequest && query !== null) {
+        this._acknowledgedPendingSearchQuery = null;
+        this._state.searchQuery = query;
+        this._input.value = query;
+        this._dispatchAcknowledgedActions(coordinator.setQuery(query));
+        this._dispatchAcknowledgedActions(coordinator.connect(query));
+        this._syncListboxAccessibility();
+        this._handleSearch(query);
+        return;
+      }
+
+      this._dispatchAcknowledgedActions(update.actions);
+      const state = coordinator.getSnapshot();
+      this._state.isBusy = state.busy;
+      this._state.isSearching = state.activeRequest?.kind === 'search';
+      this._syncListboxAccessibility();
+    }
+
+    this._dispatchPendingAcknowledgedSearchIntent();
   }
 
   private _updateGuardedVirtualWindow(scrollTop: number, viewportHeight: number): boolean {
@@ -6684,6 +7265,8 @@ export class EnhancedSelect extends HTMLElement {
 
   private _shouldRenderLoadMoreTrigger(): boolean {
     if (!this._config.loadMore.enabled && !this._config.infiniteScroll.enabled) return false;
+    if (this._dataLoadingConfig.protocol === 'acknowledged'
+      && (!this._dataRequestCoordinator || !this._acknowledgedReady)) return false;
     if (!this._dataRequestCoordinator) return this._state.loadedItems.length > 0;
     const snapshot = this._dataRequestCoordinator.getSnapshot();
     if (snapshot.status === 'resource-limited') return false;
