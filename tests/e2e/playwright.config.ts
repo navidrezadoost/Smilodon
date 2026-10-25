@@ -1,5 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Local Playwright web-server probes must not be sent through the developer's
+// outbound HTTP proxy; proxy responses can make an unopened port look ready.
+const localProxyBypass = ['localhost', '127.0.0.1', '::1'];
+const existingProxyBypass = [process.env.NO_PROXY, process.env.no_proxy]
+  .filter(Boolean)
+  .flatMap((value) => value!.split(','));
+const noProxy = [...new Set([...existingProxyBypass, ...localProxyBypass])].join(',');
+process.env.NO_PROXY = noProxy;
+process.env.no_proxy = noProxy;
+
 /**
  * Cross-Framework E2E Testing Configuration
  * 
@@ -52,6 +62,19 @@ export default defineConfig({
       testMatch: /.*\.spec\.ts/,
       grep: /@react|@all/,
     },
+    // Real React adapter certification fixture (not the shared Vanilla demo).
+    ...(['chromium', 'firefox', 'webkit'] as const).map((browserName) => ({
+      name: `react-adapter-${browserName}`,
+      use: { ...devices[
+        browserName === 'chromium'
+          ? 'Desktop Chrome'
+          : browserName === 'firefox'
+            ? 'Desktop Firefox'
+            : 'Desktop Safari'
+      ] },
+      testMatch: /.*react-adapter\.spec\.ts/,
+      grep: /@react-adapter/,
+    })),
     
     // Vue
     {
@@ -127,7 +150,10 @@ export default defineConfig({
   // Web server configuration for local testing
   webServer: [
     {
-      command: 'npm run dev:vanilla -w @smilodon/playground',
+      // The React playground's Vite root serves both the shared Vanilla demo
+      // and the dedicated React adapter fixture from one deterministic server.
+      command: 'npm run dev:react -w @smilodon/playground',
+      cwd: '../..',
       url: 'http://localhost:5173/vanilla-demo.html',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,

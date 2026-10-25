@@ -11,6 +11,10 @@ This package provides two implementations behind one import:
 
 The package shares many props and callbacks across these paths, but it does not expose one identical runtime or imperative API surface. Native WebView and React Native Web behavior, event timing, styling, and accessibility require separate verification.
 
+## Acknowledged data-loading adapter status
+
+The Phase 2F-D development candidate currently integrates acknowledged data loading through the core API and React web adapter only. This React Native package does not publish a typed contract for request identity, host completion, cancellation, or projection results across its WebView bridge or React Native Web path. Do not use the React web adapter example as a React Native API contract. Native and web adapter parity remain separate, pending work packages.
+
 Examples below the self-contained quick start that refer to `items`, `value`, `setValue`, or refs from outside their snippet are focused fragments; they assume those application values are declared in the host component.
 
 ## 📖 Documentation

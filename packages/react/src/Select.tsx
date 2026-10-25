@@ -12,8 +12,6 @@ import React, {
 import { createRoot, type Root } from "react-dom/client";
 import type {
   SelectEventDetail,
-  OpenEventDetail,
-  CloseEventDetail,
   SearchEventDetail,
   ChangeEventDetail,
   LoadMoreEventDetail,
@@ -25,12 +23,48 @@ import type {
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
-  GlobalSelectConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig as CoreStyleConfig,
+  SelectInstanceConfig,
+  SearchDataRequest,
+  LoadMoreDataRequest,
+  DataRequestCancelNotification,
+  DataProjectionEventDetail,
+  DataLoadingConfigErrorDetail,
+  DataLoadingStateSnapshot,
+  DataRequestCompletion,
+  DataRequestCompletionResult,
+  ResolvedDataLoadingConfig,
 } from "@smilodon/core";
+
+type CoreModule = typeof import("@smilodon/core");
+
+const DEFAULT_DATA_LOADING_CONFIG: ResolvedDataLoadingConfig = {
+  protocol: "legacy",
+  searchMode: "local",
+  paginationMode: "page",
+  firstPage: 1,
+} as const;
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function isBusyToken(value: unknown): boolean {
+  return value === true || value === "true";
+}
+
+function composeBusyToken(consumerValue: unknown, externalBusy: boolean): unknown {
+  if (externalBusy || isBusyToken(consumerValue)) return "true";
+  if (consumerValue === false || consumerValue === "false") return consumerValue;
+  return consumerValue;
+}
 
 /**
  * Item type for the select component
@@ -119,8 +153,8 @@ export interface SelectComponentProps {
   /** Core style configuration for internal parts */
   styles?: StyleConfig;
 
-  /** Full core config passthrough for advanced runtime features */
-  config?: Partial<GlobalSelectConfig>;
+  /** Per-instance core config, including opt-in acknowledged data loading */
+  config?: SelectInstanceConfig;
 
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
@@ -215,10 +249,18 @@ export interface SelectComponentProps {
   onClose?: () => void;
 
   /** Called when search query changes */
-  onSearch?: (query: string, results?: SelectItem[], count?: number) => void;
+  onSearch?: (
+    query: string,
+    results?: SelectItem[],
+    count?: number,
+    request?: SearchDataRequest,
+  ) => void;
 
   /** Called when more items are needed (infinite scroll) */
-  onLoadMore?: (page: number) => void | Promise<void>;
+  onLoadMore?: (
+    page: number,
+    request?: LoadMoreDataRequest,
+  ) => void | Promise<void>;
 
   /** Called when clear control is used */
   onClear?: (detail: {
@@ -228,6 +270,15 @@ export interface SelectComponentProps {
 
   /** Called when diagnostic tracking is emitted */
   onDiagnostic?: (detail: DiagnosticEventDetail) => void;
+
+  /** Called when an acknowledged request is invalidated by the core */
+  onDataRequestCancel?: (detail: DataRequestCancelNotification) => void;
+
+  /** Called after an accepted data snapshot is projected or projection fails */
+  onDataProjection?: (detail: DataProjectionEventDetail) => void;
+
+  /** Called when the core rejects a data-loading config transition */
+  onDataLoadingConfigError?: (detail: DataLoadingConfigErrorDetail) => void;
 
   /** Enable runtime tracking */
   trackingEnabled?: boolean;
@@ -298,9 +349,6 @@ export interface SelectHandle {
   /** Clear the current search query */
   clearSearch: () => void;
 
-  /** Apply partial core config at runtime */
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
-
   /** Set an error state message */
   setError: (message: string) => void;
 
@@ -327,6 +375,17 @@ export interface SelectHandle {
 
   /** Update limitation policies */
   setLimitationPolicies: (policies: LimitationPolicyMap) => void;
+
+  /** Update the per-instance config through the adapter's acceptance boundary */
+  updateConfig: (config: SelectInstanceConfig) => void;
+
+  /** Return the core-owned acknowledged request lifecycle snapshot */
+  getDataLoadingState: () => DataLoadingStateSnapshot;
+
+  /** Explicitly accept a host response for a core-issued request */
+  completeDataRequest: (
+    completion: DataRequestCompletion,
+  ) => DataRequestCompletionResult;
 }
 
 /**
@@ -420,6 +479,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onLoadMore,
     onClear,
     onDiagnostic,
+    onDataRequestCancel,
+    onDataProjection,
+    onDataLoadingConfigError,
     trackingEnabled = false,
     trackEvents = true,
     trackStyling = true,
@@ -433,18 +495,70 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onCreate,
     classMap,
     groupHeaderRenderer,
+    "aria-busy": consumerAriaBusy,
     ...hostProps
   } = props;
 
+  const [isControlled] = useState(value !== undefined);
+  const [internalValue, setInternalValue] = useState(defaultValue);
+  const hasAppliedInitialValueRef = useRef(false);
   const elementRef = useRef<any>(null);
+  const coreModuleRef = useRef<CoreModule | null>(null);
+  const acceptedDataLoadingConfigRef = useRef<ResolvedDataLoadingConfig>({
+    ...DEFAULT_DATA_LOADING_CONFIG,
+  });
+  const configUpdateStackRef = useRef<Array<{ sawConfigError: boolean }>>([]);
+  const configUpdateInProgressRef = useRef(false);
+  const queuedConfigUpdatesRef = useRef<SelectInstanceConfig[]>([]);
+  const queuedImperativeConfigsRef = useRef<SelectInstanceConfig[]>([]);
+  const activeListenersRef = useRef<{
+    element: HTMLElement;
+    dispose: () => void;
+  } | null>(null);
+  const callbackStateRef = useRef({
+    onSelect,
+    onChange,
+    onOpen,
+    onClose,
+    onSearch,
+    onLoadMore,
+    onClear,
+    onDiagnostic,
+    onDataRequestCancel,
+    onDataProjection,
+    onDataLoadingConfigError,
+    isControlled,
+    multiple,
+  });
+  callbackStateRef.current = {
+    onSelect,
+    onChange,
+    onOpen,
+    onClose,
+    onSearch,
+    onLoadMore,
+    onClear,
+    onDiagnostic,
+    onDataRequestCancel,
+    onDataProjection,
+    onDataLoadingConfigError,
+    isControlled,
+    multiple,
+  };
+  const ariaBusyInputsRef = useRef({ consumerAriaBusy, loading });
+  ariaBusyInputsRef.current = { consumerAriaBusy, loading };
+  const initializingRef = useRef(true);
+  const compatibilityFailureReportedRef = useRef(false);
+  const unusableRef = useRef(false);
+  const [acceptedProtocol, setAcceptedProtocol] = useState<"legacy" | "acknowledged">("legacy");
+  const [isCoreModuleLoaded, setIsCoreModuleLoaded] = useState(false);
+  const [isAcknowledgedQualified, setIsAcknowledgedQualified] = useState(false);
+  const [isUnusable, setIsUnusable] = useState(false);
   const resolvedDropdownPlacement = useMemo<"top" | "bottom">(() => {
     if (placement?.startsWith("top")) return "top";
     return "bottom";
   }, [placement]);
 
-  const [isControlled] = useState(value !== undefined);
-  const [internalValue, setInternalValue] = useState(defaultValue);
-  const hasAppliedInitialValueRef = useRef(false);
   const reactRendererCache = useRef(
     new Map<number, { container: HTMLElement; root: Root }>(),
   );
@@ -625,6 +739,263 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
+  const acknowledgedRequested =
+    acceptedProtocol === "acknowledged" ||
+    coreConfig?.dataLoading?.protocol === "acknowledged";
+  const dataLoadingConfigured = coreConfig?.dataLoading !== undefined;
+  const coreFacadeRequired = acknowledgedRequested || dataLoadingConfigured;
+  const isElementUsable =
+    isElementReady &&
+    (!acknowledgedRequested || isAcknowledgedQualified) &&
+    (!coreFacadeRequired || isCoreModuleLoaded) &&
+    !isUnusable;
+
+  const markUnusable = useCallback(
+    (message: string) => {
+      if (unusableRef.current) return;
+      unusableRef.current = true;
+      setIsUnusable(true);
+      const element = elementRef.current;
+      const { consumerAriaBusy: currentConsumerBusy } = ariaBusyInputsRef.current;
+      if (element) {
+        if (currentConsumerBusy === undefined) element.removeAttribute("aria-busy");
+        else element.setAttribute("aria-busy", String(currentConsumerBusy));
+      }
+      if (!compatibilityFailureReportedRef.current) {
+        compatibilityFailureReportedRef.current = true;
+        console.error(`[Smilodon React] ${message}`);
+      }
+    },
+    [],
+  );
+
+  const syncHostBusy = useCallback((element: HTMLElement) => {
+    const { consumerAriaBusy: currentConsumerBusy, loading: externalBusy } =
+      ariaBusyInputsRef.current;
+    if (acceptedDataLoadingConfigRef.current.protocol === "acknowledged" && !unusableRef.current) {
+      const composed = composeBusyToken(currentConsumerBusy, externalBusy);
+      if (composed === undefined) element.removeAttribute("aria-busy");
+      else element.setAttribute("aria-busy", String(composed));
+      return;
+    }
+
+    if (currentConsumerBusy === undefined) element.removeAttribute("aria-busy");
+    else element.setAttribute("aria-busy", String(currentConsumerBusy));
+  }, []);
+
+  const applyInstanceConfig = useCallback(
+    (element: any, config: SelectInstanceConfig) => {
+      if (!element?.updateConfig || unusableRef.current) return;
+      if (configUpdateInProgressRef.current) {
+        queuedConfigUpdatesRef.current.push({ ...config });
+        return;
+      }
+
+      configUpdateInProgressRef.current = true;
+      const queue: SelectInstanceConfig[] = [{ ...config }];
+      let processed = 0;
+      try {
+        while (queue.length > 0 && !unusableRef.current) {
+          if (processed++ >= 100) {
+            queuedConfigUpdatesRef.current = [];
+            markUnusable(
+              "Too many reentrant configuration updates were queued; the wrapper has been stopped to avoid an unbounded update loop.",
+            );
+            break;
+          }
+          const currentConfig = queue.shift()!;
+          const module = coreModuleRef.current;
+          let validation:
+            | ReturnType<CoreModule["validateDataLoadingConfig"]>
+            | undefined;
+          if (currentConfig.dataLoading !== undefined) {
+            const candidate = isPlainRecord(currentConfig.dataLoading)
+              ? { ...acceptedDataLoadingConfigRef.current, ...currentConfig.dataLoading }
+              : currentConfig.dataLoading;
+            if (!module) {
+              markUnusable(
+                "The core validator is unavailable; acknowledged configuration cannot be reconciled safely.",
+              );
+              break;
+            }
+            try {
+              validation = module.validateDataLoadingConfig(candidate);
+            } catch (error) {
+              markUnusable(
+                `Core data-loading preflight failed unexpectedly: ${String(error)}`,
+              );
+              break;
+            }
+          }
+
+          const update = { sawConfigError: false };
+          configUpdateStackRef.current.push(update);
+          let threw = false;
+          try {
+            element.updateConfig(currentConfig);
+          } catch (error) {
+            threw = true;
+            markUnusable(
+              `Core configuration acceptance is uncertain after updateConfig() threw: ${String(error)}`,
+            );
+          } finally {
+            configUpdateStackRef.current.pop();
+          }
+
+          if (validation?.valid && !threw) {
+            if (update.sawConfigError) {
+              markUnusable(
+                "Core reported a data-loading configuration error for a preflight-valid candidate; the accepted protocol is uncertain.",
+              );
+              break;
+            }
+            acceptedDataLoadingConfigRef.current = { ...validation.value };
+            setAcceptedProtocol(validation.value.protocol);
+            syncHostBusy(element);
+          }
+
+          if (queuedConfigUpdatesRef.current.length > 0) {
+            queue.push(...queuedConfigUpdatesRef.current);
+            queuedConfigUpdatesRef.current = [];
+          }
+        }
+      } finally {
+        configUpdateInProgressRef.current = false;
+      }
+    },
+    [markUnusable, syncHostBusy],
+  );
+
+  const requiresAcknowledgedQualification =
+    acceptedProtocol === "acknowledged" ||
+    coreConfig?.dataLoading?.protocol === "acknowledged";
+
+  const qualifyAcknowledgedElement = useCallback((): boolean => {
+    const element = elementRef.current;
+    const module = coreModuleRef.current;
+    if (!element || !module || typeof customElements === "undefined") return false;
+    const registered = customElements.get("enhanced-select");
+    const observed = (registered as unknown as { observedAttributes?: string[] } | undefined)
+      ?.observedAttributes;
+    const compatible =
+      registered === module.EnhancedSelect &&
+      element.constructor === module.EnhancedSelect &&
+      Array.isArray(observed) &&
+      observed.includes("aria-busy") &&
+      typeof element.updateConfig === "function" &&
+      typeof element.startDataLoading === "function" &&
+      typeof element.getDataLoadingState === "function" &&
+      typeof element.completeDataRequest === "function";
+    if (!compatible) {
+      markUnusable(
+        "Acknowledged data loading requires the exact peer-resolved EnhancedSelect constructor with the Phase 2F facade and aria-busy observation support.",
+      );
+      return false;
+    }
+    setIsAcknowledgedQualified(true);
+    return true;
+  }, [markUnusable]);
+
+  const subscribeToCoreEvents = useCallback((element: HTMLElement) => {
+    const currentSubscription = activeListenersRef.current;
+    if (currentSubscription?.element === element) return currentSubscription.dispose;
+    currentSubscription?.dispose();
+
+    const handleSelect = (event: Event) => {
+      const detail = (event as CustomEvent<SelectEventDetail>).detail;
+      callbackStateRef.current.onSelect?.(detail.item as SelectItem, detail.index);
+    };
+
+    const handleChange = (event: Event) => {
+      const { selectedItems, selectedValues } =
+        (event as CustomEvent<ChangeEventDetail>).detail;
+      const callbacks = callbackStateRef.current;
+      const values = selectedValues as Array<string | number>;
+      const nextSingleValue: string | number = values.length > 0 ? values[0] : "";
+      if (initializingRef.current) return;
+      if (!callbacks.isControlled) {
+        setInternalValue(callbacks.multiple ? values : nextSingleValue);
+      }
+      callbacks.onChange?.(
+        callbacks.multiple ? values : nextSingleValue,
+        selectedItems as SelectItem[],
+      );
+    };
+
+    const handleOpen = () => callbackStateRef.current.onOpen?.();
+    const handleClose = () => callbackStateRef.current.onClose?.();
+    const handleSearch = (event: Event) => {
+      const { query, results, count, request } =
+        (event as CustomEvent<SearchEventDetail>).detail;
+      const callback = callbackStateRef.current.onSearch;
+      if (!callback) return;
+      if (request) callback(query, results as SelectItem[] | undefined, count, request);
+      else callback(query, results as SelectItem[] | undefined, count);
+    };
+    const handleLoadMore = (event: Event) => {
+      const { page, request } = (event as CustomEvent<LoadMoreEventDetail>).detail;
+      const callback = callbackStateRef.current.onLoadMore;
+      if (!callback) return;
+      if (request) callback(page, request);
+      else callback(page);
+    };
+    const handleClear = (event: Event) => {
+      const { clearedSelection, clearedSearch } =
+        (event as CustomEvent<ClearEventDetail>).detail;
+      callbackStateRef.current.onClear?.({ clearedSelection, clearedSearch });
+    };
+    const handleDiagnostic = (event: Event) => {
+      callbackStateRef.current.onDiagnostic?.(
+        (event as CustomEvent<DiagnosticEventDetail>).detail,
+      );
+    };
+    const handleDataRequestCancel = (event: Event) => {
+      callbackStateRef.current.onDataRequestCancel?.(
+        (event as CustomEvent<DataRequestCancelNotification>).detail,
+      );
+    };
+    const handleDataProjection = (event: Event) => {
+      callbackStateRef.current.onDataProjection?.(
+        (event as CustomEvent<DataProjectionEventDetail>).detail,
+      );
+    };
+    const handleDataLoadingConfigError = (event: Event) => {
+      const activeUpdate = configUpdateStackRef.current[
+        configUpdateStackRef.current.length - 1
+      ];
+      if (activeUpdate) activeUpdate.sawConfigError = true;
+      callbackStateRef.current.onDataLoadingConfigError?.(
+        (event as CustomEvent<DataLoadingConfigErrorDetail>).detail,
+      );
+    };
+
+    const listeners: Array<[string, EventListener]> = [
+      ["select", handleSelect],
+      ["change", handleChange],
+      ["open", handleOpen],
+      ["close", handleClose],
+      ["search", handleSearch],
+      ["loadMore", handleLoadMore],
+      ["clear", handleClear],
+      ["diagnostic", handleDiagnostic],
+      ["dataRequestCancel", handleDataRequestCancel],
+      ["dataProjection", handleDataProjection],
+      ["dataLoadingConfigError", handleDataLoadingConfigError],
+    ];
+    for (const [name, listener] of listeners) {
+      element.addEventListener(name, listener);
+    }
+    const dispose = () => {
+      if (activeListenersRef.current?.dispose === dispose) {
+        activeListenersRef.current = null;
+      }
+      for (const [name, listener] of listeners) {
+        element.removeEventListener(name, listener);
+      }
+    };
+    activeListenersRef.current = { element, dispose };
+    return dispose;
+  }, []);
 
   useEffect(() => {
     const element = elementRef.current;
@@ -662,24 +1033,76 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   }, [isElementReady, classMap, areClassMapsEqual]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (customElements.get("enhanced-select")) {
+    if (typeof window === "undefined" || typeof customElements === "undefined") return;
+    let active = true;
+    const existingConstructor = customElements.get("enhanced-select");
+    if (existingConstructor) setIsElementReady(true);
+
+    import("@smilodon/core")
+      .then((module) => {
+        if (!active) return;
+        coreModuleRef.current = module;
+        setIsCoreModuleLoaded(true);
+        const currentConstructor = customElements.get("enhanced-select");
+        if (!currentConstructor) {
+          customElements.define("enhanced-select", module.EnhancedSelect);
+        }
         setIsElementReady(true);
-      } else {
-        import("@smilodon/core").then((module) => {
-          if (!customElements.get("enhanced-select")) {
-            customElements.define("enhanced-select", module.EnhancedSelect);
-          }
-          setIsElementReady(true);
-        });
-      }
-    }
+      })
+      .catch((error) => {
+        if (!active) return;
+        if (requiresAcknowledgedQualification) {
+          markUnusable(`Unable to load the compatible core runtime: ${String(error)}`);
+        } else if (!customElements.get("enhanced-select")) {
+          console.error(`[Smilodon React] Unable to register enhanced-select: ${String(error)}`);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [markUnusable]);
+
+  useEffect(() => {
+    if (
+      !isElementReady ||
+      !isCoreModuleLoaded ||
+      !requiresAcknowledgedQualification ||
+      isUnusable
+    ) return;
+    qualifyAcknowledgedElement();
+  }, [
+    isElementReady,
+    isCoreModuleLoaded,
+    requiresAcknowledgedQualification,
+    isUnusable,
+    qualifyAcknowledgedElement,
+  ]);
+
+  // Acknowledged event listeners must exist before any config can open readiness.
+  useEffect(() => {
+    const element = elementRef.current;
+    if (
+      !(acknowledgedRequested || dataLoadingConfigured) ||
+      !isElementUsable ||
+      !element
+    ) return;
+    return subscribeToCoreEvents(element);
+  }, [
+    acknowledgedRequested,
+    dataLoadingConfigured,
+    isElementUsable,
+    subscribeToCoreEvents,
+  ]);
+
+  useEffect(() => {
+    return () => activeListenersRef.current?.dispose();
   }, []);
 
   // Initialize component
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isElementReady) return;
+    if (!element || !isElementUsable) return;
 
     // Wait for the element to be fully upgraded
     if (!element.setItems) {
@@ -746,9 +1169,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       },
     };
 
-    element.updateConfig(config);
+    applyInstanceConfig(element, config as SelectInstanceConfig);
     if (coreConfig) {
-      element.updateConfig(coreConfig);
+      applyInstanceConfig(element, coreConfig);
     }
 
     // Set initial uncontrolled value only once
@@ -779,7 +1202,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       element.setRequired(true);
     }
   }, [
-    isElementReady,
+    isElementUsable,
     items,
     groupedItems,
     searchable,
@@ -822,12 +1245,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     internalValue,
     isControlled,
     areValuesEqual,
+    applyInstanceConfig,
   ]);
 
   // Update items when they change
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isElementReady || !element.setItems) return;
+    if (!element || !isElementUsable || !element.setItems) return;
     if (groupedItems) {
       element.setGroupedItems(groupedItems);
     } else if (
@@ -851,7 +1275,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     } else {
       element.setItems(items);
     }
-  }, [items, groupedItems, isElementReady]);
+  }, [items, groupedItems, isElementUsable]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
@@ -859,7 +1283,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     if (
       !element ||
       !isControlled ||
-      !isElementReady ||
+      !isElementUsable ||
       !element.setSelectedValues
     )
       return;
@@ -871,12 +1295,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         element.setSelectedValues(values);
       }
     }
-  }, [value, isControlled, isElementReady, areValuesEqual]);
+  }, [value, isControlled, isElementUsable, areValuesEqual]);
 
   // Update config when props change
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isElementReady || !element.updateConfig) return;
+    if (!element || !isElementUsable || !element.updateConfig) return;
 
     const config = {
       searchable,
@@ -928,9 +1352,9 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       },
     };
 
-    element.updateConfig(config);
+    applyInstanceConfig(element, config as SelectInstanceConfig);
     if (coreConfig) {
-      element.updateConfig(coreConfig);
+      applyInstanceConfig(element, coreConfig);
     }
   }, [
     searchable,
@@ -966,13 +1390,14 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     autoMitigateRuntimeModeSwitch,
     direction,
     resolvedDropdownPlacement,
-    isElementReady,
+    isElementUsable,
+    applyInstanceConfig,
   ]);
 
   // Update error state
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isElementReady) return;
+    if (!element || !isElementUsable) return;
 
     if (error) {
       if (element.setError)
@@ -980,104 +1405,74 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     } else {
       if (element.clearError) element.clearError();
     }
-  }, [error, errorMessage, isElementReady]);
+  }, [error, errorMessage, isElementUsable]);
 
   // Update required state
   useEffect(() => {
     const element = elementRef.current;
-    if (!element || !isElementReady || !element.setRequired) return;
+    if (!element || !isElementUsable || !element.setRequired) return;
     element.setRequired(required);
-  }, [required, isElementReady]);
+  }, [required, isElementUsable]);
 
-  // Event handlers
+  // Open acknowledged readiness only after listeners, config, initial data/value,
+  // and host presentation state have all been reconciled for this commit.
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
-
-    const handleSelect = (e: CustomEvent<SelectEventDetail>) => {
-      const { item, index } = e.detail;
-      onSelect?.(item as SelectItem, index);
-    };
-
-    const handleChange = (e: CustomEvent<ChangeEventDetail>) => {
-      const { selectedItems, selectedValues } = e.detail;
-
-      // Cast selectedValues to proper type
-      const values = selectedValues as (string | number)[];
-      const nextSingleValue: string | number =
-        values.length > 0 ? values[0] : "";
-
-      // Update internal value in uncontrolled mode
-      if (!isControlled) {
-        setInternalValue(multiple ? values : nextSingleValue);
+    if (!element || !isElementUsable) return;
+    if (isCoreModuleLoaded && queuedImperativeConfigsRef.current.length > 0) {
+      const queued = queuedImperativeConfigsRef.current;
+      queuedImperativeConfigsRef.current = [];
+      for (const config of queued) {
+        const requestsAcknowledged =
+          acceptedDataLoadingConfigRef.current.protocol === "acknowledged" ||
+          config.dataLoading?.protocol === "acknowledged";
+        if (requestsAcknowledged && !qualifyAcknowledgedElement()) break;
+        if (config.dataLoading !== undefined || requestsAcknowledged) {
+          subscribeToCoreEvents(element);
+        }
+        applyInstanceConfig(element, config);
+        if (unusableRef.current) break;
       }
-
-      // Call onChange callback
-      if (onChange) {
-        const value = multiple ? values : nextSingleValue;
-        onChange(value, selectedItems as SelectItem[]);
-      }
-    };
-
-    const handleOpen = (e: CustomEvent<OpenEventDetail>) => {
-      onOpen?.();
-    };
-
-    const handleClose = (e: CustomEvent<CloseEventDetail>) => {
-      onClose?.();
-    };
-
-    const handleSearch = (e: CustomEvent<SearchEventDetail>) => {
-      const { query, results, count } = e.detail;
-      onSearch?.(query, results as SelectItem[] | undefined, count);
-    };
-
-    const handleLoadMore = (e: CustomEvent<LoadMoreEventDetail>) => {
-      const { page } = e.detail;
-      onLoadMore?.(page);
-    };
-
-    const handleClear = (e: CustomEvent<ClearEventDetail>) => {
-      onClear?.({
-        clearedSelection: e.detail.clearedSelection,
-        clearedSearch: e.detail.clearedSearch,
-      });
-    };
-
-    const handleDiagnostic = (e: CustomEvent<DiagnosticEventDetail>) => {
-      onDiagnostic?.(e.detail);
-    };
-
-    element.addEventListener("select", handleSelect);
-    element.addEventListener("change", handleChange);
-    element.addEventListener("open", handleOpen);
-    element.addEventListener("close", handleClose);
-    element.addEventListener("search", handleSearch);
-    element.addEventListener("loadMore", handleLoadMore);
-    element.addEventListener("clear", handleClear);
-    element.addEventListener("diagnostic", handleDiagnostic);
-
-    return () => {
-      element.removeEventListener("select", handleSelect);
-      element.removeEventListener("change", handleChange);
-      element.removeEventListener("open", handleOpen);
-      element.removeEventListener("close", handleClose);
-      element.removeEventListener("search", handleSearch);
-      element.removeEventListener("loadMore", handleLoadMore);
-      element.removeEventListener("clear", handleClear);
-      element.removeEventListener("diagnostic", handleDiagnostic);
-    };
+    }
+    initializingRef.current = false;
+    syncHostBusy(element);
+    if (acceptedDataLoadingConfigRef.current.protocol === "acknowledged") {
+      element.startDataLoading?.();
+    }
   }, [
-    onSelect,
-    onChange,
-    onOpen,
-    onClose,
-    onSearch,
-    onLoadMore,
-    onClear,
-    onDiagnostic,
-    isControlled,
-    multiple,
+    isElementUsable,
+    acceptedProtocol,
+    acknowledgedRequested,
+    coreConfig,
+    items,
+    groupedItems,
+    value,
+    defaultValue,
+    loading,
+    consumerAriaBusy,
+    syncHostBusy,
+    isCoreModuleLoaded,
+    qualifyAcknowledgedElement,
+    subscribeToCoreEvents,
+    applyInstanceConfig,
+  ]);
+
+  // Keep the legacy listener timing unchanged. Acknowledged instances install
+  // the same stable listener set above, before configuration and readiness.
+  useEffect(() => {
+    const element = elementRef.current;
+    if (
+      !element ||
+      acknowledgedRequested ||
+      dataLoadingConfigured ||
+      !isElementReady
+    ) return;
+    return subscribeToCoreEvents(element);
+  }, [
+    acknowledgedRequested,
+    dataLoadingConfigured,
+    isElementReady,
+    subscribeToCoreEvents,
   ]);
 
   // Expose imperative handle
@@ -1113,8 +1508,45 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     clearSearch: () => {
       elementRef.current?.clearSearch?.();
     },
-    updateConfig: (config: Partial<GlobalSelectConfig>) => {
-      elementRef.current?.updateConfig?.(config);
+    updateConfig: (config: SelectInstanceConfig) => {
+      const element = elementRef.current;
+      if (!element || unusableRef.current) return;
+      const requestsAcknowledged =
+        acceptedDataLoadingConfigRef.current.protocol === "acknowledged" ||
+        config.dataLoading?.protocol === "acknowledged";
+      if (!isElementReady || !isCoreModuleLoaded) {
+        queuedImperativeConfigsRef.current.push({ ...config });
+        return;
+      }
+      if (requestsAcknowledged && !qualifyAcknowledgedElement()) return;
+      if (config.dataLoading !== undefined || requestsAcknowledged) {
+        subscribeToCoreEvents(element);
+      }
+      applyInstanceConfig(element, config);
+    },
+    getDataLoadingState: () => {
+      const snapshot = elementRef.current?.getDataLoadingState?.();
+      if (snapshot) return snapshot;
+      return {
+        status: "idle",
+        connected: Boolean(elementRef.current?.isConnected),
+        busy: false,
+        projectionPending: false,
+        queryGeneration: 0,
+        activeRequest: null,
+        hasMore: false,
+        nextEligiblePosition: {
+          mode: "page",
+          page: DEFAULT_DATA_LOADING_CONFIG.firstPage,
+        },
+        error: null,
+        resourceLimit: null,
+      };
+    },
+    completeDataRequest: (completion: DataRequestCompletion) => {
+      return (
+        elementRef.current?.completeDataRequest?.(completion) ?? "unknown-request"
+      );
     },
     setError: (message: string) => {
       elementRef.current?.setError?.(message);
@@ -1149,15 +1581,31 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     setLimitationPolicies: (policies: LimitationPolicyMap) => {
       elementRef.current?.setLimitationPolicies?.(policies);
     },
-  }));
+  }), [
+    applyInstanceConfig,
+    isElementReady,
+    isCoreModuleLoaded,
+    qualifyAcknowledgedElement,
+    subscribeToCoreEvents,
+    isElementUsable,
+    isControlled,
+    multiple,
+    onChange,
+  ]);
+
+  const renderedAriaBusy =
+    acceptedProtocol === "acknowledged" && !isUnusable
+      ? composeBusyToken(consumerAriaBusy, loading)
+      : consumerAriaBusy;
 
   return React.createElement("enhanced-select", {
     ref: elementRef,
     ...hostProps,
-    className,
+    "aria-busy": renderedAriaBusy,
+    class: className,
     dir: direction,
     style,
-  });
+  } as React.HTMLAttributes<HTMLElement> & { class?: string });
 });
 
 Select.displayName = "Select";

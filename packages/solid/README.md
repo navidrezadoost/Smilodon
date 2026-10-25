@@ -6,6 +6,10 @@ This package gives Solid applications a wrapper around the shared `enhanced-sele
 
 The shared `EnhancedSelect` runtime passed its scoped Phase 4 automated accessibility scenarios in Chromium, Firefox, and WebKit. Solid-specific adapter parity and browser integration are not comprehensively certified, and manual Windows/NVDA and macOS/VoiceOver assessments remain pending. This is not a WCAG conformance claim.
 
+## Acknowledged data-loading adapter status
+
+The Phase 2F-D development candidate currently integrates acknowledged data loading through the core API and React adapter only. This Solid adapter does not publish a typed props or imperative-handle contract for request identity, completion, cancellation, and projection lifecycle. Passing `dataLoading` through casts or relying on the underlying element is undocumented and unsupported for this adapter. Solid parity remains a separate, pending work package; use the existing legacy host-managed data-loading path.
+
 ## 📖 Documentation
 
 **Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)

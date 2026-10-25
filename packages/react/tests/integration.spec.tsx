@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Select } from '../src/index';
 import type { SelectItem } from '../src/index';
@@ -32,8 +32,7 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
     
     await waitFor(() => {
-      expect(element?.items).toBeDefined();
-      expect(element?.items.length).toBe(5);
+      expect(element?.loadedItems).toHaveLength(5);
     });
   });
 
@@ -44,13 +43,13 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
     
     await waitFor(() => {
-      expect(element?.value).toBe('1');
+      expect(element?.getSelectedValues()).toEqual(['1']);
     });
 
     rerender(<Select items={testItems} value="2" />);
 
     await waitFor(() => {
-      expect(element?.value).toBe('2');
+      expect(element?.getSelectedValues()).toEqual(['2']);
     });
   });
 
@@ -81,13 +80,17 @@ describe('Select React Integration', () => {
     );
     const element = container.querySelector('enhanced-select') as any;
 
-    await waitFor(() => expect(element?.items).toBeDefined());
+    await waitFor(() => expect(element?.setItems).toBeTypeOf('function'));
 
     // Simulate selection by dispatching custom event
     const event = new CustomEvent('change', {
-      detail: { value: '1', selectedItems: [testItems[0]] },
+      detail: {
+        selectedItems: [testItems[0]],
+        selectedValues: ['1'],
+        selectedIndices: [0],
+      },
     });
-    element.dispatchEvent(event);
+    act(() => element.dispatchEvent(event));
 
     await waitFor(() => {
       expect(selectedValue).toBe('1');
@@ -101,17 +104,15 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
     
     await waitFor(() => {
-      expect(element?.multiple).toBe(true);
-      expect(element?.value).toEqual(['1', '2']);
+      expect(element?.getSelectedValues()).toEqual(['1', '2']);
     });
   });
 
   it('should handle searchable prop', async () => {
     const { container } = render(<Select items={testItems} searchable />);
     const element = container.querySelector('enhanced-select') as any;
-    
     await waitFor(() => {
-      expect(element?.searchable).toBe(true);
+      expect(element?._config?.searchable).toBe(true);
     });
   });
 
@@ -120,7 +121,7 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
     
     await waitFor(() => {
-      expect(element?.disabled).toBe(true);
+      expect(element?._config?.enabled).toBe(false);
     });
   });
 
@@ -132,7 +133,7 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
     
     await waitFor(() => {
-      expect(element?.placeholder).toBe(placeholder);
+      expect(element?.shadowRoot?.querySelector('.select-input')?.getAttribute('placeholder')).toBe(placeholder);
     });
   });
 
@@ -154,14 +155,14 @@ describe('Select React Integration', () => {
     const element = container.querySelector('enhanced-select') as any;
 
     await waitFor(() => {
-      expect(element?.items.length).toBe(5);
+      expect(element?.loadedItems).toHaveLength(5);
     });
 
     const newItems = testItems.slice(0, 3);
     rerender(<Select items={newItems} />);
 
     await waitFor(() => {
-      expect(element?.items.length).toBe(3);
+      expect(element?.loadedItems).toHaveLength(3);
     });
   });
 
@@ -176,7 +177,7 @@ describe('Select React Integration', () => {
     );
     const element = container.querySelector('enhanced-select') as any;
 
-    await waitFor(() => expect(element?.items).toBeDefined());
+    await waitFor(() => expect(element?.setItems).toBeTypeOf('function'));
 
     // Simulate select event
     const event = new CustomEvent('select', {
@@ -202,7 +203,7 @@ describe('Select React Integration', () => {
     );
     const element = container.querySelector('enhanced-select') as any;
 
-    await waitFor(() => expect(element?.items).toBeDefined());
+    await waitFor(() => expect(element?.loadedItems).toHaveLength(5));
 
     // Simulate open event
     element.dispatchEvent(new Event('open'));
