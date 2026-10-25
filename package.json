@@ -29,7 +29,7 @@
     "test:contracts:vanilla": "vitest run tests/contracts/vanilla.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:e2e:preflight": "node scripts/verify-playwright.mjs",
     "test:e2e": "npm run test:e2e:preflight && playwright test",
-    "test:e2e:react": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=react-chromium --project=react-firefox --project=react-webkit",
+    "test:e2e:react": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=react-chromium --project=react-firefox --project=react-webkit --project=react-adapter-chromium --project=react-adapter-firefox --project=react-adapter-webkit",
     "test:e2e:vue": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=vue-chromium --project=vue-firefox",
     "test:e2e:svelte": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=svelte-chromium --project=svelte-firefox",
     "test:e2e:vanilla": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=vanilla-chromium --project=vanilla-firefox",

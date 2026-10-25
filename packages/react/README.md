@@ -45,6 +45,145 @@ The Quick Start examples are self-contained. Longer feature snippets below are f
 
 In focused JSX examples, `items`, `groups`, `bigItems`, and similar values are component-local application data unless the snippet declares them; imports and hook state should be added in the containing component as needed.
 
+## Acknowledged data loading (Phase 2F-D development candidate)
+
+The current local Phase 2F-D candidate integrates the core acknowledged-loading facade with the React adapter. It is not part of the published `1.10.0` package, and Firefox/WebKit certification, independent review, and remaining contract coverage are pending. Treat the following as implementation guidance for this candidate, not a release-readiness or cross-browser compatibility claim.
+
+Acknowledged loading is opt-in through per-instance `config.dataLoading`; there is no global acknowledged-loading default. If the config is omitted, the adapter keeps the legacy protocol and existing callback behavior. The host owns fetch, cancellation, and retry policy; the core owns request identity, stale-completion rejection, canonical acceptance, and subsequent DOM projection.
+
+### Remote cursor search with cancellation and failures
+
+This illustrative component handles remote search and load-more requests through one host function. It sends the exact query (including an empty string), passes page/cursor position and fetch limit to the server, echoes request identity on completion, aborts cancelled requests, and reports failures without an automatic retry.
+
+```tsx
+import { useEffect, useRef } from 'react'
+import {
+  Select,
+  type DataRequest,
+  type DataRequestCompletion,
+  type SelectHandle,
+  type SelectItem,
+} from '@smilodon/react'
+
+type SearchPage = {
+  items: SelectItem[]
+  hasMore: boolean
+  nextCursor?: string | number
+}
+
+export function RemoteSelect() {
+  const selectRef = useRef<SelectHandle>(null)
+  const controllers = useRef(new Map<string, AbortController>())
+
+  useEffect(() => () => {
+    for (const controller of controllers.current.values()) controller.abort()
+    controllers.current.clear()
+  }, [])
+
+  async function load(request: DataRequest) {
+    const controller = new AbortController()
+    controllers.current.set(request.requestId, controller)
+
+    try {
+      const params = new URLSearchParams({ q: request.query, limit: String(request.fetchLimit) })
+      if (request.position.mode === 'page') {
+        params.set('page', String(request.position.page))
+      } else if (request.position.cursor !== undefined) {
+        params.set('cursor', String(request.position.cursor))
+      }
+
+      const response = await fetch(`/api/options?${params}`, { signal: controller.signal })
+      if (!response.ok) throw new Error(`Search failed: ${response.status}`)
+
+      const page = await response.json() as SearchPage
+      if (!Array.isArray(page.items) || typeof page.hasMore !== 'boolean') {
+        throw new Error('The options endpoint returned an invalid page.')
+      }
+      if (request.position.mode === 'cursor' && page.hasMore && page.nextCursor === undefined) {
+        throw new Error('A non-terminal cursor page must include nextCursor.')
+      }
+
+      const completion: DataRequestCompletion = page.hasMore
+        ? {
+            requestId: request.requestId,
+            queryGeneration: request.queryGeneration,
+            status: 'succeeded',
+            items: page.items,
+            hasMore: true,
+            ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+          }
+        : {
+            requestId: request.requestId,
+            queryGeneration: request.queryGeneration,
+            status: 'exhausted',
+            items: page.items,
+            hasMore: false,
+          }
+
+      const result = selectRef.current?.completeDataRequest(completion)
+      if (result !== 'accepted') {
+        // Stale, unknown, invalid, or resource-limited completions are not projected.
+        console.info('Response not accepted:', result)
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        selectRef.current?.completeDataRequest({
+          requestId: request.requestId,
+          queryGeneration: request.queryGeneration,
+          status: 'failed',
+          error: { message: error instanceof Error ? error.message : String(error), retryable: true },
+        })
+      }
+    } finally {
+      controllers.current.delete(request.requestId)
+    }
+  }
+
+  return (
+    <Select
+      ref={selectRef}
+      searchable
+      config={{
+        dataLoading: {
+          protocol: 'acknowledged',
+          searchMode: 'remote',
+          paginationMode: 'cursor',
+          fetchLimit: 25,
+        },
+      }}
+      onSearch={(_query, _results, _count, request) => {
+        if (request) void load(request)
+      }}
+      onLoadMore={(_page, request) => {
+        if (request) void load(request)
+      }}
+      onDataRequestCancel={({ requestId }) => {
+        controllers.current.get(requestId)?.abort()
+        controllers.current.delete(requestId)
+      }}
+      onDataProjection={(detail) => {
+        if (detail.status === 'failed') console.error(detail.error.message)
+      }}
+      onDataLoadingConfigError={({ issues }) => {
+        console.error('Rejected data-loading config:', issues)
+      }}
+    />
+  )
+}
+```
+
+The coordinator rejects stale responses by request ID and query generation; the host should still abort cancelled network work to save resources. An accepted response does not mean projection is finished: observe `onDataProjection` for the projection result. A failed request remains failed until a new explicit request is made; the sample deliberately does not retry automatically.
+
+### Other useful scenarios
+
+- **Empty query:** clearing search still invokes `onSearch` with `request.query === ''`. `URLSearchParams` serializes it as an explicit empty `q` parameter; do not omit it if the endpoint treats an empty query specially.
+- **Page-based pagination:** change `paginationMode` to `'page'`; the request's `position.page` is the page to request. Keep the API's page numbering consistent with `firstPage`.
+- **Hybrid search:** use `searchMode: 'hybrid'` only when the host intends the runtime's hybrid search behavior; the host still answers the remote request with its identity and generation.
+- **React Strict Mode:** the adapter owns readiness and initial request setup. Do not call a second manual request from an effect; keep each host response keyed by the request ID supplied in the callback. Browser certification for this scenario remains pending outside the reported Chromium run.
+- **External busy state:** the React `loading` prop and consumer `aria-busy` remain presentation inputs. The adapter composes them with core busy state; the acknowledged request snapshot's `busy` does not include external presentation loading.
+- **Legacy compatibility:** omit `config.dataLoading` to retain the legacy protocol. Existing `onSearch(query, results, count)` and `onLoadMore(page)` calls remain usable; the new request argument is optional in those callback signatures.
+- **Controlled selection:** keep `value` in application state and update it through `onChange`. Replacing remote result pages does not transfer ownership of the selected value from the application to the transport layer.
+
 ## Infinite Render Loop: Root-Cause Review (No External Dependencies)
 
 If you see `Maximum update depth exceeded`, follow this checklist before shipping:

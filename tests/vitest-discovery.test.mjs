@@ -23,6 +23,7 @@ test('core Vitest config discovers core suites and excludes Playwright suites', 
     assert.ok(files.length > 0, 'Vitest should discover core unit and integration suites');
     assert.ok(files.includes('packages/core/tests/stress.spec.ts'));
     assert.ok(files.includes('packages/core/tests/enhanced-select-virtualization-integration.spec.ts'));
+    assert.ok(files.includes('packages/core/tests/public-config-integration.spec.ts'));
     assert.ok(
       files.every((file) => file.startsWith('packages/core/tests/')),
       `Vitest discovered files outside the core test boundary:\n${files.filter((file) => !file.startsWith('packages/core/tests/')).join('\n')}`,
@@ -35,7 +36,7 @@ test('core Vitest config discovers core suites and excludes Playwright suites', 
   }
 });
 
-test('data-loading coordinator suite is discovered by its DOM-free Node config', async () => {
+test('data-loading suites are discovered by their DOM-free Node config', async () => {
   const vitest = await createVitest('test', {
     config: path.resolve(root, 'packages/core/vitest.data-loading.config.ts'),
     root,
@@ -49,7 +50,10 @@ test('data-loading coordinator suite is discovered by its DOM-free Node config',
       .map(([, file]) => path.relative(root, file).split(path.sep).join('/'))
       .sort();
 
-    assert.deepEqual(files, ['packages/core/tests/data-loading/request-coordinator.spec.ts']);
+    assert.deepEqual(files, [
+      'packages/core/tests/data-loading/public-config.spec.ts',
+      'packages/core/tests/data-loading/request-coordinator.spec.ts',
+    ]);
   } finally {
     await vitest.close();
   }

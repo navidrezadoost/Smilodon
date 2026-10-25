@@ -75,6 +75,9 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+# Local Playwright certification cache and browser archive (not source files).
+.cert-browsers/
+smilodon-browsers.tar.gz
 
 # ============================================
 # Environment & Secrets

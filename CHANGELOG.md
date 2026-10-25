@@ -17,6 +17,11 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Added
+
+- Added a development-candidate, per-instance acknowledged data-loading API in the core runtime and React adapter. It supports explicit host completion with request identity and query generation, separate projection outcomes, remote/hybrid search configuration, page/cursor requests, cancellation notifications, and typed configuration diagnostics. Legacy remains the default protocol. This work is provisionally development-complete; Firefox/WebKit certification, independent review, skipped-contract disposition, and full C1–C8 acceptance remain outstanding. It is not a release declaration and is not included in the published `1.10.0` packages.
+- Added documentation examples for remote search, empty queries, pagination, stale responses, cancellation, failures, loading accessibility, and legacy compatibility. Other framework adapters are explicitly marked as awaiting acknowledged-loading parity.
+
 ## [1.10.0] - 2026-10-23
 
 Minor release consolidating the shared selection engine, stable option identity, accessibility effects, and guarded large-list virtualization work across the maintained packages. Existing public rendering defaults are unchanged.

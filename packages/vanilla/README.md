@@ -8,6 +8,10 @@ Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon
 >
 > **Registration prerequisite:** import `@smilodon/core` before calling `createSelect()` or `initSelect()`. The Vanilla helper creates an `enhanced-select` element and immediately calls its imperative methods; it does not wait for custom-element registration/upgrade. For an existing host, await `customElements.whenDefined('enhanced-select')` before `initSelect()`.
 
+## Acknowledged data-loading adapter status
+
+The Phase 2F-D development candidate currently integrates acknowledged data loading through the core API and React adapter only. The `@smilodon/vanilla` helper does not publish a typed helper contract for request identity, completion, cancellation, and projection lifecycle. Passing `dataLoading` through casts or relying on the underlying element is undocumented and unsupported through these helpers. Vanilla adapter parity remains a separate, pending work package; the legacy helper API remains supported.
+
 ## Features
 
 - ✨ **Simple API** - Easy-to-use helper functions for vanilla JS

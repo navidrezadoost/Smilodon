@@ -4,6 +4,10 @@ Select component for Vue 3 applications. Its underlying shared core has scoped a
 
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core's scoped Phase 4 automated browser matrix passed in Chromium, Firefox, and WebKit; this does not certify every Vue/Nuxt integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
+## Acknowledged data-loading adapter status
+
+The Phase 2F-D development candidate currently integrates acknowledged data loading through the core API and React adapter only. This Vue adapter does not publish a typed props/emits/exposed-method contract for request identity, completion, cancellation, and projection lifecycle. Passing `dataLoading` via casts or relying on the underlying element is undocumented and unsupported for this adapter. Vue adapter parity is a separate, pending work package; the existing legacy Vue data-loading behavior remains its supported path.
+
 ## 📖 Documentation
 
 **Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)

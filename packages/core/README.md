@@ -12,6 +12,63 @@
 
 > **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
+## Acknowledged data loading (Phase 2F-D development candidate)
+
+The local Phase 2F-D candidate adds a public, per-instance data-loading configuration and completion surface to `EnhancedSelect`. This API is not included in the published `1.10.0` package. The legacy protocol remains the default; remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. Cross-browser certification and independent review remain pending, so these examples are illustrative and have not been certified for release.
+
+The host owns transport, cancellation, and retry decisions. `completeDataRequest()` accepts a response only when its request identity and query generation are current. A return value of `accepted` means the canonical response was accepted; DOM projection completes separately and is reported by `dataProjection`.
+
+```ts
+import { EnhancedSelect } from '@smilodon/core'
+
+const select = document.createElement('enhanced-select') as EnhancedSelect
+
+select.updateConfig({
+  dataLoading: {
+    protocol: 'acknowledged',
+    searchMode: 'remote',
+    paginationMode: 'page',
+    firstPage: 1,
+    fetchLimit: 25,
+  },
+  callbacks: {
+    onSearch(query, request) {
+      if (!request) return // Legacy callbacks do not carry an acknowledged request.
+
+      const params = new URLSearchParams({ q: query, limit: String(request.fetchLimit) })
+      void fetch(`/api/options?${params}`)
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`Search failed: ${response.status}`)
+          const result = await response.json() as { items: unknown[] }
+          return select.completeDataRequest({
+            requestId: request.requestId,
+            queryGeneration: request.queryGeneration,
+            status: 'exhausted',
+            items: result.items,
+            hasMore: false,
+          })
+        })
+        .catch((error: unknown) => {
+          select.completeDataRequest({
+            requestId: request.requestId,
+            queryGeneration: request.queryGeneration,
+            status: 'failed',
+            error: { message: error instanceof Error ? error.message : String(error) },
+          })
+        })
+    },
+    onDataProjection(detail) {
+      if (detail.status === 'failed') console.error('Projection failed', detail.error.message)
+    },
+  },
+})
+
+document.body.append(select)
+select.startDataLoading()
+```
+
+For a paginated response, use `status: 'succeeded'` with `hasMore: true` and the next cursor when cursor pagination is configured. Use `status: 'exhausted'` with `hasMore: false` when the server reports end-of-data. On cancellation, abort the host request and do not complete it as a success. A stale completion result is not a signal to retry the old request.
+
 ## 📖 Documentation
 
 **Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)
