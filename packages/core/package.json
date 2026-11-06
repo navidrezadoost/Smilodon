@@ -19,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c && tsc --emitDeclarationOnly --outDir dist/types",
+    "build": "rollup -c && tsc --project tsconfig.build.json --emitDeclarationOnly --outDir dist/types",
     "dev": "rollup -c --watch",
     "test": "vitest run",
     "test:watch": "vitest",
