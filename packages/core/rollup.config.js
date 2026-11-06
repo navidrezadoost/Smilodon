@@ -14,7 +14,7 @@ export default [
     plugins: [
       resolve(),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: './tsconfig.build.json',
         declaration: false, // We'll use tsc for declarations
       }),
     ],
@@ -30,7 +30,7 @@ export default [
     plugins: [
       resolve(),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: './tsconfig.build.json',
         declaration: false,
       }),
       terser(),
@@ -48,7 +48,7 @@ export default [
     plugins: [
       resolve(),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: './tsconfig.build.json',
         declaration: false,
       }),
     ],
@@ -65,7 +65,7 @@ export default [
     plugins: [
       resolve(),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: './tsconfig.build.json',
         declaration: false,
       }),
       terser(),
@@ -83,7 +83,7 @@ export default [
     plugins: [
       resolve(),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: './tsconfig.build.json',
         declaration: false,
       }),
     ],
