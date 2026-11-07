@@ -234,7 +234,9 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 | `@smilodon/svelte`       | Svelte wrapper                                  | Svelte, SvelteKit                              | Maintained      |
 | `@smilodon/solid`        | SolidJS wrapper                                 | SolidJS apps                                   | Maintained      |
 | `@smilodon/vanilla`      | Helper utilities for direct DOM setup           | Vanilla JS / TS                                | Maintained      |
-| `@smilodon/react-native` | React Native adapter with native/web split      | React Native, React Native Web                 | Maintained      |
+| `@smilodon/react-native` | Native WebView bridge; separate React Native Web DOM path | React Native (WebView), React Native Web (browser custom element) | Maintained |
+
+This inventory reflects configured workspace packages and declared integration targets. The packed Solid package passes a Vite/Bundler consumer check, but strict NodeNext declaration checking currently fails with two TS2834 diagnostics; a separate fix is pending. Workspace inclusion does not certify all consumer modes. React Native's native WebView integration and React Native Web's browser DOM integration are separate platform paths.
 
 ### Support summary by platform
 
@@ -246,7 +248,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 | Svelte         | Component wrapper                               | SvelteKit-safe when mounted in browser lifecycle    | Shared token surface             | Full                |
 | SolidJS        | Component wrapper                               | Browser/client usage with safe upgrade handling     | Shared token surface             | Full                |
 | Vanilla JS     | Helper API + custom element                     | Browser-first                                       | Shared token surface             | Full                |
-| React Native   | WebView bridge on native, direct element on web | Native/mobile oriented                              | CSS tokens via bridged style map | Full                |
+| React Native   | WebView bridge on native; browser custom element on React Native Web | Native and browser paths are separate              | CSS tokens via native bridge or browser CSS | Full |
 
 ### Intentionally not provided
 
@@ -1058,7 +1060,7 @@ Testing docs:
 - SBOM published in [sbom.json](./sbom.json)
 - privacy documentation in [docs/compliance/PRIVACY-POLICY.md](./docs/compliance/PRIVACY-POLICY.md)
 - threat model in [docs/compliance/THREAT-MODEL.md](./docs/compliance/THREAT-MODEL.md)
-- SOC 2 documentation in [docs/compliance/SOC2-COMPLIANCE.md](./docs/compliance/SOC2-COMPLIANCE.md)
+- historical SOC 2 control-mapping draft (not an attestation) in [docs/compliance/SOC2-COMPLIANCE.md](./docs/compliance/SOC2-COMPLIANCE.md)
 - WCAG workstream in [docs/compliance/WCAG-COMPLIANCE.md](./docs/compliance/WCAG-COMPLIANCE.md)
 - browser support policy in [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md)
 

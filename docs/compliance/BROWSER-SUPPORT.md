@@ -1,4 +1,4 @@
-# Browser Support Matrix & Service Level Agreement
+# Historical Browser Support Notes
 ## Smilodon Component Library
 
 > **Historical policy document — not current certification or an SLA.** The compatibility and accessibility claims below have not been revalidated against the current maintained adapters and browser matrix. WCAG conformance, React Native platform parity, and production viewport virtualization are not established here; see the [Phase 4 certification record](../architecture/PHASE-4-CERTIFICATION.md).
@@ -12,13 +12,9 @@
 
 ## Executive Summary
 
-This document defines the official browser support policy, compatibility matrix, testing procedures, and service level agreements (SLAs) for the Smilodon component library.
+This archived document records browser-support claims and test plans written in 2025. It is not an active support policy, current compatibility matrix, certification, or service-level agreement. The historical version numbers and checkmarks below have not been revalidated against the maintained packages.
 
-**Support Policy:**
-- 🎯 **Tier 1:** Full support with comprehensive testing
-- 🟡 **Tier 2:** Best-effort support, known issues documented
-- ⚠️ **Tier 3:** Limited support, major features may not work
-- ❌ **Unsupported:** No guarantee of functionality
+**Historical tier labels:** These archived labels do not make a current support commitment or guarantee functionality.
 
 ---
 
@@ -26,7 +22,7 @@ This document defines the official browser support policy, compatibility matrix,
 
 ### 1.1 Desktop Browsers
 
-#### Tier 1: Full Support
+#### Historical Tier 1 entries (not current support commitments)
 
 | Browser | Minimum Version | Latest Tested | Status | Notes |
 |---------|----------------|---------------|--------|-------|
@@ -35,20 +31,19 @@ This document defines the official browser support policy, compatibility matrix,
 | **Safari** | 14.1 (April 2021) | 17.2 (Dec 2025) | ✅ Active | WebKit engine |
 | **Edge** | 90 (April 2021) | 121 (Dec 2025) | ✅ Active | Chromium-based |
 
-**Features Required:**
-- ✅ ES2020 (optional chaining, nullish coalescing)
-- ✅ CSS Custom Properties (CSS variables)
-- ✅ Intersection Observer API
-- ✅ ResizeObserver API
-- ✅ Web Workers
-- ✅ Shadow DOM (optional, graceful degradation)
-- ✅ CSS Grid & Flexbox
+**Maintained Core runtime prerequisites:**
+- Custom Elements v1 and Shadow DOM v1
+- `MutationObserver`, `AbortController`, and `requestAnimationFrame`
+- Standard DOM APIs and browser ES module support
+- CSS custom properties for the documented token-based theming
+
+`IntersectionObserver`, `ResizeObserver`, and Web Workers are optional capabilities; availability affects guarded behaviors or performance, not basic custom-element registration.
 
 #### Tier 2: Best-Effort Support
 
 | Browser | Minimum Version | Status | Notes |
 |---------|----------------|--------|-------|
-| **Chrome** | 63-89 (2017-2021) | 🟡 Limited | Polyfills may be required |
+| **Chrome** | 63-89 (2017-2021) | 🟡 Limited | Check the runtime prerequisites below |
 | **Firefox** | 60-87 (2018-2021) | 🟡 Limited | Missing some modern APIs |
 | **Safari** | 12-14 (2018-2021) | 🟡 Limited | iOS 12+ |
 | **Edge (Legacy)** | 18-19 (2019-2020) | ⚠️ Deprecated | EdgeHTML engine |
@@ -56,7 +51,7 @@ This document defines the official browser support policy, compatibility matrix,
 | **Brave** | Any version | 🟡 Limited | Chromium-based |
 
 **Limitations:**
-- May require polyfills for Intersection Observer, ResizeObserver
+- Optional observer and worker behaviors depend on native API availability
 - Some CSS features may need fallbacks
 - Performance may be reduced
 - No active testing (community reports)
@@ -77,7 +72,7 @@ This document defines the official browser support policy, compatibility matrix,
 
 ### 1.2 Mobile Browsers
 
-#### Tier 1: Full Support
+#### Historical Tier 1 mobile entries (not current support commitments)
 
 | Browser | Platform | Minimum Version | Latest Tested | Status |
 |---------|----------|----------------|---------------|--------|
@@ -88,8 +83,8 @@ This document defines the official browser support policy, compatibility matrix,
 
 **Mobile-Specific Features:**
 - ✅ Touch events (tap, swipe, long-press)
-- ✅ Touch targets ≥44×44px (WCAG AAA)
-- ✅ Virtual scrolling (smooth 60fps)
+- Touch-target sizing has not been certified against WCAG criteria.
+- The public rendering mode does not guarantee viewport-bounded virtualization or a frame-rate target.
 - ✅ Responsive design (320px-∞)
 - ✅ Orientation support (portrait/landscape)
 
@@ -127,7 +122,7 @@ This document defines the official browser support policy, compatibility matrix,
 
 **Legend:**
 - ✅ = Fully supported
-- 🟡 = Partial support (polyfills may help)
+- 🟡 = Partial support; check runtime prerequisites below
 - ❌ = Not supported
 - Version number = Minimum version
 
@@ -151,7 +146,7 @@ IntersectionObserver
 ResizeObserver
 MutationObserver
 requestAnimationFrame
-requestIdleCallback (optional, polyfilled)
+requestIdleCallback (not a Core runtime prerequisite)
 
 // Web APIs
 Worker
@@ -160,14 +155,7 @@ localStorage (optional)
 sessionStorage (optional)
 ```
 
-**Tier 2 (Polyfills Available):**
-```javascript
-// Can be polyfilled if missing
-IntersectionObserver (polyfill: ~7KB)
-ResizeObserver (polyfill: ~5KB)
-requestIdleCallback (polyfill: ~1KB)
-Element.prototype.scrollIntoView (smooth behavior)
-```
+**Optional browser APIs:** Some guarded behaviors use `IntersectionObserver` or `ResizeObserver` when available. Their absence can disable or reduce those behaviors. This package does not bundle or automatically load polyfills.
 
 **Tier 3 (Graceful Degradation):**
 ```javascript
@@ -291,117 +279,35 @@ Mobile:
 
 ---
 
-## 4. Service Level Agreement (SLA)
+## 4. Support commitments
 
-### 4.1 Compatibility Guarantee
-
-**Tier 1 Browsers:**
-- ✅ **100% functionality guaranteed**
-- ✅ Comprehensive testing before release
-- ✅ Bug fixes within 7 days (critical), 30 days (minor)
-- ✅ Performance optimization
-- ✅ Accessibility compliance
-
-**Tier 2 Browsers:**
-- 🟡 **Best-effort support**
-- 🟡 Community testing (no official QA)
-- 🟡 Bug fixes on a case-by-case basis
-- 🟡 Polyfills may be required
-- 🟡 Performance not guaranteed
-
-**Tier 3 Browsers:**
-- ❌ **No support**
-- ❌ No testing
-- ❌ No bug fixes
-- ❌ Use at your own risk
-- ❌ Recommend upgrading browser
-
-### 4.2 Deprecation Policy
-
-**Browser Version Lifecycle:**
-```
-Release of new version
-  ↓
-Previous version → Tier 1 (12 months)
-  ↓
-Older version → Tier 2 (12 months)
-  ↓
-Very old version → Tier 3 (deprecated)
-  ↓
-Ancient version → Unsupported
-```
-
-**Example (Chrome):**
-- Current: Chrome 121 (Tier 1)
-- -1 year: Chrome 109 (Tier 1)
-- -2 years: Chrome 97 (Tier 2)
-- -3 years: Chrome 85 (Tier 3)
-- -4 years: Chrome 73 (Unsupported)
-
-**Notification Period:**
-- 6 months warning before moving Tier 1 → Tier 2
-- 3 months warning before moving Tier 2 → Tier 3
-- Immediate notice for security vulnerabilities
-
-### 4.3 Update Frequency
-
-**Component Updates:**
-- **Patch releases:** Every 2-4 weeks (bug fixes, security)
-- **Minor releases:** Every 2-3 months (new features)
-- **Major releases:** Every 12-18 months (breaking changes)
-
-**Browser Testing Updates:**
-- **Tier 1:** Every release
-- **Tier 2:** Quarterly
-- **Tier 3:** Never (deprecated)
+This historical document establishes no functionality guarantee, response-time target, bug-fix deadline, browser deprecation schedule, release cadence, or accessibility commitment. Consult the current release gates and qualification records for scoped evidence; no general browser-support SLA is asserted here.
 
 ---
 
-## 5. Polyfills & Fallbacks
+## 5. Browser API prerequisites
 
-### 5.1 Recommended Polyfills
+The maintained Core runtime is a browser custom element. Its browser environment must provide Custom Elements v1, Shadow DOM, `MutationObserver`, and `AbortController`, in addition to standard DOM and ES module support. The package does not include or automatically load polyfills.
 
-**For Tier 2 Browser Support:**
-```html
-<!-- Intersection Observer polyfill -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver"></script>
+`IntersectionObserver` and `ResizeObserver` are optional for guarded behaviors; availability can affect those behaviors. If an application supports older browsers, its team should choose and test any required polyfills as part of that application's dependency and security review. No CDN polyfill is recommended here.
 
-<!-- ResizeObserver polyfill -->
-<script src="https://cdn.jsdelivr.net/npm/resize-observer-polyfill@1.5.1/dist/ResizeObserver.min.js"></script>
+### 5.1 Feature detection
 
-<!-- requestIdleCallback polyfill -->
-<script>
-window.requestIdleCallback = window.requestIdleCallback || function (cb) {
-  return setTimeout(cb, 1);
-};
-</script>
-```
-
-**Automatic Polyfill Loading (Polyfill.io):**
-```html
-<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver%2CResizeObserver%2CrequestIdleCallback"></script>
-```
-
-### 5.2 Feature Detection
-
-**Graceful Degradation:**
+Check prerequisites before importing or mounting the component in environments where browser APIs may be missing:
 ```javascript
-// Check for required APIs
-if (!('IntersectionObserver' in window)) {
-  console.warn('IntersectionObserver not supported, virtual scrolling disabled');
-  // Fallback: render all items (no virtualization)
-}
+const requiredBrowserFeatures = {
+  customElements: 'customElements' in window,
+  shadowDom: 'attachShadow' in Element.prototype,
+  mutationObserver: 'MutationObserver' in window,
+  abortController: 'AbortController' in window,
+};
 
-if (!('Worker' in window)) {
-  console.warn('Web Workers not supported, search runs on main thread');
-  // Fallback: synchronous search (may impact performance)
-}
+const missingFeatures = Object.entries(requiredBrowserFeatures)
+  .filter(([, available]) => !available)
+  .map(([name]) => name);
 
-// Detect CSS support
-const supportsCustomProperties = CSS.supports('color', 'var(--test)');
-if (!supportsCustomProperties) {
-  console.warn('CSS Custom Properties not supported, theming limited');
-  // Fallback: inline styles or predefined themes only
+if (missingFeatures.length > 0) {
+  throw new Error(`Smilodon requires browser features: ${missingFeatures.join(', ')}`);
 }
 ```
 
@@ -479,11 +385,10 @@ if (!isSupported) {
 
 **For Developers:**
 ```javascript
-// Provide fallback component
-import NativeSelect from '@smilodon/core';
-import LegacySelect from '@smilodon/legacy'; // Simplified version
-
-const SelectComponent = isModernBrowser() ? NativeSelect : LegacySelect;
+// Provide a native control when the application does not support the required browser APIs.
+if (!('customElements' in window) || !('attachShadow' in Element.prototype)) {
+  renderNativeSelectFallback();
+}
 ```
 
 ### 7.2 From IE11 to Modern Browser
@@ -500,7 +405,7 @@ IE11 is not supported due to:
 **Recommendation:**
 - Upgrade to Edge 90+ (Chromium-based)
 - Use `<select>` element as fallback
-- Consider polyfilling entire ES6+ (large bundle size ~100KB)
+- Use a native `<select>` fallback when required browser APIs are unavailable; no polyfill package is prescribed here.
 
 ---
 
@@ -534,16 +439,13 @@ IE11 is not supported due to:
 
 ---
 
-## 9. Compliance & Standards
+## 9. Standards referenced (not a conformance claim)
 
-### 9.1 Web Standards Compliance
+### 9.1 Web standards
 
 **W3C Standards:**
-- ✅ HTML5
-- ✅ CSS3
-- ✅ ECMAScript 2020 (ES11)
-- ✅ WAI-ARIA 1.2
-- ✅ WCAG 2.2 Level AA
+- HTML, CSS, ECMAScript, and WAI-ARIA are relevant platform standards; this list is descriptive only.
+- WCAG conformance has not been established or certified. Automated checks and scoped browser scenarios do not constitute conformance certification.
 
 **WHATWG Standards:**
 - ✅ DOM Living Standard
@@ -668,4 +570,4 @@ GitHub: https://github.com/native-select/native-select/issues
 
 ---
 
-**End of Browser Support Matrix & SLA**
+**End of historical browser-support notes**

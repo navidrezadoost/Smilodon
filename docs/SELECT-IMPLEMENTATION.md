@@ -1,10 +1,10 @@
 # Enhanced Select Component - Implementation Summary
 
-> Historical implementation summary, not a current feature contract. Some bullets and examples below describe intended or superseded behavior (including automatic page caching and viewport virtualization). Use [Known Limitations](./KNOWN-LIMITATIONS.md), [API Reference](./API-REFERENCE.md), and the [Phase 4 feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) as the current sources of support status.
+> Historical implementation summary, not a current feature contract or release approval. Some bullets and examples below describe intended or superseded behavior (including automatic page caching and viewport virtualization). Bare npm imports require an npm-aware bundler or explicit import map. Use [Known Limitations](./KNOWN-LIMITATIONS.md), [API Reference](./API-REFERENCE.md), and the [Phase 4 feature-contract audit](./architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) as the current sources of support status.
 
 ## 🎯 Overview
 
-This implementation provides a **fully-featured, framework-agnostic select component** with high cohesion and low coupling architecture. The component system solves complex real-world scenarios while maintaining simplicity and performance.
+This document records implementation examples and historical design notes for the framework-agnostic select component. Its descriptions do not establish that every listed feature is currently supported or qualified.
 
 ## ✨ Key Features Implemented
 
@@ -149,10 +149,10 @@ import { Select } from '@smilodon/react';
 
 #### Angular
 ```html
-<smilodon-select
+<enhanced-select
   [items]="items"
   (select)="handleSelect($event)"
-></smilodon-select>
+></enhanced-select>
 ```
 
 All frameworks receive the same data structure: `{ item, index, value, label, selected }`
@@ -403,10 +403,8 @@ The architecture supports:
 
 ## 🔐 Security
 
-- HTML sanitization
-- XSS prevention
-- CSP compatibility
-- Input validation
+- Renderer output and HTML-string inputs have security-sensitive sinks; callers must treat application-provided markup as untrusted.
+- No blanket XSS-prevention or CSP-compatibility guarantee is established by this historical implementation summary.
 
 ## 🌐 Browser Support
 
@@ -418,4 +416,4 @@ Modern browsers (ES6+):
 
 ---
 
-**This implementation provides a production-ready, enterprise-grade select component that solves real-world challenges while maintaining simplicity and performance.**
+> **Historical implementation summary:** This document is not a production-readiness or enterprise-security certification. Phase 02 remains NO-GO; use the current package declarations, known limitations, and scoped qualification records for release decisions.
