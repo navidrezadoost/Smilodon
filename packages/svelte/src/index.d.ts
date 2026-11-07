@@ -19,5 +19,8 @@ export type {
   GroupedItem,
 } from '@smilodon/core';
 
+// Keep the declaration surface aligned with the runtime re-exports in index.ts.
+export { configureSelect, resetSelectConfig, selectConfig } from '@smilodon/core';
+
 // Export component-specific types
 export type { SelectItem, SelectProps, SelectEvents } from './Select.svelte.d.ts';
