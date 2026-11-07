@@ -1,4 +1,4 @@
-import Select from './Select'
+import Select from './Select.js'
 
 export type {
   SelectEventDetail,
@@ -30,7 +30,7 @@ export type {
   LimitationsConfig,
 } from '@smilodon/core'
 
-export type { SelectHandle, SelectItem, SelectProps } from './Select'
+export type { SelectHandle, SelectItem, SelectProps } from './Select.js'
 export { configureSelect, resetSelectConfig, selectConfig } from '@smilodon/core'
 export { Select }
 export default Select
