@@ -39,3 +39,18 @@ The existing Vanilla build ran `tsc` before Vite. TypeScript resolved `@smilodon
 ## Scope and remaining gates
 
 The patch changes only `packages/vanilla/package.json`, adds `packages/vanilla/scripts/cleanup-types.js`, and adds this evidence document. Hosted CI has not yet run for this branch. PR merge is not authorized by this directive; merge remains pending required checks and review. No security remediation was attempted.
+
+## Directive 178-B.1 amendment — cleanup script CI compatibility
+
+PR #58's initial hosted run failed in both `build-and-test` and `Regression, lint, and build` because ESLint parsed top-level `await` in `packages/vanilla/scripts/cleanup-types.js` as invalid. This was a parser compatibility failure; the other reported lint findings were warnings. The existing declaration-source discovery, missing-file checks, moves, cleanup, and messages are preserved. The asynchronous execution body now runs inside `async function main()`, with the requested rejection handler setting a failing process exit code.
+
+Local validation on the amendment:
+
+- `npm run lint`: passed with zero errors and six existing warnings.
+- `npm run build -w @smilodon/vanilla`: passed; `test -s packages/vanilla/dist/types/index.d.ts`: passed.
+- `npm run test:contracts:vanilla`: 2 passed.
+- Freshly packed Core and Vanilla packages installed in an external consumer fixture; strict NodeNext and Bundler TypeScript checks passed with `skipLibCheck: false`.
+- `git diff --check`: passed.
+- No runtime source, package API, dependency, or declaration-generation behavior changed.
+
+Hosted checks for the amendment commit are pending. Merge remains unauthorized until all required checks pass and independent review is satisfied.
