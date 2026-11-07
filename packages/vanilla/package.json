@@ -19,7 +19,7 @@
     "COMPLETE-GUIDE.md"
   ],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly --outDir dist/types && vite build",
+    "build": "vite build && tsc --emitDeclarationOnly --outDir dist/types && node scripts/cleanup-types.js",
     "size": "gzip -c dist/index.mjs | wc -c",
     "prepublishOnly": "npm run build"
   },
