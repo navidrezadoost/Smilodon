@@ -1189,9 +1189,9 @@ native-select {
 
 - Custom Elements v1
 - Shadow DOM v1
-- Intersection Observer
+- `IntersectionObserver` and `ResizeObserver` for guarded optional behaviors
 - CSS Custom Properties
-- ES2020+ (optional, uses polyfills)
+- Browser support for the JavaScript syntax emitted by the published ESM build; the package does not bundle or automatically load polyfills
 
 ---
 

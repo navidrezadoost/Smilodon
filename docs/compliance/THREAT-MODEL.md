@@ -1,6 +1,8 @@
 # Security Threat Model & Risk Assessment
 ## Smilodon Component Library
 
+> **Historical assessment draft — not a current security audit or certification.** The risk scores, mitigation checkmarks, standards-alignment statements, and example controls below have not been revalidated against the current source and dependency state. They are not guarantees of XSS prevention or CSP compatibility. The maintained Core contains an `eval('true')` capability probe, and selected HTML-string rendering paths have separate security-sensitive findings; review the current [security policy](../../SECURITY.md) and [Phase 1 characterization](../architecture/PHASE-1-CHARACTERIZATION.md) before relying on a claim in this draft.
+
 **Version:** 1.0.0  
 **Last Updated:** December 7, 2025  
 **Classification:** Public  
@@ -16,8 +18,8 @@ This document provides a comprehensive security threat model for the Smilodon co
 - ✅ Zero server-side attack surface (client-side only library)
 - ✅ No authentication/authorization mechanisms (application responsibility)
 - ⚠️ Primary risks: XSS, prototype pollution, ReDoS, memory exhaustion
-- ✅ Comprehensive input validation and output encoding implemented
-- ✅ Defense-in-depth strategy with multiple security layers
+- ⚠️ Input-validation and rendering controls vary by path; no blanket XSS-prevention guarantee is established.
+- ⚠️ This historical draft does not establish an independently verified defense-in-depth program.
 
 ---
 
@@ -253,7 +255,7 @@ option.textContent = userLabel; // SAFE
 **Controls:**
 - ✅ textContent/setAttribute only (never innerHTML)
 - ✅ HTML entity encoding for all user input
-- ✅ CSP headers (no unsafe-inline, no unsafe-eval)
+- ⚠️ CSP compatibility is not established; Core includes an `eval` capability probe and worker paths have separate CSP requirements.
 - ✅ Shadow DOM isolation (optional)
 - ✅ DOMPurify integration for custom renderers
 
@@ -278,7 +280,7 @@ for (const payload of XSS_PAYLOADS) {
 }
 ```
 
-**Residual Risk:** Very Low
+**Residual Risk:** Not established by a current independent security review.
 
 ---
 
@@ -750,7 +752,7 @@ Risk Score: 1-125
 
 | ID | Threat | Risk Score | Priority | Status |
 |----|--------|-----------|----------|--------|
-| T2 | DOM-Based XSS | 9 | 🔴 Critical | ✅ Mitigated |
+| T2 | DOM-Based XSS | 9 | 🔴 Critical | ⚠️ Mitigation status not established; application-provided markup remains security-sensitive |
 | T1 | Prototype Pollution | 8 | 🔴 High | ✅ Mitigated |
 | S2 | NPM Typosquatting | 7 | 🟡 High | ✅ Mitigated |
 | D1 | ReDoS | 7 | 🟡 High | ✅ Mitigated |
@@ -894,11 +896,7 @@ node scripts/stress-test.js
 
 ### 7.1 Security Standards
 
-**Adherence:**
-- ✅ OWASP Top 10 (2021) - All mitigated
-- ✅ CWE Top 25 (2024) - Addressed
-- ✅ NIST Cybersecurity Framework - Aligned
-- ✅ ISO 27001 - Security controls implemented
+**Status:** This historical draft does not establish adherence to or certification against OWASP, CWE, NIST, or ISO frameworks. No completed independent ISO 27001 audit is established by this repository.
 
 ### 7.2 Secure Development Lifecycle
 
@@ -937,9 +935,9 @@ node scripts/stress-test.js
 ### Appendix A: Common Vulnerabilities
 
 **CWE Coverage:**
-- ✅ CWE-79: XSS → Mitigated (output encoding)
+- ⚠️ CWE-79: XSS → Not certified; review the scoped findings and renderer input requirements
 - ✅ CWE-89: SQL Injection → N/A (no database)
-- ✅ CWE-94: Code Injection → Mitigated (no eval)
+- ⚠️ CWE-94: Code Injection → No blanket mitigation claim; Core contains an `eval` capability probe
 - ✅ CWE-116: Improper Encoding → Mitigated (HTML escape)
 - ✅ CWE-200: Information Exposure → Mitigated (no sensitive data)
 - ✅ CWE-287: Authentication → N/A (client library)

@@ -4,6 +4,8 @@ SolidJS adapter for Smilodon's core custom-element select engine.
 
 This package gives Solid applications a wrapper around the shared `enhanced-select` runtime. Its public `virtualized` option enables legacy chunked rendering for large flat lists, not viewport-windowed rendering; true viewport virtualization remains guarded and is not a supported production mode.
 
+Packed-consumer qualification is mode-specific: the package builds and passes a Vite/Bundler consumer check, while strict TypeScript NodeNext checking with `skipLibCheck: false` currently fails with two TS2834 diagnostics for extensionless relative imports in the emitted declarations. A separate Solid NodeNext remediation is under review; this note does not claim general consumer compatibility.
+
 The shared `EnhancedSelect` runtime passed its scoped Phase 4 automated accessibility scenarios in Chromium, Firefox, and WebKit. Solid-specific adapter parity and browser integration are not comprehensively certified, and manual Windows/NVDA and macOS/VoiceOver assessments remain pending. This is not a WCAG conformance claim.
 
 ## Acknowledged data-loading adapter status

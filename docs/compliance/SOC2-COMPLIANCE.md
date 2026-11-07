@@ -1,5 +1,7 @@
-# SOC2 Type II Compliance Documentation
+# Historical SOC 2 Control-Mapping Draft (Not an Attestation)
 ## Smilodon Security Controls & Data Protection
+
+> **Status: not certified.** This file is an unverified historical planning draft, not a SOC 2 Type II report, audit result, evidence package, or attestation. No independent SOC 2 audit or certification is established by this repository. The controls and organization-level statements below must not be represented as verified facts without separate evidence.
 
 **Document Version:** 1.0.0  
 **Last Updated:** December 7, 2025  
@@ -10,7 +12,7 @@
 
 ## Executive Summary
 
-This document provides comprehensive SOC2 Type II compliance documentation for the Smilodon component library. It addresses the five Trust Services Criteria: Security, Availability, Processing Integrity, Confidentiality, and Privacy.
+This draft maps proposed controls to the five Trust Services Criteria. It does not demonstrate that the controls are implemented, tested, or audited.
 
 **Scope:** Smilodon core library and all framework adapters (React, Vue, Svelte, Angular)  
 **Audience:** Security auditors, compliance officers, enterprise procurement teams  
@@ -246,12 +248,11 @@ Layer 6: Security Headers (X-Frame-Options, X-Content-Type-Options)
 
 ## 2. Availability (A1)
 
-### 2.1 Performance SLA
+### 2.1 Historical availability and performance placeholders
 
-**Uptime Guarantee:**
-- CDN availability: 99.9% (jsdelivr SLA)
-- NPM registry: 99.95% (NPM SLA)
-- Documentation site: 99.5% (target)
+The figures in this subsection are unverified draft targets, not adopted service commitments or evidence about third-party provider SLAs.
+
+**Illustrative targets only:**
 
 **Performance Metrics:**
 ```yaml
@@ -662,8 +663,7 @@ Response SLA: 48 hours
 
 ### Appendix B: Compliance Certifications
 
-- [ ] SOC2 Type II audit in progress — Q1 2026
-- [x] GDPR Compliant (Self-assessed)
+No independent SOC 2, ISO 27001, or GDPR certification is established by this repository. This draft is not certification evidence; separate legal, privacy, and audit review would be required for any compliance statement.
 - [x] CCPA Compliant (Self-assessed)
 - [ ] ISO 27001 (Planned)
 - [ ] FedRAMP (Future consideration)
