@@ -85,8 +85,8 @@ jobs:
           mkdir -p test-results/performance/phase-4-c5a
           npx playwright install --with-deps chromium 2>&1 | tee test-results/performance/phase-4-c5a/browser-install.log
 
-      - name: Build component packages
-        run: npm run build
+      - name: Build Core package used by the benchmark fixture
+        run: npm run ws:build:core
 
       - name: Run controlled 100k paired End-key replication
         run: |
