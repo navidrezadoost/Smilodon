@@ -58,9 +58,11 @@ For sensitive reports, you may encrypt your message using our PGP key:
 
 ## Security Features
 
-### Content Security Policy (CSP)
+### Content Security Policy (CSP) — not certified
 
-Smilodon is fully compatible with strict Content Security Policy:
+No blanket strict-CSP compatibility claim is established. The maintained Core source contains an `eval('true')` capability probe, and worker creation or other application integrations may also be affected by a site's policy. Test the exact built package and deployment policy; do not assume that `script-src 'self'` is sufficient.
+
+The policy below is an example application header, not a tested compatibility guarantee:
 
 ```html
 <meta http-equiv="Content-Security-Policy" 
@@ -71,16 +73,9 @@ Smilodon is fully compatible with strict Content Security Policy:
                font-src 'self';">
 ```
 
-**Features:**
-- ✅ No `eval()` or `Function()` constructors
-- ✅ No inline scripts or styles
-- ✅ No unsafe dynamic code execution
-- ✅ Shadow DOM isolation
-- ✅ Nonce support for inline styles (if needed)
+### Handling untrusted content (no blanket XSS guarantee)
 
-### XSS Prevention
-
-**Built-in Protections:**
+The default Core label path uses text content, but custom renderers and legacy HTML-string paths can introduce HTML sinks. Treat renderer output, icons, templates, and data from untrusted sources as sensitive input. The examples below are application guidance, not a claim that every Core path automatically sanitizes content.
 
 1. **Default Safe Rendering**
    ```typescript
@@ -88,7 +83,7 @@ Smilodon is fully compatible with strict Content Security Policy:
    option.textContent = userInput;
    ```
 
-2. **Optional HTML Sanitization**
+2. **Application-owned HTML sanitization**
    ```typescript
    import { setHTMLSanitizer } from '@smilodon/core';
    import DOMPurify from 'dompurify';
@@ -98,20 +93,13 @@ Smilodon is fully compatible with strict Content Security Policy:
    });
    ```
 
-3. **Input Validation**
-   ```typescript
-   // All user inputs are validated
-   const safeValue = validateInput(userInput);
-   ```
+3. Validate data at the application boundary using the validation rules appropriate to that application. The package does not expose a universal `validateInput()` function.
 
 ### Shadow DOM Isolation
 
-**Security Benefits:**
+**Encapsulation properties (not a security boundary):**
 
-- Styles cannot leak in or out
-- DOM structure is encapsulated
-- Event handling is isolated
-- Reduces attack surface
+- Shadow DOM scopes internal markup and many styles, but does not isolate composed events or make untrusted content safe.
 
 ```typescript
 class EnhancedSelect extends HTMLElement {
@@ -264,14 +252,12 @@ No security vulnerabilities have been reported or discovered to date.
 
 - **OWASP Top 10**: Protection against common web vulnerabilities
 - **CWE/SANS Top 25**: Mitigation of most dangerous software weaknesses
-- **CSP Level 3**: Full Content Security Policy compliance
-- **WCAG 2.1 AAA**: Accessibility standards (reduces social engineering)
+- **CSP**: Compatibility is policy-dependent and has not been certified; the Core source contains an `eval('true')` capability probe.
+- **WCAG**: Conformance is not established or certified; automated checks do not replace manual assistive-technology review.
 
 ### Certifications
 
-Currently pursuing:
-- SOC 2 Type II compliance
-- ISO 27001 certification
+No completed independent SOC 2 or ISO 27001 audit/certification is established by this repository. Do not treat the linked historical control-mapping draft as proof of certification.
 
 See [SOC2-COMPLIANCE.md](./docs/compliance/SOC2-COMPLIANCE.md) for details.
 

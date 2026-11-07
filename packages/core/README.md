@@ -124,57 +124,56 @@ npm install @smilodon/core
 
 ## Quick Start
 
-### Vanilla JavaScript / Web Components
+Bare imports such as `@smilodon/core` require a bundler or an explicit browser import map. The example below uses Vite's module resolver; an unbundled browser does not resolve npm package names by itself.
+
+### Bundler-based Vanilla JavaScript / Web Components
 
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <script type="module">
-    import '@smilodon/core';
-  </script>
-</head>
 <body>
-  <smilodon-select id="my-select"></smilodon-select>
-
-  <script type="module">
-    const select = document.getElementById('my-select');
-    
-    // Generate 1 million items
-    const items = Array.from({ length: 1_000_000 }, (_, i) => ({
-      label: `Item ${i + 1}`,
-      value: i + 1
-    }));
-
-    select.items = items;
-    
-    select.addEventListener('change', (e) => {
-      console.log('Selected:', e.detail);
-    });
-  </script>
+  <enhanced-select id="my-select"></enhanced-select>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
 ```
 
+```javascript
+// src/main.js (resolved by Vite or another npm-aware bundler)
+import '@smilodon/core';
+
+const select = document.querySelector('enhanced-select');
+const items = [
+  { label: 'Option 1', value: 1 },
+  { label: 'Option 2', value: 2 },
+];
+
+select.setItems(items);
+select.addEventListener('change', (event) => {
+  console.log('Selected:', event.detail);
+});
+```
+
 ### Framework Usage
 
-**`@smilodon/core` works directly in all frameworks** as a Web Component - no adapters needed!
+**In browser DOM frameworks, `@smilodon/core` can be used directly** as a Web Component; framework adapters are available for framework-specific APIs.
 
-Simply import and use `<smilodon-select>` in React, Vue, Svelte, or any framework:
+The maintained Core runtime registers `<enhanced-select>`. Import Core and use that tag in browser-rendered framework templates:
 
 ```jsx
 // React, Vue, Svelte - all work the same way
 import '@smilodon/core';
-<smilodon-select ref={selectRef} />
+<enhanced-select ref={selectRef} />
 ```
 
-**Optional Framework Adapters** (for enhanced developer experience):
+**Framework adapters** (for framework-specific APIs):
 - **React**: `npm install @smilodon/react` - React hooks and components
 - **Vue**: `npm install @smilodon/vue` - Vue composables and components  
 - **Svelte**: `npm install @smilodon/svelte` - Svelte stores and components
+- **Solid**: `npm install @smilodon/solid` - SolidJS component API (Vite/Bundler consumer passes; strict NodeNext declarations currently fail with TS2834; separate fix pending)
 - **Vanilla**: `npm install @smilodon/vanilla` - Vanilla JS helpers
 
-These adapters provide framework-native APIs (hooks, composables) for enhanced developer experience, but are **not required** - the core package works everywhere!
+React Native uses a separate native WebView bridge and a browser-based React Native Web path; it does not use one shared browser runtime across both platforms.
 
 **Note:** Angular support has been discontinued as of December 2025.
 
@@ -182,31 +181,20 @@ See the [main documentation](https://github.com/navidrezadoost/smilodon#readme) 
 
 ## Key Features
 
-### 🚀 Extreme Performance
+### Large-list behavior
 - **Chunked large-list rendering**: Reduces the size of an individual render task; it does not guarantee constant DOM or viewport-bounded mounting.
-- **Work Stealing**: Background search workers with automatic cancellation
-- **Sub-millisecond Search**: Fenwick tree indexing for O(log n) queries
+- **Search and indexing**: Current behavior and limits are described in the API and performance documentation; no per-query latency guarantee is made here.
 - **Separate legacy virtualizer**: `NativeSelectElement` has its own compatibility implementation; do not infer its behavior from `EnhancedSelect`.
 
-### 🎯 Production Ready
-- **TypeScript First**: Complete type definitions included
-- **Zero Dependencies**: 6.6 KB gzipped runtime
-- **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JS
-- **Accessibility**: ARIA and keyboard behavior is implemented; cross-browser and manual assistive-technology certification remains pending.
-- **Full keyboard navigation**: Enter/Space, Arrows, Home/End, PageUp/Down, Escape
-- **Multi-select modes**: wrap, horizontal, vertical, both (with drag-scroll)
+### Capability and verification status
 
-### 🎨 CSS Framework Compatibility (`1.5.5`)
-- **Scoped mirrored styles**: class-based framework styles used by custom renderers are mirrored only into the options subtree, not the whole shadow root.
-- **Dark variant support**: `.dark`, `.dark-mode`, and theme-attribute variants propagate into custom-rendered option content.
-- **Stable state hooks**: `classMap`, `data-sm-state`, and Smilodon state classes stay available on custom option roots for hover, active, selected, and disabled styling.
-- **Accessible custom renderers**: nested interactive descendants are normalized by default so option renderers stay compatible with listbox semantics.
-
-### 🔒 Enterprise Grade
-- **SOC2 Compliant**: Audit-ready security controls
-- **CSP Compatible**: No eval(), no inline scripts
-- **SBOM Included**: Full dependency transparency
-- **99.8% Test Coverage**: Unit, integration, and E2E tests
+- The maintained runtime is the `enhanced-select` browser custom element, with typed declarations and framework adapters.
+- The public `virtualize` setting uses chunked rendering; it does not guarantee a viewport-bounded option DOM.
+- Automated keyboard and ARIA checks exist, but WCAG conformance and manual assistive-technology certification have not been established.
+- SOC 2 certification is not established. This package makes no SOC 2 compliance claim.
+- CSP compatibility is policy-dependent and is not certified. The Core source contains an `eval('true')` capability probe; a CSP that blocks `eval` may block that probe and report a violation.
+- No percentage code-coverage claim is made here. Test counts are not a code-coverage percentage.
+- No blanket XSS-prevention guarantee is made. Treat application-provided renderer content as untrusted input; prefer DOM nodes and `textContent` for user-controlled values.
 
 ## API Reference
 
@@ -252,23 +240,11 @@ The `--select-input-padding-with-clear` token applies only while the clear contr
 ### Properties
 
 ```typescript
-interface SmilodonSelectElement extends HTMLElement {
-  items: SelectItem[] | string[] | number[];  // Dataset (can be millions of items)
-  value: any;                    // Current selected value
-  placeholder?: string;          // Placeholder text
-  searchable?: boolean;          // Enable search (default: true)
-  disabled?: boolean;            // Disable the select
-  multiple?: boolean;            // Multiple selection mode
-  virtualization?: boolean;      // Enable virtualization (default: true)
-  maxHeight?: number;            // Max dropdown height in pixels
-}
+import type { EnhancedSelect, SelectItem } from '@smilodon/core';
 
-interface SelectItem {
-  label: string;                 // Display text
-  value: any;                    // Value (can be any type)
-  disabled?: boolean;            // Disable this option
-  group?: string;                // Optgroup name
-}
+const items: SelectItem[] = [{ label: 'One', value: 1 }];
+const select = document.querySelector('enhanced-select') as EnhancedSelect | null;
+if (select) select.setItems(items);
 ```
 
 > **Flexible Input Formats:**
@@ -280,16 +256,16 @@ interface SelectItem {
 
 #### Object Array (Traditional)
 ```javascript
-select.items = [
+select.setItems([
   { value: 'apple', label: 'Apple' },
   { value: 'banana', label: 'Banana' },
   { value: 'cherry', label: 'Cherry' }
-];
+]);
 ```
 
 #### String Array (Auto-converted)
 ```javascript
-select.items = ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry'];
+select.setItems(['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry']);
 // Automatically becomes:
 // [
 //   { value: 'Apple', label: 'Apple' },
@@ -300,7 +276,7 @@ select.items = ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry'];
 
 #### Number Array (Auto-converted)
 ```javascript
-select.items = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+select.setItems([1, 2, 3, 5, 8, 13, 21, 34, 55, 89]);
 // Automatically becomes:
 // [
 //   { value: 1, label: '1' },
@@ -311,302 +287,36 @@ select.items = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
 ---
 
-## 🎯 Two Ways to Specify Options
+## Supplying options and custom rendering
 
-Smilodon provides **two powerful approaches** for defining select options, each optimized for different use cases:
+Use the declared `setItems()` method to provide options. The public `virtualize` setting can chunk large-list rendering, but the final option DOM is not guaranteed to stay bounded by the viewport.
 
-### Method 1: Data-Driven (Object Arrays) 📊
+```typescript
+import type { EnhancedSelect, SelectItem } from '@smilodon/core';
 
-**Use when**: You have structured data and want simple, declarative option rendering.
+const select = document.querySelector('enhanced-select') as EnhancedSelect | null;
+if (!select) throw new Error('EnhancedSelect element not found');
 
-**Advantages**:
-- ✅ Simple and declarative
-- ✅ Auto-conversion from strings/numbers
-- ✅ Perfect for basic dropdowns
-- ✅ Zero boilerplate code
-- ✅ Extremely performant (millions of items)
-- ✅ Built-in search and filtering
-- ✅ TypeScript type safety
-
-**Examples**:
-
-```javascript
-// Simple object array
-const select = document.querySelector('enhanced-select');
-
-select.items = [
-  { value: '1', label: 'Apple' },
-  { value: '2', label: 'Banana' },
-  { value: '3', label: 'Cherry' }
+const items: SelectItem[] = [
+  { value: 'js', label: 'JavaScript' },
+  { value: 'py', label: 'Python' },
 ];
-
-// With additional metadata
-select.items = [
-  { value: 'us', label: 'United States', disabled: false },
-  { value: 'ca', label: 'Canada', disabled: false },
-  { value: 'mx', label: 'Mexico', disabled: true }  // Disabled option
-];
-
-// With grouping
-select.items = [
-  { value: 'apple', label: 'Apple', group: 'Fruits' },
-  { value: 'banana', label: 'Banana', group: 'Fruits' },
-  { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
-  { value: 'broccoli', label: 'Broccoli', group: 'Vegetables' }
-];
-
-// Auto-conversion from strings
-select.items = ['Red', 'Green', 'Blue', 'Yellow'];
-
-// Auto-conversion from numbers
-select.items = [10, 20, 30, 40, 50];
-
-// Large datasets (millions of items)
-select.items = Array.from({ length: 1_000_000 }, (_, i) => ({
-  value: i,
-  label: `Item ${i + 1}`
-}));
+select.setItems(items);
 ```
 
-### Method 2: Component-Driven (Custom Renderers) 🎨
+For custom option content, assign `optionRenderer`. It returns an `HTMLElement`; this example uses `textContent` so item text is not parsed as HTML.
 
-**Use when**: You need rich, interactive option content with custom HTML/styling.
-
-**Advantages**:
-- ✅ Full control over option rendering
-- ✅ Rich content (images, icons, badges, multi-line text)
-- ✅ Custom HTML and styling
-- ✅ Interactive elements within options
-- ✅ Conditional rendering based on item data
-- ✅ Perfect for complex UIs (user cards, product listings, etc.)
-
-**How it works**: Provide an `optionTemplate` function that returns HTML string for each option.
-
-**Examples**:
-
-```javascript
-const select = document.querySelector('enhanced-select');
-
-// Example 1: Simple custom template with icons
-const items = [
-  { value: 'js', label: 'JavaScript', icon: '🟨', description: 'Dynamic scripting language' },
-  { value: 'py', label: 'Python', icon: '🐍', description: 'General-purpose programming' },
-  { value: 'rs', label: 'Rust', icon: '🦀', description: 'Systems programming language' }
-];
-
-select.items = items;
-select.optionTemplate = (item, index) => `
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 24px;">${item.icon}</span>
-    <div>
-      <div style="font-weight: 600;">${item.label}</div>
-      <div style="font-size: 12px; color: #6b7280;">${item.description}</div>
-    </div>
-  </div>
-`;
-
-// Example 2: User selection with avatars
-const users = [
-  { 
-    value: '1', 
-    label: 'John Doe', 
-    email: 'john@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=1',
-    role: 'Admin'
-  },
-  { 
-    value: '2', 
-    label: 'Jane Smith', 
-    email: 'jane@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=2',
-    role: 'User'
-  },
-  { 
-    value: '3', 
-    label: 'Bob Johnson', 
-    email: 'bob@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=3',
-    role: 'Moderator'
-  }
-];
-
-select.items = users;
-select.optionTemplate = (item, index) => `
-  <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
-    <img 
-      src="${item.avatar}" 
-      alt="${item.label}"
-      style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
-    />
-    <div style="flex: 1;">
-      <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
-      <div style="font-size: 13px; color: #6b7280;">${item.email}</div>
-    </div>
-    <span style="
-      padding: 4px 8px;
-      background: ${item.role === 'Admin' ? '#dbeafe' : '#f3f4f6'};
-      color: ${item.role === 'Admin' ? '#1e40af' : '#374151'};
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    ">${item.role}</span>
-  </div>
-`;
-
-// Example 3: Product selection with images and pricing
-const products = [
-  { 
-    value: 'p1', 
-    label: 'Premium Laptop', 
-    price: 1299.99, 
-    stock: 15,
-    image: 'https://via.placeholder.com/60',
-    badge: 'Best Seller'
-  },
-  { 
-    value: 'p2', 
-    label: 'Wireless Mouse', 
-    price: 29.99, 
-    stock: 150,
-    image: 'https://via.placeholder.com/60',
-    badge: null
-  },
-  { 
-    value: 'p3', 
-    label: 'Mechanical Keyboard', 
-    price: 89.99, 
-    stock: 0,
-    image: 'https://via.placeholder.com/60',
-    badge: 'Out of Stock'
-  }
-];
-
-select.items = products;
-select.optionTemplate = (item, index) => `
-  <div style="display: flex; align-items: center; gap: 12px; opacity: ${item.stock === 0 ? '0.5' : '1'};">
-    <img 
-      src="${item.image}" 
-      alt="${item.label}"
-      style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb;"
-    />
-    <div style="flex: 1;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-weight: 600; color: #1f2937;">${item.label}</span>
-        ${item.badge ? `
-          <span style="
-            padding: 2px 6px;
-            background: ${item.badge === 'Best Seller' ? '#dcfce7' : '#fee2e2'};
-            color: ${item.badge === 'Best Seller' ? '#166534' : '#991b1b'};
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-          ">${item.badge}</span>
-        ` : ''}
-      </div>
-      <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 16px; font-weight: 700; color: #059669;">$${item.price.toFixed(2)}</span>
-        <span style="font-size: 12px; color: #6b7280;">${item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}</span>
-      </div>
-    </div>
-  </div>
-`;
-
-// Example 4: Status indicators with conditional styling
-const tasks = [
-  { value: 't1', label: 'Design Homepage', status: 'completed', priority: 'high', assignee: 'John' },
-  { value: 't2', label: 'API Integration', status: 'in-progress', priority: 'high', assignee: 'Jane' },
-  { value: 't3', label: 'Write Documentation', status: 'pending', priority: 'medium', assignee: 'Bob' },
-  { value: 't4', label: 'Bug Fixes', status: 'in-progress', priority: 'low', assignee: 'Alice' }
-];
-
-const statusColors = {
-  'completed': { bg: '#dcfce7', color: '#166534', icon: '✓' },
-  'in-progress': { bg: '#dbeafe', color: '#1e40af', icon: '⟳' },
-  'pending': { bg: '#fef3c7', color: '#92400e', icon: '○' }
-};
-
-const priorityColors = {
-  'high': '#ef4444',
-  'medium': '#f59e0b',
-  'low': '#10b981'
-};
-
-select.items = tasks;
-select.optionTemplate = (item, index) => {
-  const status = statusColors[item.status];
-  return `
-    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 0;">
-      <div style="
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: ${status.bg};
-        color: ${status.color};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-      ">${status.icon}</div>
-      <div style="flex: 1;">
-        <div style="font-weight: 600; color: #1f2937;">${item.label}</div>
-        <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
-          Assigned to ${item.assignee}
-        </div>
-      </div>
-      <div style="
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: ${priorityColors[item.priority]};
-      " title="${item.priority} priority"></div>
-    </div>
-  `;
+```typescript
+select.optionRenderer = (item, index) => {
+  const option = item as SelectItem;
+  const row = document.createElement('div');
+  row.className = 'language-option';
+  row.textContent = `${index + 1}. ${option.label}`;
+  return row;
 };
 ```
 
-### Comparison: When to Use Each Method
-
-| Feature | Method 1: Object Arrays | Method 2: Custom Renderers |
-|---------|------------------------|---------------------------|
-| **Setup Complexity** | ⭐ Simple | ⭐⭐ Moderate |
-| **Rendering Speed** | ⭐⭐⭐ Fastest | ⭐⭐ Fast |
-| **Visual Customization** | ⭐⭐ Limited | ⭐⭐⭐ Unlimited |
-| **Use Case** | Standard dropdowns | Rich, complex UIs |
-| **Code Amount** | Minimal | More code |
-| **TypeScript Support** | ⭐⭐⭐ Full | ⭐⭐⭐ Full |
-| **Performance (1M items)** | ⭐⭐⭐ Excellent | ⭐⭐ Good |
-| **Learning Curve** | ⭐ Easy | ⭐⭐ Medium |
-
-**Best Practices**:
-
-✅ **Use Method 1 (Object Arrays) when**:
-- You need simple text-based options
-- Performance is critical (millions of items)
-- You want minimal code
-- Built-in search/filter is sufficient
-
-✅ **Use Method 2 (Custom Renderers) when**:
-- You need images, icons, or badges
-- Options require multiple lines of text
-- Custom styling/layout is important
-- Conditional rendering based on data
-- Rich user experience is priority
-
-### Combining Both Methods
-
-You can start with Method 1 and add Method 2 later as your UI evolves:
-
-```javascript
-// Start simple
-select.items = ['Option 1', 'Option 2', 'Option 3'];
-
-// Later, add custom rendering without changing items
-select.optionTemplate = (item, index) => `
-  <div style="padding: 8px; background: ${index % 2 ? '#f9fafb' : 'white'};">
-    <strong>${item.label || item}</strong>
-  </div>
-`;
-```
+`optionRenderer` is the maintained `EnhancedSelect` API. The legacy `NativeSelectElement` has a separate compatibility surface; do not copy its `optionTemplate` examples into `enhanced-select` integrations.
 
 ---
 
@@ -647,8 +357,8 @@ select.clear();
 // Focus the select
 select.focus();
 
-// Get filtered items (useful for debugging)
-const filtered = select.getFilteredItems();
+// Read selected items through the declared API
+const selectedItems = select.getSelectedItems();
 ```
 
 ## Advanced Usage
@@ -1367,22 +1077,13 @@ if (typeof window !== 'undefined') {
 
 ### Performance Monitoring
 
-Enable telemetry to monitor performance:
-
-```javascript
-select.enableTelemetry = true;
-
-select.addEventListener('telemetry', (event) => {
-  console.log('Performance metrics:', event.detail);
-  // { renderTime, searchTime, scrollFPS, memoryUsage }
-});
-```
+The Core package exports `getTelemetry()` for frame and long-task measurements in browser environments. See its emitted TypeScript declarations for the available snapshot fields and lifecycle methods. It is not enabled by assigning a property to the custom element.
 
 ## Architecture
 
 Smilodon's performance comes from three core optimizations:
 
-1. **Virtual Scrolling**: Only renders visible items (10-15 DOM nodes for any dataset size)
+1. **Chunked rendering**: Splits large-list rendering work into chunks; the public mode does not guarantee a fixed number of mounted DOM nodes.
 2. **Work Stealing Scheduler**: Search operations run in background workers with automatic cancellation
 3. **Fenwick Tree Indexing**: O(log n) search queries instead of O(n) array scans
 
@@ -1410,15 +1111,16 @@ Requires browsers with native Web Components support (custom elements v1).
 Full TypeScript definitions included. No need for `@types/*` packages.
 
 ```typescript
-import type { SmilodonSelectElement, SelectItem } from '@smilodon/core';
+import type { EnhancedSelect, SelectItem } from '@smilodon/core';
 
 const items: SelectItem[] = [
   { label: 'Option 1', value: 1 },
   { label: 'Option 2', value: 2 }
 ];
 
-const select = document.querySelector('smilodon-select') as SmilodonSelectElement;
-select.items = items;
+const select = document.querySelector('enhanced-select') as EnhancedSelect | null;
+if (!select) throw new Error('EnhancedSelect element not found');
+select.setItems(items);
 ```
 
 ## Documentation
