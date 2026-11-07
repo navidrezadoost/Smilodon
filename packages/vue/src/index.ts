@@ -33,6 +33,12 @@
 
 import Select from './Select.vue';
 
+export type {
+  SelectEmits,
+  SelectItem,
+  SelectProps,
+} from './Select.vue';
+
 // Re-export useful types from core
 export type {
   SelectEventDetail,
