@@ -38,7 +38,7 @@ The existing Vanilla build ran `tsc` before Vite. TypeScript resolved `@smilodon
 
 ## Scope and remaining gates
 
-The patch changes only `packages/vanilla/package.json`, adds `packages/vanilla/scripts/cleanup-types.js`, and adds this evidence document. Hosted CI has not yet run for this branch. PR merge is not authorized by this directive; merge remains pending required checks and review. No security remediation was attempted.
+The original 178-B patch changes only `packages/vanilla/package.json`, adds `packages/vanilla/scripts/cleanup-types.js`, and adds this evidence document. At issuance, hosted CI had not run. No security remediation was attempted. Merge remains pending the required checks and independent review.
 
 ## Directive 178-B.1 amendment — cleanup script CI compatibility
 
@@ -53,4 +53,4 @@ Local validation on the amendment:
 - `git diff --check`: passed.
 - No runtime source, package API, dependency, or declaration-generation behavior changed.
 
-Hosted checks for the amendment commit are pending. Merge remains unauthorized until all required checks pass and independent review is satisfied.
+The corrective code commit is `2a4a8a42363d7919cc479ecfe7c5b8733944fd82`. All hosted checks passed on that commit: CI run `42389174786` (`build-and-test`), Phase 4 Certification run `42389174782` (including `Regression, lint, and build` and all three guarded virtualization browsers), Tests run `42389174725`, and Phase 4 Performance Baseline run `42389174832`. The correction commit remains subject to independent review; merge is not authorized by this amendment.
