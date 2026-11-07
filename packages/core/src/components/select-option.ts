@@ -3,8 +3,8 @@
  * High cohesion, low coupling - handles its own selection state and events
  */
 
-import type { DisabledOptionBehaviorConfig } from '../config/global-config';
-import { ClassMap } from '../types';
+import type { DisabledOptionBehaviorConfig } from '../config/global-config.js';
+import { ClassMap } from '../types.js';
 
 export interface OptionConfig {
   /** The data item this option represents */

@@ -3,7 +3,7 @@
  * Allows users to define default behaviors that can be overridden at component level
  */
 
-import type { KnownLimitationId, LimitationPolicy } from '../types';
+import type { KnownLimitationId, LimitationPolicy } from '../types.js';
 
 export interface ScrollToSelectedConfig {
   /** Whether to scroll to selected item when dropdown opens/closes */

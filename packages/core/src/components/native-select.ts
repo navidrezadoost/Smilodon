@@ -3,13 +3,13 @@ import type {
   SelectEventName,
   SelectEventsDetailMap,
   RendererHelpers,
-} from "../types";
+} from "../types.js";
 import {
   createRendererHelpers,
   OptionRenderer,
   OptionTemplate,
   renderTemplate,
-} from "../renderers/contracts";
+} from "../renderers/contracts.js";
 import { Virtualizer } from "../utils/virtualizer";
 import { OptionRenderer as UnifiedOptionRenderer } from "../utils/option-renderer";
 import type { OptionRendererConfig } from "../utils/option-renderer";

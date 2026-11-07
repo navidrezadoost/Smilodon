@@ -1,4 +1,4 @@
-import type { RendererHelpers } from '../types';
+import type { RendererHelpers } from '../types.js';
 
 export type OptionTemplate = (item: unknown, index: number) => string;
 export type OptionRenderer = (item: unknown, index: number, helpers: RendererHelpers) => HTMLElement;

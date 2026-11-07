@@ -6,8 +6,8 @@
  * Redesigned with formal elegance, refined microinteractions, and polished UX
  */
 
-import type { CallbackConfig, GlobalSelectConfig } from '../config/global-config';
-import { selectConfig } from '../config/global-config';
+import type { CallbackConfig, GlobalSelectConfig } from '../config/global-config.js';
+import { selectConfig } from '../config/global-config.js';
 import { validateDataLoadingConfig } from '../data-loading/public-config.js';
 import type {
   DataLoadingConfigErrorDetail,
@@ -32,8 +32,8 @@ import type {
   KnownLimitationId,
   TrackingSnapshot,
   TrackingEntry,
-} from '../types';
-import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts';
+} from '../types.js';
+import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts.js';
 import type { CloseReason, SelectKey } from '../engine/contracts.js';
 import { createDefaultItemAdapter, type ItemAdapter } from '../engine/item-adapter.js';
 import { createItemRegistry, type DuplicateKeyPolicy, type ItemRecord, type ItemRegistry } from '../engine/item-registry.js';
@@ -44,7 +44,7 @@ import { computeAccessibilityEffects, deriveAccessibilityState } from '../engine
 import { applyAccessibilityEffects } from '../platform/web/accessibility-effects.js';
 import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
 import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
-import { SelectOption } from './select-option';
+import { SelectOption } from './select-option.js';
 import { arrayIncludesValue } from '../utils/value-equality.js';
 import { Virtualizer, type VirtualizerScrollResult } from '../utils/virtualizer.js';
 import {
@@ -296,7 +296,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
   private _optionRenderer?: OptionRendererFn;
-  private _groupHeaderRenderer?: import('../types').GroupHeaderRenderer;
+  private _groupHeaderRenderer?: import('../types.js').GroupHeaderRenderer;
   private _classMap?: ClassMap;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
@@ -396,11 +396,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
    * call this function for each group during rendering.  The returned element
    * will receive `.group-header` and `part="group-header"` automatically.
    */
-  get groupHeaderRenderer(): import('../types').GroupHeaderRenderer | undefined {
+  get groupHeaderRenderer(): import('../types.js').GroupHeaderRenderer | undefined {
     return this._groupHeaderRenderer;
   }
 
-  set groupHeaderRenderer(renderer: import('../types').GroupHeaderRenderer | undefined) {
+  set groupHeaderRenderer(renderer: import('../types.js').GroupHeaderRenderer | undefined) {
     if (this._groupHeaderRenderer === renderer) return;
 
     this._groupHeaderRenderer = renderer;
