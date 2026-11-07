@@ -5,7 +5,7 @@
  * Uses object pooling pattern to minimize allocation/deallocation overhead.
  */
 
-import type { CustomOptionContract, CustomOptionContext, CustomOptionFactory } from '../types/custom-option';
+import type { CustomOptionContract, CustomOptionContext, CustomOptionFactory } from '../types/custom-option.js';
 
 interface PooledComponent {
   instance: CustomOptionContract;
