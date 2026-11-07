@@ -21,7 +21,7 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
-} from '@smilodon/core'
+} from '@smilodon/core/native-types'
 
 export interface SelectItem {
   value: string | number

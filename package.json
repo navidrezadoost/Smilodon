@@ -27,6 +27,7 @@
     "test:contracts:vue": "vitest run tests/contracts/vue.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:svelte": "vitest run tests/contracts/svelte.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:vanilla": "vitest run tests/contracts/vanilla.contract.spec.ts --config tests/contracts/vitest.config.ts",
+    "test:types:react-native": "node scripts/test-react-native-native-types.mjs",
     "test:e2e:preflight": "node scripts/verify-playwright.mjs",
     "test:e2e": "npm run test:e2e:preflight && playwright test",
     "test:e2e:react": "npm run test:e2e:preflight && playwright test --config=tests/e2e/playwright.config.ts --project=react-chromium --project=react-firefox --project=react-webkit --project=react-adapter-chromium --project=react-adapter-firefox --project=react-adapter-webkit",

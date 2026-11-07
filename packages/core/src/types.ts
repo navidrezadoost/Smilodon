@@ -1,4 +1,8 @@
 // Public types and contracts for the smilodon select component
+import type { KnownLimitationId, LimitationControlMode, LimitationPolicy } from './types/limitation.js';
+
+export type { KnownLimitationId, LimitationControlMode, LimitationPolicy } from './types/limitation.js';
+
 export type Placement =
   | 'top' | 'bottom' | 'left' | 'right'
   | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'
@@ -61,21 +65,6 @@ export interface RemoveEventDetail { item: unknown; index: number }
 export interface ClearEventDetail {
   clearedSelection: boolean;
   clearedSearch: boolean;
-}
-
-export type KnownLimitationId =
-  | 'variableItemHeight'
-  | 'builtInFetchPaginationApi'
-  | 'virtualizationOverheadSmallLists'
-  | 'runtimeModeSwitching'
-  | 'legacyBrowserSupport'
-  | 'webkitArchLinux';
-
-export type LimitationControlMode = 'default' | 'suppress' | 'strict';
-
-export interface LimitationPolicy {
-  mode: LimitationControlMode;
-  note?: string;
 }
 
 export type LimitationPolicyMap = Partial<Record<KnownLimitationId, LimitationPolicy>>;

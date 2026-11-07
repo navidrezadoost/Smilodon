@@ -12,6 +12,9 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./native-types": {
+      "types": "./dist/types/src/native-types.d.ts"
+    },
     "./package.json": "./package.json"
   },
   "files": [

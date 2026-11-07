@@ -3,7 +3,10 @@
  * Allows users to define default behaviors that can be overridden at component level
  */
 
-import type { KnownLimitationId, LimitationPolicy } from '../types.js';
+import type { KnownLimitationId, LimitationPolicy } from '../types/limitation.js';
+
+type ScrollToSelectedBehavior = 'auto' | 'instant' | 'smooth';
+type ScrollToSelectedBlock = 'start' | 'center' | 'end' | 'nearest';
 
 export interface ScrollToSelectedConfig {
   /** Whether to scroll to selected item when dropdown opens/closes */
@@ -11,9 +14,9 @@ export interface ScrollToSelectedConfig {
   /** Which selected item to scroll to in multi-select mode: 'first' | 'last' */
   multiSelectTarget: 'first' | 'last';
   /** Scroll behavior */
-  behavior?: ScrollBehavior;
+  behavior?: ScrollToSelectedBehavior;
   /** Scroll block alignment */
-  block?: ScrollLogicalPosition;
+  block?: ScrollToSelectedBlock;
 }
 
 export interface LoadMoreConfig {
