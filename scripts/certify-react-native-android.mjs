@@ -17,11 +17,12 @@ const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'smilodon-rn-android-
 const fixtureDirectory = path.join(tempDirectory, 'app');
 const tarballDirectory = path.join(tempDirectory, 'tarballs');
 const gradleOutput = path.join(resultDirectory, 'gradle-install-release.log');
+const emulatorSerial = process.env.ANDROID_SERIAL ?? 'emulator-5554';
 
 await mkdir(resultDirectory, { recursive: true });
 await mkdir(tarballDirectory, { recursive: true });
 
-function commandOutput(command, args, options = {}) {
+function rawCommandOutput(command, args, options = {}) {
   return execFileSync(command, args, {
     cwd: options.cwd ?? root,
     encoding: 'utf8',
@@ -29,6 +30,34 @@ function commandOutput(command, args, options = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: process.env,
   }).trim();
+}
+
+function ensureAdbOnline() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const devices = rawCommandOutput('adb', ['devices', '-l'], { timeout: 10_000 });
+    if (new RegExp(`^${emulatorSerial}\\s+device\\b`, 'm').test(devices)) return;
+    console.warn(`[178-F] ADB device ${emulatorSerial} is not online; reconnect attempt ${attempt + 1}/4`);
+    try {
+      rawCommandOutput('adb', ['start-server'], { timeout: 10_000 });
+      rawCommandOutput('adb', ['reconnect', 'offline'], { timeout: 10_000 });
+      rawCommandOutput('adb', ['-s', emulatorSerial, 'wait-for-device'], { timeout: 10_000 });
+    } catch {
+      // Recheck the transport; the next attempt may reconnect after the emulator recovers.
+    }
+  }
+  const devices = rawCommandOutput('adb', ['devices', '-l'], { timeout: 10_000 });
+  throw new Error(`ADB device ${emulatorSerial} did not return online after reconnect attempts.\n${devices}`);
+}
+
+function commandOutput(command, args, options = {}) {
+  if (command !== 'adb') return rawCommandOutput(command, args, options);
+  if (args[0] !== 'devices' && args[0] !== 'start-server' && args[0] !== 'reconnect') {
+    ensureAdbOnline();
+  }
+  const targetArgs = args[0] === 'devices' || args[0] === 'start-server' || args[0] === 'reconnect'
+    ? args
+    : ['-s', emulatorSerial, ...args];
+  return rawCommandOutput(command, targetArgs, options);
 }
 
 function run(command, args, { cwd = root, logFile } = {}) {
@@ -98,7 +127,8 @@ async function dumpUi(label) {
 }
 
 async function captureScreen(label) {
-  const screenshot = execFileSync('adb', ['exec-out', 'screencap', '-p'], {
+  ensureAdbOnline();
+  const screenshot = execFileSync('adb', ['-s', emulatorSerial, 'exec-out', 'screencap', '-p'], {
     encoding: null,
     timeout: 30_000,
   });
