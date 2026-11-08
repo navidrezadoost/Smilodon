@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import process from 'node:process';
 import { createWriteStream } from 'node:fs';
-import { cp, mkdir, mkdtemp, open, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, mkdtemp, open, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -267,7 +267,8 @@ async function startLogcatCollector() {
   const errorPath = path.join(resultDirectory, 'device-logcat-collector-error.log');
   logcatErrorStream = createWriteStream(errorPath, { flags: 'w' });
   logcatCollector = spawn('adb', ['-s', emulatorSerial, 'logcat', '-v', 'threadtime',
-    'ReactNativeJS:V', 'System.err:V', 'AndroidRuntime:E', 'ActivityManager:E', 'chromium:E', '*:S'],
+    'ReactNativeJS:V', 'System.err:V', 'AndroidRuntime:E', 'ActivityManager:E', 'ActivityTaskManager:E',
+    'DEBUG:E', 'libc:E', 'chromium:E', '*:S'],
   { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
   logcatCollector.stdout.pipe(logcatStream);
   logcatCollector.stderr.pipe(logcatErrorStream);
@@ -349,13 +350,6 @@ async function captureStage(label, { requireWebContent = false } = {}) {
   result.diagnostics = {};
   const errors = [];
   try {
-    result.nodes = await dumpUi(label);
-    result.diagnostics.uiHierarchy = { result: 'pass', file: `ui-${label}.xml` };
-  } catch (error) {
-    result.diagnostics.uiHierarchy = { result: 'unavailable', error: String(error?.message ?? error) };
-    errors.push(`UI hierarchy: ${error?.message ?? error}`);
-  }
-  try {
     result.screenshot = `screen-${label}.png`;
     result.screenshotMetadata = await captureScreen(label);
     result.diagnostics.screenshot = { result: result.screenshotMetadata.pngSignatureValid ? 'pass' : 'fail', file: result.screenshot };
@@ -363,6 +357,13 @@ async function captureStage(label, { requireWebContent = false } = {}) {
   } catch (error) {
     result.diagnostics.screenshot = { result: 'unavailable', error: String(error?.message ?? error) };
     errors.push(`Screenshot: ${error?.message ?? error}`);
+  }
+  try {
+    result.nodes = await dumpUi(label);
+    result.diagnostics.uiHierarchy = { result: 'pass', file: `ui-${label}.xml` };
+  } catch (error) {
+    result.diagnostics.uiHierarchy = { result: 'unavailable', error: String(error?.message ?? error) };
+    errors.push(`UI hierarchy: ${error?.message ?? error}`);
   }
   if (requireWebContent && result.nodes) {
     result.webContentVisible = result.nodes.some(node => node.text === 'Alpha' || node['content-desc'] === 'Alpha');
@@ -410,9 +411,40 @@ async function captureRuntimeDiagnostics(label) {
     const hostProcesses = spawnSync('bash', ['-lc', 'ps -eo pid,stat,etime,args | grep -E "[e]mulator.*-avd|[q]emu-system.*-avd"'],
       { encoding: 'utf8', timeout: 5_000 });
     diagnostics.hostEmulatorProcesses = (hostProcesses.stdout ?? '').trim();
+    diagnostics.emulatorProcessPresent = /(?:emulator|qemu-system).*?-avd/.test(diagnostics.hostEmulatorProcesses);
     if (hostProcesses.error) diagnostics.hostEmulatorProcessesError = hostProcesses.error.message;
   } catch (error) {
     diagnostics.hostEmulatorProcessesError = String(error?.message ?? error);
+  }
+  try {
+    diagnostics.adbDevices = rawCommandOutput('adb', ['devices', '-l'], { timeout: 5_000 });
+  } catch (error) {
+    diagnostics.adbDevicesError = String(error?.message ?? error);
+  }
+  const hostResources = spawnSync('bash', ['-lc', 'free -b; df -h /tmp'], { encoding: 'utf8', timeout: 5_000 });
+  diagnostics.hostResources = hostResources.stdout ?? '';
+  if (hostResources.error) diagnostics.hostResourcesError = hostResources.error.message;
+  const kernelLog = spawnSync('sudo', ['-n', 'dmesg', '--ctime'], { encoding: 'utf8', timeout: 5_000, maxBuffer: 4 * 1024 * 1024 });
+  if (kernelLog.status === 0) {
+    diagnostics.kernelEmulatorTerminationLines = (kernelLog.stdout ?? '').split('\n')
+      .filter(line => /out of memory|oom-kill|killed process|qemu-system|emulator.*(killed|crash|exit)/i.test(line))
+      .slice(-100);
+  } else {
+    diagnostics.kernelLogUnavailable = kernelLog.error?.message ?? kernelLog.stderr ?? String(kernelLog.status);
+  }
+  try {
+    const crashDirectory = '/tmp/android-runner';
+    const crashFiles = (await readdir(crashDirectory)).filter(file => /^emu-crash-.*\.db$/.test(file));
+    diagnostics.emulatorCrashFiles = [];
+    for (const file of crashFiles) {
+      const source = path.join(crashDirectory, file);
+      const destinationName = `emulator-crash-${label}-${file}`;
+      const destination = path.join(resultDirectory, destinationName);
+      await copyFile(source, destination);
+      diagnostics.emulatorCrashFiles.push({ file: destinationName, sizeBytes: (await stat(destination)).size, sha256: await sha256(destination) });
+    }
+  } catch (error) {
+    diagnostics.emulatorCrashFilesError = String(error?.message ?? error);
   }
   const crashBuffer = spawnSync('adb', ['-s', emulatorSerial, 'logcat', '-b', 'crash', '-d', '-t', '200'],
     { encoding: 'utf8', timeout: 10_000 });
@@ -757,19 +789,24 @@ try {
 } catch (error) {
   report.status = 'fail';
   report.failureStage = currentStage;
+  const failureMessage = String(error?.message ?? error);
   const failedStage = report.stages.at(-1);
   if (failedStage) {
     failedStage.status = 'fail';
     failedStage.finishedAt = new Date().toISOString();
     failedStage.error = String(error?.message ?? error);
   }
-  report.failureCode = currentStage === 'app-launch-and-bridge-scenarios'
-    ? 'ANDROID_RUNTIME_OBSERVABILITY_OR_BRIDGE_UNRESOLVED'
-    : error?.code === 'ENOBUFS'
+  report.failureCode = error?.code === 'ENOBUFS'
       ? 'TEST_HARNESS_SCREENSHOT_BUFFER_LIMIT'
+    : /device offline|ETIMEDOUT|error: closed/i.test(failureMessage)
+      ? 'ANDROID_EMULATOR_ADB_TRANSPORT_LOST'
+    : currentStage.startsWith('bridge-')
+      ? 'ANDROID_RUNTIME_OBSERVABILITY_OR_BRIDGE_UNRESOLVED'
     : undefined;
   report.failureOwnership = error?.code === 'ENOBUFS'
     ? 'test-harness-screenshot-capture'
+    : /device offline|ETIMEDOUT|error: closed/i.test(failureMessage)
+      ? 'emulator-or-adb-transport; adapter attribution not established'
     : currentStage.startsWith('android-environment')
     ? 'environment'
     : currentStage === 'emulator-boot'

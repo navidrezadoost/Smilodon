@@ -27,6 +27,7 @@ jobs:
         with:
           path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
           key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
+          save-always: true
 
       - uses: actions/setup-node@v4
         with:
