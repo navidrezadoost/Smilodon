@@ -279,6 +279,9 @@ try {
   await cp(coreTarball, path.join(appArtifactDirectory, 'smilodon-core-1.10.0.tgz'));
   await cp(nativeTarball, path.join(appArtifactDirectory, 'smilodon-react-native-1.10.0.tgz'));
 
+  await run('npm', ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], {
+    cwd: fixtureDirectory,
+  });
   await run('npm', ['ci', '--no-audit', '--no-fund'], { cwd: fixtureDirectory });
   const nativeEntry = commandOutput('node', [
     '--conditions=react-native',
