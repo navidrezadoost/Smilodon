@@ -149,10 +149,25 @@ function boundsOf(node) {
 }
 
 async function dumpUi(label) {
-  adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/smilodon-window.xml');
-  const xml = adb('shell', 'cat', '/sdcard/smilodon-window.xml');
-  await writeFile(path.join(resultDirectory, `ui-${label}.xml`), xml);
-  return nodesFromXml(xml);
+  let lastError;
+  const attempts = [];
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const dumpOutput = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/smilodon-window.xml');
+    try {
+      const xml = adb('shell', 'cat', '/sdcard/smilodon-window.xml');
+      await writeFile(path.join(resultDirectory, `ui-${label}.xml`), xml);
+      if (attempts.length) {
+        await writeFile(path.join(resultDirectory, `ui-${label}-retry.json`), `${JSON.stringify({ attempts }, null, 2)}\n`);
+      }
+      return nodesFromXml(xml);
+    } catch (error) {
+      lastError = error;
+      attempts.push({ attempt, dumpOutput, error: String(error?.message ?? error) });
+      if (attempt < 2) await delay(250);
+    }
+  }
+  await writeFile(path.join(resultDirectory, `ui-${label}-retry.json`), `${JSON.stringify({ attempts }, null, 2)}\n`);
+  throw new Error(`uiautomator hierarchy capture failed after ${attempts.length} attempts: ${lastError?.message ?? lastError}`);
 }
 
 async function captureScreen(label) {
@@ -819,6 +834,8 @@ try {
   }
   report.failureCode = error?.code === 'ENOBUFS'
       ? 'TEST_HARNESS_SCREENSHOT_BUFFER_LIMIT'
+    : /uiautomator hierarchy capture failed/i.test(failureMessage)
+      ? 'TEST_HARNESS_UI_HIERARCHY_CAPTURE'
     : /device offline|ETIMEDOUT|error: closed/i.test(failureMessage)
       ? 'ANDROID_EMULATOR_ADB_TRANSPORT_LOST'
     : currentStage.startsWith('bridge-')
@@ -826,6 +843,8 @@ try {
     : undefined;
   report.failureOwnership = error?.code === 'ENOBUFS'
     ? 'test-harness-screenshot-capture'
+    : /uiautomator hierarchy capture failed/i.test(failureMessage)
+      ? 'test-harness-ui-hierarchy-capture'
     : /device offline|ETIMEDOUT|error: closed/i.test(failureMessage)
       ? 'emulator-or-adb-transport; adapter attribution not established'
     : currentStage.startsWith('android-environment')
