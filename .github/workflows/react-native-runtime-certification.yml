@@ -7,6 +7,7 @@ on:
       - 'packages/core/**'
       - 'packages/react-native/**'
       - 'scripts/certify-react-native-android.mjs'
+      - 'scripts/install-gradle-distribution.mjs'
       - 'tests/react-native-runtime/**'
   workflow_dispatch:
 
@@ -21,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Restore checksum-pinned Gradle distribution cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
+          key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20.20.2'
@@ -34,19 +41,9 @@ jobs:
           cache: gradle
           cache-dependency-path: tests/react-native-runtime/android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Install checksum-pinned Gradle distribution
-        run: |
-          gradle_archive="$RUNNER_TEMP/gradle-8.10.2-bin.zip"
-          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
-            --connect-timeout 30 --max-time 300 \
-            --output "$gradle_archive" \
-            https://downloads.gradle.org/distributions/gradle-8.10.2-bin.zip
-          printf '%s  %s\n' \
-            '31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26' \
-            "$gradle_archive" | sha256sum --check
-          unzip -q "$gradle_archive" -d "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/gradle-8.10.2/bin" >> "$GITHUB_PATH"
-          "$RUNNER_TEMP/gradle-8.10.2/bin/gradle" --version
+      - name: Install checksum-pinned Gradle distribution with controlled fallback
+        id: gradle
+        run: node scripts/install-gradle-distribution.mjs
 
       - name: Pin fixture package manager
         run: npm install --global npm@10.8.2
@@ -69,7 +66,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Record pending emulator boot stage
+        run: |
+          mkdir -p test-results/react-native-runtime
+          node -e "require('node:fs').writeFileSync('test-results/react-native-runtime/emulator-boot.json', JSON.stringify({stage:'emulator-boot',status:'pending',startedAt:new Date().toISOString(),apiLevel:35,target:'google_apis',arch:'x86_64',profile:'pixel_2'},null,2)+'\\n')"
+
       - name: Build packed packages and execute Android runtime scenarios
+        id: emulator
+        continue-on-error: true
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -79,6 +83,34 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: node scripts/certify-react-native-android.mjs
+
+      - name: Record emulator runner outcome and preserve required failure
+        if: always()
+        env:
+          EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'test-results/react-native-runtime/emulator-boot.json';
+          let record = { stage: 'emulator-boot', startedAt: new Date().toISOString() };
+          if (fs.existsSync(path)) record = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (process.env.EMULATOR_OUTCOME === 'success') {
+            record.status = 'pass';
+            record.finishedAt = new Date().toISOString();
+          } else if (process.env.EMULATOR_OUTCOME === 'skipped') {
+            record.status = 'skipped';
+            record.failureCode = 'UPSTREAM_REQUIRED_STAGE_FAILED';
+            record.failure = 'Emulator setup did not start because an earlier required workflow stage failed.';
+            record.finishedAt = new Date().toISOString();
+          } else if (!fs.existsSync('test-results/react-native-runtime/runtime-certification.json')) {
+            record.status = 'fail';
+            record.failureCode = 'ANDROID_EMULATOR_BOOT_OR_RUNNER_INFRASTRUCTURE';
+            record.failure = 'Emulator runner failed before the certification runner wrote a runtime report.';
+            record.finishedAt = new Date().toISOString();
+          }
+          fs.writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
+          NODE
+          test "$EMULATOR_OUTCOME" = success
 
       - name: Preserve Android runtime evidence
         if: always()

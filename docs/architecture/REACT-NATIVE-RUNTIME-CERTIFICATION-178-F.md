@@ -73,6 +73,7 @@ The hosted Android attempts exposed and resolved several certification-infrastru
 | [42467522390](https://github.com/navidrezadoost/Smilodon/actions/runs/42467522390) | Packed install and release APK build/install passed; bridge callback unverified | Direct Gradle download worked. `APP_MOUNTED` and `SELECT_MOUNTED` were observed; the Open control was found and tapped. The subsequent React Native JS logcat query timed out, and emulator teardown reported connection refused on port 5554. The report has no verified bridge callback. |
 | [42470002719](https://github.com/navidrezadoost/Smilodon/actions/runs/42470002719) | Failed before emulator setup | The direct Gradle CDN returned HTTP 504 on all six curl attempts. Environment/download failure. |
 | [42470104127](https://github.com/navidrezadoost/Smilodon/actions/runs/42470104127) | Failed before emulator setup | The direct Gradle CDN again returned HTTP 504 on all six curl attempts. Environment/download failure. |
+| [42470311789](https://github.com/navidrezadoost/Smilodon/actions/runs/42470311789) | Failed before emulator setup | The direct Gradle CDN again returned HTTP 504 on all six curl attempts. Environment/download failure; this remains a failed run and is not reclassified. |
 
 Run `42467522390` recorded this environment: Node `20.20.2`, npm `10.8.2`, Temurin Java `17.0.21`, Gradle `8.10.2`, Android API 35 / Android 15, Google API x86_64 emulator `sdk_gphone64_x86_64`, emulator package `37.2.13`, WebView `124.0.6367.219`, React Native `0.76.9`, React `18.3.1`, and `react-native-webview` `13.12.5`. Its report records packed Core SHA-256 `1af2a7b7cf844d228d5dd2ff55197bc28d1589e80e9fe9da7040da9f615ac27f`, React Native SHA-256 `0f46d29ff74d3283d2996697ce0a9a898d141c6980d72c0e3ca0592e98ef9210`, and fixture lockfile SHA-256 `1435cc4eecdb3981211e4bcd97fb1bab8f09c94ec82b82f83a35345f6f2d2627`.
 
@@ -81,3 +82,29 @@ The saved UI hierarchy contains the React Native controls and an embedded WebVie
 Disposition: **`BLOCKED_HOSTED_ANDROID_RUNTIME_INFRASTRUCTURE — REVIEW_PENDING`**. The report is evidence of a successful packed install and APK build, followed by an incomplete runtime attempt; repeated runs also failed to download Gradle. It is not a native qualification pass. PR #62 remains open and draft; no independent review has been submitted, no production adapter changes were made, and `PRODUCTION_NO_GO` remains in effect.
 
 `PRODUCTION_NO_GO` remains in effect.
+
+## 7. Directive 178-F.1 — Infrastructure stabilization amendment
+
+Directive 178-F.1 is implemented on the existing PR #62 branch. It changes only the Android certification workflow, its runner, the Android-only fixture event correlation, and this evidence document. No production adapter code or package API was changed. Existing failed runs, artifacts, and package hashes above remain intact.
+
+The Gradle setup now records `gradle-setup.json`, verifies the pinned 8.10.2 distribution against SHA-256 `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`, restores a reusable archive cache keyed by that checksum, then tries the two official Gradle distribution endpoints with bounded retries and timeouts. If neither produces the verified archive, the setup report uses `INFRA_GRADLE_UNAVAILABLE` and the required workflow fails.
+
+The Android runner records explicit bounded stages for emulator boot, pre-install and post-install ADB health, app launch/mount, WebView readiness, an isolated bridge canary, and the remaining bridge scenarios. ADB canaries use a unique echoed nonce and `sys.boot_completed`, and record latency, device listing, and host emulator processes. A dedicated continuous logcat process starts before app launch and appends directly to an evidence file. Callback checks read that file and match the per-run identifier. The first Open callback plus a post-Open ADB canary gates entry into the rest of the interaction suite.
+
+Stage captures now attempt UI hierarchy, screenshot, app process, Android exit/crash buffer, and emulator process diagnostics independently, recording unavailable diagnostics when the ADB transport fails. The workflow writes a pending emulator-boot record before invoking the emulator action, finalizes it afterward, and uploads all available evidence on failure. A successful infrastructure canary alone is not a runtime certification pass; all existing bridge scenarios must pass on the Android emulator.
+
+### 178-F.1 validation record
+
+| Gate | Result |
+| --- | --- |
+| Gradle checksum and failure classification | Implemented; hosted execution pending |
+| Emulator boot and ADB health evidence | Implemented; hosted execution pending |
+| ADB canaries before and after app interaction | Implemented; hosted execution pending |
+| Continuous logcat and unique-run callback assertions | Implemented; hosted execution pending |
+| Stage screenshots, hierarchy, and process/crash evidence | Implemented; hosted execution pending |
+| Isolated Open canary gates full scenarios | Implemented; hosted execution pending |
+| Failure-safe evidence on setup/emulator failure | Implemented; hosted execution pending |
+| Standard hosted CI | Pending on the 178-F.1 head |
+| Independent authorized review | Pending; PR remains draft and unmerged |
+
+The local host has no Android SDK or emulator. Local verification can cover script syntax, lint, report failure handling, and repository diff integrity, but cannot establish Android runtime behavior. Hosted workflow run IDs, the exact 178-F.1 commit, and resulting evidence will be added here after the branch update.

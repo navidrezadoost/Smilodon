@@ -12,6 +12,7 @@ import Select, {
   type SelectItem,
   type SelectValue,
 } from '@smilodon/react-native';
+import { runtimeId } from './runtime-context';
 
 const initialItems: SelectItem[] = [
   {value: 'alpha', label: 'Alpha'},
@@ -22,7 +23,7 @@ const initialItems: SelectItem[] = [
 
 function report(event: string, detail?: unknown) {
   const serialized = detail === undefined ? '' : ` ${JSON.stringify(detail)}`;
-  console.log(`SMILODON_RUNTIME:${event}${serialized}`);
+  console.log(`SMILODON_RUNTIME:${runtimeId}:${event}${serialized}`);
 }
 
 export default function App() {
