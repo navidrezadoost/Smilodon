@@ -285,7 +285,7 @@ try {
     throw new Error(`Expected Android API 35, found ${report.toolchain.android.apiLevel}.`);
   }
 
-  const gradleVersion = commandOutput('./gradlew', ['--version'], {
+  const gradleVersion = commandOutput('gradle', ['--version'], {
     cwd: path.join(root, 'tests/react-native-runtime/android'),
   });
   report.toolchain.gradle = gradleVersion.split('\n').filter(line => /Gradle |JVM:|Launcher JVM:/.test(line));
@@ -355,7 +355,7 @@ try {
 
   currentStage = 'android-build-and-install';
   console.log(`[178-F] ${currentStage} (x86_64 only)`);
-  await run('./gradlew', [
+  await run('gradle', [
     '--no-daemon',
     '--stacktrace',
     '-PreactNativeArchitectures=x86_64',

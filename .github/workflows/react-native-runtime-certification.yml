@@ -31,8 +31,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
-          cache-dependency-path: tests/react-native-runtime/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install pinned Gradle distribution
+        uses: gradle/actions/setup-gradle@7296c772c13d12d9871528814b51fb2143c138ef # v6.4.1
+        with:
+          gradle-version: '8.10.2'
 
       - name: Pin fixture package manager
         run: npm install --global npm@10.8.2
