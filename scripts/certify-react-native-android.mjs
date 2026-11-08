@@ -25,6 +25,7 @@ function commandOutput(command, args, options = {}) {
   return execFileSync(command, args, {
     cwd: options.cwd ?? root,
     encoding: 'utf8',
+    timeout: options.timeout ?? 30_000,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: process.env,
   }).trim();
@@ -97,7 +98,10 @@ async function dumpUi(label) {
 }
 
 async function captureScreen(label) {
-  const screenshot = execFileSync('adb', ['exec-out', 'screencap', '-p'], { encoding: null });
+  const screenshot = execFileSync('adb', ['exec-out', 'screencap', '-p'], {
+    encoding: null,
+    timeout: 30_000,
+  });
   await writeFile(path.join(resultDirectory, `screen-${label}.png`), screenshot);
 }
 
@@ -258,6 +262,7 @@ try {
   await writeFile(path.join(resultDirectory, 'android-environment.json'), `${JSON.stringify(report.toolchain, null, 2)}\n`);
 
   currentStage = 'package-build';
+  console.log(`[178-F] ${currentStage}`);
   await run('npm', ['run', 'build', '-w', '@smilodon/core']);
   await run('npm', ['run', 'build', '-w', '@smilodon/react-native']);
   await run('npm', ['pack', '-w', '@smilodon/core', '--pack-destination', tarballDirectory]);
@@ -270,6 +275,7 @@ try {
   report.artifacts.reactNativeTarballSha256 = await sha256(nativeTarball);
 
   currentStage = 'packed-dependency-install';
+  console.log(`[178-F] ${currentStage}`);
   await cp(path.join(root, 'tests/react-native-runtime'), fixtureDirectory, {
     recursive: true,
     filter: source => !source.split(path.sep).includes('node_modules') && !source.split(path.sep).includes('artifacts'),
@@ -318,13 +324,20 @@ try {
   report.checks.push({ name: 'packed-install-and-native-entry-resolution', result: 'pass' });
 
   currentStage = 'android-build-and-install';
-  await run('./gradlew', ['--no-daemon', '--stacktrace', ':app:installRelease'], {
+  console.log(`[178-F] ${currentStage} (x86_64 only)`);
+  await run('./gradlew', [
+    '--no-daemon',
+    '--stacktrace',
+    '-PreactNativeArchitectures=x86_64',
+    ':app:installRelease',
+  ], {
     cwd: path.join(fixtureDirectory, 'android'),
     logFile: gradleOutput,
   });
   report.checks.push({ name: 'android-release-bundle-build-and-install', result: 'pass' });
 
   currentStage = 'app-launch-and-bridge-scenarios';
+  console.log(`[178-F] ${currentStage}`);
   await writeFile(path.join(resultDirectory, 'logcat-before-launch.log'), commandOutput('adb', ['logcat', '-c']));
   adb('shell', 'am', 'start', '-n', 'com.smilodonnativeruntime/.MainActivity');
   await waitForLog(logs => logs.includes('SMILODON_RUNTIME:APP_MOUNTED'), 'native fixture app mount');
