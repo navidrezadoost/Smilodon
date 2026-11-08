@@ -17,7 +17,7 @@ const child = spawn(executable, args, { stdio: ['ignore', 'pipe', 'pipe'], env: 
 child.stdout.pipe(out);
 child.stderr.pipe(err);
 await record({ event: 'child-start', pid: child.pid, executable, args });
-await writeFile(path.join(results, 'emulator-supervisor.json'), JSON.stringify({ supervisorPid: process.pid, childPid: child.pid, executable, args, startedAt: new Date().toISOString() }, null, 2) + '\n');
+await writeFile(path.join(results, `emulator-supervisor-${process.pid}.json`), JSON.stringify({ supervisorPid: process.pid, childPid: child.pid, executable, args, startedAt: new Date().toISOString() }, null, 2) + '\n');
 let stoppingSignal = null;
 for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(signal, () => {
   stoppingSignal = signal;

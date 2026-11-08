@@ -8,6 +8,7 @@ on:
       - 'packages/react-native/**'
       - 'scripts/certify-react-native-android.mjs'
       - 'scripts/compare-react-native-android-runtime.mjs'
+      - 'scripts/finalize-emulator-lifecycle.mjs'
       - 'scripts/install-emulator-supervisor.mjs'
       - 'scripts/supervise-emulator-process.mjs'
       - 'scripts/install-gradle-distribution.mjs'
@@ -86,6 +87,13 @@ jobs:
           disable-animations: true
           pre-emulator-launch-script: node scripts/install-emulator-supervisor.mjs
           script: node scripts/compare-react-native-android-runtime.mjs
+
+      - name: Finalize supervised emulator termination evidence
+        if: always()
+        env:
+          EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
+          NATIVE_CERTIFICATION_RESULTS_DIR: test-results/react-native-runtime-comparison
+        run: node scripts/finalize-emulator-lifecycle.mjs
 
       - name: Record comparison runner outcome
         if: always()

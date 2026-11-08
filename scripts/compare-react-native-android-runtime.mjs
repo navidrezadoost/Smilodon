@@ -198,6 +198,7 @@ async function runTrial(kind, index) {
   let offset = (await stat(logPath)).size;
   await tapNode('open', n => n['content-desc'] === 'runtime-open', directory);
   await waitFor(`${markerPrefix}OPEN`, offset);
+  await waitForNode('search-field-after-open', n => n.class === 'android.widget.EditText' || n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
   record.operations.push(await capture('opened-1', directory));
   record.operations.push(await capture('opened-2', directory));
 
@@ -205,6 +206,9 @@ async function runTrial(kind, index) {
   await tapNode('search', n => n.class === 'android.widget.EditText' || n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
   adb('shell', 'input', 'text', 'beta');
   await waitFor(`${markerPrefix}SEARCH "beta"`, offset);
+  const filteredNodes = await hierarchy('filtered-options-check', directory);
+  if (filteredNodes.some(n => n.text === 'Alpha' || n['content-desc'] === 'Alpha')) throw new Error(`${kind} WebView did not filter out Alpha after searching Beta.`);
+  if (!filteredNodes.some(n => n.text === 'Beta' || n['content-desc'] === 'Beta')) throw new Error(`${kind} WebView did not expose Beta after searching.`);
   record.operations.push(await capture('filtered-1', directory));
   record.operations.push(await capture('filtered-2', directory));
 

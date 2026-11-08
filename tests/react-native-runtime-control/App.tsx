@@ -39,6 +39,12 @@ export default function ControlApp() {
     return values.map(v => items.find(item => item.value === v)?.label ?? v);
   }, [items, value]);
 
+  const postToWeb = (message: unknown) => {
+    web.current?.injectJavaScript(
+      `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(JSON.stringify(message))}})); true;`,
+    );
+  };
+
   const report = useCallback((event: string, payload?: unknown) => {
     console.log(`SMILODON_CONTROL:${runtimeId}:${event}${payload === undefined ? '' : ` ${JSON.stringify(payload)}`}`);
   }, []);
@@ -50,7 +56,7 @@ export default function ControlApp() {
     };
   }, []);
 
-  const postState = () => web.current?.postMessage(JSON.stringify({type: 'STATE', data: {disabled, multiple, labels}}));
+  const postState = () => postToWeb({type: 'STATE', data: {disabled, multiple, labels}});
   const button = (id: string, label: string, onPress: () => void) => (
     <Pressable key={id} accessibilityRole="button" accessibilityLabel={`runtime-${id}`} onPress={onPress} style={styles.button}>
       <Text style={styles.buttonText}>{label}</Text>
@@ -60,7 +66,7 @@ export default function ControlApp() {
     const message = JSON.parse(event.nativeEvent.data) as {type: string; data?: unknown};
     if (message.type === 'OPEN') {
       report('OPEN');
-      web.current?.postMessage(JSON.stringify({type: 'OPEN'}));
+      postToWeb({type: 'OPEN'});
     } else if (message.type === 'SEARCH') {
       report('SEARCH', message.data);
     } else if (message.type === 'SELECT') {
@@ -72,8 +78,8 @@ export default function ControlApp() {
         : selected.value;
       setValue(next);
       report('CHANGE', {value: next, labels: [...(Array.isArray(next) ? next : [next])].map(v => items.find(item => item.value === v)?.label ?? v)});
-      web.current?.postMessage(JSON.stringify({type: 'STATE', data: {disabled, multiple, labels: [...(Array.isArray(next) ? next : [next])].map(v => items.find(item => item.value === v)?.label ?? v)}}));
-      if (!multiple) web.current?.postMessage(JSON.stringify({type: 'CLOSE'}));
+      postToWeb({type: 'STATE', data: {disabled, multiple, labels: [...(Array.isArray(next) ? next : [next])].map(v => items.find(item => item.value === v)?.label ?? v)}});
+      if (!multiple) postToWeb({type: 'CLOSE'});
     }
   };
 
@@ -84,11 +90,11 @@ export default function ControlApp() {
         value={JSON.stringify(value)} · {disabled ? 'disabled' : 'enabled'} · {multiple ? 'multiple' : 'single'} · {mounted ? 'mounted' : 'unmounted'}
       </Text>
       <View style={styles.controls}>
-        {button('open', 'Open', () => { report('OPEN'); web.current?.postMessage(JSON.stringify({type: 'OPEN'})); })}
-        {button('close', 'Close', () => { report('CLOSE'); web.current?.postMessage(JSON.stringify({type: 'CLOSE'})); })}
+        {button('open', 'Open', () => { report('OPEN'); postToWeb({type: 'OPEN'}); })}
+        {button('close', 'Close', () => { report('CLOSE'); postToWeb({type: 'CLOSE'}); })}
         {button('clear', 'Clear', () => { setValue(multiple ? [] : ''); report('CHANGE', {value: multiple ? [] : '', labels: []}); postState(); })}
-        {button('clear-search', 'Clear search', () => { web.current?.postMessage(JSON.stringify({type: 'CLEAR_SEARCH'})); report('CLEAR_SEARCH'); })}
-        {button('set-items', 'Set items', () => { const next = [{value:'delta',label:'Delta'},{value:'epsilon',label:'Epsilon'},{value:'locked',label:'Locked',disabled:true}]; setItems(next); setValue([]); web.current?.postMessage(JSON.stringify({type:'ITEMS',data:{items:next}})); report('SET_ITEMS'); })}
+        {button('clear-search', 'Clear search', () => { postToWeb({type: 'CLEAR_SEARCH'}); report('CLEAR_SEARCH'); })}
+        {button('set-items', 'Set items', () => { const next = [{value:'delta',label:'Delta'},{value:'epsilon',label:'Epsilon'},{value:'locked',label:'Locked',disabled:true}]; setItems(next); setValue([]); postToWeb({type:'ITEMS',data:{items:next}}); report('SET_ITEMS'); })}
         {button('set-value', 'Set value', () => { const next = multiple ? ['delta','epsilon'] : 'delta'; setValue(next); report('SET_VALUE', next); postState(); })}
         {button('toggle-disabled', 'Toggle disabled', () => { const next = !disabled; setDisabled(next); report('DISABLED_TOGGLED', next); setTimeout(postState, 0); })}
         {button('toggle-multiple', 'Toggle multiple', () => { const next = !multiple; setMultiple(next); setValue([]); report('MULTIPLE_TOGGLED', next); setTimeout(postState, 0); })}
