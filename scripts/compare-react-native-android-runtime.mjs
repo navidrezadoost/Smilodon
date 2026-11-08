@@ -198,12 +198,12 @@ async function runTrial(kind, index) {
   let offset = (await stat(logPath)).size;
   await tapNode('open', n => n['content-desc'] === 'runtime-open', directory);
   await waitFor(`${markerPrefix}OPEN`, offset);
-  await waitForNode('search-field-after-open', n => n.class === 'android.widget.EditText' || n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
+  await waitForNode('search-field-after-open', n => n.class === 'android.widget.EditText', directory);
   record.operations.push(await capture('opened-1', directory));
   record.operations.push(await capture('opened-2', directory));
 
   offset = (await stat(logPath)).size;
-  await tapNode('search', n => n.class === 'android.widget.EditText' || n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
+  await tapNode('search', n => n.class === 'android.widget.EditText', directory);
   adb('shell', 'input', 'text', 'beta');
   await waitFor(`${markerPrefix}SEARCH "beta"`, offset);
   const filteredNodes = await hierarchy('filtered-options-check', directory);
