@@ -21,7 +21,7 @@ let items=${JSON.stringify(originalItems)}, disabled=false, multiple=false, sele
 const options=document.getElementById('options'), list=document.getElementById('option-list'), search=document.getElementById('search');
 function render(){list.replaceChildren(...items.filter(item=>item.label.toLowerCase().includes(search.value.toLowerCase())).map(item=>{const b=document.createElement('button');b.textContent=item.label;b.disabled=disabled||item.disabled;b.setAttribute('aria-label',item.label);b.onclick=()=>send('SELECT',item.value);return b;}));document.getElementById('summary').textContent=selected.length?selected.join(', '):'Choose an item';}
 document.getElementById('summary').onclick=()=>send('OPEN');
-search.oninput=()=>{render();send('SEARCH',search.value);};
+search.oninput=()=>{for(const option of list.querySelectorAll('button')) option.hidden=!option.textContent.toLowerCase().includes(search.value.toLowerCase());send('SEARCH',search.value);};
 window.addEventListener('message',event=>{let m;try{m=JSON.parse(event.data)}catch{return}switch(m.type){case 'OPEN':options.hidden=false;break;case 'CLOSE':options.hidden=true;break;case 'CLEAR_SEARCH':search.value='';render();break;case 'STATE':disabled=m.disabled;multiple=m.multiple;selected=m.labels;render();break;case 'ITEMS':items=m.items;search.value='';render();break;}});
 render();
 </script></body></html>`;
