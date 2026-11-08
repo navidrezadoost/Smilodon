@@ -436,12 +436,21 @@ async function captureRuntimeDiagnostics(label) {
     const crashDirectory = '/tmp/android-runner';
     const crashFiles = (await readdir(crashDirectory)).filter(file => /^emu-crash-.*\.db$/.test(file));
     diagnostics.emulatorCrashFiles = [];
-    for (const file of crashFiles) {
-      const source = path.join(crashDirectory, file);
-      const destinationName = `emulator-crash-${label}-${file}`;
-      const destination = path.join(resultDirectory, destinationName);
-      await copyFile(source, destination);
-      diagnostics.emulatorCrashFiles.push({ file: destinationName, sizeBytes: (await stat(destination)).size, sha256: await sha256(destination) });
+    const transportUnavailable = Object.values(diagnostics.commands).some(command => command.result === 'unavailable');
+    if (!diagnostics.emulatorProcessPresent || transportUnavailable) {
+      for (const file of crashFiles) {
+        const source = path.join(crashDirectory, file);
+        const destinationName = `emulator-crash-${label}-${file}`;
+        const destination = path.join(resultDirectory, destinationName);
+        const sourceInfo = await stat(source);
+        if (sourceInfo.isDirectory()) {
+          await cp(source, destination, { recursive: true });
+          diagnostics.emulatorCrashFiles.push({ file: destinationName, entries: await listFilesWithHashes(destination) });
+        } else {
+          await copyFile(source, destination);
+          diagnostics.emulatorCrashFiles.push({ file: destinationName, sizeBytes: (await stat(destination)).size, sha256: await sha256(destination) });
+        }
+      }
     }
   } catch (error) {
     diagnostics.emulatorCrashFilesError = String(error?.message ?? error);
@@ -453,6 +462,17 @@ async function captureRuntimeDiagnostics(label) {
     : { result: 'unavailable', error: crashBuffer.error?.message ?? crashBuffer.stderr ?? String(crashBuffer.status) };
   await writeFile(path.join(resultDirectory, `runtime-diagnostics-${label}.json`), `${JSON.stringify(diagnostics, null, 2)}\n`);
   return diagnostics;
+}
+
+async function listFilesWithHashes(directory, relative = '') {
+  const results = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const childRelative = path.join(relative, entry.name);
+    const childPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) results.push(...await listFilesWithHashes(childPath, childRelative));
+    else if (entry.isFile()) results.push({ file: childRelative, sizeBytes: (await stat(childPath)).size, sha256: await sha256(childPath) });
+  }
+  return results;
 }
 
 function delay(ms) {
@@ -684,6 +704,7 @@ try {
   markStage('bridge-isolated-canary');
   await tapAndAssertEvent('open', 'OPEN');
   await adbCanary('post-open');
+  await delay(1_500);
   await captureStage('after-open', { requireWebContent: true });
   report.checks.push({
     name: 'isolated-android-bridge-canary-before-full-scenarios', result: 'pass',
