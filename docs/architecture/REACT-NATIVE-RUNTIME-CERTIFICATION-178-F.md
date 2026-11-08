@@ -1,6 +1,6 @@
 # Directive 178-F — React Native Android Runtime Certification
 
-Status: **Implementation in progress; Android runtime evidence pending. No native runtime pass is claimed.** `PRODUCTION_NO_GO` remains in effect.
+Status: **Android runtime qualification blocked. The packed APK builds and installs, and the app mounts, but the hosted emulator loses ADB/logcat responsiveness around the first bridge interaction. No native bridge pass is claimed.** `PRODUCTION_NO_GO` remains in effect.
 
 ## 1. 178-E post-merge integrity
 
@@ -57,6 +57,25 @@ The evidence is specific to Android API 35, the pinned emulator image, and the R
 
 If hosted execution fails, the runner records the failing stage and a provisional ownership category. The Android build logs, runtime logcat, UI hierarchy, and screenshot must be reviewed before assigning the final category among environment, dependency compatibility, test harness, native runtime, or WebView bridge. No production adapter changes are authorized by 178-F.
 
-The Android workflow is `.github/workflows/react-native-runtime-certification.yml`. Hosted run outcome, exact emulator metadata, installed tarball hashes, scenario results, and final failure classification will be added here before the evidence-only PR is finalized. Independent review is required before merge.
+The Android workflow is `.github/workflows/react-native-runtime-certification.yml`. It downloads the pinned Gradle 8.10.2 `bin` distribution from `downloads.gradle.org` and verifies SHA-256 `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26` before use. This avoids the hosted 504 responses from the Gradle GitHub release redirect.
+
+## 6. Hosted execution and failure classification
+
+178-E post-merge workflows passed on `5a407954302a5152c94d5dcaf900ee4adc71785c` as recorded above. On PR #62 head `8bfd71e0a82ea9d03294770747c53e9bf7d207f6`, CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline passed. The Android certification job did not pass.
+
+The hosted Android attempts exposed and resolved several certification-infrastructure issues before reaching the runtime boundary: emulator executable discovery, emulator package-version discovery without invoking its binary, packed tarball lockfile integrity, and using a release APK with its JavaScript bundle embedded. Earlier attempts also hit Gradle distribution 504s and ADB transport failures. These setup failures were not adapter results.
+
+| Run | Result | Evidence and classification |
+| --- | --- | --- |
+| [42465963200](https://github.com/navidrezadoost/Smilodon/actions/runs/42465963200) | Failed before package build | `./gradlew --version` received HTTP 504 fetching Gradle 8.10.2 through `services.gradle.org` to the GitHub release. Environment/download failure. |
+| [42466389565](https://github.com/navidrezadoost/Smilodon/actions/runs/42466389565) | Failed before emulator scenarios | Gradle setup action retried twice and received HTTP 504 for the same distribution. Environment/download failure. |
+| [42466778011](https://github.com/navidrezadoost/Smilodon/actions/runs/42466778011) | Packed install and release APK build/install passed; runtime interaction failed | Direct checksum-verified Gradle download worked. ADB `logcat -d` timed out before the first Open tap could be attempted. |
+| [42467522390](https://github.com/navidrezadoost/Smilodon/actions/runs/42467522390) | Packed install and release APK build/install passed; bridge callback unverified | Direct Gradle download worked. `APP_MOUNTED` and `SELECT_MOUNTED` were observed; the Open control was found and tapped. The subsequent React Native JS logcat query timed out, and emulator teardown reported connection refused on port 5554. The report has no verified bridge callback. |
+
+Run `42467522390` recorded this environment: Node `20.20.2`, npm `10.8.2`, Temurin Java `17.0.21`, Gradle `8.10.2`, Android API 35 / Android 15, Google API x86_64 emulator `sdk_gphone64_x86_64`, emulator package `37.2.13`, WebView `124.0.6367.219`, React Native `0.76.9`, React `18.3.1`, and `react-native-webview` `13.12.5`. Its report records packed Core SHA-256 `1af2a7b7cf844d228d5dd2ff55197bc28d1589e80e9fe9da7040da9f615ac27f`, React Native SHA-256 `0f46d29ff74d3283d2996697ce0a9a898d141c6980d72c0e3ca0592e98ef9210`, and fixture lockfile SHA-256 `1435cc4eecdb3981211e4bcd97fb1bab8f09c94ec82b82f83a35345f6f2d2627`.
+
+The saved UI hierarchy contains the React Native controls and an embedded WebView field showing `Alpha`. The saved initial screenshot is blank white. This visual discrepancy is unresolved. Together with the ADB/logcat timeout after the Open tap, it prevents distinguishing an emulator/transport failure from a runtime rendering or bridge failure. No defect in the production adapter is established, and no interaction, callback, controlled-state, imperative-method, or teardown/reconnect scenario is certified.
+
+Disposition: **`BLOCKED_ANDROID_RUNTIME_OR_EMULATOR_TRANSPORT — REVIEW_PENDING`**. The report is evidence of a successful packed install and APK build, followed by an incomplete runtime attempt. It is not a native qualification pass. PR #62 remains open and draft; no independent review has been submitted, no production adapter changes were made, and `PRODUCTION_NO_GO` remains in effect.
 
 `PRODUCTION_NO_GO` remains in effect.
