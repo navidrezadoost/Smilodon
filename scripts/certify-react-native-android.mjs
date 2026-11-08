@@ -221,6 +221,13 @@ try {
     throw new Error(`No booted Android emulator/device was found. adb devices output:\n${devices}`);
   }
   const androidSdkRoot = process.env.ANDROID_HOME ?? process.env.ANDROID_SDK_ROOT;
+  const emulatorExecutable = path.join(androidSdkRoot, 'emulator', 'emulator');
+  const emulatorPackageXml = await readFile(path.join(androidSdkRoot, 'emulator', 'package.xml'), 'utf8');
+  const emulatorRevisionXml = emulatorPackageXml.match(/<revision>([\s\S]*?)<\/revision>/)?.[1];
+  const emulatorRevision = emulatorRevisionXml && [...emulatorRevisionXml.matchAll(
+    /<(major|minor|micro)>([^<]+)<\/\1>/g,
+  )].map(([, field, value]) => `${field}=${value}`).join(', ');
+  if (!emulatorRevision) throw new Error('Could not read the installed Android emulator package revision.');
 
   currentStage = 'android-environment-capture';
   report.toolchain.android = {
@@ -238,7 +245,7 @@ try {
       .filter(line => /Current WebView|WebView package|webview provider/i.test(line)),
     screenSize: adb('shell', 'wm', 'size'),
     screenDensity: adb('shell', 'wm', 'density'),
-    emulator: commandOutput(path.join(androidSdkRoot, 'emulator', 'emulator'), ['-version']),
+    emulator: { executable: emulatorExecutable, packageRevision: emulatorRevision },
   };
   if (report.toolchain.android.apiLevel !== '35') {
     throw new Error(`Expected Android API 35, found ${report.toolchain.android.apiLevel}.`);
