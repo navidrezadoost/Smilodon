@@ -220,10 +220,11 @@ try {
   if (!/\bdevice\b/.test(devices.split('\n').slice(1).join('\n'))) {
     throw new Error(`No booted Android emulator/device was found. adb devices output:\n${devices}`);
   }
+  const androidSdkRoot = process.env.ANDROID_HOME ?? process.env.ANDROID_SDK_ROOT;
 
   currentStage = 'android-environment-capture';
   report.toolchain.android = {
-    sdkRoot: process.env.ANDROID_HOME ?? process.env.ANDROID_SDK_ROOT,
+    sdkRoot: androidSdkRoot,
     devices,
     apiLevel: adb('shell', 'getprop', 'ro.build.version.sdk'),
     release: adb('shell', 'getprop', 'ro.build.version.release'),
@@ -237,7 +238,7 @@ try {
       .filter(line => /Current WebView|WebView package|webview provider/i.test(line)),
     screenSize: adb('shell', 'wm', 'size'),
     screenDensity: adb('shell', 'wm', 'density'),
-    emulator: commandOutput('emulator', ['-version']),
+    emulator: commandOutput(path.join(androidSdkRoot, 'emulator', 'emulator'), ['-version']),
   };
   if (report.toolchain.android.apiLevel !== '35') {
     throw new Error(`Expected Android API 35, found ${report.toolchain.android.apiLevel}.`);
