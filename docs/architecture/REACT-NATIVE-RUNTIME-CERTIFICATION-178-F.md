@@ -183,4 +183,8 @@ The Android executable is wrapped before launch by a process supervisor. The sup
 | Workflow YAML parse and `git diff --check` | Passed |
 | Local Android execution | Not available; this host has no Android SDK/emulator |
 
-The hosted comparison has not yet run on this revision. Its results, QEMU exit evidence, matched completed trial counts, and platform decision are intentionally pending; no Android runtime or bridge pass is claimed. Previous 178-F and 178-F.1 run statuses and artifacts above remain unchanged. PR #62 remains draft and unmerged, independent review is pending, and `PRODUCTION_NO_GO` remains in effect.
+No controlled comparison has completed yet. QEMU exit evidence, matched completed trial counts, and the platform decision remain pending; no Android runtime or bridge pass is claimed. Previous 178-F and 178-F.1 run statuses and artifacts above remain unchanged. PR #62 remains draft and unmerged, independent review is pending, and `PRODUCTION_NO_GO` remains in effect.
+
+### First hosted 178-F.2 attempt
+
+Run [42480698042](https://github.com/navidrezadoost/Smilodon/actions/runs/42480698042) on head `18acb05bf759c33036237ed01409aab2545c81f1` failed before emulator boot or comparison. The process supervisor attempted to pass unopened Node.js `WriteStream` objects as child stdio; Node rejected them with `ERR_INVALID_ARG_VALUE`. The runner consequently recorded no QEMU lifecycle file and no comparison report, and completed zero control or Smilodon trials. This is a test-harness startup failure, not evidence about emulator stability or either app. The logs and outcome record are preserved in [artifact 13618021489](https://github.com/navidrezadoost/Smilodon/actions/runs/42480698042/artifacts/13618021489). The supervisor now uses child stdout/stderr pipes and streams them into the separate evidence files. A new hosted attempt is pending; the F.2 stability classification remains open.
