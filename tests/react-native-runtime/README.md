@@ -1,6 +1,6 @@
 # Android runtime certification fixture
 
-This minimal React Native `0.76.9` application exists only for the 178-F Android emulator workflow. The workflow builds Core and React Native from the checked-out commit, packs both workspaces, installs those tarballs into this app with the committed lockfile, builds the Android APK, and runs it on Android API 35.
+This minimal React Native `0.76.9` application exists only for the 178-F Android emulator workflow. The workflow builds Core and React Native from the checked-out commit, packs both workspaces, installs those tarballs into this app with the committed lockfile, builds and installs the signed release APK with its JavaScript bundle embedded, and runs it on Android API 35 without a Metro server.
 
 The screen drives `@smilodon/react-native` through its actual native `WebView`. The host-side runner uses Android UI accessibility nodes to operate controls and select visible options, then checks native callback logs for initialization, open/close, search, single and multiple selection, disabled state, controlled updates, imperative methods, and teardown/reconnect behavior.
 

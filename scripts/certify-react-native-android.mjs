@@ -16,7 +16,7 @@ const bundlePath = path.join(root, 'packages/react-native/src/generated/coreBund
 const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'smilodon-rn-android-178f-'));
 const fixtureDirectory = path.join(tempDirectory, 'app');
 const tarballDirectory = path.join(tempDirectory, 'tarballs');
-const gradleOutput = path.join(resultDirectory, 'gradle-install-debug.log');
+const gradleOutput = path.join(resultDirectory, 'gradle-install-release.log');
 
 await mkdir(resultDirectory, { recursive: true });
 await mkdir(tarballDirectory, { recursive: true });
@@ -318,11 +318,11 @@ try {
   report.checks.push({ name: 'packed-install-and-native-entry-resolution', result: 'pass' });
 
   currentStage = 'android-build-and-install';
-  await run('./gradlew', ['--no-daemon', '--stacktrace', ':app:installDebug'], {
+  await run('./gradlew', ['--no-daemon', '--stacktrace', ':app:installRelease'], {
     cwd: path.join(fixtureDirectory, 'android'),
     logFile: gradleOutput,
   });
-  report.checks.push({ name: 'android-debug-build-and-install', result: 'pass' });
+  report.checks.push({ name: 'android-release-bundle-build-and-install', result: 'pass' });
 
   currentStage = 'app-launch-and-bridge-scenarios';
   await writeFile(path.join(resultDirectory, 'logcat-before-launch.log'), commandOutput('adb', ['logcat', '-c']));
