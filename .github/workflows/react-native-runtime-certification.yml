@@ -23,11 +23,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore checksum-pinned Gradle distribution cache
-        uses: actions/cache@v4
+        id: gradle-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
           key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
-          save-always: true
 
       - uses: actions/setup-node@v4
         with:
@@ -112,6 +112,13 @@ jobs:
           fs.writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
           NODE
           test "$EMULATOR_OUTCOME" = success
+
+      - name: Save checksum-verified Gradle distribution cache
+        if: always() && steps.gradle.outputs.archive_ready == 'true' && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
+          key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
 
       - name: Preserve Android runtime evidence
         if: always()
