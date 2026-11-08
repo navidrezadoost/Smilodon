@@ -182,12 +182,16 @@ async function waitForLog(predicate, label, timeoutMs = 20_000) {
   const deadline = Date.now() + timeoutMs;
   let logs = '';
   while (Date.now() < deadline) {
-    logs = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+    logs = runtimeLogs();
     if (predicate(logs)) return logs;
     await delay(500);
   }
   await writeFile(path.join(resultDirectory, 'logcat-timeout.log'), logs);
   throw new Error(`Timed out waiting for ${label}`);
+}
+
+function runtimeLogs() {
+  return commandOutput('adb', ['logcat', '-d', '-v', 'brief', '-s', 'ReactNativeJS']);
 }
 
 function delay(ms) {
@@ -200,7 +204,7 @@ function runtimeEvent(logs, name, matchingText = '') {
 }
 
 async function tapAndAssertEvent(button, event, expectedText = '', timeoutMs = 20_000) {
-  const before = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+  const before = runtimeLogs();
   const priorCount = before.split('\n').filter(line => line.includes(`SMILODON_RUNTIME:${event}`)).length;
   await tapButton(button);
   await waitForLog(logs => {
@@ -402,13 +406,13 @@ try {
   }
   await textNode('Beta');
   await waitForLog(logs => runtimeEvent(logs, 'CHANGE', '"value":"beta"'), 'controlled single selection');
-  let logs = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+  let logs = runtimeLogs();
   if (!runtimeEvent(logs, 'SELECT', 'beta')) throw new Error('onSelect did not report the selected Beta item.');
   report.checks.push({ name: 'initialization-search-selection-controlled-state-and-callbacks', result: 'pass' });
 
   await tapButton('toggle-disabled');
   await delay(1_000);
-  const disabledChangeCount = commandOutput('adb', ['logcat', '-d', '-v', 'brief'])
+  const disabledChangeCount = runtimeLogs()
     .split('\n').filter(line => line.includes('SMILODON_RUNTIME:CHANGE')).length;
   await tapButton('open');
   const disabledNodes = await dumpUi('disabled-state');
@@ -418,7 +422,7 @@ try {
     adb('shell', 'input', 'tap', String(x), String(y));
     await delay(1_000);
   }
-  logs = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+  logs = runtimeLogs();
   const afterDisabledChangeCount = logs.split('\n').filter(line => line.includes('SMILODON_RUNTIME:CHANGE')).length;
   if (afterDisabledChangeCount !== disabledChangeCount) throw new Error('A disabled Select emitted an unexpected change callback.');
   report.checks.push({ name: 'disabled-state-suppresses-selection-change', result: 'pass' });
@@ -436,7 +440,7 @@ try {
   await tapButton('close');
   await tapAndAssertEvent('set-items', 'SET_ITEMS');
   await tapAndAssertEvent('set-value', 'SET_VALUE', '["delta","epsilon"]');
-  logs = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+  logs = runtimeLogs();
   if (!runtimeEvent(logs, 'CHANGE', '"labels":["Delta","Epsilon"]')) {
     throw new Error('Imperative setValue did not synchronize the selected values through the bridge.');
   }
@@ -449,11 +453,11 @@ try {
   const bridgeEventCount = logs => logs.split('\n').filter(line =>
     /SMILODON_RUNTIME:(OPEN|CLOSE|SELECT|CHANGE|SEARCH|CLEAR|DIAGNOSTIC)\b/.test(line),
   ).length;
-  const eventsAtUnmount = bridgeEventCount(commandOutput('adb', ['logcat', '-d', '-v', 'brief']));
+  const eventsAtUnmount = bridgeEventCount(runtimeLogs());
   await dumpUi('unmounted');
   report.artifacts.memoryAfterUnmount = await recordProcessMemory('unmounted');
   await delay(600);
-  logs = commandOutput('adb', ['logcat', '-d', '-v', 'brief']);
+  logs = runtimeLogs();
   if (bridgeEventCount(logs) !== eventsAtUnmount) {
     throw new Error('The old WebView emitted a bridge callback after Select teardown.');
   }
@@ -464,7 +468,7 @@ try {
   await tapButton('close');
   report.checks.push({ name: 'teardown-reconnect-and-post-reconnect-bridge', result: 'pass' });
 
-  await writeFile(path.join(resultDirectory, 'device-logcat.log'), commandOutput('adb', ['logcat', '-d', '-v', 'threadtime']));
+  await writeFile(path.join(resultDirectory, 'react-native-js-logcat.log'), runtimeLogs());
   await writeFile(path.join(resultDirectory, 'device-ui-final.xml'), (await dumpUi('final')).map(node => JSON.stringify(node)).join('\n'));
   await captureScreen('final');
   report.status = 'pass';
@@ -483,7 +487,7 @@ try {
   report.failure = String(error?.stack ?? error);
   recordCommandFailure(error);
   try {
-    await writeFile(path.join(resultDirectory, 'device-logcat-failure.log'), commandOutput('adb', ['logcat', '-d', '-v', 'threadtime']));
+    await writeFile(path.join(resultDirectory, 'react-native-js-logcat-failure.log'), runtimeLogs());
     await captureScreen('failure');
   } catch {
     // Preserve the original infrastructure or test failure.
