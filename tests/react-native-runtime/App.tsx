@@ -7,24 +7,28 @@ import {
   Text,
   View,
 } from 'react-native';
-import Select from '@smilodon/react-native';
+import Select, {
+  type SelectHandle,
+  type SelectItem,
+  type SelectValue,
+} from '@smilodon/react-native';
 
-const initialItems = [
+const initialItems: SelectItem[] = [
   {value: 'alpha', label: 'Alpha'},
   {value: 'beta', label: 'Beta'},
   {value: 'gamma', label: 'Gamma'},
   {value: 'locked', label: 'Locked', disabled: true},
 ];
 
-function report(event, detail) {
+function report(event: string, detail?: unknown) {
   const serialized = detail === undefined ? '' : ` ${JSON.stringify(detail)}`;
   console.log(`SMILODON_RUNTIME:${event}${serialized}`);
 }
 
 export default function App() {
-  const selectRef = useRef(null);
-  const [items, setItems] = useState(initialItems);
-  const [value, setValue] = useState('alpha');
+  const selectRef = useRef<SelectHandle | null>(null);
+  const [items, setItems] = useState<SelectItem[]>(initialItems);
+  const [value, setValue] = useState<SelectValue | undefined>('alpha');
   const [disabled, setDisabled] = useState(false);
   const [multiple, setMultiple] = useState(false);
   const [mounted, setMounted] = useState(true);
@@ -40,7 +44,7 @@ export default function App() {
     return () => report('SELECT_UNMOUNTED');
   }, [mounted]);
 
-  const button = (id, label, onPress) => (
+  const button = (id: string, label: string, onPress: () => void) => (
     <Pressable
       key={id}
       accessibilityRole="button"
