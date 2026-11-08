@@ -83,6 +83,7 @@ Disposition: **`BLOCKED_HOSTED_ANDROID_RUNTIME_INFRASTRUCTURE — REVIEW_PENDING
 
 `PRODUCTION_NO_GO` remains in effect.
 
+
 ## 7. Directive 178-F.1 — Infrastructure stabilization amendment
 
 Directive 178-F.1 is implemented on the existing PR #62 branch. It changes only the Android certification workflow, its runner, the Android-only fixture event correlation, and this evidence document. No production adapter code or package API was changed. Existing failed runs, artifacts, and package hashes above remain intact.
@@ -162,3 +163,24 @@ On this same PR head, CI, Tests, Phase 4 Certification, and Phase 4 Performance 
 Run [42477723912](https://github.com/navidrezadoost/Smilodon/actions/runs/42477723912) on PR head `2ed590f3861dca300cec0d9fd3735e7d412a2077` reused the checksum-pinned Gradle cache, booted the emulator, passed the pre-install and post-install ADB canaries, built and installed both packed packages and the APK, and launched the app. Continuous logcat recorded `APP_MOUNTED`, `SELECT_MOUNTED`, and the initial controlled `CHANGE` synchronization. During the after-mount hierarchy capture, ADB timed out; subsequent diagnostics found no connected device or QEMU process, about 15.7 GB host memory available, no captured kernel termination lines, and an unavailable device crash buffer. The run failed at `app-launch-and-mount` before WebView readiness or an interaction. This earlier stop on the same harness revision as the later successful partial interaction runs shows the hosted emulator failure is intermittent; it does not establish an adapter defect. Failure evidence is preserved in [artifact 13615679007](https://github.com/navidrezadoost/Smilodon/actions/runs/42477723912/artifacts/13615679007).
 
 At head `2ed590f3861dca300cec0d9fd3735e7d412a2077`, CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline all passed (runs `42477723983`, `42477723940`, `42477724013`, and `42477723950`). The Android certification run failed as described above. No PR merge or independent review is recorded.
+
+## 8. Directive 178-F.2 — Controlled emulator comparison
+
+178-F.2 adds a standalone Android control app at `tests/react-native-runtime-control/`. It uses React Native `0.76.9` and React Native WebView `13.12.5`, the same API 35 Pixel 2 emulator profile, and the same pinned Gradle distribution as the Smilodon fixture. The control app has no Smilodon dependency. It presents a small HTML list in WebView with matching native controls for open, search, and selection.
+
+The hosted comparison builds both release APKs, installs them in one emulator session, and runs three alternating trials per app (control, Smilodon, repeated). Each trial waits for app and WebView readiness, captures two screenshots and UI hierarchies at mount, open, filtered search, and selection, performs the same search and Beta selection, runs three ADB shell echo/boot-property probes, and preserves a continuous logcat slice. Per-trial evidence is stored separately. The subject app is built from packed Core and React Native tarballs produced by the checked-out revision. This comparison does not execute the full native bridge certification suite.
+
+The Android executable is wrapped before launch by a process supervisor. The supervisor records its child PID and arguments, one-second host process-tree snapshots, emulator stdout and stderr, signal forwarding, and the child's exit code or terminating signal. A workflow outcome record captures whether the emulator action itself succeeded and whether the lifecycle/comparison reports were written. This is independent of ADB availability. The existing API, image target, architecture, profile, graphics options, and Gradle checksum remain pinned.
+
+### 178-F.2 local validation
+
+| Check | Result |
+| --- | --- |
+| Comparison and supervisor scripts: `node --check` | Passed |
+| Targeted ESLint for comparison/supervisor scripts and control app | Passed |
+| Control fixture `npm ci --no-audit --no-fund` | Passed (638 packages installed) |
+| Control fixture Metro Android bundle | Passed |
+| Workflow YAML parse and `git diff --check` | Passed |
+| Local Android execution | Not available; this host has no Android SDK/emulator |
+
+The hosted comparison has not yet run on this revision. Its results, QEMU exit evidence, matched completed trial counts, and platform decision are intentionally pending; no Android runtime or bridge pass is claimed. Previous 178-F and 178-F.1 run statuses and artifacts above remain unchanged. PR #62 remains draft and unmerged, independent review is pending, and `PRODUCTION_NO_GO` remains in effect.

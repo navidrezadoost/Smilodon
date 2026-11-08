@@ -7,8 +7,12 @@ on:
       - 'packages/core/**'
       - 'packages/react-native/**'
       - 'scripts/certify-react-native-android.mjs'
+      - 'scripts/compare-react-native-android-runtime.mjs'
+      - 'scripts/install-emulator-supervisor.mjs'
+      - 'scripts/supervise-emulator-process.mjs'
       - 'scripts/install-gradle-distribution.mjs'
       - 'tests/react-native-runtime/**'
+      - 'tests/react-native-runtime-control/**'
   workflow_dispatch:
 
 permissions:
@@ -16,7 +20,7 @@ permissions:
 
 jobs:
   android-runtime:
-    name: Packed React Native bridge on Android API 35
+    name: Controlled React Native emulator comparison (not certification)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -67,14 +71,11 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Record pending emulator boot stage
-        run: |
-          mkdir -p test-results/react-native-runtime
-          node -e "require('node:fs').writeFileSync('test-results/react-native-runtime/emulator-boot.json', JSON.stringify({stage:'emulator-boot',status:'pending',startedAt:new Date().toISOString(),apiLevel:35,target:'google_apis',arch:'x86_64',profile:'pixel_2'},null,2)+'\\n')"
-
-      - name: Build packed packages and execute Android runtime scenarios
+      - name: Build paired apps and execute matched Android workloads
         id: emulator
         continue-on-error: true
+        env:
+          NATIVE_CERTIFICATION_RESULTS_DIR: test-results/react-native-runtime-comparison
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -83,33 +84,24 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: node scripts/certify-react-native-android.mjs
+          pre-emulator-launch-script: node scripts/install-emulator-supervisor.mjs
+          script: node scripts/compare-react-native-android-runtime.mjs
 
-      - name: Record emulator runner outcome and preserve required failure
+      - name: Record comparison runner outcome
         if: always()
         env:
           EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
         run: |
+          mkdir -p test-results/react-native-runtime-comparison
           node - <<'NODE'
           const fs = require('node:fs');
-          const path = 'test-results/react-native-runtime/emulator-boot.json';
-          let record = { stage: 'emulator-boot', startedAt: new Date().toISOString() };
-          if (fs.existsSync(path)) record = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (process.env.EMULATOR_OUTCOME === 'success') {
-            record.status = 'pass';
-            record.finishedAt = new Date().toISOString();
-          } else if (process.env.EMULATOR_OUTCOME === 'skipped') {
-            record.status = 'skipped';
-            record.failureCode = 'UPSTREAM_REQUIRED_STAGE_FAILED';
-            record.failure = 'Emulator setup did not start because an earlier required workflow stage failed.';
-            record.finishedAt = new Date().toISOString();
-          } else if (!fs.existsSync('test-results/react-native-runtime/runtime-certification.json')) {
-            record.status = 'fail';
-            record.failureCode = 'ANDROID_EMULATOR_BOOT_OR_RUNNER_INFRASTRUCTURE';
-            record.failure = 'Emulator runner failed before the certification runner wrote a runtime report.';
-            record.finishedAt = new Date().toISOString();
-          }
-          fs.writeFileSync(path, JSON.stringify(record, null, 2) + '\n');
+          const path = 'test-results/react-native-runtime-comparison/runner-outcome.json';
+          fs.writeFileSync(path, JSON.stringify({
+            at: new Date().toISOString(),
+            emulatorRunnerOutcome: process.env.EMULATOR_OUTCOME,
+            qemuLifecycleAvailable: fs.existsSync('test-results/react-native-runtime-comparison/emulator-lifecycle.jsonl'),
+            comparisonReportAvailable: fs.existsSync('test-results/react-native-runtime-comparison/comparison.json'),
+          }, null, 2) + '\n');
           NODE
           test "$EMULATOR_OUTCOME" = success
 
@@ -125,6 +117,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: react-native-android-runtime-evidence
-          path: test-results/react-native-runtime/
+          path: test-results/react-native-runtime-comparison/
           if-no-files-found: warn
           retention-days: 30
