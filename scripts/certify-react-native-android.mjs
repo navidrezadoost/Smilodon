@@ -160,6 +160,7 @@ async function captureScreen(label) {
   const screenshot = execFileSync('adb', ['-s', emulatorSerial, 'exec-out', 'screencap', '-p'], {
     encoding: null,
     timeout: 30_000,
+    maxBuffer: 32 * 1024 * 1024,
   });
   await writeFile(path.join(resultDirectory, `screen-${label}.png`), screenshot);
   return {
@@ -764,9 +765,15 @@ try {
   }
   report.failureCode = currentStage === 'app-launch-and-bridge-scenarios'
     ? 'ANDROID_RUNTIME_OBSERVABILITY_OR_BRIDGE_UNRESOLVED'
+    : error?.code === 'ENOBUFS'
+      ? 'TEST_HARNESS_SCREENSHOT_BUFFER_LIMIT'
     : undefined;
-  report.failureOwnership = currentStage.startsWith('android-environment')
+  report.failureOwnership = error?.code === 'ENOBUFS'
+    ? 'test-harness-screenshot-capture'
+    : currentStage.startsWith('android-environment')
     ? 'environment'
+    : currentStage === 'emulator-boot'
+      ? 'emulator-boot-or-stage-capture; requires evidence review'
     : currentStage === 'package-build'
       ? 'package-build-or-source'
       : currentStage === 'packed-dependency-install'
