@@ -97,14 +97,14 @@ Stage captures now attempt UI hierarchy, screenshot, app process, Android exit/c
 
 | Gate | Result |
 | --- | --- |
-| Gradle checksum and failure classification | Checksum passed on hosted runs `42473638178`, `42474005423`, `42474841708`, and `42475860539`; cache saved on `42475860539`, cache-hit reuse pending |
-| Emulator boot and ADB health evidence | Boot and three-round pre/post-install ADB canaries passed on run `42474841708` |
-| ADB canaries before and after app interaction | Pre-install, post-install, and post-Open canaries passed on run `42474841708`; transport failed during later evidence capture |
-| Continuous logcat and unique-run callback assertions | `APP_MOUNTED`, `SELECT_MOUNTED`, initial synchronization, and one `OPEN` callback recorded on run `42474841708` |
-| Stage screenshots, hierarchy, and process/crash evidence | Boot, install, mount, and WebView-ready captures recorded; post-Open hierarchy unavailable after emulator loss |
-| Isolated Open canary gates full scenarios | Open callback and post-Open canary passed; full suite remained blocked by emulator/ADB loss |
-| Failure-safe evidence on setup/emulator failure | Evidence artifact uploaded for each hosted attempt |
-| Standard hosted CI | Passed on `6124ad91459ad6f0109715a2d3aa01215b4ab2d5` (runs `42474841743`, `42474841776`, `42474841727`, `42474841758`); pending on the newest amendment |
+| Gradle checksum and failure classification | Exact SHA-256 passed on all completed setup attempts; run `42476146355` reused the checksum-valid Actions cache without downloading Gradle |
+| Emulator boot and ADB health evidence | Boot and three-round pre-install and post-install canaries passed on runs `42474841708`, `42475739495`, and `42476146355` |
+| ADB canaries before and after app interaction | Pre-install, post-install, and post-Open canaries all passed on `42476146355`; the emulator and ADB then disappeared during later scenarios |
+| Continuous logcat and unique-run callback assertions | On `42476146355`, the log verified mount, initial sync, open, close, clear, search, and Beta selection callbacks with the unique run ID |
+| Stage screenshots, hierarchy, and process/crash evidence | Boot, install, mount, WebView-ready, and post-Open screenshots and hierarchies were captured on `42476146355`; failure diagnostics recorded missing ADB device and QEMU process, available host memory, and unavailable device crash buffer |
+| Isolated Open canary gates full scenarios | Open callback, post-Open ADB canary, screenshot, and hierarchy passed; partial interaction scenarios passed, then the full suite stopped on emulator/ADB loss during disabled-state testing |
+| Failure-safe evidence on setup/emulator failure | Evidence artifacts uploaded for each hosted attempt, including runs `42475739495` and `42476146355` |
+| Standard hosted CI | CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline passed on `a7221f65fb27aa9a0a8a6532192d0f464f9af1f9` (runs `42476146353`, `42476146366`, `42476146372`, `42476146375`) |
 | Independent authorized review | Pending; PR remains draft and unmerged |
 
 The local host has no Android SDK or emulator. Local verification can cover script syntax, lint, report failure handling, and repository diff integrity, but cannot establish Android runtime behavior. Hosted evidence and the exact tested commit are recorded below as runs complete.
@@ -134,3 +134,17 @@ PR head `7effb1de7489489a18456f386501234d7018cc75` (PR merge checkout `954ab4142
 The verified 136,494,016-byte Gradle archive was successfully saved under its checksum-keyed Actions cache after this later-stage failure. The next hosted run will establish cache-hit reuse. The runner now retries the hierarchy dump/read once, records both command results, and assigns a specific harness failure code if the file remains unavailable.
 
 The standard workflows all passed on this same PR head: CI run `42474841743`, Tests run `42474841776`, Phase 4 Certification run `42474841727`, and Phase 4 Performance Baseline run `42474841758`. Independent review remains absent, PR #62 remains draft, and no merge is authorized.
+
+### Fifth hosted 178-F.1 attempt
+
+PR head `70a3c1c3ec42bf284e177578e48add98a05de588`, run [42475739495](https://github.com/navidrezadoost/Smilodon/actions/runs/42475739495), verified the Gradle checksum, booted the API 35 emulator, passed all three pre-install and post-install ADB echo/getprop probe pairs, installed the packed packages, and built and installed the release APK. Logcat recorded `APP_MOUNTED`, `SELECT_MOUNTED`, and initial `CHANGE` synchronization. The after-mount UI hierarchy command timed out; subsequent diagnostics found no listed ADB device and no QEMU process. The app-launch-and-mount stage therefore failed before WebView readiness or any interaction. Host diagnostics showed about 15.6 GB available memory and no captured kernel emulator-termination lines. The device crash buffer was unavailable and the copied emulator crash database contained only `settings.dat`. The run is classified as `ANDROID_EMULATOR_ADB_TRANSPORT_LOST`; no adapter result is inferred. Failure evidence is preserved in [artifact 13615552852](https://github.com/navidrezadoost/Smilodon/actions/runs/42475739495/artifacts/13615552852). This attempt used head `70a3c1c`; its UI hierarchy retry was followed by the latest attempt below.
+
+### Sixth hosted 178-F.1 attempt
+
+PR head `a7221f65fb27aa9a0a8a6532192d0f464f9af1f9`, run [42476146355](https://github.com/navidrezadoost/Smilodon/actions/runs/42476146355), confirmed checksum-keyed Gradle cache reuse: `cacheCandidate.valid` was true for SHA-256 `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`, and no download attempt was needed. Emulator boot, packed package installation, release APK build/install, and all pre-install, post-install, and post-Open ADB canaries passed. The bounded hierarchy retry also worked: mount, WebView-ready, and post-Open stage screenshots and UI hierarchies were saved.
+
+The unique-run logcat verified `APP_MOUNTED`, `SELECT_MOUNTED`, initial `CHANGE` synchronization, `OPEN`, `CLOSE`, another `OPEN`, `clear` changes, search updates for `beta`, `SELECT "beta"`, and the controlled `CHANGE` to Beta. Search filtering and clear-search checks passed, as did the Open canary. The screenshot at WebView readiness visibly shows the fixture and Alpha control. The post-Open screenshot shows the Select's open indicator but no visible option list, while the corresponding accessibility hierarchy contains the options; visual presentation of the expanded list therefore remains unresolved.
+
+The run then failed in `bridge-full-scenarios` when `tapButton('toggle-disabled')` attempted a UI hierarchy read and `adb` timed out. Failure diagnostics recorded `adb devices` with no device, no QEMU emulator process, about 15.6 GB host memory available, no captured kernel termination lines, and an unavailable device crash buffer. Continuous logcat ended with exit code 255 after the emulator disappeared. This isolates the immediate interruption to emulator/ADB process loss, but does not explain why QEMU exited. The report marks the initialization, search, Beta selection, and callback check as passed; disabled-state, multiple-selection, imperative update/clear, and teardown/reconnect scenarios did not complete. The full native runtime qualification remains failed and no production adapter defect is established. Complete evidence is preserved in [artifact 13615722817](https://github.com/navidrezadoost/Smilodon/actions/runs/42476146355/artifacts/13615722817).
+
+At head `a7221f65fb27aa9a0a8a6532192d0f464f9af1f9`, the standard CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline workflows all passed (runs `42476146353`, `42476146366`, `42476146372`, and `42476146375`). The Android certification job failed as described above. PR #62 remains open and draft, with no submitted independent review and no merge authorization. `PRODUCTION_NO_GO` remains in effect.
