@@ -276,12 +276,22 @@ try {
   });
   const appArtifactDirectory = path.join(fixtureDirectory, 'artifacts');
   await mkdir(appArtifactDirectory, { recursive: true });
-  await cp(coreTarball, path.join(appArtifactDirectory, 'smilodon-core-1.10.0.tgz'));
-  await cp(nativeTarball, path.join(appArtifactDirectory, 'smilodon-react-native-1.10.0.tgz'));
+  const fixtureCoreTarball = path.join(appArtifactDirectory, 'smilodon-core-1.10.0.tgz');
+  const fixtureNativeTarball = path.join(appArtifactDirectory, 'smilodon-react-native-1.10.0.tgz');
+  await cp(coreTarball, fixtureCoreTarball);
+  await cp(nativeTarball, fixtureNativeTarball);
 
-  await run('npm', ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'], {
-    cwd: fixtureDirectory,
-  });
+  const fixtureLockPath = path.join(fixtureDirectory, 'package-lock.json');
+  const fixtureLock = JSON.parse(await readFile(fixtureLockPath, 'utf8'));
+  const coreLockEntry = fixtureLock.packages?.['node_modules/@smilodon/core'];
+  const nativeLockEntry = fixtureLock.packages?.['node_modules/@smilodon/react-native'];
+  if (!coreLockEntry || !nativeLockEntry) {
+    throw new Error('Fixture lockfile is missing a packed Core or React Native package entry.');
+  }
+  coreLockEntry.integrity = `sha512-${createHash('sha512').update(await readFile(fixtureCoreTarball)).digest('base64')}`;
+  nativeLockEntry.integrity = `sha512-${createHash('sha512').update(await readFile(fixtureNativeTarball)).digest('base64')}`;
+  await writeFile(fixtureLockPath, `${JSON.stringify(fixtureLock, null, 2)}\n`);
+
   await run('npm', ['ci', '--no-audit', '--no-fund'], { cwd: fixtureDirectory });
   const nativeEntry = commandOutput('node', [
     '--conditions=react-native',
