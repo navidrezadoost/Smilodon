@@ -1,0 +1,76 @@
+name: React Native Android Runtime Certification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/react-native-runtime-certification.yml'
+      - 'packages/core/**'
+      - 'packages/react-native/**'
+      - 'scripts/certify-react-native-android.mjs'
+      - 'tests/react-native-runtime/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-runtime:
+    name: Packed React Native bridge on Android API 35
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: tests/react-native-runtime/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Pin fixture package manager
+        run: npm install --global npm@10.8.2
+
+      - name: Verify pinned Node and npm toolchain
+        run: |
+          node --version
+          npm --version
+          test "$(node --version)" = 'v20.20.2'
+          test "$(npm --version)" = '10.8.2'
+          java --version
+
+      - name: Install locked repository dependencies
+        run: npm ci
+
+      - name: Enable Android KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build packed packages and execute Android runtime scenarios
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: node scripts/certify-react-native-android.mjs
+
+      - name: Preserve Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-native-android-runtime-evidence
+          path: test-results/react-native-runtime/
+          if-no-files-found: warn
+          retention-days: 30
