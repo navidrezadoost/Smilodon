@@ -305,3 +305,11 @@ During multiple selection, after the first Alpha selection, the emulator process
 The alternate-backend experiment is complete and no further emulator runs are authorized by this directive. Full screenshots, UI hierarchies, logs, package provenance, runtime report, host diagnostics, and coredump metadata are preserved under `/tmp/smilodon-178f4-evidence/renderer-software/`; the separate initial Gradle setup failure is under `/tmp/smilodon-178f4-evidence/renderer-software-setup-failure/`. The evidence manifest is `/tmp/smilodon-178f4-evidence/renderer-software-sha256.txt`.
 
 Disposition: **`178-F.4_RENDERER_COMPARISON_REPRODUCED_QEMU_CRASH — PHYSICAL_DEVICE_REQUIRED`**. The renderer change did not eliminate the emulator crash, and no complete bridge pass was obtained. Stop emulator experimentation and require physical Android execution for the primary certification objective. PR #62 remains unmerged; independent review remains pending. `PRODUCTION_NO_GO` remains in effect.
+
+## 9. Directive 178-F.5 — Physical-device availability gate
+
+The runtime source baseline remains `fe88313329b0b415826431697d642da07a014ca7`. The F.4 evidence-report update is commit `bcb68d8ceba97c794a3a9b8527b86fc21ec5c340`; these are distinct provenance records. F.3 and F.4 evidence directories and their hashes remain preserved as recorded above.
+
+Physical-device availability was checked on 2026-11-09 before beginning any F.5 workload. `adb devices -l` listed no devices, and `lsusb` showed no Android handset or tablet. No device metadata, control cycles, APK install, or subject scenarios could be collected. No emulator was started for this check.
+
+Disposition: **`BLOCKED_PHYSICAL_DEVICE_UNAVAILABLE`**. Stop F.5 execution until a supported physical Android device with USB debugging is connected. No emulator result substitutes for this gate. PR #62 was verified open and Draft at head `bcb68d8ceba97c794a3a9b8527b86fc21ec5c340`, with no independent review recorded; it remains unmerged. `PRODUCTION_NO_GO` remains in effect.
