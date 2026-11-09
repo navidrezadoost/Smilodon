@@ -226,3 +226,39 @@ The runner's initial readiness selector now checks for the subject's actual `Alp
 Across three independent sessions, the control workload completed 3/3 times. The first two Smilodon starts emitted initial state callbacks but QEMU exited by `SIGSEGV` during the first post-launch hierarchy capture (2/2); the third stayed alive and exposed the Alpha field, but the runner rejected it because of its incorrect placeholder expectation. Thus, the QEMU signal is repeated but not consistent across subject starts, and the comparison harness also had a subject-specific readiness mismatch. The evidence does not establish whether the two signals came from an emulator defect, the hierarchy interaction with the native view, or the adapter/WebView workload. No subject interaction beyond initial mount/synchronization has been certified.
 
 Disposition: **`INCONCLUSIVE_HOSTED_ANDROID_COMPARISON — QUALIFICATION_BLOCKED`**. Three controls completed, two of three subject sessions recorded QEMU `SIGSEGV`, and the third exposed a readiness assertion defect before interaction. The first evidence points to a subject-associated failure, but the third run prevents a consistent causal attribution. The comparison runner now checks for the subject's actual Alpha field. Rerun the corrected matched comparison and investigate the first hierarchy operation if QEMU fails again. Do not change production adapter code until a defect is isolated. The full native bridge gate remains blocking; PR #62 remains open, draft, and unmerged with no independent review. `PRODUCTION_NO_GO` remains in effect.
+
+### Ninth 178-F.2 attempt — query was appended to the selected label
+
+Run [42554479827](https://github.com/navidrezadoost/Smilodon/actions/runs/42554479827) on head `fead4f0ffe2d93dac2f4cbf2650fb4a02681359a` completed the control trial in 37.1 seconds. The subject mounted and opened, but its search field already contained the selected value `Alpha`; the runner appended `beta`, producing `SEARCH "Alphabeta"` and timing out while waiting for `SEARCH "beta"`. The accessibility hierarchy showed the field and options, ADB remained responsive, and supervised QEMU exited normally with code 0 during teardown. This is a comparison-input mismatch, not a QEMU loss or adapter finding. Evidence: [artifact 13646908623](https://github.com/navidrezadoost/Smilodon/actions/runs/42554479827).
+
+The runner was amended to replace existing input before typing the query. Local syntax, ESLint, and diff checks passed; commit `e6a20dd792dc8fcabb3dcb8dc84927f5f8bbd173` contains that harness-only change.
+
+### Tenth 178-F.2 attempt — filtered option remained behind the keyboard
+
+Run [42555679152](https://github.com/navidrezadoost/Smilodon/actions/runs/42555679152) on head `e6a20dd792dc8fcabb3dcb8dc84927f5f8bbd173` completed the control trial in 42.1 seconds. The subject search produced `SEARCH "beta"`; the hierarchy and screenshot confirmed that Alpha was filtered out and Beta remained. The subsequent Beta tap failed because the soft keyboard covered the subject's option row and its accessibility bounds were outside the visible area. QEMU remained present and exited normally with code 0 during teardown. Thus the subject's mount, open, search, and filter stages ran, but selection did not. Evidence: [artifact 13647382262](https://github.com/navidrezadoost/Smilodon/actions/runs/42555679152).
+
+The runner was amended to dismiss the keyboard before capturing and selecting the filtered option. This keeps the same interaction in both apps. Commit `01c40865f127e26e5a8ef80f19f221e4fb6b29e7` contains this harness-only change.
+
+### Eleventh 178-F.2 attempt — Android UiAutomation failure during subject startup
+
+Run [42556814028](https://github.com/navidrezadoost/Smilodon/actions/runs/42556814028) on head `01c40865f127e26e5a8ef80f19f221e4fb6b29e7` completed the control workload. The subject mounted and logged its initial controlled state. The first hierarchy dump then failed with an Android `UiAutomation` fatal exception, `java.lang.RuntimeException: Bad file descriptor`, while QEMU remained alive; the supervisor recorded exit code 0 at teardown. No subject interaction ran. Evidence: [artifact 13647429960](https://github.com/navidrezadoost/Smilodon/actions/runs/42556814028).
+
+The comparison runner now retries a failed hierarchy dump/read once after 500 ms. Both attempts remain recorded in the ADB evidence. Commit `c0af4594400fb3817d46e4b77a3c17f3027f0e86` contains this bounded harness-only change.
+
+### Twelfth 178-F.2 attempt — QEMU SIGSEGV during subject text entry
+
+Run [42557626194](https://github.com/navidrezadoost/Smilodon/actions/runs/42557626194) on head `c0af4594400fb3817d46e4b77a3c17f3027f0e86` completed the control trial. The subject mounted, opened, and produced repeated screenshots and hierarchies. ADB then timed out on `KEYCODE_MOVE_END`, the first key event used to erase `Alpha`, and the supervisor recorded QEMU PID `2770` exiting by `SIGSEGV`. No search query was entered. This is a genuine supervised emulator crash temporally associated with subject text-input interaction; it does not establish the underlying fault or prove a production adapter defect. Evidence: [artifact 13647548921](https://github.com/navidrezadoost/Smilodon/actions/runs/42557626194).
+
+To remove synthetic deletion from the comparison, the next runner revision cleared the initial selection using the matching Clear control in both apps before opening and searching. This also makes both search fields start empty. Commit `fd74be1e908425d7e0868d698493b547411e4e38` contains that change.
+
+### Thirteenth 178-F.2 attempt — Android system launcher ANR in control trial
+
+Run [42558590334](https://github.com/navidrezadoost/Smilodon/actions/runs/42558590334) on head `fd74be1e908425d7e0868d698493b547411e4e38` failed during the control trial, before any subject app launch. Logcat confirmed control-app mount and `WEBVIEW_READY`, but repeated hierarchy captures showed the Android system dialog **“Pixel Launcher isn't responding”** instead of the control UI. The supervisor recorded QEMU exit code 0 during workflow teardown. This is a hosted emulator/OS stability failure; it provides no subject comparison. Evidence: [artifact 13648731264](https://github.com/navidrezadoost/Smilodon/actions/runs/42558590334).
+
+CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline all passed on `fd74be1e908425d7e0868d698493b547411e4e38` (runs `42558590294`, `42558590276`, `42558590349`, and `42558590293`). The Android comparison workflow failed as described above.
+
+### Updated 178-F.2 comparison finding
+
+The five runs above preserve distinct outcomes rather than combining them into a pass: four completed control workloads before the final control-side launcher ANR; subject runs exposed a prefilled-search mismatch, then passed search/filter but not selection, then hit an Android `UiAutomation` Binder failure, and once triggered a supervised QEMU `SIGSEGV` during synthetic key input. The final run failed in the control app before subject launch. These results show that the hosted emulator and UI automation are not consistently reliable enough to finish the paired comparison. They do not isolate the QEMU crash to production adapter code, nor establish that the control and subject are equally stable.
+
+Disposition remains **`INCONCLUSIVE_HOSTED_ANDROID_COMPARISON — QUALIFICATION_BLOCKED`**. No full matched comparison or native bridge qualification passed. The existing report, hashes, and failed run statuses remain preserved; no production adapter code or API was changed. PR #62 remains open and draft, independent review is pending, and `PRODUCTION_NO_GO` remains in effect. Further hosted retries should stop until a stable dedicated Android host or physical device is available, or a narrowly identified emulator/automation issue can be addressed.
