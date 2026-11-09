@@ -191,7 +191,9 @@ async function runTrial(kind, index) {
   adb('shell', 'am', 'start', '-n', app.activity);
   await waitFor(`${markerPrefix}APP_MOUNTED`, baseOffset);
   await waitFor(`${markerPrefix}${kind === 'subject' ? 'SELECT_MOUNTED' : 'WEBVIEW_READY'}`, baseOffset);
-  await waitForNode('initial-webview-control', n => n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
+  await waitForNode('initial-webview-control', kind === 'subject'
+    ? n => n.text === 'Alpha' || n['content-desc'] === 'Alpha'
+    : n => n.text === 'Choose an item' || n['content-desc'] === 'Choose an item', directory);
   record.operations.push(await capture('mounted-1', directory));
   record.operations.push(await capture('mounted-2', directory));
 
