@@ -1,0 +1,5 @@
+b04461c7379d8122f7122991e7ff236432459109785a0e5e3abcc1cfd0ac4405  docs/architecture/PRODUCTION-READINESS-AUDIT-178-G.md
+c8d4c1205ece3cd07f2194cb1cadf0458f44c62412e8895f60823cf3f558f453  docs/architecture/178-g-evidence/dependency-audit-context-2026-11-09.json
+d9ab089a2d7606ec8eb14689ab494f6f3fb83984380519e2fb3377fbd9829769  docs/architecture/178-g-evidence/npm-audit-locked-full-2026-11-09.json
+8def2f86b46963e8f04ec2f07fbeafc7078064513448af24067d209090e681b8  docs/architecture/178-g-evidence/npm-audit-locked-production-only-2026-11-09.json
+6a4afe29c174521901dcb30b1267d0425118446f62c4042495339eea88b9720a  docs/architecture/178-g-evidence/skipped-test-inventory-2026-11-09.json

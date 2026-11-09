@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-11-09T10:56:20+03:30",
+  "baselineCommit": "5a407954302a5152c94d5dcaf900ee4adc71785c",
+  "node": "v20.20.2",
+  "npm": "10.8.2",
+  "lockfile": "package-lock.json",
+  "lockfileSha256": "e09d2f6ff33c905943cd2eb93b57a0887f5193b13e9bec0a04819c0282f447c5",
+  "command": "npm audit --package-lock-only --json",
+  "totalVulnerablePackageEntries": 45,
+  "severityCounts": {
+    "low": 3,
+    "moderate": 21,
+    "critical": 6,
+    "high": 15
+  },
+  "ownershipCounts": {
+    "transitive_low": 2,
+    "direct_low": 1,
+    "direct_moderate": 7,
+    "transitive_moderate": 14,
+    "direct_critical": 3,
+    "transitive_high": 13,
+    "transitive_critical": 3,
+    "direct_high": 2
+  },
+  "fixAvailabilityCounts": {
+    "boolean_fix_available": 23,
+    "named_target_version": 16,
+    "no_fix_reported": 6
+  },
+  "omitDevCommand": "npm audit --package-lock-only --omit=dev --json",
+  "omitDevVulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "allAuditedPackageLocationsMarkedDevInLock": true,
+  "rawFullReport": "npm-audit-locked-full-2026-11-09.json",
+  "rawProductionOnlyReport": "npm-audit-locked-production-only-2026-11-09.json"
+}
