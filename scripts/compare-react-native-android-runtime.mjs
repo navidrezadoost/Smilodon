@@ -214,6 +214,11 @@ async function runTrial(kind, index) {
   for (let i = 0; i < Array.from(String(searchField.text ?? '')).length; i += 1) adb('shell', 'input', 'keyevent', '67'); // KEYCODE_DEL
   adb('shell', 'input', 'text', 'beta');
   await waitFor(`${markerPrefix}SEARCH "beta"`, offset);
+  // On Android the subject's option list is below the focused field and is
+  // covered by the soft keyboard. Dismiss it in both apps before checking and
+  // selecting the matching result.
+  adb('shell', 'input', 'keyevent', '4'); // KEYCODE_BACK dismisses the IME
+  await delay(750);
   const filteredNodes = await hierarchy('filtered-options-check', directory);
   if (filteredNodes.some(n => n.text === 'Alpha' || n['content-desc'] === 'Alpha')) throw new Error(`${kind} WebView did not filter out Alpha after searching Beta.`);
   if (!filteredNodes.some(n => n.text === 'Beta' || n['content-desc'] === 'Beta')) throw new Error(`${kind} WebView did not expose Beta after searching.`);
