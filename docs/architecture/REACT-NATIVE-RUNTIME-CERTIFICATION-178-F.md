@@ -262,3 +262,46 @@ CI, Tests, Phase 4 Certification, and Phase 4 Performance Baseline all passed on
 The five runs above preserve distinct outcomes rather than combining them into a pass: four completed control workloads before the final control-side launcher ANR; subject runs exposed a prefilled-search mismatch, then passed search/filter but not selection, then hit an Android `UiAutomation` Binder failure, and once triggered a supervised QEMU `SIGSEGV` during synthetic key input. The final run failed in the control app before subject launch. These results show that the hosted emulator and UI automation are not consistently reliable enough to finish the paired comparison. They do not isolate the QEMU crash to production adapter code, nor establish that the control and subject are equally stable.
 
 Disposition remains **`INCONCLUSIVE_HOSTED_ANDROID_COMPARISON — QUALIFICATION_BLOCKED`**. No full matched comparison or native bridge qualification passed. The existing report, hashes, and failed run statuses remain preserved; no production adapter code or API was changed. PR #62 remains open and draft, independent review is pending, and `PRODUCTION_NO_GO` remains in effect. Further hosted retries should stop until a stable dedicated Android host or physical device is available, or a narrowly identified emulator/automation issue can be addressed.
+
+## 7. Directive 178-F.3 — Local KVM handoff result
+
+The frozen source baseline for this investigation is commit `fe88313329b0b415826431697d642da07a014ca7`. The repository worktree was clean before the F.3 evidence amendment. No production adapter or package API changes were made, and no GitHub actions were triggered.
+
+### Target and control validation
+
+No physical Android device was connected. The available Linux workstation has an AMD Ryzen 9 7845HX (24 CPUs), AMD-V, usable `/dev/kvm`, and 30 GiB RAM. An API 35 Google APIs x86_64 AVD (`smilodon-f3-api35`) was provisioned locally with emulator `37.2.13`, platform tools `37.0.1`, Android 15, and WebView `124.0.6367.219`. It booted with KVM acceleration. The host is a developer workstation rather than a dedicated Android host; the control workload below was used as the required stability gate before installing the subject app.
+
+The standalone React Native `0.76.9` control app, with React `18.3.1` and WebView `13.12.5`, passed three consecutive local cycles. Each cycle mounted the app and WebView, captured screenshots and UI hierarchies, opened the control, searched for Beta, emitted incremental search events, selected Beta, reported the controlled change, and completed native open/close interactions. ADB stayed online after every cycle. The cycle durations were 17.0, 17.1, and 17.1 seconds. This qualifies the local AVD for this control workload only.
+
+### Packed subject attempt
+
+The exact `fe883133` source revision built and installed the packed release fixture. Pinned Node `20.20.2`, npm `10.8.2`, and Gradle `8.10.2` were used; the Gradle distribution matched the recorded SHA-256 `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`. Installed package versions matched the fixture lock: Core and React Native `1.10.0`, React Native `0.76.9`, React `18.3.1`, and WebView `13.12.5`. The fixture lockfile SHA-256 was `1435cc4eecdb3981211e4bcd97fb1bab8f09c94ec82b82f83a35345f6f2d2627`.
+
+The rebuilt packed artifacts exactly matched the prior hosted hashes:
+
+| Package | SHA-256 |
+| --- | --- |
+| Core | `1af2a7b7cf844d228d5dd2ff55197bc28d1589e80e9fe9da7040da9f615ac27f` |
+| React Native | `0f46d29ff74d3283d2996697ce0a9a898d141c6980d72c0e3ca0592e98ef9210` |
+
+Packed install, native entry resolution, Android release build/install, WebView readiness, initial controlled Alpha synchronization, the isolated Open callback, and the post-Open three-round ADB canary all passed. The full suite stopped at the first search text-entry command, `adb shell input text beta`. The command timed out after the emulator process had crashed; ADB then reported the device offline. The certification report records no search callback and no completed multi-selection, imperative API, or teardown/reconnect scenarios.
+
+Host coredump metadata independently confirms QEMU PID `346970` exited with signal 11 (`SIGSEGV`) on its `RenderThread` at 10:14:35 +0330. The emulator process was absent afterward, ADB listed the emulator offline, and the host had about 16.4 GB available RAM at failure capture. The host had nearly all 8.8 GiB swap in use; no kernel OOM record was available. The coredump stack is unsymbolized, so it establishes an emulator crash but not its root cause or a production adapter defect. This reproduces the emulator-side failure boundary on a local KVM host after the control workload passed; it does not certify the subject app.
+
+### Evidence and disposition
+
+Reviewable local evidence, including control screenshots and hierarchies, control callbacks, packed tarballs, package hashes, subject logs, stage captures, the runtime report, and QEMU coredump metadata, is preserved under `/tmp/smilodon-178f3-evidence/`. `evidence-sha256.txt` records hashes for the evidence files. The original 1.2 GiB system coredump remains in the host's systemd coredump store and is referenced by `qemu-coredump-info.txt`; it was not duplicated into the evidence directory.
+
+Disposition: **`178-F.3_LOCAL_CONTROL_PASS_SUBJECT_BLOCKED_BY_QEMU_SIGSEGV`**. The control gate passed, but this AVD is not a stable target for the Smilodon text-entry workload. No reproducible adapter defect is established, and no product fix is authorized. Do not repeat the same emulator/input attempt. The next qualification needs a physical Android device or a different independently validated Android host/emulator stack. PR #62 remains open, draft, and unmerged; independent review remains pending. `PRODUCTION_NO_GO` remains in effect.
+
+## 8. Directive 178-F.4 — Renderer isolation comparison
+
+No physical Android device was connected, so the single permitted renderer diagnostic was run on the existing API 35 x86_64 AVD. The source revision remained `fe88313329b0b415826431697d642da07a014ca7`; emulator package 37.2.13, Android image, WebView 124.0.6367.219, fixture lockfile, test runner, and input sequence were held constant. The only emulator launch option changed from the F.3 subject attempt was `-gpu software`. Emulator startup identified the selected backend as Lavapipe for Vulkan and swangle (ANGLE indirect) for GLES. This is the supported software mode reported by the installed emulator's `-help-gpu`.
+
+The first F.4 invocation did not reach Android build or runtime: it accidentally selected the host Gradle 9.8 package, whose Kotlin metadata was incompatible with the fixture plugin. That setup failure is preserved separately. The comparison was then run with the already pinned Gradle 8.10.2 distribution and Node 20.20.2/npm 10.8.2. The release APK built and installed, WebView readiness and the Open canary passed, and the initialization/search/single-selection/controlled-state and disabled-state checks passed. The packed Core and React Native tarball SHA-256 values exactly matched F.3 (`1af2a7b7cf844d228d5dd2ff55197bc28d1589e80e9fe9da7040da9f615ac27f` and `0f46d29ff74d3283d2996697ce0a9a898d141c6980d72c0e3ca0592e98ef9210`); the fixture lockfile hash also matched. The fixture APK was rebuilt from the same source and dependency inputs; an APK byte-hash comparison with F.3 was not available because F.3 did not preserve the APK artifact.
+
+During multiple selection, after the first Alpha selection, the emulator process exited while the runner was resolving the next option. ADB became unavailable and the full test stopped before completing multiple selection, imperative operations, or teardown/reconnect. The system coredump registry records QEMU PID `426173`, thread `RenderThread` TID `436329`, signal 11 (`SIGSEGV`), with launch argument `-gpu software`; the coredump also lists `libvulkan_lvp.so`. About 15 GiB of RAM remained available while swap was nearly full at 8.8 GiB. No kernel OOM evidence or symbolized stack is available. This confirms another emulator-process crash under the alternate renderer and makes a failure unique to `swiftshader_indirect` less likely, but it does not identify the root cause or establish a Smilodon adapter defect.
+
+The alternate-backend experiment is complete and no further emulator runs are authorized by this directive. Full screenshots, UI hierarchies, logs, package provenance, runtime report, host diagnostics, and coredump metadata are preserved under `/tmp/smilodon-178f4-evidence/renderer-software/`; the separate initial Gradle setup failure is under `/tmp/smilodon-178f4-evidence/renderer-software-setup-failure/`. The evidence manifest is `/tmp/smilodon-178f4-evidence/renderer-software-sha256.txt`.
+
+Disposition: **`178-F.4_RENDERER_COMPARISON_REPRODUCED_QEMU_CRASH — PHYSICAL_DEVICE_REQUIRED`**. The renderer change did not eliminate the emulator crash, and no complete bridge pass was obtained. Stop emulator experimentation and require physical Android execution for the primary certification objective. PR #62 remains unmerged; independent review remains pending. `PRODUCTION_NO_GO` remains in effect.
