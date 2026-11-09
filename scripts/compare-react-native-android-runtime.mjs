@@ -207,6 +207,11 @@ async function runTrial(kind, index) {
   record.operations.push(await capture('mounted-2', directory));
 
   let offset = (await stat(logPath)).size;
+  await tapNode('clear-initial-selection', n => n['content-desc'] === 'runtime-clear', directory);
+  await waitFor(`${markerPrefix}CHANGE`, offset);
+  record.operations.push(await capture('cleared', directory));
+
+  offset = (await stat(logPath)).size;
   await tapNode('open', n => n['content-desc'] === 'runtime-open', directory);
   await waitFor(`${markerPrefix}OPEN`, offset);
   await waitForNode('search-field-after-open', n => n.class === 'android.widget.EditText', directory);
@@ -214,13 +219,7 @@ async function runTrial(kind, index) {
   record.operations.push(await capture('opened-2', directory));
 
   offset = (await stat(logPath)).size;
-  const searchNodes = await waitForNode('search-field-before-input', n => n.class === 'android.widget.EditText', directory);
-  const searchField = searchNodes.find(n => n.class === 'android.widget.EditText');
   await tapNode('search', n => n.class === 'android.widget.EditText', directory);
-  // The subject displays its selected label in the editable field; the control
-  // starts empty. Replace any existing text so both apps receive the same query.
-  adb('shell', 'input', 'keyevent', '123'); // KEYCODE_MOVE_END
-  for (let i = 0; i < Array.from(String(searchField.text ?? '')).length; i += 1) adb('shell', 'input', 'keyevent', '67'); // KEYCODE_DEL
   adb('shell', 'input', 'text', 'beta');
   await waitFor(`${markerPrefix}SEARCH "beta"`, offset);
   // On Android the subject's option list is below the focused field and is
