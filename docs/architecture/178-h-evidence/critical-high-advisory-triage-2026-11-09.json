@@ -1,0 +1,1539 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "9e893521db78a42b63f9d0d1956ee6b09eeb5f72",
+  "baselineAuditLockSha256": "e09d2f6ff33c905943cd2eb93b57a0887f5193b13e9bec0a04819c0282f447c5",
+  "updatedLockSha256": "413be68c19b11a2c3264976628453aabecaf23717d8ef9e39fc0da0c8b719111",
+  "node": "v20.20.2",
+  "npm": "10.8.2",
+  "baselineCriticalHighEntries": 21,
+  "afterAuditCounts": {
+    "info": 0,
+    "low": 3,
+    "moderate": 20,
+    "high": 5,
+    "critical": 3,
+    "total": 31
+  },
+  "entries": [
+    {
+      "package": "@vitest/ui",
+      "severity": "critical",
+      "direct": true,
+      "baselineVersions": [
+        {
+          "node": "node_modules/@vitest/ui",
+          "version": "1.6.1"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > @vitest/ui"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-5xrq-8626-4rwp",
+          "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+          "severity": "critical",
+          "affectedRange": "<3.2.6",
+          "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp"
+        },
+        {
+          "id": "GHSA-5gmw-xhrv-c9v3",
+          "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+          "severity": "critical",
+          "affectedRange": "<=2.1.0",
+          "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+        },
+        {
+          "id": "GHSA-85c8-ppgw-ccpr",
+          "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+          "severity": "critical",
+          "affectedRange": "<2.1.2",
+          "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+        },
+        {
+          "id": "GHSA-4w7w-66w2-5vf9",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.1",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+        },
+        {
+          "id": "GHSA-v6wh-96g9-6wx3",
+          "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+        },
+        {
+          "id": "GHSA-698v-4r3x-3vcv",
+          "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+        },
+        {
+          "id": "GHSA-r825-w8mm-5pxw",
+          "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+        },
+        {
+          "id": "GHSA-587h-7wmj-h5pm",
+          "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+          "severity": "high",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+        },
+        {
+          "id": "GHSA-9jrq-w75r-8gcw",
+          "title": "Vite: Cross origin script execution through Vite custom middleware",
+          "severity": "low",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+        },
+        {
+          "id": "GHSA-rq7h-c2jc-7f22",
+          "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+        },
+        {
+          "id": "GHSA-fx2h-pf6j-xcff",
+          "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+        },
+        {
+          "id": "GHSA-67mh-4wv8-2f99",
+          "title": "esbuild enables any website to send any requests to the development server and read the response",
+          "severity": "moderate",
+          "affectedRange": "<=0.24.2",
+          "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+        }
+      ],
+      "baselineFixSignal": {
+        "name": "@vitest/ui",
+        "version": "5.1.0",
+        "isSemVerMajor": true
+      },
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/@vitest/ui",
+          "version": "1.6.1"
+        }
+      ],
+      "use": "Root development dependency paired with Vitest; the repository workflows invoke `vitest run`, not the Vitest UI server.",
+      "reachable": "The advisory condition requires the Vitest UI server to be listening. No workflow command or config enabling that server was found. Developers could invoke it manually; exposure depends on host/network access.",
+      "decision": "Defer the aligned Vitest and UI major migration (Vitest 4 / UI 5) to a separately tested directive."
+    },
+    {
+      "package": "@vue/server-renderer",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/@vue/server-renderer",
+          "version": "3.5.33"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vue > @vue/server-renderer",
+        "@smilodon/vue > vue > @vue/server-renderer"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-g2v6-rqmx-r4w6",
+          "title": "@vue/server-renderer: XSS via missing CR in attribute-name blacklist",
+          "severity": "high",
+          "affectedRange": "<3.5.42",
+          "url": "https://github.com/advisories/GHSA-g2v6-rqmx-r4w6"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/@vue/server-renderer",
+          "version": "3.5.33"
+        }
+      ],
+      "use": "Transitive from the Vue peer/development dependency and Vue test tooling; the maintained adapter is a client wrapper.",
+      "reachable": "The advisory affects Vue SSR serialization with attacker-controlled attribute names. No server-renderer call or SSR workflow is present in this repository. A downstream Vue application can independently use SSR.",
+      "decision": "Keep the declared Vue peer range unchanged. Local peer/runtime range policy requires separate compatibility decision; do not claim downstream Vue graphs are fixed."
+    },
+    {
+      "package": "brace-expansion",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/@eslint/eslintrc/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/@humanwhocodes/config-array/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/@react-native/codegen/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/@vue/language-core/node_modules/brace-expansion",
+          "version": "2.1.0"
+        },
+        {
+          "node": "node_modules/brace-expansion",
+          "version": "5.0.5"
+        },
+        {
+          "node": "node_modules/editorconfig/node_modules/brace-expansion",
+          "version": "2.1.0"
+        },
+        {
+          "node": "node_modules/eslint/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/glob/node_modules/brace-expansion",
+          "version": "2.1.0"
+        },
+        {
+          "node": "node_modules/node-dir/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/react-native/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/rimraf/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/temp/node_modules/brace-expansion",
+          "version": "1.1.14"
+        },
+        {
+          "node": "node_modules/test-exclude/node_modules/brace-expansion",
+          "version": "1.1.14"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > eslint > minimatch > brace-expansion",
+        "@smilodon/monorepo > @typescript-eslint/parser > @typescript-eslint/typescript-estree > minimatch > brace-expansion",
+        "@smilodon/monorepo > eslint > @eslint/eslintrc > minimatch > brace-expansion",
+        "@smilodon/monorepo > eslint > @humanwhocodes/config-array > minimatch > brace-expansion",
+        "@smilodon/monorepo > @testing-library/vue > @vue/test-utils > js-beautify > editorconfig > minimatch > brace-expansion",
+        "@smilodon/monorepo > @testing-library/vue > @vue/test-utils > js-beautify > glob > minimatch > brace-expansion",
+        "@smilodon/monorepo > eslint > file-entry-cache > flat-cache > rimraf > glob > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > glob > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > @react-native/codegen > glob > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > @react-native/codegen > jscodeshift > node-dir > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > babel-jest > babel-plugin-istanbul > test-exclude > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > @react-native/codegen > jscodeshift > temp > rimraf > glob > minimatch > brace-expansion",
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > @react-native/dev-middleware > chromium-edge-launcher > rimraf > glob > minimatch > brace-expansion",
+        "@smilodon/vue > vue-tsc > @vue/language-core > minimatch > brace-expansion"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-jxxr-4gwj-5jf2",
+          "title": "brace-expansion: Large numeric range defeats documented `max` DoS protection",
+          "severity": "moderate",
+          "affectedRange": ">=5.0.0 <5.0.6",
+          "url": "https://github.com/advisories/GHSA-jxxr-4gwj-5jf2"
+        },
+        {
+          "id": "GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+          "severity": "high",
+          "affectedRange": ">=2.0.0 <2.1.2",
+          "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp"
+        },
+        {
+          "id": "GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+          "severity": "high",
+          "affectedRange": "<1.1.16",
+          "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp"
+        },
+        {
+          "id": "GHSA-3jxr-9vmj-r5cp",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+          "severity": "high",
+          "affectedRange": ">=3.0.0 <5.0.7",
+          "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp"
+        },
+        {
+          "id": "GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+          "severity": "high",
+          "affectedRange": "<1.1.17",
+          "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg"
+        },
+        {
+          "id": "GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+          "severity": "high",
+          "affectedRange": ">=2.0.0 <2.1.3",
+          "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg"
+        },
+        {
+          "id": "GHSA-mh99-v99m-4gvg",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <5.0.8",
+          "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg"
+        },
+        {
+          "id": "GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <5.0.9",
+          "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895"
+        },
+        {
+          "id": "GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+          "severity": "high",
+          "affectedRange": ">=2.0.0 <2.1.4",
+          "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895"
+        },
+        {
+          "id": "GHSA-rgw5-rvv9-x895",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+          "severity": "high",
+          "affectedRange": "<1.1.18",
+          "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895"
+        },
+        {
+          "id": "GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+          "severity": "moderate",
+          "affectedRange": "<1.1.21",
+          "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+        },
+        {
+          "id": "GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+          "severity": "moderate",
+          "affectedRange": ">=2.0.0 <2.1.7",
+          "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+        },
+        {
+          "id": "GHSA-q2hr-2g5m-vwhr",
+          "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+          "severity": "moderate",
+          "affectedRange": ">=4.0.0 <5.0.12",
+          "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+        },
+        {
+          "id": "GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": "<1.1.20",
+          "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+        },
+        {
+          "id": "GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": ">=2.0.0 <2.1.6",
+          "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+        },
+        {
+          "id": "GHSA-qhr7-859c-m2p7",
+          "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <5.0.11",
+          "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+        },
+        {
+          "id": "GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": "<1.1.19",
+          "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+        },
+        {
+          "id": "GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": ">=2.0.0 <2.1.5",
+          "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+        },
+        {
+          "id": "GHSA-6j4f-fj2g-mc7p",
+          "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <5.0.10",
+          "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/@eslint/eslintrc/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/@humanwhocodes/config-array/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/@react-native/codegen/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/@vue/language-core/node_modules/brace-expansion",
+          "version": "2.1.7"
+        },
+        {
+          "node": "node_modules/brace-expansion",
+          "version": "5.0.12"
+        },
+        {
+          "node": "node_modules/editorconfig/node_modules/brace-expansion",
+          "version": "2.1.7"
+        },
+        {
+          "node": "node_modules/eslint/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/glob/node_modules/brace-expansion",
+          "version": "2.1.7"
+        },
+        {
+          "node": "node_modules/node-dir/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/react-native/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/rimraf/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/temp/node_modules/brace-expansion",
+          "version": "1.1.21"
+        },
+        {
+          "node": "node_modules/test-exclude/node_modules/brace-expansion",
+          "version": "1.1.21"
+        }
+      ],
+      "use": "Transitive through minimatch/glob used by ESLint, test tooling, Vue type tooling, and React Native codegen/CLI.",
+      "reachable": "Advisories are denial-of-service conditions on crafted brace patterns. Repository glob patterns are configuration/source controlled; no untrusted user input to these development globs was identified.",
+      "decision": "Updated vulnerable lock locations to patched versions that satisfy existing parent ranges; manifests unchanged."
+    },
+    {
+      "package": "browserslist",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/browserslist",
+          "version": "4.28.2"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/react-native > react-native > @react-native/codegen > jscodeshift > @babel/core > @babel/helper-compilation-targets > browserslist",
+        "@smilodon/solid > vite-plugin-solid > @babel/core > @babel/helper-compilation-targets > browserslist"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-c83g-rgw3-j3cx",
+          "title": "Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM",
+          "severity": "high",
+          "affectedRange": "<=4.28.6",
+          "url": "https://github.com/advisories/GHSA-c83g-rgw3-j3cx"
+        },
+        {
+          "id": "GHSA-73wf-gq98-2v4g",
+          "title": "Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)",
+          "severity": "high",
+          "affectedRange": "<=4.28.6",
+          "url": "https://github.com/advisories/GHSA-73wf-gq98-2v4g"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/browserslist",
+          "version": "4.29.5"
+        }
+      ],
+      "use": "Transitive in Babel target resolution for package build tooling.",
+      "reachable": "Advisories concern resource exhaustion or unsafe custom stats. Build targets/stats in this repository are configuration inputs; no untrusted stats source was identified.",
+      "decision": "Updated within the existing dependency range; manifests unchanged."
+    },
+    {
+      "package": "form-data",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/form-data",
+          "version": "4.0.5"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > jsdom > form-data",
+        "@smilodon/core > jsdom > form-data"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-hmw2-7cc7-3qxx",
+          "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <4.0.6",
+          "url": "https://github.com/advisories/GHSA-hmw2-7cc7-3qxx"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/form-data",
+          "version": "4.0.6"
+        }
+      ],
+      "use": "Transitive through jsdom used in unit/contract tests.",
+      "reachable": "CRLF injection requires attacker-controlled multipart field names or filenames. Repository tests do not use multipart uploads or send external requests through this dependency.",
+      "decision": "Updated to the patched 4.x release within existing parent range."
+    },
+    {
+      "package": "image-size",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/image-size",
+          "version": "1.2.1"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > metro > image-size"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-5p2g-fcmc-qvqq",
+          "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
+          "severity": "high",
+          "affectedRange": ">=1.2.0 <=2.0.2",
+          "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq"
+        },
+        {
+          "id": "GHSA-w3rx-r6r6-pgpr",
+          "title": "image-size: ICNS parser allows denial of service through an infinite loop",
+          "severity": "high",
+          "affectedRange": ">=0.6.3 <=2.0.2",
+          "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/image-size",
+          "version": "1.2.1"
+        }
+      ],
+      "use": "Transitive through Metro, used by Android fixture bundling/asset inspection.",
+      "reachable": "The parser can process image files supplied to Metro; no production adapter code imports it. A crafted repository asset could reach the parser in the Android bundling job, which is currently separate from standard main CI.",
+      "decision": "Defer: current Metro dependency range resolves image-size 1.x; the reported fixed release is 2.x and requires a Metro compatibility migration."
+    },
+    {
+      "package": "js-cookie",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/js-cookie",
+          "version": "3.0.5"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > @testing-library/vue > @vue/test-utils > js-beautify > js-cookie"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-qjx8-664m-686j",
+          "title": "JavaScript Cookie: Per-instance prototype hijack in assign() enables cookie-attribute injection",
+          "severity": "high",
+          "affectedRange": "<=3.0.5",
+          "url": "https://github.com/advisories/GHSA-qjx8-664m-686j"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/js-cookie",
+          "version": "3.0.8"
+        }
+      ],
+      "use": "Transitive through js-beautify in Vue test tooling; no direct import in Smilodon source was found.",
+      "reachable": "No application path or test use of the vulnerable cookie operation was identified; this remains a test-tool dependency exposure only.",
+      "decision": "Updated within the existing parent dependency range; manifests unchanged."
+    },
+    {
+      "package": "js-yaml",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "version": "3.14.2"
+        },
+        {
+          "node": "node_modules/cosmiconfig/node_modules/js-yaml",
+          "version": "3.14.2"
+        },
+        {
+          "node": "node_modules/js-yaml",
+          "version": "4.1.1"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > eslint > js-yaml",
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > metro-config > cosmiconfig > js-yaml",
+        "@smilodon/react-native > react-native > babel-jest > babel-plugin-istanbul > @istanbuljs/load-nyc-config > js-yaml"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-h67p-54hq-rp68",
+          "title": "JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases",
+          "severity": "moderate",
+          "affectedRange": "<3.15.0",
+          "url": "https://github.com/advisories/GHSA-h67p-54hq-rp68"
+        },
+        {
+          "id": "GHSA-h67p-54hq-rp68",
+          "title": "JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases",
+          "severity": "moderate",
+          "affectedRange": ">=4.0.0 <=4.1.1",
+          "url": "https://github.com/advisories/GHSA-h67p-54hq-rp68"
+        },
+        {
+          "id": "GHSA-52cp-r559-cp3m",
+          "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <4.3.0",
+          "url": "https://github.com/advisories/GHSA-52cp-r559-cp3m"
+        },
+        {
+          "id": "GHSA-52cp-r559-cp3m",
+          "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption",
+          "severity": "high",
+          "affectedRange": ">=3.0.0 <3.15.0",
+          "url": "https://github.com/advisories/GHSA-52cp-r559-cp3m"
+        },
+        {
+          "id": "GHSA-5p4m-2wfm-xmqj",
+          "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
+          "severity": "high",
+          "affectedRange": ">=3.0.0 <3.15.1",
+          "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj"
+        },
+        {
+          "id": "GHSA-5p4m-2wfm-xmqj",
+          "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <4.3.1",
+          "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj"
+        },
+        {
+          "id": "GHSA-2883-xcg3-v3hh",
+          "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+          "severity": "high",
+          "affectedRange": ">=3.0.0 <3.15.2",
+          "url": "https://github.com/advisories/GHSA-2883-xcg3-v3hh"
+        },
+        {
+          "id": "GHSA-2883-xcg3-v3hh",
+          "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+          "severity": "high",
+          "affectedRange": ">=4.0.0 <4.3.2",
+          "url": "https://github.com/advisories/GHSA-2883-xcg3-v3hh"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "version": "3.15.2"
+        },
+        {
+          "node": "node_modules/cosmiconfig/node_modules/js-yaml",
+          "version": "3.15.2"
+        },
+        {
+          "node": "node_modules/js-yaml",
+          "version": "4.3.2"
+        }
+      ],
+      "use": "Transitive through ESLint and React Native Metro/Babel tooling to parse configuration.",
+      "reachable": "Advisories concern malformed YAML parser inputs. Repository configs are checked-in inputs; no user-facing YAML parsing path was found.",
+      "decision": "Updated 3.x and 4.x lock locations to patched versions allowed by their parents."
+    },
+    {
+      "package": "nanoid",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/nanoid",
+          "version": "3.3.12"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vitest > vite > postcss > nanoid",
+        "@smilodon/core > vitest > vite > postcss > nanoid",
+        "@smilodon/solid > vite > postcss > nanoid",
+        "@smilodon/svelte > vite > postcss > nanoid",
+        "@smilodon/vanilla > vite > postcss > nanoid",
+        "@smilodon/vue > vite > postcss > nanoid"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-28wg-ghj8-5hjv",
+          "title": "nanoid: non-secure generators can loop indefinitely with negative size",
+          "severity": "high",
+          "affectedRange": "<3.3.16",
+          "url": "https://github.com/advisories/GHSA-28wg-ghj8-5hjv"
+        },
+        {
+          "id": "GHSA-2v37-7h3g-55p8",
+          "title": "nanoid: custom generators can loop indefinitely when size is zero",
+          "severity": "high",
+          "affectedRange": "<3.3.18",
+          "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/nanoid",
+          "version": "3.3.20"
+        }
+      ],
+      "use": "Transitive through PostCSS/Vite build transforms.",
+      "reachable": "The vulnerable behavior is limited to generating identifiers from supplied parameters; repository build configuration and CSS are trusted source inputs.",
+      "decision": "Updated within the existing parent range; manifests unchanged."
+    },
+    {
+      "package": "node-forge",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/node-forge",
+          "version": "1.4.0"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > @react-native/dev-middleware > selfsigned > node-forge"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-86w9-cpqp-85rv",
+          "title": "node-forge RSA PKCS#1 v1.5 signature verification accepts extra nested DigestAlgorithm elements",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv"
+        },
+        {
+          "id": "GHSA-4642-5mcj-2rqw",
+          "title": "Forge: ASN.1 OID first arc truncation in asn1.oidToDer",
+          "severity": "low",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-4642-5mcj-2rqw"
+        },
+        {
+          "id": "GHSA-6wvx-3r32-xmcg",
+          "title": "Forge: Prototype Pollution in forge.http cookie handling via a malicious Set-Cookie",
+          "severity": "moderate",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-6wvx-3r32-xmcg"
+        },
+        {
+          "id": "GHSA-525v-9gp9-w22h",
+          "title": "Forge: TLS client crash when the server sends no certificate",
+          "severity": "moderate",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-525v-9gp9-w22h"
+        },
+        {
+          "id": "GHSA-7wch-p9px-956x",
+          "title": "Forge: Regular expression denial of service in PEM decoding (pem.decode)",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-7wch-p9px-956x"
+        },
+        {
+          "id": "GHSA-h6cr-wjv9-3cpp",
+          "title": "Forge: Denial of Service via infinite loop in BigInteger.modInverse() with negative input (incomplete fix of CVE-2026-33891)",
+          "severity": "low",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-h6cr-wjv9-3cpp"
+        },
+        {
+          "id": "GHSA-4487-j8r4-4g2f",
+          "title": "Forge: verifyCertificateChain() removes trusted CA certificates with the same subject from the CA store",
+          "severity": "low",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-4487-j8r4-4g2f"
+        },
+        {
+          "id": "GHSA-5cwg-6vw7-rj6p",
+          "title": "Forge: AES-GCM authentication bypass via unvalidated tagLength option",
+          "severity": "moderate",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-5cwg-6vw7-rj6p"
+        },
+        {
+          "id": "GHSA-jc66-7q78-782g",
+          "title": "Forge: PKCS#12 MAC forgery and constant-key PBE via zero iteration count",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-jc66-7q78-782g"
+        },
+        {
+          "id": "GHSA-8hrf-8g6f-7xwp",
+          "title": "Forge: Denial of service in TLS record processing via a record interleaved with a fragmented handshake message",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-8hrf-8g6f-7xwp"
+        },
+        {
+          "id": "GHSA-hqq3-7jhf-c5jx",
+          "title": "Forge: Denial of service in TLS record processing via call stack exhaustion",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-hqq3-7jhf-c5jx"
+        },
+        {
+          "id": "GHSA-5x38-2vff-x55p",
+          "title": "Forge: X.509 basicConstraints bypass in verifyCertificateChain() via deprecated extension OIDs 2.5.29.10 and 2.5.29.13",
+          "severity": "high",
+          "affectedRange": "<=1.4.0",
+          "url": "https://github.com/advisories/GHSA-5x38-2vff-x55p"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/node-forge",
+          "version": "1.4.3"
+        }
+      ],
+      "use": "Transitive through React Native dev middleware/self-signed certificate tooling.",
+      "reachable": "No production adapter import exists. The likely execution surface is Metro/development middleware, not the shipped library runtime; current standard workflows do not expose a public service using it.",
+      "decision": "Updated to patched 1.x in the lockfile; manifests unchanged."
+    },
+    {
+      "package": "postcss",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/postcss",
+          "version": "8.5.14"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vitest > vite > postcss",
+        "@smilodon/core > vitest > vite > postcss",
+        "@smilodon/solid > vite > postcss",
+        "@smilodon/svelte > vite > postcss",
+        "@smilodon/vanilla > vite > postcss",
+        "@smilodon/vue > vite > postcss"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-fxqj-rqcc-2cmp",
+          "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+          "severity": "moderate",
+          "affectedRange": "<=8.5.22",
+          "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp"
+        },
+        {
+          "id": "GHSA-r28c-9q8g-f849",
+          "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+          "severity": "high",
+          "affectedRange": "<=8.5.17",
+          "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/postcss",
+          "version": "8.5.32"
+        }
+      ],
+      "use": "Transitive through Vite/Vitest CSS build and test tooling.",
+      "reachable": "The parser processes repository CSS/build inputs. No remote CSS ingestion path in shipped Smilodon code was identified.",
+      "decision": "Updated within existing Vite/PostCSS dependency ranges; manifests unchanged."
+    },
+    {
+      "package": "serialize-javascript",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/serialize-javascript",
+          "version": "6.0.2"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > @rollup/plugin-terser > serialize-javascript",
+        "@smilodon/core > @rollup/plugin-terser > serialize-javascript"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-5c6j-r48x-rmvq",
+          "title": "Serialize JavaScript is Vulnerable to RCE via RegExp.flags and Date.prototype.toISOString()",
+          "severity": "high",
+          "affectedRange": "<=7.0.2",
+          "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq"
+        },
+        {
+          "id": "GHSA-qj8w-gfj5-8c6v",
+          "title": "Serialize JavaScript has CPU Exhaustion Denial of Service via crafted array-like objects",
+          "severity": "moderate",
+          "affectedRange": ">=5.0.0 <7.0.5",
+          "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v"
+        },
+        {
+          "id": "GHSA-m5mm-p8h7-m29v",
+          "title": "Serialize JavaScript: Cross-site scripting (XSS) via unescaped </script at the end of a serialized function body",
+          "severity": "low",
+          "affectedRange": "<7.1.3",
+          "url": "https://github.com/advisories/GHSA-m5mm-p8h7-m29v"
+        }
+      ],
+      "baselineFixSignal": {
+        "name": "@rollup/plugin-terser",
+        "version": "1.0.2",
+        "isSemVerMajor": true
+      },
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/serialize-javascript",
+          "version": "6.0.2"
+        }
+      ],
+      "use": "Transitive through @rollup/plugin-terser during Core minified bundle builds.",
+      "reachable": "The serializer receives build sources, not data from a running consumer application.",
+      "decision": "Defer: current plugin-terser 0.4.x pins the 6.x serializer line; the npm fix path upgrades plugin-terser to 1.x, a major build-tool change."
+    },
+    {
+      "package": "seroval",
+      "severity": "critical",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/seroval",
+          "version": "1.5.4"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/solid > solid-js > seroval"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-p6vx-979v-rg4c",
+          "title": "Seroval: `fromJSON()` Promise thenable assimilation invokes plugin-produced callables (bypass of GHSA-mv8w-475r-vwqw)",
+          "severity": "critical",
+          "affectedRange": ">=0.12.0 <=1.6.0",
+          "url": "https://github.com/advisories/GHSA-p6vx-979v-rg4c"
+        },
+        {
+          "id": "GHSA-jp82-f5mq-hwhp",
+          "title": "Seroval: Memory exhaustion via unchecked TypedArray length in JSON deserialization",
+          "severity": "high",
+          "affectedRange": "<=1.6.2",
+          "url": "https://github.com/advisories/GHSA-jp82-f5mq-hwhp"
+        },
+        {
+          "id": "GHSA-97r2-qh9m-474h",
+          "title": "Seroval: fromJSON deserializer trusts node-supplied array length and sequence doneAt (unauthenticated event-loop DoS)",
+          "severity": "high",
+          "affectedRange": "<=1.6.7",
+          "url": "https://github.com/advisories/GHSA-97r2-qh9m-474h"
+        },
+        {
+          "id": "GHSA-wp97-x4hv-qvhp",
+          "title": "Seroval `fromJSON`/`fromCrossJSON` denial of service via unvalidated array node length",
+          "severity": "high",
+          "affectedRange": ">=1.4.1 <=1.6.7",
+          "url": "https://github.com/advisories/GHSA-wp97-x4hv-qvhp"
+        },
+        {
+          "id": "GHSA-7rv5-mrxv-xcr9",
+          "title": "Seroval: Deserialization invokes attacker-chosen callables: AsyncIteratorFactoryInstance calls source.on(listener) without type check",
+          "severity": "high",
+          "affectedRange": "<=1.6.7",
+          "url": "https://github.com/advisories/GHSA-7rv5-mrxv-xcr9"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/seroval",
+          "version": "1.6.12"
+        }
+      ],
+      "use": "Transitive through solid-js; the Solid adapter source uses Solid signals/rendering and does not import seroval directly.",
+      "reachable": "Advisories affect deserialization of attacker-controlled serialized nodes. No deserialization use in Smilodon source or browser adapter path was identified.",
+      "decision": "Updated seroval and seroval-plugins within the existing Solid dependency range; Solid peer range unchanged."
+    },
+    {
+      "package": "shell-quote",
+      "severity": "critical",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/shell-quote",
+          "version": "1.8.3"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/react-native > react-native > react-devtools-core > shell-quote"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-w7jw-789q-3m8p",
+          "title": "shell-quote quote() does not escape newlines in object .op values",
+          "severity": "critical",
+          "affectedRange": ">=1.1.0 <=1.8.3",
+          "url": "https://github.com/advisories/GHSA-w7jw-789q-3m8p"
+        },
+        {
+          "id": "GHSA-395f-4hp3-45gv",
+          "title": "shell-quote: Quadratic-complexity Denial of Service in `parse()` (CWE-407)",
+          "severity": "high",
+          "affectedRange": "<=1.8.4",
+          "url": "https://github.com/advisories/GHSA-395f-4hp3-45gv"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/shell-quote",
+          "version": "1.12.0"
+        }
+      ],
+      "use": "Transitive through React Native React DevTools tooling.",
+      "reachable": "The critical advisory requires crafted object `.op` values to be passed to `quote()`. No Smilodon source invocation was found; this is a development-toolchain path.",
+      "decision": "Updated to patched 1.x within the parent range; manifests unchanged."
+    },
+    {
+      "package": "solid-js",
+      "severity": "critical",
+      "direct": true,
+      "baselineVersions": [
+        {
+          "node": "node_modules/solid-js",
+          "version": "1.9.12"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/solid > solid-js"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-p6vx-979v-rg4c",
+          "title": "Seroval: `fromJSON()` Promise thenable assimilation invokes plugin-produced callables (bypass of GHSA-mv8w-475r-vwqw)",
+          "severity": "critical",
+          "affectedRange": ">=0.12.0 <=1.6.0",
+          "url": "https://github.com/advisories/GHSA-p6vx-979v-rg4c"
+        },
+        {
+          "id": "GHSA-jp82-f5mq-hwhp",
+          "title": "Seroval: Memory exhaustion via unchecked TypedArray length in JSON deserialization",
+          "severity": "high",
+          "affectedRange": "<=1.6.2",
+          "url": "https://github.com/advisories/GHSA-jp82-f5mq-hwhp"
+        },
+        {
+          "id": "GHSA-97r2-qh9m-474h",
+          "title": "Seroval: fromJSON deserializer trusts node-supplied array length and sequence doneAt (unauthenticated event-loop DoS)",
+          "severity": "high",
+          "affectedRange": "<=1.6.7",
+          "url": "https://github.com/advisories/GHSA-97r2-qh9m-474h"
+        },
+        {
+          "id": "GHSA-wp97-x4hv-qvhp",
+          "title": "Seroval `fromJSON`/`fromCrossJSON` denial of service via unvalidated array node length",
+          "severity": "high",
+          "affectedRange": ">=1.4.1 <=1.6.7",
+          "url": "https://github.com/advisories/GHSA-wp97-x4hv-qvhp"
+        },
+        {
+          "id": "GHSA-7rv5-mrxv-xcr9",
+          "title": "Seroval: Deserialization invokes attacker-chosen callables: AsyncIteratorFactoryInstance calls source.on(listener) without type check",
+          "severity": "high",
+          "affectedRange": "<=1.6.7",
+          "url": "https://github.com/advisories/GHSA-7rv5-mrxv-xcr9"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/solid-js",
+          "version": "1.9.18"
+        }
+      ],
+      "use": "Direct Solid peer and development dependency; used by `packages/solid/src/Select.tsx` for reactive state and rendering.",
+      "reachable": "The npm finding is inherited through seroval serialization; Smilodon does not import seroval. Browser-only usage does not establish SSR deserializer reachability. Downstream Solid consumers may independently use SSR.",
+      "decision": "Updated the workspace lock resolution to patched Solid 1.9.x; public `solid-js` peer range was left unchanged, so consumer-resolved versions remain a separate risk."
+    },
+    {
+      "package": "source-map-js",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/source-map-js",
+          "version": "1.2.1"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > svelte > css-tree > source-map-js",
+        "@smilodon/core > vitest > vite > postcss > source-map-js",
+        "@smilodon/solid > vite > postcss > source-map-js",
+        "@smilodon/svelte > svelte > css-tree > source-map-js",
+        "@smilodon/vanilla > vite > postcss > source-map-js",
+        "@smilodon/vue > vite > postcss > source-map-js"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-68fv-2mgg-jv7q",
+          "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+          "severity": "high",
+          "affectedRange": ">=1.0.0 <1.2.2",
+          "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/source-map-js",
+          "version": "1.2.2"
+        }
+      ],
+      "use": "Transitive through PostCSS/CSS tooling and Svelte CSS processing.",
+      "reachable": "The advisory requires parsing crafted source-map section offsets. Build tools process source maps during development/build; no production library source-map parsing API was identified.",
+      "decision": "Updated within existing parent ranges; manifests unchanged."
+    },
+    {
+      "package": "tinypool",
+      "severity": "critical",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/tinypool",
+          "version": "0.8.4"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vitest > tinypool",
+        "@smilodon/core > vitest > tinypool"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-5gmw-xhrv-c9v3",
+          "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+          "severity": "critical",
+          "affectedRange": "<=2.1.0",
+          "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+        },
+        {
+          "id": "GHSA-85c8-ppgw-ccpr",
+          "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+          "severity": "critical",
+          "affectedRange": "<2.1.2",
+          "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+        }
+      ],
+      "baselineFixSignal": {
+        "name": "vitest",
+        "version": "4.1.12",
+        "isSemVerMajor": true
+      },
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/tinypool",
+          "version": "0.8.4"
+        }
+      ],
+      "use": "Vitest worker-pool dependency used by unit/contract test commands.",
+      "reachable": "The RCE finding is a prototype-pollution gadget in worker options. Tests execute the pool, but current options come from checked-in Vitest config; no externally controlled pool-options path was identified.",
+      "decision": "Defer with Vitest major upgrade; npm proposes Vitest 4.x, which changes the runner/toolchain and needs independent migration/regression work."
+    },
+    {
+      "package": "vite",
+      "severity": "high",
+      "direct": true,
+      "baselineVersions": [
+        {
+          "node": "node_modules/vite",
+          "version": "5.4.21"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vitest > vite",
+        "@smilodon/core > vitest > vite",
+        "@smilodon/solid > vite",
+        "@smilodon/svelte > vite",
+        "@smilodon/vanilla > vite",
+        "@smilodon/vue > vite"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-4w7w-66w2-5vf9",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.1",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+        },
+        {
+          "id": "GHSA-v6wh-96g9-6wx3",
+          "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+        },
+        {
+          "id": "GHSA-698v-4r3x-3vcv",
+          "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+        },
+        {
+          "id": "GHSA-r825-w8mm-5pxw",
+          "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+        },
+        {
+          "id": "GHSA-587h-7wmj-h5pm",
+          "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+          "severity": "high",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+        },
+        {
+          "id": "GHSA-9jrq-w75r-8gcw",
+          "title": "Vite: Cross origin script execution through Vite custom middleware",
+          "severity": "low",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+        },
+        {
+          "id": "GHSA-rq7h-c2jc-7f22",
+          "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+        },
+        {
+          "id": "GHSA-fx2h-pf6j-xcff",
+          "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+        },
+        {
+          "id": "GHSA-67mh-4wv8-2f99",
+          "title": "esbuild enables any website to send any requests to the development server and read the response",
+          "severity": "moderate",
+          "affectedRange": "<=0.24.2",
+          "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+        }
+      ],
+      "baselineFixSignal": {
+        "name": "vitest",
+        "version": "4.1.12",
+        "isSemVerMajor": true
+      },
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/vite",
+          "version": "5.4.21"
+        }
+      ],
+      "use": "Direct development/build dependency for Vue, Solid, Svelte, Vanilla, and playground; workflows start local Vite servers for browser tests.",
+      "reachable": "The reported path-traversal/editor issues affect the development server or editor-launch path. Browser tests connect to local configured servers; no public deployment server is shipped by this package.",
+      "decision": "Defer: the existing maintained workspaces pin Vite 5.x; npm proposes a Vite/Vitest major migration. Run a compatibility matrix across each plugin/workspace before upgrading."
+    },
+    {
+      "package": "vitest",
+      "severity": "critical",
+      "direct": true,
+      "baselineVersions": [
+        {
+          "node": "node_modules/vitest",
+          "version": "1.6.1"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vitest",
+        "@smilodon/core > vitest"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-5xrq-8626-4rwp",
+          "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+          "severity": "critical",
+          "affectedRange": "<3.2.6",
+          "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp"
+        },
+        {
+          "id": "GHSA-5gmw-xhrv-c9v3",
+          "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+          "severity": "critical",
+          "affectedRange": "<=2.1.0",
+          "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+        },
+        {
+          "id": "GHSA-85c8-ppgw-ccpr",
+          "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+          "severity": "critical",
+          "affectedRange": "<2.1.2",
+          "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+        },
+        {
+          "id": "GHSA-4w7w-66w2-5vf9",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.1",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+        },
+        {
+          "id": "GHSA-v6wh-96g9-6wx3",
+          "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+        },
+        {
+          "id": "GHSA-698v-4r3x-3vcv",
+          "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+        },
+        {
+          "id": "GHSA-r825-w8mm-5pxw",
+          "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+        },
+        {
+          "id": "GHSA-587h-7wmj-h5pm",
+          "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+          "severity": "high",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+        },
+        {
+          "id": "GHSA-9jrq-w75r-8gcw",
+          "title": "Vite: Cross origin script execution through Vite custom middleware",
+          "severity": "low",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+        },
+        {
+          "id": "GHSA-rq7h-c2jc-7f22",
+          "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.3",
+          "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+        },
+        {
+          "id": "GHSA-fx2h-pf6j-xcff",
+          "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+          "severity": "moderate",
+          "affectedRange": "<=6.4.2",
+          "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+        },
+        {
+          "id": "GHSA-67mh-4wv8-2f99",
+          "title": "esbuild enables any website to send any requests to the development server and read the response",
+          "severity": "moderate",
+          "affectedRange": "<=0.24.2",
+          "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+        }
+      ],
+      "baselineFixSignal": {
+        "name": "vitest",
+        "version": "4.1.12",
+        "isSemVerMajor": true
+      },
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/vitest",
+          "version": "1.6.1"
+        }
+      ],
+      "use": "Root and Core development dependency; unit and contract test runner.",
+      "reachable": "The critical RCE advisory is conditional on the Vitest UI server listening. Main workflows use `vitest run` and do not start that UI server; local developers could start it manually.",
+      "decision": "Defer Vitest 1.x to 4.x as a coordinated major migration with @vitest/ui and tinypool."
+    },
+    {
+      "package": "vue",
+      "severity": "high",
+      "direct": true,
+      "baselineVersions": [
+        {
+          "node": "node_modules/vue",
+          "version": "3.5.33"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > vue",
+        "@smilodon/vue > vue"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-g2v6-rqmx-r4w6",
+          "title": "@vue/server-renderer: XSS via missing CR in attribute-name blacklist",
+          "severity": "high",
+          "affectedRange": "<3.5.42",
+          "url": "https://github.com/advisories/GHSA-g2v6-rqmx-r4w6"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": true,
+      "currentVersions": [
+        {
+          "node": "node_modules/vue",
+          "version": "3.5.33"
+        }
+      ],
+      "use": "Vue peer and development dependency for the Vue wrapper and its consumer tests.",
+      "reachable": "The high finding flows from the SSR renderer XSS advisory; client-side wrapper usage does not itself execute the SSR renderer. A downstream consumer using Vue SSR may reach it.",
+      "decision": "Do not narrow the published `vue: ^3.0.0` peer range in Wave 1. The required minimum-version change would reduce supported peer compatibility; maintainers must decide and test that separately."
+    },
+    {
+      "package": "ws",
+      "severity": "high",
+      "direct": false,
+      "baselineVersions": [
+        {
+          "node": "node_modules/@react-native/dev-middleware/node_modules/ws",
+          "version": "6.2.3"
+        },
+        {
+          "node": "node_modules/metro/node_modules/ws",
+          "version": "7.5.10"
+        },
+        {
+          "node": "node_modules/react-devtools-core/node_modules/ws",
+          "version": "7.5.10"
+        },
+        {
+          "node": "node_modules/react-native/node_modules/ws",
+          "version": "6.2.3"
+        },
+        {
+          "node": "node_modules/ws",
+          "version": "8.20.0"
+        }
+      ],
+      "dependencyPaths": [
+        "@smilodon/monorepo > jsdom > ws",
+        "@smilodon/core > jsdom > ws",
+        "@smilodon/react-native > react-native > ws",
+        "@smilodon/react-native > react-native > react-devtools-core > ws",
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > @react-native/dev-middleware > ws",
+        "@smilodon/react-native > react-native > @react-native/community-cli-plugin > metro > ws"
+      ],
+      "advisories": [
+        {
+          "id": "GHSA-58qx-3vcg-4xpx",
+          "title": "ws: Uninitialized memory disclosure",
+          "severity": "moderate",
+          "affectedRange": ">=8.0.0 <8.20.1",
+          "url": "https://github.com/advisories/GHSA-58qx-3vcg-4xpx"
+        },
+        {
+          "id": "GHSA-96hv-2xvq-fx4p",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "severity": "high",
+          "affectedRange": ">=8.0.0 <8.21.0",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p"
+        },
+        {
+          "id": "GHSA-96hv-2xvq-fx4p",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "severity": "high",
+          "affectedRange": ">=7.0.0 <7.5.11",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p"
+        },
+        {
+          "id": "GHSA-96hv-2xvq-fx4p",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "severity": "high",
+          "affectedRange": ">=6.0.0 <6.2.4",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p"
+        }
+      ],
+      "baselineFixSignal": true,
+      "currentAuditFinding": false,
+      "currentVersions": [
+        {
+          "node": "node_modules/@react-native/dev-middleware/node_modules/ws",
+          "version": "6.2.6"
+        },
+        {
+          "node": "node_modules/metro/node_modules/ws",
+          "version": "7.5.13"
+        },
+        {
+          "node": "node_modules/react-devtools-core/node_modules/ws",
+          "version": "7.5.13"
+        },
+        {
+          "node": "node_modules/react-native/node_modules/ws",
+          "version": "6.2.6"
+        },
+        {
+          "node": "node_modules/ws",
+          "version": "8.22.2"
+        }
+      ],
+      "use": "Transitive WebSocket implementation in jsdom and React Native Metro/DevTools tooling.",
+      "reachable": "The high DoS requires network WebSocket traffic to vulnerable server/client operations. No public server is shipped; local test/Metro servers are scoped development services.",
+      "decision": "Updated each vulnerable 6.x/7.x/8.x location to patched versions within existing parent ranges."
+    }
+  ]
+}

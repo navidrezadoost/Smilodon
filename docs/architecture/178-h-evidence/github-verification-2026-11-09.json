@@ -1,0 +1,39 @@
+{
+  "verifiedAt": "2026-11-09",
+  "pr63": {
+    "number": 63,
+    "state": "MERGED",
+    "draft": false,
+    "headSha": "23fcea49d896f5c0612b7ea0c13908db57205cfc",
+    "mergeSha": "9e893521db78a42b63f9d0d1956ee6b09eeb5f72",
+    "submittedIndependentReviews": 0,
+    "reportedChecks": "20/20 passed"
+  },
+  "postMergeWorkflows": [
+    {
+      "workflow": "CI",
+      "run": 42582874478,
+      "headSha": "9e893521db78a42b63f9d0d1956ee6b09eeb5f72",
+      "conclusion": "success"
+    },
+    {
+      "workflow": "Tests",
+      "run": 42582874439,
+      "headSha": "9e893521db78a42b63f9d0d1956ee6b09eeb5f72",
+      "conclusion": "success"
+    },
+    {
+      "workflow": "Phase 4 Certification",
+      "run": 42582874444,
+      "headSha": "9e893521db78a42b63f9d0d1956ee6b09eeb5f72",
+      "conclusion": "success"
+    }
+  ],
+  "pr62": {
+    "number": 62,
+    "state": "OPEN",
+    "draft": true,
+    "headSha": "efeb75165cc6403822a93f35368d57939fb45b58",
+    "submittedIndependentReviews": 0
+  }
+}
