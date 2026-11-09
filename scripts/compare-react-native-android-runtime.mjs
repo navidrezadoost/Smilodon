@@ -68,10 +68,19 @@ function xmlNodes(xml) {
   ));
 }
 async function hierarchy(label, directory) {
-  adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/178f2-window.xml');
-  const xml = adb('shell', 'cat', '/sdcard/178f2-window.xml');
-  await writeFile(path.join(directory, `ui-${label}.xml`), xml);
-  return xmlNodes(xml);
+  let lastError;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/178f2-window.xml');
+      const xml = adb('shell', 'cat', '/sdcard/178f2-window.xml');
+      await writeFile(path.join(directory, `ui-${label}.xml`), xml);
+      return xmlNodes(xml);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await delay(500);
+    }
+  }
+  throw lastError;
 }
 async function waitForNode(label, selector, directory, timeout = 30_000) {
   const deadline = Date.now() + timeout;
