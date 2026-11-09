@@ -1,0 +1,10 @@
+83a7e696bfe5fc1b3fcc0ad2cb8118d8c150bcdb27c2ea779c1b747b3e1e75be  docs/architecture/SECURITY-REMEDIATION-178-H.md
+413be68c19b11a2c3264976628453aabecaf23717d8ef9e39fc0da0c8b719111  package-lock.json
+7de2b73054dff9b58fd4c117c3a59a9a0ae802578cf7dc80930c6ecf5a9754a8  docs/architecture/178-h-evidence/critical-high-advisory-triage-2026-11-09.json
+25c56aa5329c7a7076e9a6ffea419eebdfb227330560c44c880327cfa26a0bab  docs/architecture/178-h-evidence/generated-bundle-build-observation.json
+a6b312feee959d168c24a81420ef1cff63e76c855fedcbf2aeb7f5f8e5994cda  docs/architecture/178-h-evidence/github-verification-2026-11-09.json
+dfdce499d2e1cecee751457d34bdf1d5cd669c55dd0b3f3fe841adea008d4ad5  docs/architecture/178-h-evidence/main-branch-protection-after-review-gate.json
+d81acbe6ecd8841585f287772bedd18cb6ea3e1fb7f52618a153b1b96bbc4dc3  docs/architecture/178-h-evidence/npm-audit-after-semver-safe-2026-11-09.json
+8def2f86b46963e8f04ec2f07fbeafc7078064513448af24067d209090e681b8  docs/architecture/178-h-evidence/npm-audit-after-semver-safe-production-2026-11-09.json
+c3c51ee308597496fe9e4d644da177ed6ad17d8908e9fbc8da8d678c815bb8bb  docs/architecture/178-h-evidence/npm-audit-full-2026-11-09.json
+8def2f86b46963e8f04ec2f07fbeafc7078064513448af24067d209090e681b8  docs/architecture/178-h-evidence/npm-audit-production-2026-11-09.json
