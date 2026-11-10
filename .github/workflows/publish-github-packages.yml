@@ -76,6 +76,24 @@ jobs:
           publication_registry="https://npm.pkg.github.com/"
           output_dir="$RUNNER_TEMP/smilodon-package-artifact"
           mkdir -p "$output_dir"
+          bundle_source="packages/react-native/src/generated/coreBundle.ts"
+          bundle_snapshot=""
+          if [[ "$PACKAGE_NAME" == "react-native" ]]; then
+            if ! git diff --quiet -- "$bundle_source" || ! git diff --cached --quiet -- "$bundle_source"; then
+              echo "Refusing to build: $bundle_source is already modified" >&2
+              exit 1
+            fi
+            bundle_snapshot="$(mktemp "$RUNNER_TEMP/react-native-coreBundle.XXXXXX")"
+            cp -p "$bundle_source" "$bundle_snapshot"
+            restore_bundle_source() {
+              cp -p "$bundle_snapshot" "$bundle_source"
+              rm -f "$bundle_snapshot"
+            }
+            trap restore_bundle_source EXIT
+          fi
+          if [[ "$PACKAGE_NAME" != "core" ]]; then
+            npm --workspace @smilodon/core run build
+          fi
           npm --workspace "$workspace" run build
           npm pack --workspace "$workspace" --pack-destination "$output_dir"
 
