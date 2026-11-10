@@ -3,7 +3,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte({ compilerOptions: { compatibility: { componentApi: 4 } } })],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -12,7 +12,7 @@ export default defineConfig({
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
     rollupOptions: {
-      external: ['svelte', 'svelte/internal', '@smilodon/core'],
+      external: [/^svelte(?:\/|$)/, '@smilodon/core'],
       output: {
         globals: {
           svelte: 'Svelte',

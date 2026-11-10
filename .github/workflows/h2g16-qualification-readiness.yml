@@ -1,0 +1,168 @@
+name: H.2G.16 Qualification Readiness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: h2g16-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  node22-full-suite:
+    name: Locked build, type, unit, and contract checks (Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+          cache: npm
+      - name: Install locked graph
+        run: npm ci --no-audit --no-fund
+      - name: Record Node and lock provenance
+        run: |
+          mkdir -p test-results/h2g16/node22
+          node --input-type=module - <<'NODE'
+          import { writeFile } from 'node:fs/promises';
+          import { provenance } from './scripts/h2g16-provenance.mjs';
+          const result = await provenance(process.cwd(), { invocations: [
+            ['npm', 'ci', '--no-audit', '--no-fund'],
+            ['npm', 'run', 'lint'],
+            ['npm', 'run', 'test:types:react-native'],
+            ['npm', 'run', 'build'],
+            ['npm', 'test'],
+          ] });
+          await writeFile('test-results/h2g16/node22/provenance.json', `${JSON.stringify(result, null, 2)}\n`);
+          NODE
+      - name: Lint
+        run: npm run lint
+      - name: Packed React Native native type consumer
+        run: npm run test:types:react-native
+      - name: Build workspaces
+        run: npm run build
+      - name: Unit and contract suites
+        run: npm test
+      - name: Preserve Node 22 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2g16-node22-${{ github.run_id }}
+          path: |
+            test-results/h2g16/node22/
+            test-results/react-native-types/
+          if-no-files-found: warn
+          retention-days: 30
+
+  security-audit-evidence:
+    name: Locked dependency audit evidence (Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+      - name: Install locked graph without implicit audit
+        run: |
+          mkdir -p test-results/h2g16/security
+          set +e
+          npm ci --no-audit --no-fund > test-results/h2g16/security/npm-ci.stdout.txt 2> test-results/h2g16/security/npm-ci.stderr.txt
+          install_exit=$?
+          set -e
+          printf '%s\n' "$install_exit" > test-results/h2g16/security/npm-ci.exit
+          exit "$install_exit"
+      - name: Capture full and production audit results
+        run: node scripts/summarize-h2g16-security-audit.mjs --capture test-results/h2g16/security
+      - name: Require zero Critical and zero unexcepted High findings
+        run: node scripts/summarize-h2g16-security-audit.mjs --gate test-results/h2g16/security/security-status.json
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2g16-security-audit-${{ github.run_id }}
+          path: test-results/h2g16/security/
+          if-no-files-found: warn
+          retention-days: 30
+
+  assertion-inventory:
+    name: Baseline test identity and outcome comparison (Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+      - name: Compare base and candidate suites
+        run: node --test scripts/tests/h2g16-evidence-integrity.test.mjs
+      - name: Compare certified baseline and candidate suites
+        run: node scripts/run-h2g16-assertion-comparison.mjs test-results/h2g16/assertions
+      - name: Preserve test identity and outcome reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2g16-assertion-inventory-${{ github.run_id }}
+          path: test-results/h2g16/assertions/
+          if-no-files-found: warn
+          retention-days: 30
+
+  core-node18-consumer:
+    name: Packed Core Node 18 consumer (built with Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+      - name: Install and build candidate Core
+        run: |
+          npm ci
+          npm --workspace @smilodon/core run build
+          mkdir -p "$RUNNER_TEMP/smilodon-core"
+          npm pack --workspace @smilodon/core --pack-destination "$RUNNER_TEMP/smilodon-core"
+          sha256sum "$RUNNER_TEMP"/smilodon-core/*.tgz > "$RUNNER_TEMP/smilodon-core/core-tarball.sha256"
+          sha256sum package-lock.json > "$RUNNER_TEMP/smilodon-core/root-lock.sha256"
+      - name: Install Node 18 fixture dependencies and packed Core
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.20.6'
+          cache: npm
+          cache-dependency-path: tests/consumers/core-node18/package-lock.json
+      - name: Run NodeNext and Bundler declaration consumers
+        run: >-
+          node scripts/run-core-node18-consumer-check.mjs
+          "$RUNNER_TEMP/smilodon-core"
+          "$GITHUB_WORKSPACE/tests/consumers/core-node18"
+          "$RUNNER_TEMP/smilodon-core/node18-consumer-result.json"
+          package-lock.json
+      - name: Preserve Node 18 consumer result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2g16-core-node18-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/smilodon-core/
+          if-no-files-found: warn
+          retention-days: 30
