@@ -7,6 +7,11 @@ on:
         description: 'Package to publish (e.g., core)'
         required: true
         default: 'core'
+      dry_run:
+        description: 'Build, pack, and verify the package without publishing it'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   publish:
@@ -28,10 +33,65 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build package
-        run: npm --workspace @smilodon/${{ github.event.inputs.package }} run build
+      - name: Validate package selection
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          case "$PACKAGE_NAME" in
+            core|react|react-native|vue|svelte|solid|vanilla) ;;
+            *) echo "Unsupported package: $PACKAGE_NAME" >&2; exit 1 ;;
+          esac
+
+      - name: Build and pack package
+        id: package
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          workspace="@smilodon/$PACKAGE_NAME"
+          output_dir="$RUNNER_TEMP/smilodon-package-artifact"
+          mkdir -p "$output_dir"
+          npm --workspace "$workspace" run build
+          npm pack --workspace "$workspace" --pack-destination "$output_dir"
+
+          shopt -s nullglob
+          archives=("$output_dir"/*.tgz)
+          if [[ ${#archives[@]} -ne 1 ]]; then
+            echo "Expected exactly one package archive, found ${#archives[@]}" >&2
+            exit 1
+          fi
+          archive="${archives[0]}"
+          tar -xOf "$archive" package/package.json > "$output_dir/package.json"
+          node --input-type=module - "$output_dir/package.json" "$workspace" <<'NODE'
+          import fs from 'node:fs';
+          const [manifestPath, expectedName] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          if (manifest.name !== expectedName) {
+            throw new Error(`Packed name ${manifest.name} does not match ${expectedName}`);
+          }
+          if (!manifest.version || !/^\d+\.\d+\.\d+/.test(manifest.version)) {
+            throw new Error(`Packed package has invalid version: ${manifest.version}`);
+          }
+          console.log(`Verified packed artifact ${manifest.name}@${manifest.version}`);
+          NODE
+          tar -tzf "$archive" | sort > "$output_dir/package-files.txt"
+          if ! grep -q '^package/dist/' "$output_dir/package-files.txt"; then
+            echo "Packed artifact contains no dist output" >&2
+            exit 1
+          fi
+          (cd "$output_dir" && sha256sum "$(basename "$archive")" package.json package-files.txt > SHA256SUMS.txt)
+          echo "archive=$(basename "$archive")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package qualification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ inputs.package }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/smilodon-package-artifact/
+          if-no-files-found: error
+          retention-days: 30
       
       - name: Publish to GitHub Packages
+        if: ${{ inputs.dry_run == false }}
         run: npm publish --workspace @smilodon/${{ github.event.inputs.package }} --registry=https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
