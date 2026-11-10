@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-Version **1.10.0** is the current release for `@smilodon/core` and all maintained adapters.
+The public npm registry contains `1.10.0` for Core and the adapters, while `@smilodon/svelte@2.0.0` is separately published for Svelte 5. **Publication does not currently imply strict NodeNext compatibility**: post-publication consumers with `strict: true` and `skipLibCheck: false` fail on missing `.js` declaration import extensions in Core; `@smilodon/vanilla@1.10.0` also lacks an accessible declaration entry. Do not treat these versions as certified for that TypeScript configuration. See [Release consumer qualification blockers](docs/RELEASE-CONSUMER-QUALIFICATION-2026-11-10.md).
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 

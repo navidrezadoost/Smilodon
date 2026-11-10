@@ -17,6 +17,15 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Publication correction — 2026-11-10
+
+- The public npm registry already contains Core, React, Vue, Solid, Vanilla, and React Native at `1.10.0`, but the existing five web-package tarballs **do not match** the later qualified release candidate's hashes. Published versions are immutable; do not republish the same version with altered artifacts.
+- `@smilodon/svelte@2.0.0` has been published from the qualified candidate artifact, but strict installed-consumer checks still fail through its Core peer dependency.
+- All six targeted web-package installations and a browser import smoke test succeeded. However, NodeNext consumer compilation with `strict: true` and `skipLibCheck: false` failed across all six, primarily because published Core declarations contain extensionless relative imports. Vanilla additionally lacks a resolvable declaration entry.
+- GitHub Release `v1.10.0` has **not** been created. New corrected, publishable versions and verified registry-installed consumer tests are required before a release announcement. React Native remains outside the qualified web release scope; manual assistive-technology and performance-budget gates remain open.
+- See [Release consumer qualification blockers](docs/RELEASE-CONSUMER-QUALIFICATION-2026-11-10.md) for the technical remediation and release criteria.
+
+
 ### Release candidate scope (GitHub Packages; not published)
 
 - The qualified web-package candidate contains `@smilodon/core`, `@smilodon/react`, `@smilodon/vue`, `@smilodon/solid`, and `@smilodon/vanilla` at `1.10.0`, plus `@smilodon/svelte` at `2.0.0`. The Svelte `2.0.0` release supports Svelte 5 only and is a breaking change from the earlier Svelte 3/4 compatibility claim. Consumers on Svelte 3 or 4 must remain on an earlier compatible package release or migrate to Svelte 5. See [ADR 179](docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
