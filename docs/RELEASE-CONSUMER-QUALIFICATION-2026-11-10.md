@@ -1,38 +1,39 @@
-# Release consumer qualification blockers — 2026-11-10
+# Release consumer qualification — 2026-11-10
 
-**Status: RELEASE BLOCKED (published npm consumer artifacts do not satisfy strict TypeScript NodeNext).** This document records post-publication findings and the required technical fixes. It does not certify the packages and does not authorize another registry publication or GitHub Release.
+**Status: registry publication and tested-scope qualification complete for the web package set. React Native runtime qualification remains excluded.**
 
-## Observed registry state
+## Source and hosted qualification
 
-- The public npm registry already contains `@smilodon/core`, `@smilodon/react`, `@smilodon/vue`, `@smilodon/solid`, `@smilodon/vanilla`, and `@smilodon/react-native` at `1.10.0`.
-- `@smilodon/svelte@2.0.0` is published. Its registry tarball was reported to match the qualified candidate SHA-256 `f5aa20c1064e465c9e0ffa833dd963095b63d5a732b377bcbd7b74c7f040e82c`.
-- The existing npm tarballs for the five other targeted web packages at `1.10.0` differ from their later qualified candidate artifacts. Do not overwrite or attempt to republish immutable versions.
-- The GitHub Packages scope `@smilodon` belongs to a separate GitHub user account; its ownership and publication access from this repository remain unverified. No GitHub Packages publication is claimed.
-- No GitHub Release `v1.10.0` has been created.
+- Package source tree: `7987875c162560575482d07024fd537ffc193df3` (the PR #70 head tree, identical to the merged tree).
+- Current main at post-merge qualification: `7987875c162560575482d07024fd537ffc193df3`.
+- Post-merge workflows all succeeded on that exact commit: Tests `42875704103`, CI `42875704012`, H.2G.16 Qualification Readiness `42875704090`, and Phase 4 Certification `42875704023`.
+- PR #70 reported 26/26 successful PR-head checks. Its local packed matrix reported six packages × NodeNext/Bundler (12/12) using strict TypeScript 5.6.3, `strict: true`, and `skipLibCheck: false`.
 
-## Post-publication verification
+## Public npm package set
 
-- Installation of the six target web packages from the public npm registry succeeded.
-- A browser smoke test imported the six packages and created a Core `enhanced-select` with two items.
-- **All six strict NodeNext consumers failed** with `strict: true` and `skipLibCheck: false`. The published Core declarations contain extensionless relative import specifiers that NodeNext cannot resolve. Downstream adapters are affected through Core.
-- The published Vanilla adapter additionally has no resolvable TypeScript declaration entry.
-- This strict consumer gate takes precedence over CI that only tests source trees, workspace links, locally packed artifacts, or builds with declaration checking disabled.
+The five corrected artifacts were published in dependency order, Core first, followed by React, Vue, Solid, and Vanilla. Each registry-downloaded tarball was SHA-256 checked against the exact archive prepared from the qualified source tree. `@smilodon/svelte@2.0.0` was retained and independently verified against its already-published artifact; it declares Svelte 5 only.
 
-## Mandatory engineering remediation
+| Package | Version | npm integrity (SHA-512) | Tarball SHA-256 |
+| --- | --- | --- | --- |
+| `@smilodon/core` | `1.10.1` | `sha512-+WjilNMOToHuSMCUVLHQXI5PFrl5Bph03GqUiUkb9qnkh7tPOZm0mEPQ1g9TWeFF2i3UenytPc7PKXa9xsM8Aw==` | `b7213ae48e927c49bfc18897509513ed593d30bb974b28b8ad4fd9e3564a509b` |
+| `@smilodon/react` | `1.10.1` | `sha512-KWaPchLQReH+XDAA7ssRBtu/WCf3D7ylP7I2dzYL5dmWzhBQQ+HGZX9+K+FGLR10bgs00J/sPydizh2BxxpEJA==` | `675ab4b1abce06dfaba5c804046466b2e3a7d13e734c2a33efb266bfaedec606` |
+| `@smilodon/vue` | `1.10.1` | `sha512-+CpVnqo0S2Iy5G8H8+DaZJDAB/CNvxmtCYeKXFUKStvXk9javfAHBrOl4Poc5QsLi4l6T2n4jIZZsTMXBGMvkw==` | `93cff8c0d12de2b530a00f20695e22aef73825c1f77d35e29887c5be18391e54` |
+| `@smilodon/solid` | `1.10.1` | `sha512-dWOjOijYc/TLTT9JilfEK2ypd8OKh4gs3glC0iCspuBS8ntx9xV1FJo6q8ePGq9MQiGqgj1Z/EdfH8oFwoBx8Q==` | `488c7347bc7b859c655fc47b18d5fd691b3860a3af539f64189c9dc98bf8ab87` |
+| `@smilodon/vanilla` | `1.10.1` | `sha512-+JyKHZybW9qQuLl3dlvMdWVtwBolCKJGL3lI+Evv7j0GbDUqBO/BHBSEpJRl/eUnezHaL/AhOHPC6+Zu3uDmgA==` | `8b2d5a1e3cf78a95b5947aa682ba2c04c2c6ac9887918450d0b22b99fcd57c14` |
+| `@smilodon/svelte` | `2.0.0` | `sha512-JbT4qPv44ZdObbLbpUuY1xrnuq2HR+BYynudLTRB6hMTBtrYE0EOikxSdWdBkaGxG15Qj7JZ4lhOWFWkpVxq/g==` | `f5aa20c1064e465c9e0ffa833dd963095b63d5a732b377bcbd7b74c7f040e82c` |
 
-1. Fix Core declaration emit/source import specifiers for NodeNext. Use valid explicit `.js` specifiers for emitted ESM declaration imports and ensure exported subpaths resolve. Preserve compatibility with Bundler resolution.
-2. Fix Vanilla declaration generation and `package.json` exports/types paths so the packed archive includes the referenced `.d.ts` entry.
-3. Add a clean, registry-installed consumer matrix for Core plus React, Vue, Solid, Vanilla, and Svelte with both NodeNext and Bundler; enforce `strict: true`, `skipLibCheck: false`, and independent install (not workspace symlinks). Exercise imports and public types from the actual `.tgz` files.
-4. Check package manifests and peer ranges against the next corrected, independently versioned Core and adapter artifacts. **Never reuse an npm version for different bytes.** Define new publishable patch/minor versions as appropriate, including a new Svelte version after `2.0.0` if its Core dependency needs updating.
-5. Publish only after the packed-consumer matrix passes. Verify each installed registry artifact (name, version, integrity/hash, declarations, basic runtime behavior), then create a GitHub Release with exact commit, assets, checksums, and supported scope.
+## Registry consumer checks
 
-## Explicitly excluded / pending
+Clean temporary projects installed the six exact versions from `registry.npmjs.org`, with Core `1.10.1` as the peer for the five adapters. The checks ran with Node `26.10.0`, npm `12.2.0`, and TypeScript `5.6.3`. All 12 declaration checks passed: each package compiled once with NodeNext resolution and once with Bundler resolution, using TypeScript `5.6.3`, strict mode, and `skipLibCheck: false`. The fixture lockfiles record the registry-resolved package versions and integrity metadata. React used matching React and ReactDOM `18.3.1`; Vue used `3.5.22`; Solid used `1.9.9`; Svelte used `5.57.3`.
 
-- React Native: Android physical-device and iOS runtime qualification remain outstanding, so it is excluded from the next web release.
-- Manual assistive-technology assessment and formal WCAG conformance are not certified.
-- Performance budgets are report-only; public viewport virtualization remains disabled.
-- The acknowledged data-loading API under development is outside this release's certified scope.
+A Chromium `133.0.6943.126` browser smoke test imported all six registry-installed packages, observed their module exports, registered Core's `enhanced-select` custom element, and attached an element with two items. It completed without page errors or failed requests. This is a basic runtime import/mount smoke check, not full framework interaction certification.
 
-## Git worktree hygiene for VS Code
+## Release scope and limitations
 
-A VS Code Source Control count (for example 172) is not sufficient to determine whether changes are untracked evidence, generated output, multiple open Git repositories/worktrees, or modified tracked files. Inspect each repository independently with `git status --short --untracked-files=normal`, `git diff --name-status`, `git diff --cached --name-status`, `git ls-files --others --exclude-standard`, and `git worktree list`. Do **not** run `git clean`, `git reset --hard`, or discard changes until every path is classified and backed up if needed. Never alter the original IDE checkout merely to remove an unexplained Source Control count.
+- Core, React, Vue, Solid, and Vanilla are published at `1.10.1`. Svelte remains at `2.0.0`, is Svelte 5 only, and is a breaking compatibility change from the former Svelte 3/4 claim.
+- React Native is excluded: Android physical-device and iOS runtime qualification are incomplete.
+- Manual assistive-technology assessment and formal WCAG conformance remain unverified. Performance results remain report-only, and public viewport virtualization remains disabled.
+- The acknowledged data-loading API and examples remain future development, outside this release.
+- The prior `1.10.0` npm artifacts remain immutable and are not replaced by this publication.
+
+The GitHub Release is created only after the exact registry versions and attached checksums are verified. No GitHub Packages publication is claimed.
