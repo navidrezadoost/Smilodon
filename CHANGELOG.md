@@ -17,31 +17,28 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-### Fixed
-
-- Prepared `1.10.1` repackages of Core, React, Vue, Solid, and Vanilla after consumer checks found stale declaration output in the already-published `1.10.0` artifacts. Fresh packed outputs pass strict NodeNext and Bundler checks with TypeScript 5.6.3, `strict: true`, and `skipLibCheck: false`; Vanilla's packed archive includes its declaration entry. These versions are not published; hosted qualification is still required.
-
-### Release candidate scope (GitHub Packages; not published)
-
-- The qualified web-package candidate contains `@smilodon/core`, `@smilodon/react`, `@smilodon/vue`, `@smilodon/solid`, and `@smilodon/vanilla` at `1.10.0`, plus `@smilodon/svelte` at `2.0.0`. The Svelte `2.0.0` release supports Svelte 5 only and is a breaking change from the earlier Svelte 3/4 compatibility claim. Consumers on Svelte 3 or 4 must remain on an earlier compatible package release or migrate to Svelte 5. See [ADR 179](docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
-- These exact `1.10.0` versions were already published to public npm on October 23, 2026. This candidate targets GitHub Packages; no GitHub Packages publication or GitHub Release has been made. React Native is excluded because Android and iOS runtime qualification is incomplete.
-- The candidate's automated checks passed for their recorded scopes. Manual screen-reader assessment and WCAG conformance are not certified, performance results remain report-only, and public viewport virtualization remains disabled.
-
-### Compatibility
-
-- `@smilodon/svelte@2.0.0` supports Svelte 5 only (`svelte: ^5.0.0`). This is a breaking change from the earlier Svelte 3/4 compatibility claim.
-
-### Security
-
-- Updated locked development and build-tool dependencies in the release candidate. Its hosted locked-graph audit reports zero Critical and zero High findings; this does not audit dependency graphs resolved by downstream peer consumers.
-
 ### Added
 
-- Future development: a per-instance acknowledged data-loading API is in progress in the Core runtime and React adapter, with related documentation examples. Firefox/WebKit certification, independent review, skipped-contract disposition, full C1–C8 acceptance, and parity in other adapters remain outstanding. This API and its examples are outside this release candidate and are not included in the published `1.10.0` packages.
+- Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
+
+## [1.10.1] - 2026-11-10
+
+Corrected declaration artifacts for Core and the React, Vue, Solid, and Vanilla adapters. These five exact versions were published to the public npm registry from the verified package archives listed in the release assets. `@smilodon/svelte@2.0.0` remains the current Svelte package and supports Svelte 5 only; that major-version change is breaking for consumers previously using Svelte 3 or 4.
+
+### Fixed
+
+- Published Core and adapter declaration artifacts that pass strict TypeScript NodeNext and Bundler consumer checks (`strict: true`, `skipLibCheck: false`).
+- Included the Vanilla declaration entry in the published archive.
+
+### Compatibility and scope
+
+- Core, React, Vue, Solid, and Vanilla: `1.10.1`. Svelte: `2.0.0` (Svelte 5 only).
+- React Native is excluded from this web release because Android physical-device and iOS runtime qualification are incomplete.
+- Automated consumer and browser smoke checks passed for the recorded configurations. Manual assistive-technology assessment, WCAG conformance, performance budgets, and public viewport virtualization are not certified by this release.
 
 ## [1.10.0] - 2026-10-23
 
-This date records the public npm publication of version `1.10.0` for the maintained packages. Those npm versions already exist; this entry is historical release history, not a claim that the current GitHub Packages candidate has been published. GitHub's latest release remains `v1.9.1` as of November 10, 2026.
+This entry records the initial public npm publication of version `1.10.0`; corrected declaration packages were later published as `1.10.1` for Core, React, Vue, Solid, and Vanilla.
 
 Minor release consolidating the shared selection engine, stable option identity, accessibility effects, and guarded large-list virtualization work across the maintained packages. Existing public rendering defaults are unchanged.
 
