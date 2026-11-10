@@ -20,7 +20,21 @@ import { createElement } from 'react';
 
 const reactItems = basicItems as unknown as SelectItem[];
 
+const activatedReactTests = [
+  'rendersWithGroupedItems',
+  'rendersInDisabledState',
+  'setsInitialValue',
+  'updatesValueProgrammatically',
+  'displaysSelectedItem',
+  'emitsOpenEvent',
+  'emitsCloseEvent',
+  'closesViaImperativeAPI',
+  'clearsViaImperativeAPI',
+  'updatesItemsViaAPI',
+];
+
 const pendingTests = [
+  'rendersInErrorState',
   'deselectsItemInMultiMode',
   'respectsMaxSelections',
   'enablesSearchMode',
@@ -59,7 +73,7 @@ class ReactContractTests extends ContractTestRunner {
   private cleanup: (() => void) | null = null;
   
   constructor() {
-    super({ framework: 'react', skipTests: pendingTests });
+    super({ framework: 'react', skipTests: [...pendingTests, ...activatedReactTests] });
   }
   
   private _renderSelect(props: any = {}) {
@@ -695,6 +709,15 @@ describe('React Adapter Contract Tests', () => {
 
   pendingTests.forEach((testName) => {
     it.skip(`${testName} (not implemented yet)`, () => {});
+  });
+
+  activatedReactTests.forEach((testName) => {
+    it(testName, async () => {
+      const runner = new ReactContractTests();
+      const test = (runner as any)[testName] as () => Promise<ContractTestResult>;
+      const result = await test.call(runner);
+      expect(result.success, result.error).toBe(true);
+    });
   });
 
   it('emits diagnostic events when tracking diagnostics are enabled', async () => {

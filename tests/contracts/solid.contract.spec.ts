@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/dom';
-import { createComponent, createSignal } from 'solid-js';
+import { createComponent, createSignal, type Component } from 'solid-js';
 import { render as renderSolid } from 'solid-js/web';
 import '@smilodon/core';
 import { Select, type SelectHandle } from '@smilodon/solid';
@@ -17,7 +17,8 @@ const cleanups = new Set<() => void>();
 function mount(props: Record<string, unknown>) {
   const host = document.createElement('div');
   document.body.append(host);
-  const disposeSolid = renderSolid(() => createComponent(Select, props as any), host);
+  const SolidSelect = Select as unknown as Component<Record<string, unknown>>;
+  const disposeSolid = renderSolid(() => createComponent(SolidSelect, props), host);
   const dispose = () => {
     cleanups.delete(dispose);
     disposeSolid();

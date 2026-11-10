@@ -12,6 +12,45 @@ const reports = [
   ['data-loading', 'packages/core/vitest.data-loading.config.ts'],
   ['contracts', 'tests/contracts/vitest.config.ts'],
 ];
+const approvedCandidateChanges = [
+  ...[
+    'rendersWithGroupedItems',
+    'rendersInDisabledState',
+    'setsInitialValue',
+    'updatesValueProgrammatically',
+    'displaysSelectedItem',
+    'emitsOpenEvent',
+    'emitsCloseEvent',
+    'closesViaImperativeAPI',
+    'clearsViaImperativeAPI',
+    'updatesItemsViaAPI',
+  ].map((name) => ({
+    baselineIdentity: `contracts :: tests/contracts/react.contract.spec.ts :: React Adapter Contract Tests :: ${name} (not implemented yet)`,
+    candidateIdentity: `contracts :: tests/contracts/react.contract.spec.ts :: React Adapter Contract Tests :: ${name}`,
+    baselineStatus: 'skipped',
+    candidateStatus: 'passed',
+    reason: '178 fast-track P1 activates this previously skipped React contract with an individually reported assertion.',
+  })),
+  {
+    candidateIdentity: 'core-unit :: packages/core/tests/enhanced-select-accessibility-integration.spec.ts :: EnhancedSelect combobox accessibility integration :: synchronizes the input disabled property when enabled changes',
+    baselineStatus: 'missing',
+    candidateStatus: 'passed',
+    reason: 'Focused regression coverage for the observable enabled-to-input property synchronization fix.',
+  },
+  ...[
+    'mounts the custom element and synchronizes the provided items',
+    'synchronizes controlled values reactively',
+    'forwards selection callbacks with the selected item and index',
+    'renders grouped items from the groupedItems prop',
+    'exposes the ref handle for selection and imperative item updates',
+    'removes adapter event listeners when the Solid owner is disposed',
+  ].map((name) => ({
+    candidateIdentity: `contracts :: tests/contracts/solid.contract.spec.ts :: Solid Adapter Contract Tests :: ${name}`,
+    baselineStatus: 'missing',
+    candidateStatus: 'passed',
+    reason: '178 fast-track P1 adds a direct Solid adapter contract assertion.',
+  })),
+];
 const workspaces = ['@smilodon/core', '@smilodon/react', '@smilodon/vue', '@smilodon/vanilla', '@smilodon/solid', '@smilodon/svelte'];
 const failures = [];
 const commands = [];
@@ -62,7 +101,18 @@ try {
     const tap = tapInventory(await readFile(path.join(outputRoot, tree, 'discovery.tap'), 'utf8'), `${tree}/discovery`);
     for (const [identity, status] of tap) inventories[tree].set(`node-test :: ${identity}`, status);
   }
-  const differences = compareInventories(inventories.baseline, inventories.candidate);
+  const baselineForComparison = new Map(inventories.baseline);
+  const candidateForComparison = new Map(inventories.candidate);
+  const acceptedCandidateChanges = [];
+  for (const expected of approvedCandidateChanges) {
+    const baselineStatus = expected.baselineIdentity ? baselineForComparison.get(expected.baselineIdentity) ?? 'missing' : 'missing';
+    const candidateStatus = candidateForComparison.get(expected.candidateIdentity) ?? 'missing';
+    if (baselineStatus !== expected.baselineStatus || candidateStatus !== expected.candidateStatus) continue;
+    if (expected.baselineIdentity) baselineForComparison.delete(expected.baselineIdentity);
+    candidateForComparison.delete(expected.candidateIdentity);
+    acceptedCandidateChanges.push({ ...expected, observedBaselineStatus: baselineStatus, observedCandidateStatus: candidateStatus });
+  }
+  const differences = compareInventories(baselineForComparison, candidateForComparison);
   const prov = await provenance(root);
   const [baselineVitestPackage, candidateVitestPackage] = await Promise.all([
     readFile(path.join(baselineRoot, 'node_modules/vitest/package.json'), 'utf8').then(JSON.parse),
@@ -87,10 +137,13 @@ try {
       explicitIdentityExceptions: REPORTER_IDENTITY_EXCEPTIONS,
       exceptionStatusRule: 'statuses must still match exactly',
     },
+    acceptedCandidateChanges,
+    acceptedCandidateChangeCount: acceptedCandidateChanges.length,
+    expectedCandidateChangeCount: approvedCandidateChanges.length,
     differences,
     commands,
     commandFailures: failures,
-    status: differences.length === 0 && failures.length === 0 ? 'PASS' : 'FAIL',
+    status: differences.length === 0 && failures.length === 0 && acceptedCandidateChanges.length === approvedCandidateChanges.length ? 'PASS' : 'FAIL',
   };
 } catch (error) {
   failures.push({ label: 'comparison', error: error.stack ?? error.message });
@@ -101,7 +154,7 @@ try {
   if (summary) {
     if (failures.length) { summary.commandFailures = failures; summary.status = 'FAIL'; }
     await writeFile(path.join(outputRoot, 'comparison.json'), `${JSON.stringify(summary, null, 2)}\n`);
-    console.log(JSON.stringify({ status: summary.status, baselineCommit: summary.baselineCommit, candidateCommit: summary.candidateCommit, candidateTreeHash: summary.candidateTreeHash, baselineAssertions: summary.baselineAssertions, candidateAssertions: summary.candidateAssertions, differenceCount: summary.differences?.length ?? null, commandFailureCount: summary.commandFailures?.length ?? 0, report: path.join(outputRoot, 'comparison.json') }, null, 2));
+    console.log(JSON.stringify({ status: summary.status, baselineCommit: summary.baselineCommit, candidateCommit: summary.candidateCommit, candidateTreeHash: summary.candidateTreeHash, baselineAssertions: summary.baselineAssertions, candidateAssertions: summary.candidateAssertions, acceptedCandidateChangeCount: summary.acceptedCandidateChangeCount ?? 0, expectedCandidateChangeCount: summary.expectedCandidateChangeCount ?? 0, differenceCount: summary.differences?.length ?? null, commandFailureCount: summary.commandFailures?.length ?? 0, report: path.join(outputRoot, 'comparison.json') }, null, 2));
   }
 }
 if (summary?.status !== 'PASS') process.exitCode = 1;
