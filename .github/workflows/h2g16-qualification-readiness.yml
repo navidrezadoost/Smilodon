@@ -21,6 +21,30 @@ defaults:
     shell: bash
 
 jobs:
+  svelte-v5-packed-consumer:
+    name: Packed Svelte 5 consumer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+      - name: Install locked repository graph
+        run: npm ci --no-audit --no-fund
+      - name: Build and consume packed Svelte 5 artifacts
+        run: node scripts/run-svelte-packed-consumer.mjs
+      - name: Preserve packed consumer provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svelte-v5-packed-consumer-${{ github.run_id }}
+          path: test-results/svelte/packed-consumer.json
+          if-no-files-found: warn
+          retention-days: 30
+
   node22-full-suite:
     name: Locked build, type, unit, and contract checks (Node 22)
     runs-on: ubuntu-latest

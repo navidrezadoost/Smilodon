@@ -48,9 +48,11 @@ gates:
     checks: [lint, packed_react_native_types, workspace_build, unit, contracts]
   react_vue_vanilla_solid_svelte_packed_consumers:
     status: pending
-    blocker: full framework and minimum-peer matrix remains unexecuted
-    svelte_3_4: blocked_pending_independent_consumer_evidence
-    svelte_5: local_toolchain_only
+    blocker: packed framework consumer matrix remains unexecuted for supported package ranges
+    svelte_supported_peer: ^5.0.0
+    svelte_3_4: unsupported_by_published_peer_range
+    svelte_5: packed_runtime_and_strict_type_consumer_passed_locally_hosted_pending
+    svelte_package_release_version: 2.0.0
     solid_contracts: blocked_missing_dedicated_contract_suite
   react_native:
     packed_types: pending_hosted_node_matrix

@@ -66,9 +66,9 @@ The assertion comparison now uses the pinned certified baseline `c1e95d637ddbdda
 
 The Node 18 consumer declaration check passes locally, while using Node 18 to build the candidate emits engine warnings for dependencies that require Node 20. The publishing workflow is therefore proposed for Node 20; Core's public Node `>=18` metadata is retained and must continue to be supported by consumer tests.
 
-The full audit still reports one High `image-size` entry through Metro. The production-only audit does not grant an exception. Svelte 3/4 consumer behavior, Solid contract parity, manual accessibility, Android physical-device certification, and iOS runtime certification remain unresolved. No H.2G.16 hosted job is yet qualified, and the prepared workflow definitions do not change the current release disposition.
+The full audit still reports one High `image-size` entry through Metro. The production-only audit does not grant an exception. Svelte 3/4 are not in the declared peer range after ADR 179; the supported Svelte 5 packed-consumer check is being added. Solid contract parity, manual accessibility, Android physical-device certification, and iOS runtime certification remain unresolved. No H.2G.16 hosted job is yet qualified, and the prepared workflow definitions do not change the current release disposition.
 
-Disposition: **`H2G16_READINESS_CHANGES_PREPARED — LOCAL_NODE18_DECLARATION_PASS — HOSTED_RUN_PENDING — SECURITY_HIGH_OPEN — PRODUCTION_NO_GO`**. Independent review and all required hosted evidence remain necessary. No release, merge, publication, exception, or package compatibility change is authorized.
+Disposition at candidate preparation: **`H2G16_READINESS_CHANGES_PREPARED — LOCAL_NODE18_DECLARATION_PASS — HOSTED_RUN_PENDING — SECURITY_HIGH_OPEN — PRODUCTION_NO_GO`**. The subsequent H.2G.21 executive track below records the changed authorization and new technical work; the historical section remains as originally assessed.
 
 ## 7. Directive 178-H.2G.18 — Final candidate freeze and hosted-workflow review
 
@@ -93,7 +93,7 @@ The proposed workflow checks out the explicit pull-request head SHA (or push SHA
 
 The preserved H.2G.14 locked-graph audit contains one High `image-size` finding through Metro and the production-only audit contains zero. On that preserved evidence, the expected hosted security disposition is a valid blocked result (gate exit 1), not a clean pass or an evidence-parser failure. H.2G.18 did not rerun npm audit; the live hosted result remains pending. The prepared workflow has no cache that can substitute dependencies for the lockfile install. The assertion job uses the pinned baseline, separately installs both trees, and uploads comparison evidence after success or failure. The Node 18 consumer job builds and packs under Node 20, then tests the extracted tarball under Node 18; this remains declaration-consumer evidence, not an application runtime claim.
 
-No hosted workflow, GitHub action, PR, commit, push, publication, exception, or production promotion was performed. Hosted qualification remains unexecuted because its checkout must target a real, immutable candidate commit. Security High, Svelte 3/4 consumer compatibility, Solid contract coverage, Android physical-device certification, iOS runtime certification, independent review, and the other open readiness gates remain unresolved.
+No hosted workflow, GitHub action, PR, commit, push, publication, exception, or production promotion was performed. Hosted qualification remains unexecuted because its checkout must target a real, immutable candidate commit. Security High, Solid contract coverage, manual accessibility, Android physical-device certification, iOS runtime certification, independent review, and the other open readiness gates remain unresolved. Svelte compatibility is limited to the Svelte 5 peer range by ADR 179, pending packed-consumer qualification.
 
 Disposition: **`H2G18_LOCAL_NODE20_VALIDATION_PASS — CANDIDATE_SNAPSHOT_FROZEN — HOSTED_COMMIT_NOT_CREATED — SECURITY_HIGH_OPEN — PRODUCTION_NO_GO`**. H.2G.18's local checks are complete. Its hosted-candidate acceptance item remains blocked until a candidate commit is separately authorized and created; no hosted result is inferred from this local evidence.
 
@@ -104,6 +104,16 @@ This documentation-only amendment replaces links to evidence directories exclude
 The local manifests were verified with `sha256sum -c`. The H2G14 manifest digest is `42226e5ed0b08b0329568fd95518b27c16aa8fd01b0cc3a486d4e669b3cdc5a8`; the H2G16 evidence manifest digest is `0d65a4a710becee9e929d34646d777bcbe065b708ebbc732845b2848aa3d0318`; and the H2G18 Node 20 evidence manifest digest is `58c0ad5838be99299e8f704a9a9afd2ea1433d137b41eeef4e60e7e54aca8550`. The H2G18 evidence manifest covers its raw result files and intentionally does not checksum this summary document, avoiding a self-referential digest. No local evidence is represented as remotely accessible.
 
 H2G.20 changed documentation and the qualification manifest only. The root lockfile remains SHA-256 `3d7a4f8e4c4b536f5c33911128a76ce4a5807306dc0d76f1e02bd71adcf61c74`; the 703/703 assertion result is unchanged; the React Native generated bundle remains byte-identical to the parent. The updated source snapshot is `73c12b432cb305d01da0406d401e289fd7f33f1bddd5f8ab58b13f0c8994f91f` across 368 included files. The proposed Git tree was recalculated using a temporary index; the real index remains empty. No commit, push, PR, hosted workflow, or publication was performed. The Metro High and other release gates remain open; `PRODUCTION_NO_GO` remains in effect.
+
+## 8. H.2G.21 executive-track update — Metro and Svelte
+
+The CTO fast-track directive authorizes isolated P0 troubleshooting while the H.2G.20 commit remains immutable. The candidate was pushed separately as commit `e2733eb2a4bc826e2cdf0023afd852c3c01ffb5c` on PR #65. Hosted workflows ran on that exact head: CI, Tests, Phase 4 Certification, Phase 4 Performance Baseline, Phase 4 End-key Replication, and the Node 22 qualification passed; the locked audit gate failed as expected with 0 Critical, 1 High, 13 Moderate, and 5 Low. The High was `image-size` through Metro 0.81.5. The production-only audit was zero. The audit check was not weakened.
+
+The Metro remediation remains a separate workstream and is not claimed as closed by this Svelte change.
+
+The CTO selected Svelte 5 only. ADR 179 limits `@smilodon/svelte` to peer `^5.0.0` and versions the compatibility-contract change as package 2.0.0. Svelte 3/4 are explicitly unsupported by this artifact; no separate legacy package is claimed. The packed Svelte 5.57.3 consumer passed strict TypeScript checking with `skipLibCheck: false` and a production Vite build locally; hosted Node 20 qualification remains pending. This narrows the published compatibility contract and is included in the release change summary.
+
+These workstreams remain separate from the frozen H.2G.20 candidate and require their own hosted evidence. Solid contract coverage, manual accessibility, Android physical-device certification, and iOS runtime certification remain unresolved. No merge or publication is authorized by this update; `PRODUCTION_NO_GO` remains in effect.
 
 ## 6. Directive 178-H.2G.17 — CI reliability and evidence integrity amendment
 

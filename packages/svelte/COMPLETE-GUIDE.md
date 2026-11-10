@@ -4,6 +4,8 @@
 
 This guide provides comprehensive documentation for using Smilodon Select in Svelte applications, covering all features, styling options, and advanced use cases.
 
+**Supported peer:** Svelte 5.x. Svelte 3 and 4 are outside this package's published compatibility range.
+
 > Capability caveat: the public `virtualized` prop enables chunked rendering for large flat lists, not viewport-windowed virtualization. Older examples below that say “only visible rows” or imply bounded DOM are not current release guarantees. See [Known Limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 >
 > Accessibility status: selected keyboard and ARIA behaviors are implemented, but pinned cross-browser verification and manual assistive-technology assessment are pending. This guide is not a WCAG conformance statement. For the maintained public API, use the [API reference](../../docs/API-REFERENCE.md) and the adapter's exported TypeScript types.
