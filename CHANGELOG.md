@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- Prepared `1.10.1` repackages of Core, React, Vue, Solid, and Vanilla after consumer checks found stale declaration output in the already-published `1.10.0` artifacts. Fresh packed outputs pass strict NodeNext and Bundler checks with TypeScript 5.6.3, `strict: true`, and `skipLibCheck: false`; Vanilla's packed archive includes its declaration entry. These versions are not published; hosted qualification is still required.
+
 ### Release candidate scope (GitHub Packages; not published)
 
 - The qualified web-package candidate contains `@smilodon/core`, `@smilodon/react`, `@smilodon/vue`, `@smilodon/solid`, and `@smilodon/vanilla` at `1.10.0`, plus `@smilodon/svelte` at `2.0.0`. The Svelte `2.0.0` release supports Svelte 5 only and is a breaking change from the earlier Svelte 3/4 compatibility claim. Consumers on Svelte 3 or 4 must remain on an earlier compatible package release or migrate to Svelte 5. See [ADR 179](docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
