@@ -17,6 +17,14 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Compatibility
+
+- The release candidate's `@smilodon/svelte` package is version `2.0.0` and supports Svelte 5 only (`svelte: ^5.0.0`). This is a breaking change from the earlier Svelte 3/4 compatibility claim. Consumers on Svelte 3 or 4 must remain on an earlier compatible package release or migrate to Svelte 5. See [ADR 179](docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
+
+### Security
+
+- Updated locked development and build-tool dependencies in the release candidate. Its hosted locked-graph audit reports zero Critical and zero High findings; this does not audit dependency graphs resolved by downstream peer consumers.
+
 ### Added
 
 - Added a development-candidate, per-instance acknowledged data-loading API in the core runtime and React adapter. It supports explicit host completion with request identity and query generation, separate projection outcomes, remote/hybrid search configuration, page/cursor requests, cancellation notifications, and typed configuration diagnostics. Legacy remains the default protocol. This work is provisionally development-complete; Firefox/WebKit certification, independent review, skipped-contract disposition, and full C1–C8 acceptance remain outstanding. It is not a release declaration and is not included in the published `1.10.0` packages.
