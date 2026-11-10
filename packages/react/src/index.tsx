@@ -32,8 +32,8 @@
  * @packageDocumentation
  */
 
-export { Select } from './Select';
-export type { SelectProps, SelectComponentProps, SelectItem, SelectHandle, StyleConfig } from './Select';
+export { Select } from './Select.js';
+export type { SelectProps, SelectComponentProps, SelectItem, SelectHandle, StyleConfig } from './Select.js';
 
 // Re-export useful types from core
 export type {

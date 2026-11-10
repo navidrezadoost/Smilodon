@@ -24,6 +24,8 @@
     "test:unit:watch": "vitest --config packages/core/vitest.config.ts",
     "test:contracts": "vitest run --config tests/contracts/vitest.config.ts",
     "test:contracts:react": "vitest run tests/contracts/react.contract.spec.ts --config tests/contracts/vitest.config.ts",
+    "test:contracts:solid": "vitest run tests/contracts/solid.contract.spec.ts --config tests/contracts/vitest.config.ts",
+    "test:types:react-solid": "node scripts/test-packed-react-solid-consumers.mjs",
     "test:contracts:vue": "vitest run tests/contracts/vue.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:svelte": "vitest run tests/contracts/svelte.contract.spec.ts --config tests/contracts/vitest.config.ts",
     "test:contracts:vanilla": "vitest run tests/contracts/vanilla.contract.spec.ts --config tests/contracts/vitest.config.ts",
