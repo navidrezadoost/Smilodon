@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: [react, vue, svelte, vanilla]
+        framework: [react, vue, svelte, vanilla, solid]
     
     steps:
       - uses: actions/checkout@v4

@@ -87,6 +87,16 @@ describe('EnhancedSelect combobox accessibility integration', () => {
     expect(getInput(select).getAttribute('aria-autocomplete')).toBe('none');
   });
 
+  it('synchronizes the input disabled property when enabled changes', () => {
+    select.updateConfig({ enabled: false });
+
+    expect(getInput(select).disabled).toBe(true);
+
+    select.updateConfig({ enabled: true });
+
+    expect(getInput(select).disabled).toBe(false);
+  });
+
   it('maps required engine state to aria-required=true', () => {
     select.setRequired(true);
 

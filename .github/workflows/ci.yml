@@ -25,6 +25,8 @@ jobs:
         run: npm run test:types:react-native
       - name: Build
         run: npm run build
+      - name: Packed React and Solid consumers
+        run: npm run test:types:react-solid
       - name: Unit tests
         run: npm run test
       - name: Install browsers

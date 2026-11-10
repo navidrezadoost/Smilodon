@@ -14,6 +14,9 @@ export default defineConfig({
   },
   test: {
     name: 'contracts',
+    server: {
+      deps: { inline: ['solid-js'] },
+    },
     include: ['tests/contracts/**/*.contract.spec.ts'],
     exclude: [
       '**/node_modules/**',
@@ -38,8 +41,10 @@ export default defineConfig({
   },
   resolve: {
     conditions: ['browser'],
+    dedupe: ['solid-js'],
     alias: {
       '@smilodon/react': resolve(__dirname, '../../packages/react/dist/index.js'),
+      '@smilodon/solid': resolve(__dirname, '../../packages/solid/dist/index.js'),
       '@smilodon/vue': resolve(__dirname, '../../packages/vue/dist/index.js'),
       '@smilodon/svelte': resolve(__dirname, '../../packages/svelte/dist/index.mjs'),
       '@smilodon/vanilla': resolve(__dirname, '../../packages/vanilla/dist/index.mjs'),

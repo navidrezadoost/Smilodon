@@ -5307,6 +5307,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
     this._rebuildItemRegistry();
     if (previousEnabled !== this._config.enabled) {
+      this._input.disabled = !this._config.enabled;
       if (!this._config.enabled && this._state.isOpen) {
         this._handleClose('disabled');
       }
