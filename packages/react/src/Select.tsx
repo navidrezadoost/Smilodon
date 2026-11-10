@@ -1478,7 +1478,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   // Expose imperative handle
   useImperativeHandle(ref, () => ({
     focus: () => {
-      elementRef.current?.focus();
+      const element = elementRef.current;
+      const input = element?.shadowRoot?.querySelector('input');
+      if (input instanceof HTMLElement) {
+        input.focus();
+      } else {
+        element?.focus();
+      }
     },
     open: () => {
       elementRef.current?.open();
