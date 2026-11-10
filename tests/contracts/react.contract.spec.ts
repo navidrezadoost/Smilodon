@@ -5,8 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, render, waitFor } from '@testing-library/react';
 import '@smilodon/core';
 import { Select } from '@smilodon/react';
 import type { SelectHandle, SelectItem } from '@smilodon/react';
@@ -17,17 +16,25 @@ import {
   largeDataset,
   searchableItems,
 } from './fixtures/test-data';
-import { createElement, useRef, useState } from 'react';
+import { createElement } from 'react';
 
 const reactItems = basicItems as unknown as SelectItem[];
 
-const pendingTests = [
+const activatedReactTests = [
   'rendersWithGroupedItems',
   'rendersInDisabledState',
-  'rendersInErrorState',
   'setsInitialValue',
   'updatesValueProgrammatically',
   'displaysSelectedItem',
+  'emitsOpenEvent',
+  'emitsCloseEvent',
+  'closesViaImperativeAPI',
+  'clearsViaImperativeAPI',
+  'updatesItemsViaAPI',
+];
+
+const pendingTests = [
+  'rendersInErrorState',
   'deselectsItemInMultiMode',
   'respectsMaxSelections',
   'enablesSearchMode',
@@ -45,13 +52,8 @@ const pendingTests = [
   'preventsInteractionWhenDisabled',
   'showsErrorStyling',
   'showsRequiredIndicator',
-  'emitsOpenEvent',
-  'emitsCloseEvent',
   'emitsLoadMoreEvent',
-  'closesViaImperativeAPI',
-  'clearsViaImperativeAPI',
   'focusesViaImperativeAPI',
-  'updatesItemsViaAPI',
   'rendersGroupHeaders',
   'navigatesBetweenGroups',
   'selectsFromDifferentGroups',
@@ -71,7 +73,7 @@ class ReactContractTests extends ContractTestRunner {
   private cleanup: (() => void) | null = null;
   
   constructor() {
-    super({ framework: 'react', skipTests: pendingTests });
+    super({ framework: 'react', skipTests: [...pendingTests, ...activatedReactTests] });
   }
   
   private _renderSelect(props: any = {}) {
@@ -84,6 +86,17 @@ class ReactContractTests extends ContractTestRunner {
     if (this.cleanup) {
       this.cleanup();
       this.cleanup = null;
+    }
+  }
+
+  private async _runContract(assertion: () => void | Promise<void>): Promise<ContractTestResult> {
+    try {
+      await assertion();
+      this._cleanupAfterTest();
+      return { success: true };
+    } catch (error) {
+      this._cleanupAfterTest();
+      return { success: false, error: String(error) };
     }
   }
   
@@ -324,13 +337,26 @@ class ReactContractTests extends ContractTestRunner {
   // In production, all methods would be fully implemented
   
   async rendersWithGroupedItems(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const groups = groupedItems.map(({ group, items }) => ({ label: group, options: items }));
+      const { container } = this._renderSelect({ groupedItems: groups });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(6));
+      element.open();
+      await waitFor(() => {
+        expect(element.shadowRoot?.querySelector('[part="group-header"]')?.textContent).toContain('Fruits');
+        expect(element.shadowRoot?.textContent).toContain('Vegetables');
+      });
+    });
   }
   
   async rendersInDisabledState(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: basicItems, disabled: true });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._config?.enabled).toBe(false));
+      expect(element?.shadowRoot?.querySelector('.select-input')?.disabled).toBe(true);
+    });
   }
   
   async rendersInErrorState(): Promise<ContractTestResult> {
@@ -339,13 +365,22 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async setsInitialValue(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, value: '2' });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['2']));
+    });
   }
   
   async updatesValueProgrammatically(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const props = { items: reactItems, value: '1' };
+      const { container, rerender } = this._renderSelect(props);
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+      rerender(createElement(Select, { ...props, value: '3' }));
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['3']));
+    });
   }
   
   async getsCurrentValue(): Promise<ContractTestResult> {
@@ -394,8 +429,12 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async displaysSelectedItem(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, value: '1' });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+      expect(element.shadowRoot?.querySelector('.select-input')?.value).toBe('Apple');
+    });
   }
   
   async deselectsItemInMultiMode(): Promise<ContractTestResult> {
@@ -513,13 +552,26 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async emitsOpenEvent(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const onOpen = vi.fn();
+      const { container } = this._renderSelect({ items: reactItems, onOpen });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(reactItems.length));
+      element.open();
+      await waitFor(() => expect(onOpen).toHaveBeenCalledTimes(1));
+    });
   }
   
   async emitsCloseEvent(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const onClose = vi.fn();
+      const { container } = this._renderSelect({ items: reactItems, onClose });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(reactItems.length));
+      element.open();
+      element.close();
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    });
   }
   
   async emitsLoadMoreEvent(): Promise<ContractTestResult> {
@@ -528,13 +580,27 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async closesViaImperativeAPI(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      let handle: SelectHandle | null = null;
+      const onClose = vi.fn();
+      const result = render(createElement(Select, { items: reactItems, onClose, ref: (value: SelectHandle | null) => { handle = value; } }));
+      this.cleanup = result.unmount;
+      await waitFor(() => expect(typeof handle?.close).toBe('function'));
+      act(() => handle!.open());
+      act(() => handle!.close());
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    });
   }
   
   async clearsViaImperativeAPI(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      let handle: SelectHandle | null = null;
+      const result = render(createElement(Select, { items: reactItems, value: '1', ref: (value: SelectHandle | null) => { handle = value; } }));
+      this.cleanup = result.unmount;
+      await waitFor(() => expect(handle?.getSelectedValues()).toEqual(['1']));
+      act(() => handle!.clear());
+      await waitFor(() => expect(handle?.getSelectedValues()).toEqual([]));
+    });
   }
   
   async focusesViaImperativeAPI(): Promise<ContractTestResult> {
@@ -543,8 +609,16 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async updatesItemsViaAPI(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      let handle: SelectHandle | null = null;
+      const result = render(createElement(Select, { items: reactItems, ref: (value: SelectHandle | null) => { handle = value; } }));
+      this.cleanup = result.unmount;
+      const element = result.container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(typeof handle?.setItems).toBe('function'));
+      act(() => handle!.setItems([{ value: 'x', label: 'Xigua' }]));
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(1));
+      expect(element?._state?.loadedItems[0]?.label).toBe('Xigua');
+    });
   }
   
   async rendersGroupHeaders(): Promise<ContractTestResult> {
@@ -635,6 +709,15 @@ describe('React Adapter Contract Tests', () => {
 
   pendingTests.forEach((testName) => {
     it.skip(`${testName} (not implemented yet)`, () => {});
+  });
+
+  activatedReactTests.forEach((testName) => {
+    it(testName, async () => {
+      const runner = new ReactContractTests();
+      const test = (runner as any)[testName] as () => Promise<ContractTestResult>;
+      const result = await test.call(runner);
+      expect(result.success, result.error).toBe(true);
+    });
   });
 
   it('emits diagnostic events when tracking diagnostics are enabled', async () => {

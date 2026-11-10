@@ -2,6 +2,8 @@
 
 Select component for Svelte applications. The shared core has scoped automated Phase 4 browser coverage; exhaustive Svelte integration parity and manual assistive-technology certification remain unverified. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
+**Supported peer:** Svelte 5.x. Svelte 3 and 4 are not supported by this package artifact. The published peer range is limited to the major version validated by the packed-consumer check; see [ADR 179](../../docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
+
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not establish exhaustive Svelte integration parity, minimum-browser-version support, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## Acknowledged data-loading adapter status

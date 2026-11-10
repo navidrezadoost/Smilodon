@@ -7,6 +7,11 @@ on:
         description: 'Package to publish (e.g., core)'
         required: true
         default: 'core'
+      dry_run:
+        description: 'Build, pack, and verify the package without publishing it'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   publish:
@@ -21,17 +26,172 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20.20.2'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@smilodon'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Build package
-        run: npm --workspace @smilodon/${{ github.event.inputs.package }} run build
+      - name: Validate package selection
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_NAME" in
+            core|react|react-native|vue|svelte|solid|vanilla) ;;
+            *) echo "Unsupported package: $PACKAGE_NAME" >&2; exit 1 ;;
+          esac
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const workspaces = ['core', 'react', 'react-native', 'vue', 'svelte', 'solid', 'vanilla'];
+          const manifests = workspaces.map((workspace) => {
+            const manifest = JSON.parse(fs.readFileSync(`packages/${workspace}/package.json`, 'utf8'));
+            if (manifest.name !== `@smilodon/${workspace}`) {
+              throw new Error(`${workspace}: unexpected package name ${manifest.name}`);
+            }
+            if (!manifest.version || manifest.publishConfig?.registry !== 'https://registry.npmjs.org/') {
+              throw new Error(`${manifest.name}: version or public npm registry declaration is missing`);
+            }
+            return manifest;
+          });
+          const core = manifests.find(({ name }) => name === '@smilodon/core');
+          const expectedCorePeer = `^${core.version}`;
+          for (const manifest of manifests.filter(({ name }) => name !== '@smilodon/core')) {
+            if (manifest.peerDependencies?.['@smilodon/core'] !== expectedCorePeer) {
+              throw new Error(`${manifest.name}: expected @smilodon/core ${expectedCorePeer}`);
+            }
+          }
+          console.log(`Validated ${manifests.length} package names, versions, npmjs manifest destinations, and Core peer ranges.`);
+          console.log(`This workflow explicitly overrides the manifest destination and publishes only to https://npm.pkg.github.com/.`);
+          NODE
+
+      - name: Build and pack package
+        id: package
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          workspace="@smilodon/$PACKAGE_NAME"
+          publication_registry="https://npm.pkg.github.com/"
+          output_dir="$RUNNER_TEMP/smilodon-package-artifact"
+          mkdir -p "$output_dir"
+          bundle_source="packages/react-native/src/generated/coreBundle.ts"
+          bundle_snapshot=""
+          if [[ "$PACKAGE_NAME" == "react-native" ]]; then
+            if ! git diff --quiet -- "$bundle_source" || ! git diff --cached --quiet -- "$bundle_source"; then
+              echo "Refusing to build: $bundle_source is already modified" >&2
+              exit 1
+            fi
+            bundle_snapshot="$(mktemp "$RUNNER_TEMP/react-native-coreBundle.XXXXXX")"
+            cp -p "$bundle_source" "$bundle_snapshot"
+            restore_bundle_source() {
+              cp -p "$bundle_snapshot" "$bundle_source"
+              rm -f "$bundle_snapshot"
+            }
+            trap restore_bundle_source EXIT
+          fi
+          if [[ "$PACKAGE_NAME" != "core" ]]; then
+            npm --workspace @smilodon/core run build
+          fi
+          npm --workspace "$workspace" run build
+          npm pack --workspace "$workspace" --pack-destination "$output_dir"
+
+          shopt -s nullglob
+          archives=("$output_dir"/*.tgz)
+          if [[ ${#archives[@]} -ne 1 ]]; then
+            echo "Expected exactly one package archive, found ${#archives[@]}" >&2
+            exit 1
+          fi
+          archive="${archives[0]}"
+          tar -xOf "$archive" package/package.json > "$output_dir/package.json"
+          node --input-type=module - "$output_dir/package.json" "$workspace" "$publication_registry" > "$output_dir/package-metadata.json" <<'NODE'
+          import fs from 'node:fs';
+          const [manifestPath, expectedName, publicationRegistry] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          if (manifest.name !== expectedName) {
+            throw new Error(`Packed name ${manifest.name} does not match ${expectedName}`);
+          }
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(manifest.version ?? '')) {
+            throw new Error(`Packed package has invalid version: ${manifest.version}`);
+          }
+          const declaredRegistry = manifest.publishConfig?.registry ?? 'https://registry.npmjs.org/';
+          console.log(JSON.stringify({
+            package: manifest.name,
+            version: manifest.version,
+            peerDependencies: manifest.peerDependencies ?? {},
+            manifestDeclaredRegistry: declaredRegistry,
+            workflowPublicationRegistry: publicationRegistry,
+            registryOverrideIsExplicit: declaredRegistry !== publicationRegistry,
+          }, null, 2));
+          NODE
+          tar -tzf "$archive" | sort > "$output_dir/package-files.txt"
+          if ! grep -q '^package/dist/' "$output_dir/package-files.txt"; then
+            echo "Packed artifact contains no dist output" >&2
+            exit 1
+          fi
+          (cd "$output_dir" && sha256sum "$(basename "$archive")" package.json package-metadata.json package-files.txt > SHA256SUMS.txt)
+          echo "archive=$(basename "$archive")" >> "$GITHUB_OUTPUT"
+          echo "registry=$publication_registry" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package qualification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ inputs.package }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/smilodon-package-artifact/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify exact tarball publish command (dry run)
+        if: ${{ inputs.dry_run == true }}
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+          PACKAGE_ARCHIVE: ${{ steps.package.outputs.archive }}
+          PUBLICATION_REGISTRY: ${{ steps.package.outputs.registry }}
+        run: |
+          set -euo pipefail
+          output_dir="$RUNNER_TEMP/smilodon-package-artifact"
+          archive="$output_dir/$PACKAGE_ARCHIVE"
+          test -s "$archive"
+          (cd "$output_dir" && sha256sum -c SHA256SUMS.txt)
+          digest="$(sha256sum "$archive" | cut -d ' ' -f 1)"
+          metadata_name="$(node -p "require('$output_dir/package.json').name")"
+          metadata_version="$(node -p "require('$output_dir/package.json').version")"
+          if [[ "$metadata_name" != "@smilodon/$PACKAGE_NAME" ]]; then
+            echo "Refusing to qualify $metadata_name; selected package is @smilodon/$PACKAGE_NAME" >&2
+            exit 1
+          fi
+          if [[ "$PUBLICATION_REGISTRY" != "https://npm.pkg.github.com/" ]]; then
+            echo "Refusing unexpected registry: $PUBLICATION_REGISTRY" >&2
+            exit 1
+          fi
+          echo "Dry-running exact artifact $metadata_name@$metadata_version (sha256 $digest) to $PUBLICATION_REGISTRY"
+          npm publish "$archive" --dry-run --registry="$PUBLICATION_REGISTRY"
       
       - name: Publish to GitHub Packages
-        run: npm publish --workspace @smilodon/${{ github.event.inputs.package }} --registry=https://npm.pkg.github.com
+        if: ${{ inputs.dry_run == false }}
         env:
+          PACKAGE_NAME: ${{ inputs.package }}
+          PACKAGE_ARCHIVE: ${{ steps.package.outputs.archive }}
+          PUBLICATION_REGISTRY: ${{ steps.package.outputs.registry }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          output_dir="$RUNNER_TEMP/smilodon-package-artifact"
+          archive="$output_dir/$PACKAGE_ARCHIVE"
+          test -s "$archive"
+          (cd "$output_dir" && sha256sum -c SHA256SUMS.txt)
+          digest="$(sha256sum "$archive" | cut -d ' ' -f 1)"
+          metadata_name="$(node -p "require('$output_dir/package.json').name")"
+          metadata_version="$(node -p "require('$output_dir/package.json').version")"
+          expected_name="@smilodon/$PACKAGE_NAME"
+          if [[ "$metadata_name" != "$expected_name" ]]; then
+            echo "Refusing to publish $metadata_name; selected package is $expected_name" >&2
+            exit 1
+          fi
+          if [[ "$PUBLICATION_REGISTRY" != "https://npm.pkg.github.com/" ]]; then
+            echo "Refusing unexpected registry: $PUBLICATION_REGISTRY" >&2
+            exit 1
+          fi
+          echo "Publishing verified $metadata_name@$metadata_version (sha256 $digest) from $PACKAGE_ARCHIVE to $PUBLICATION_REGISTRY"
+          npm publish "$archive" --registry="$PUBLICATION_REGISTRY"

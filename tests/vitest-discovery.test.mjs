@@ -15,9 +15,9 @@ test('core Vitest config discovers core suites and excludes Playwright suites', 
   });
 
   try {
-    const discovered = await vitest.globTestFiles();
+    const discovered = await vitest.globTestSpecifications();
     const files = discovered
-      .map(([, file]) => path.relative(root, file).split(path.sep).join('/'))
+      .map(({ moduleId }) => path.relative(root, moduleId).split(path.sep).join('/'))
       .sort();
 
     assert.ok(files.length > 0, 'Vitest should discover core unit and integration suites');
@@ -45,9 +45,9 @@ test('data-loading suites are discovered by their DOM-free Node config', async (
   });
 
   try {
-    const discovered = await vitest.globTestFiles();
+    const discovered = await vitest.globTestSpecifications();
     const files = discovered
-      .map(([, file]) => path.relative(root, file).split(path.sep).join('/'))
+      .map(({ moduleId }) => path.relative(root, moduleId).split(path.sep).join('/'))
       .sort();
 
     assert.deepEqual(files, [

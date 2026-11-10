@@ -1,9 +1,22 @@
+import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
 
 export default defineConfig({
+  plugins: [
+    svelte({ compilerOptions: { compatibility: { componentApi: 4 } } }),
+    svelteTesting(),
+  ],
+
+  ssr: {
+    noExternal: ['@testing-library/svelte-core'],
+  },
   test: {
     name: 'contracts',
+    server: {
+      deps: { inline: ['solid-js'] },
+    },
     include: ['tests/contracts/**/*.contract.spec.ts'],
     exclude: [
       '**/node_modules/**',
@@ -27,8 +40,11 @@ export default defineConfig({
     testTimeout: 10000,
   },
   resolve: {
+    conditions: ['browser'],
+    dedupe: ['solid-js'],
     alias: {
       '@smilodon/react': resolve(__dirname, '../../packages/react/dist/index.js'),
+      '@smilodon/solid': resolve(__dirname, '../../packages/solid/dist/index.js'),
       '@smilodon/vue': resolve(__dirname, '../../packages/vue/dist/index.js'),
       '@smilodon/svelte': resolve(__dirname, '../../packages/svelte/dist/index.mjs'),
       '@smilodon/vanilla': resolve(__dirname, '../../packages/vanilla/dist/index.mjs'),

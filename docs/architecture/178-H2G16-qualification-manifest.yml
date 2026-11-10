@@ -1,0 +1,74 @@
+directive: 178-H.2G.16
+candidate:
+  branch: experiment/178-h2g16-qualification-readiness
+  base_commit: c1e95d637ddbdda426448e8944c7bfe766e6b7fa
+  source_candidate: experiment/178-h2g14-high-remediation
+  status: qualification_prepared_not_hosted
+  lockfile_sha256: 3d7a4f8e4c4b536f5c33911128a76ce4a5807306dc0d76f1e02bd71adcf61c74
+required_node:
+  release_toolchain: 20.20.2
+  consumer_compatibility: 18.20.6
+  additional_full_ci: 22.22.3
+gates:
+  locked_security_audit:
+    job: security-audit-evidence
+    status: blocked
+    blocker: one High image-size entry through Metro; production omission audit is not an exception
+    evidence: hosted artifact must retain full and production npm audit JSON and status JSON
+  node18_publishing_toolchain:
+    job: publish-github-packages
+    status: blocked_pending_hosted_node20_qualification
+    blocker: candidate install emits EBADENGINE for Node-20-only dev dependencies; local Core build succeeds but is outside declared tool engines
+    proposed_node: 20.20.2
+  packed_core_node18_consumer:
+    job: core-node18-consumer
+    status: passed_locally_hosted_pending
+    node: 18.20.6
+    npm: 10.8.2
+    modes: [NodeNext, Bundler]
+    compiler: 5.6.3
+    strict: true
+    skip_lib_check: false
+    evidence_reference: H2G16-NODE18-CONSUMER
+    evidence_availability: local_only_not_in_proposed_git_tree
+    evidence_manifest: 178-H2G16-SHA256SUMS
+    evidence_manifest_sha256: 0d65a4a710becee9e929d34646d777bcbe065b708ebbc732845b2848aa3d0318
+    evidence_artifact_sha256: f0b9d2358db3a79712e14c7728bd7e2536cc641c3d42bb1e3b2e87e2dcec48a9
+    evidence_index: docs/architecture/SECURITY-EVIDENCE-INDEX-178-H2G20.md#h2g16-node18-consumer
+  test_identity_and_outcomes:
+    job: assertion-inventory
+    status: prepared_not_run
+    comparison: base_commit_vs_candidate
+    compares: [test_file, full_test_identity, pass_skip_fail_status]
+    artifact: baseline_and_candidate_Vitest_JSON_plus_comparison_JSON
+  node22_full_suite:
+    job: node22-full-suite
+    status: prepared_not_run
+    node: 22.22.3
+    checks: [lint, packed_react_native_types, workspace_build, unit, contracts]
+  react_vue_vanilla_solid_svelte_packed_consumers:
+    status: pending
+    blocker: packed framework consumer matrix remains unexecuted for supported package ranges
+    svelte_supported_peer: ^5.0.0
+    svelte_3_4: unsupported_by_published_peer_range
+    svelte_5: packed_runtime_and_strict_type_consumer_passed_locally_hosted_pending
+    svelte_package_release_version: 2.0.0
+    solid_contracts: blocked_missing_dedicated_contract_suite
+  react_native:
+    packed_types: pending_hosted_node_matrix
+    android_runtime: blocked_physical_device_unavailable
+    ios_runtime: unqualified
+  browser_accessibility:
+    automated_browser_jobs: preserve_existing_workflows
+    manual_assistive_technology: pending
+  performance:
+    status: preserve_pinned_node20_jobs
+    policy: report_only_no_accepted_release_budget
+workflow_changes:
+  publish_github_packages_node20: proposed
+  qualification_readiness_jobs: proposed_not_executed
+  branch_protection_changes: none
+release:
+  production: NO_GO
+  security_exception: none
+  public_metadata_changes: none

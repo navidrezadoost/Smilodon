@@ -7,5 +7,8 @@ export default {
   compilerOptions: {
     // Enable run-time checks when not in production
     dev: process.env.NODE_ENV !== 'production',
+    compatibility: {
+      componentApi: 4,
+    },
   },
 };
