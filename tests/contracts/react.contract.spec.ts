@@ -31,16 +31,12 @@ const activatedReactTests = [
   'closesViaImperativeAPI',
   'clearsViaImperativeAPI',
   'updatesItemsViaAPI',
-];
-
-const pendingTests = [
-  'rendersInErrorState',
-  'deselectsItemInMultiMode',
-  'respectsMaxSelections',
+  'updatesItemsReactively',
+  'updatesValueReactively',
+  'updatesPropsReactively',
   'enablesSearchMode',
   'filtersItemsBySearchQuery',
   'emitsSearchEvent',
-  'clearsSearchOnClose',
   'opensDropdownWithEnter',
   'opensDropdownWithSpace',
   'opensDropdownWithArrowDown',
@@ -49,25 +45,30 @@ const pendingTests = [
   'selectsWithEnterKey',
   'jumpsToFirstWithHome',
   'jumpsToLastWithEnd',
+  'rendersInErrorState',
+  'deselectsItemInMultiMode',
+  'respectsMaxSelections',
   'preventsInteractionWhenDisabled',
   'showsErrorStyling',
   'showsRequiredIndicator',
-  'emitsLoadMoreEvent',
   'focusesViaImperativeAPI',
   'rendersGroupHeaders',
   'navigatesBetweenGroups',
   'selectsFromDifferentGroups',
-  'updatesItemsReactively',
-  'updatesValueReactively',
-  'updatesPropsReactively',
   'hasCorrectAriaAttributes',
   'managesFocusCorrectly',
   'announcesChangesToScreenReaders',
-  'rendersLargeDatasetEfficiently',
-  'handlesVirtualScrolling',
-  'handlesInfiniteScrolling',
-  'searchesLargeDatasetQuickly',
 ];
+
+const pendingReactTests = {
+  clearsSearchOnClose: 'Close-time search persistence has no approved contract; Core currently retains the query on close.',
+  emitsLoadMoreEvent: 'A deterministic load-more trigger and expected callback payload have not been specified for this adapter contract.',
+  rendersLargeDatasetEfficiently: 'No accepted dataset size, environment, or render-time budget is defined for a pass/fail contract.',
+  handlesVirtualScrolling: 'Public virtualization is chunked rendering and does not bound mounted options to the viewport; no virtual-windowing pass is claimed.',
+  handlesInfiniteScrolling: 'The loading callback contract needs a deterministic scroll/response fixture before it can be certified here.',
+  searchesLargeDatasetQuickly: 'No accepted search-latency threshold or benchmark environment is defined for a pass/fail contract.',
+};
+const pendingTests = Object.keys(pendingReactTests);
 
 class ReactContractTests extends ContractTestRunner {
   private cleanup: (() => void) | null = null;
@@ -360,8 +361,18 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async rendersInErrorState(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, error: true, errorMessage: 'Choose a valid item' });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => {
+        expect(input.getAttribute('aria-invalid')).toBe('true');
+        expect(input.getAttribute('aria-describedby')).toContain('error');
+      });
+      const errorDescriptionId = input.getAttribute('aria-describedby')?.split(/\s+/).find((id: string) => id.includes('error'));
+      expect(errorDescriptionId).toBeTruthy();
+      expect(element.shadowRoot?.getElementById(errorDescriptionId!)?.textContent).toBe('Choose a valid item');
+    });
   }
   
   async setsInitialValue(): Promise<ContractTestResult> {
@@ -438,88 +449,223 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async deselectsItemInMultiMode(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const onChange = vi.fn();
+      const { container } = this._renderSelect({ items: reactItems, multiple: true, onChange });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(reactItems.length));
+      await element.setSelectedValues(['1', '2']);
+      element.open();
+      const selectedOption = element.shadowRoot?.querySelector('[part="option"][data-value="1"]') as HTMLElement;
+      act(() => selectedOption.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+      await waitFor(() => expect(element.getSelectedValues()).toEqual(['2']));
+      expect(onChange.mock.calls.at(-1)?.[0]).toEqual(['2']);
+    });
   }
   
   async respectsMaxSelections(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, multiple: true, maxSelections: 1 });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(reactItems.length));
+      element.open();
+      const first = element.shadowRoot?.querySelector('[part="option"][data-value="1"]') as HTMLElement;
+      const second = element.shadowRoot?.querySelector('[part="option"][data-value="2"]') as HTMLElement;
+      act(() => first.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+      act(() => second.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+      await waitFor(() => expect(element.getSelectedValues()).toEqual(['1']));
+    });
   }
   
   async enablesSearchMode(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems, searchable: true });
+      const element = container.querySelector('enhanced-select') as any;
+
+      await waitFor(() => {
+        expect(element?._config?.searchable).toBe(true);
+        expect(element?.shadowRoot?.querySelector('.select-input')?.readOnly).toBe(false);
+      });
+    });
   }
   
   async filtersItemsBySearchQuery(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems, searchable: true });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement | null;
+
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      input!.value = 'United';
+      act(() => input!.dispatchEvent(new Event('input', { bubbles: true, composed: true })));
+
+      await waitFor(() => {
+        const options = Array.from(element.shadowRoot.querySelectorAll('[part="option"]')) as HTMLElement[];
+        expect(options.map((option) => option.dataset.value)).toEqual(['us', 'uk']);
+      });
+    });
   }
   
   async emitsSearchEvent(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const onSearch = vi.fn();
+      const { container } = this._renderSelect({ items: searchableItems, searchable: true, onSearch });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement | null;
+
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      input!.value = 'Canada';
+      act(() => input!.dispatchEvent(new Event('input', { bubbles: true, composed: true })));
+      await waitFor(() => {
+        expect(onSearch).toHaveBeenCalledWith('Canada', expect.any(Array), 1);
+        expect(onSearch.mock.calls[0]?.[1]?.map((item: SelectItem) => item.label)).toEqual(['Canada']);
+      });
+    });
   }
   
   async clearsSearchOnClose(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.clearsSearchOnClose };
   }
   
   async opensDropdownWithEnter(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.isOpen).toBe(true));
+    });
   }
   
   async opensDropdownWithSpace(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.isOpen).toBe(true));
+    });
   }
   
   async opensDropdownWithArrowDown(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.isOpen).toBe(true));
+    });
   }
   
   async closesDropdownWithEscape(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.isOpen).toBe(false));
+    });
   }
   
   async navigatesWithArrowKeys(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(1));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(2));
+    });
   }
   
   async selectsWithEnterKey(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(1));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['uk']));
+    });
   }
   
   async jumpsToFirstWithHome(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(2));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+    });
   }
   
   async jumpsToLastWithEnd(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: searchableItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
+      element.open();
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(searchableItems.length - 1));
+    });
   }
   
   async preventsInteractionWhenDisabled(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const onChange = vi.fn();
+      const { container } = this._renderSelect({ items: reactItems, disabled: true, onChange });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(input.disabled).toBe(true));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      expect(element?._state?.isOpen).toBe(false);
+      expect(element?.getSelectedValues?.()).toEqual([]);
+      expect(onChange).not.toHaveBeenCalled();
+    });
   }
   
   async showsErrorStyling(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, error: true, errorMessage: 'Invalid selection' });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(input.getAttribute('aria-invalid')).toBe('true'));
+      const styleElements = (element.shadowRoot as ShadowRoot).querySelectorAll('style');
+      expect(Array.from(styleElements).some(
+        (style: HTMLStyleElement) => style.textContent?.includes('.select-input[aria-invalid="true"]'),
+      )).toBe(true);
+    });
   }
   
   async showsRequiredIndicator(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems, required: true });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(input.hasAttribute('required')).toBe(true));
+      expect(input.getAttribute('aria-required')).toBe('true');
+    });
   }
   
   async emitsSelectEvent(): Promise<ContractTestResult> {
@@ -575,8 +721,7 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async emitsLoadMoreEvent(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.emitsLoadMoreEvent };
   }
   
   async closesViaImperativeAPI(): Promise<ContractTestResult> {
@@ -604,8 +749,19 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async focusesViaImperativeAPI(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      let handle: SelectHandle | null = null;
+      const { container, unmount } = render(createElement(Select, {
+        items: reactItems,
+        ref: (value: SelectHandle | null) => { handle = value; },
+      }));
+      this.cleanup = unmount;
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(typeof handle?.focus).toBe('function'));
+      await waitFor(() => expect(element?.shadowRoot?.querySelector('.select-input')).toBeTruthy());
+      act(() => handle!.focus());
+      await waitFor(() => expect(element?.shadowRoot?.activeElement).toBe(element.shadowRoot.querySelector('.select-input')));
+    });
   }
   
   async updatesItemsViaAPI(): Promise<ContractTestResult> {
@@ -622,68 +778,153 @@ class ReactContractTests extends ContractTestRunner {
   }
   
   async rendersGroupHeaders(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const groups = groupedItems.map(({ group, items }) => ({ label: group, options: items }));
+      const { container } = this._renderSelect({ groupedItems: groups });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(6));
+      element.open();
+      await waitFor(() => {
+        const headers = Array.from(element.shadowRoot.querySelectorAll('[part="group-header"]')) as HTMLElement[];
+        expect(headers.map((header) => header.textContent)).toEqual(['Fruits', 'Vegetables']);
+      });
+    });
   }
   
   async navigatesBetweenGroups(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const groups = groupedItems.map(({ group, items }) => ({ label: group, options: items }));
+      const { container } = this._renderSelect({ groupedItems: groups });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(6));
+      element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+      for (let index = 0; index < 3; index += 1) {
+        act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      }
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(3));
+      expect(element.shadowRoot.querySelector('[part="option"][data-index="3"]')?.dataset.value).toBe('carrot');
+    });
   }
   
   async selectsFromDifferentGroups(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const groups = groupedItems.map(({ group, items }) => ({ label: group, options: items }));
+      const { container } = this._renderSelect({ groupedItems: groups });
+      const element = container.querySelector('enhanced-select') as any;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(6));
+      element.open();
+      const option = element.shadowRoot?.querySelector('[part="option"][data-value="carrot"]') as HTMLElement;
+      act(() => option.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+      await waitFor(() => expect(element.getSelectedValues()).toEqual(['carrot']));
+    });
   }
   
   async updatesItemsReactively(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const initialItems = [{ value: 'initial', label: 'Initial' }];
+      const nextItems = [{ value: 'next', label: 'Next' }];
+      const { container, rerender } = this._renderSelect({ items: initialItems });
+      const element = container.querySelector('enhanced-select') as any;
+
+      await waitFor(() => expect(element?._state?.loadedItems).toEqual(initialItems));
+      rerender(createElement(Select, { items: nextItems }));
+      await waitFor(() => expect(element?._state?.loadedItems).toEqual(nextItems));
+    });
   }
   
   async updatesValueReactively(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const props = { items: reactItems, value: '1' };
+      const { container, rerender } = this._renderSelect(props);
+      const element = container.querySelector('enhanced-select') as any;
+
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['1']));
+      rerender(createElement(Select, { ...props, value: '2' }));
+      await waitFor(() => expect(element?.getSelectedValues?.()).toEqual(['2']));
+    });
   }
   
   async updatesPropsReactively(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container, rerender } = this._renderSelect({
+        items: reactItems,
+        placeholder: 'Before update',
+      });
+      const element = container.querySelector('enhanced-select') as any;
+
+      await waitFor(() => expect(element?._config?.placeholder).toBe('Before update'));
+      rerender(createElement(Select, {
+        items: reactItems,
+        placeholder: 'After update',
+        disabled: true,
+      }));
+      await waitFor(() => {
+        expect(element?._config?.placeholder).toBe('After update');
+        expect(element?._config?.enabled).toBe(false);
+        expect(element?.shadowRoot?.querySelector('.select-input')?.disabled).toBe(true);
+      });
+    });
   }
   
   async hasCorrectAriaAttributes(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(input.getAttribute('role')).toBe('combobox'));
+      expect(input.getAttribute('aria-haspopup')).toBe('listbox');
+      expect(input.getAttribute('aria-expanded')).toBe('false');
+      const controlsId = input.getAttribute('aria-controls');
+      expect(controlsId).toBeTruthy();
+      element.open();
+      await waitFor(() => expect(input.getAttribute('aria-expanded')).toBe('true'));
+      expect(element.shadowRoot?.getElementById(controlsId!)?.getAttribute('role')).toBe('listbox');
+    });
   }
   
   async managesFocusCorrectly(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+      await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(reactItems.length));
+      input.focus();
+      expect(element.shadowRoot.activeElement).toBe(input);
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
+      await waitFor(() => expect(element?._state?.isOpen).toBe(true));
+      expect(element.shadowRoot.activeElement).toBe(input);
+    });
   }
   
   async announcesChangesToScreenReaders(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return this._runContract(async () => {
+      const { container } = this._renderSelect({ items: reactItems });
+      const element = container.querySelector('enhanced-select') as any;
+      const liveRegion = element?.shadowRoot?.querySelector('[role="status"]') as HTMLElement;
+      await waitFor(() => expect(liveRegion?.getAttribute('aria-live')).toBe('polite'));
+      element.open();
+      const option = element.shadowRoot?.querySelector('[part="option"][data-value="1"]') as HTMLElement;
+      act(() => option.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+      await waitFor(() => expect(liveRegion.textContent).toContain('Selected Apple'));
+    });
   }
   
   async rendersLargeDatasetEfficiently(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.rendersLargeDatasetEfficiently };
   }
   
   async handlesVirtualScrolling(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.handlesVirtualScrolling };
   }
   
   async handlesInfiniteScrolling(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.handlesInfiniteScrolling };
   }
   
   async searchesLargeDatasetQuickly(): Promise<ContractTestResult> {
-    // TODO: Implement
-    return { success: true };
+    return { success: false, pending: true, error: pendingReactTests.searchesLargeDatasetQuickly };
   }
 }
 
@@ -708,7 +949,7 @@ describe('React Adapter Contract Tests', () => {
   });
 
   pendingTests.forEach((testName) => {
-    it.skip(`${testName} (not implemented yet)`, () => {});
+    it.skip(`${testName} (unqualified: ${pendingReactTests[testName as keyof typeof pendingReactTests]})`, () => {});
   });
 
   activatedReactTests.forEach((testName) => {
