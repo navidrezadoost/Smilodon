@@ -1,0 +1,21 @@
+{
+  "name": "smilodon-react-native-runtime-certification",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android"
+  },
+  "dependencies": {
+    "@smilodon/core": "file:artifacts/smilodon-core-1.10.0.tgz",
+    "@smilodon/react-native": "file:artifacts/smilodon-react-native-1.10.0.tgz",
+    "react": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-webview": "13.12.5"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "15.0.1",
+    "@react-native-community/cli-platform-android": "15.0.1",
+    "@react-native/babel-preset": "0.76.9",
+    "@react-native/metro-config": "0.76.9"
+  }
+}
