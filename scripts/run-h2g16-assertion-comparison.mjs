@@ -94,6 +94,12 @@ const approvedCandidateChanges = [
     candidateStatus: 'passed',
     reason: 'Focused regression coverage for the observable enabled-to-input property synchronization fix.',
   },
+  {
+    candidateIdentity: 'core-unit :: packages/core/tests/interaction.spec.ts :: Interaction & Accessibility :: preserves an actively cleared search when async items updates arrive',
+    baselineStatus: 'missing',
+    candidateStatus: 'passed',
+    reason: 'Regression coverage for preserving the active search input, including an empty query, while asynchronous items updates arrive.',
+  },
   ...[
     'mounts the custom element and synchronizes the provided items',
     'synchronizes controlled values reactively',

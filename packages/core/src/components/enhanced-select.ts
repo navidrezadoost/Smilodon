@@ -4683,6 +4683,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._syncClearControlState();
   }
 
+  private _isActivelyEditingSearchInput(): boolean {
+    return this._config.searchable === true
+      && this._state.isOpen
+      && this._shadow.activeElement === this._input;
+  }
+
   private _renderOptionsWithAnimation(): void {
     // Add fade-out animation
     this._optionsContainer.style.opacity = '0';
@@ -5030,7 +5036,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const previousLength = this._state.loadedItems.length;
     this._rebuildItemRegistry(items);
     this._state.groupedItems = this._groupItemsByProperty(items);
-    if (!this._state.searchQuery) this._updateInputDisplay();
+    if (!this._state.searchQuery && !this._isActivelyEditingSearchInput()) this._updateInputDisplay();
     
     const newLength = this._state.loadedItems.length;
 
@@ -5122,7 +5128,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._rebuildItemRegistry(groupedItems.flatMap(group => group.options));
     this._state.groupedItems = groupedItems;
     this._renderOptions();
-    if (!this._state.searchQuery) this._updateInputDisplay();
+    if (!this._state.searchQuery && !this._isActivelyEditingSearchInput()) this._updateInputDisplay();
   }
 
   /**
@@ -5366,14 +5372,14 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._initializeObservers();
 
       this._syncClearControlState();
-      this._updateInputDisplay();
+      if (!this._isActivelyEditingSearchInput()) this._updateInputDisplay();
       
       this._renderOptions();
     } else {
       this._syncInputContainerMode();
       this._syncMultiSelectDisplayConfig();
       this._syncClearControlState();
-      this._updateInputDisplay();
+      if (!this._isActivelyEditingSearchInput()) this._updateInputDisplay();
     }
 
     this._acknowledgedSearchMode = this._dataLoadingConfig.searchMode;
@@ -6278,7 +6284,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         throw new Error('Injected acknowledged projection failure after publication');
       }
 
-      if (!this._state.searchQuery && this._acknowledgedPendingSearchQuery === null) {
+      if (
+        !this._state.searchQuery
+        && this._acknowledgedPendingSearchQuery === null
+        && !this._isActivelyEditingSearchInput()
+      ) {
         this._updateInputDisplay();
       }
       this._syncListboxAccessibility();
