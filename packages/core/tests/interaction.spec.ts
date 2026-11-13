@@ -257,4 +257,43 @@ describe('Interaction & Accessibility', () => {
 
     select.remove();
   });
+
+  it('preserves an actively cleared search when async items updates arrive', async () => {
+    const select = document.createElement('enhanced-select') as any;
+    document.body.appendChild(select);
+    select.updateConfig({ searchable: true });
+    select.setItems([
+      { value: 'previous', label: 'Previous selection' },
+      { value: 'replacement', label: 'Replacement option' },
+    ]);
+    await select.setSelectedValues(['previous']);
+
+    const input = select.shadowRoot?.querySelector('input') as HTMLInputElement | null;
+    expect(input).toBeTruthy();
+    if (!input) return;
+
+    input.focus();
+    input.value = 'Replacement';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(input.value).toBe('Replacement');
+
+    select.setItems([{ value: 'replacement', label: 'Replacement option' }]);
+    expect(input.value).toBe('Replacement');
+
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(select._state.searchQuery).toBe('');
+
+    // A debounced empty-query request and a later default-options refresh must
+    // not make the previous selection look like newly entered search text.
+    select.setItems([{ value: 'default', label: 'Default option' }]);
+    expect(input.value).toBe('');
+    select.setItems([
+      { value: 'previous', label: 'Previous selection' },
+      { value: 'default', label: 'Default option' },
+    ]);
+    expect(input.value).toBe('');
+
+    select.remove();
+  });
 });

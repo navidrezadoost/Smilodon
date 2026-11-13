@@ -116,6 +116,39 @@ describe('Select React Integration', () => {
     });
   });
 
+  it('preserves the active search text across asynchronous items updates, including an empty query', async () => {
+    const filteredItems = [testItems[1], testItems[2]];
+    const { container, rerender } = render(
+      <Select items={testItems} value="1" searchable />
+    );
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => expect(element?.getSelectedValues()).toEqual(['1']));
+    const input = element.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+
+    act(() => {
+      input.focus();
+      input.value = 'Ban';
+      input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    });
+    expect(element._state.searchQuery).toBe('Ban');
+
+    rerender(<Select items={filteredItems} value="1" searchable />);
+    await waitFor(() => expect(element.loadedItems).toEqual(filteredItems));
+    expect(input.value).toBe('Ban');
+
+    act(() => {
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    });
+    expect(element._state.searchQuery).toBe('');
+
+    rerender(<Select items={testItems} value="1" searchable />);
+    await waitFor(() => expect(element.loadedItems).toEqual(testItems));
+    expect(input.value).toBe('');
+  });
+
   it('should handle disabled prop', async () => {
     const { container } = render(<Select items={testItems} disabled />);
     const element = container.querySelector('enhanced-select') as any;
