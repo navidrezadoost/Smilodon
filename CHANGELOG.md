@@ -21,6 +21,14 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
 
+## [1.10.2] - 2026-11-13
+
+Core patch release for searchable single-selects whose options are replaced asynchronously. Users on an existing React adapter can update `@smilodon/core` to receive the fix; no React package update is required.
+
+### Fixed
+
+- Preserve the active search input while items or configuration are refreshed, including when the user has cleared the query. The selected label is still restored when the search input is not actively being edited.
+
 ## [1.10.1] - 2026-11-10
 
 Corrected declaration artifacts for Core and the React, Vue, Solid, and Vanilla adapters. These five exact versions were published to the public npm registry from the verified package archives listed in the release assets. `@smilodon/svelte@2.0.0` remains the current Svelte package and supports Svelte 5 only; that major-version change is breaking for consumers previously using Svelte 3 or 4.
