@@ -17,13 +17,17 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-### Fixed
-
-- Fixed stale built-in active classes when custom-rendered options use `classMap.active`. The Core reconciles current and previously mapped active classes on navigation, re-render, and class-map changes so inactive options no longer match `.option.active`.
-
 ### Added
 
 - Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
+
+## [1.11.1] - 2026-11-18
+
+Core-only patch release. `@smilodon/react@1.11.0` remains compatible through its existing `@smilodon/core@^1.11.0` peer range.
+
+### Fixed
+
+- **Custom active-class lifecycle ([#82](https://github.com/navidrezadoost/Smilodon/issues/82)):** Reconcile built-in, legacy, and configured active classes on custom-rendered options when navigation, rendering, or `classMap` changes. Options that are no longer active no longer retain active classes or the `active` state token.
 
 ## [1.11.0] - 2026-11-18
 
