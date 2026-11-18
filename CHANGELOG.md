@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed stale built-in active classes when custom-rendered options use `classMap.active`. The Core reconciles current and previously mapped active classes on navigation, re-render, and class-map changes so inactive options no longer match `.option.active`.
+
 ### Added
 
 - Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
