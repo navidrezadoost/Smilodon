@@ -154,6 +154,10 @@ select.addEventListener('change', (event) => {
 });
 ```
 
+### Hover stability
+
+Option hover styling no longer moves the option hit target or introduces a layout-changing border. The default `--select-option-hover-transform` is `none`, and hover border tokens render as outlines. The former `styles.hoverOption.transform` setting no longer moves the selectable element on hover; animate inner content instead if motion is needed. Option selection and keyboard-active styling remain separate from hover.
+
 ### Custom arrow slot
 
 The default chevron remains in place unless a light-DOM child is assigned to the `arrow` slot:

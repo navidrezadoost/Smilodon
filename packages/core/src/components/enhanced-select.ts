@@ -2080,7 +2080,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         --select-scrollbar-width: 6px;
         --select-scrollbar-thumb-radius: 3px;
         --select-option-hover-enabled: 1;
-        --select-option-hover-transform: translateX(2px);
+        --select-option-hover-transform: none;
         --select-option-font-weight: 450;
         --select-option-margin: 2px 0;
         --select-input-font-size: inherit;
@@ -2864,8 +2864,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         transition: var(--select-option-transition, 
           background var(--select-transition-fast),
           color var(--select-transition-fast),
-          border var(--select-transition-fast),
-          transform var(--select-transition-fast),
+          outline-color var(--select-transition-fast),
           box-shadow var(--select-transition-fast)
         );
         user-select: none;
@@ -2879,9 +2878,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       .option:hover:not(.disabled):not(.smilodon-option--disabled),
       .option.smilodon-option--disabled-hoverable:hover {
         background: var(--select-option-hover-bg, var(--select-surface-elevated));
-        border: var(--select-option-hover-border, var(--select-option-border, none));
+        /* Hover decoration must not resize or translate the pointer hit target. */
+        outline: var(--select-option-hover-border, none);
+        outline-offset: -1px;
         color: var(--select-option-hover-color, var(--select-text));
-        transform: var(--select-option-hover-transform, none);
       }
 
       .option.selected {
@@ -2924,7 +2924,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
       .option.selected:hover {
         background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, linear-gradient(135deg, rgba(15, 52, 96, 0.12) 0%, rgba(15, 52, 96, 0.06) 100%)));
-        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-hover-border, var(--select-option-border, none))));
+        outline: var(--select-option-selected-hover-border, var(--select-option-hover-border, none));
+        outline-offset: -1px;
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, var(--select-accent)));
       }
 
