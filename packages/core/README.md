@@ -334,6 +334,16 @@ select.optionRenderer = (item, index) => {
 
 `optionRenderer` is the maintained `EnhancedSelect` API. The legacy `NativeSelectElement` has a separate compatibility surface; do not copy its `optionTemplate` examples into `enhanced-select` integrations.
 
+### Active state on custom option roots
+
+For custom-rendered options, `classMap.active` names the class or classes applied to the active option root. Core removes its built-in active aliases and previously configured active classes when another option becomes active, when the option is rendered again, or when `classMap` changes. The active `data-sm-state` token is reconciled with those classes, so an inactive option does not retain stale active styling.
+
+```typescript
+select.classMap = { active: 'is-active keyboard-focus' };
+```
+
+Style the returned option root using the configured class. If the active class map changes, Core removes classes from the prior map before applying the current active state.
+
 ---
 
 ### Events
