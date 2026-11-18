@@ -70,13 +70,41 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.remove();
   });
 
-  it('sets activeKey consistently with activeIndex when opening', () => {
+  it('does not activate the first option when an empty single-select opens', () => {
     select.setItems(makeItems());
 
     select.open();
 
+    expect(activeIndex(select)).toBe(-1);
+    expect(engineActiveKey(select)).toBeNull();
+    expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(false);
+    expect(select.shadowRoot?.querySelector('[data-sm-state="active"]')).toBeNull();
+  });
+
+
+  it('keeps empty multi-select unactivated and allows keyboard activation', () => {
+    select.updateConfig({ selection: { mode: 'multi' } });
+    select.setItems(makeItems());
+    select.open();
+
+    expect(activeIndex(select)).toBe(-1);
+    expect(engineActiveKey(select)).toBeNull();
+    expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(false);
+
+    pressKey(select, 'ArrowDown');
     expect(activeIndex(select)).toBe(0);
     expect(engineActiveKey(select)).toBe('a');
+  });
+
+  it('restores a selected item as active when opening a single-select', async () => {
+    select.setItems(makeItems());
+    await select.setSelectedValues(['BAN']);
+    select.open();
+
+    expect(activeIndex(select)).toBe(1);
+    expect(engineActiveKey(select)).toBe('b');
+    expect(inputElement(select).getAttribute('aria-activedescendant'))
+      .toBe(select.shadowRoot!.querySelector<HTMLElement>('[data-index="1"]')?.id);
   });
 
   it('mirrors ArrowDown navigation to activeKey', () => {
@@ -85,13 +113,14 @@ describe('EnhancedSelect active-key shadow parity', () => {
 
     pressKey(select, 'ArrowDown');
 
-    expect(activeIndex(select)).toBe(1);
-    expect(engineActiveKey(select)).toBe('b');
+    expect(activeIndex(select)).toBe(0);
+    expect(engineActiveKey(select)).toBe('a');
   });
 
   it('mirrors ArrowUp navigation to activeKey', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
 
     pressKey(select, 'ArrowUp');
@@ -165,6 +194,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.open();
 
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
     expect(engineActiveKey(select)).toBe('b');
 
     pressKey(select, 'Enter');
@@ -201,6 +231,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.open();
 
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
     (select as any)._setActive(1, 'keyboard');
 
     expect(activeIndex(select)).toBe(2);
@@ -210,6 +241,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
   it('retains active parity when required selection configuration is synchronized', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
 
     select.setRequired(true);
@@ -225,6 +257,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.setItems(makeItems());
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
     expect(engineActiveKey(select)).toBe('b');
 
     filterTo(select, 'Apple');
@@ -239,6 +272,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.setItems(makeItems());
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
 
     filterTo(select, 'Banana');
 
@@ -251,6 +285,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
   it('preserves activeKey when a replacement item has the same enabled key', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
 
     select.setItems([
@@ -268,6 +303,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.setItems(items);
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
 
     select.setItems([items[0], items[2]]);
 
@@ -279,6 +315,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
   it('points aria-activedescendant at the active option id', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
     const activeOption = select.shadowRoot!.querySelector<HTMLElement>('[data-index="1"]');
 
@@ -292,6 +329,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.open();
     expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(true);
 
+    pressKey(select, 'ArrowDown');
     select.setItems([]);
 
     expect(activeIndex(select)).toBe(-1);

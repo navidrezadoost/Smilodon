@@ -68,7 +68,7 @@ describe('EnhancedSelect active-key authority', () => {
     const stateAtDispatch: Array<{ key: SelectKey | null; index: number }> = [];
     vi.spyOn(engine, 'dispatch').mockImplementation((event: any) => {
       const effects = originalDispatch(event);
-      if (event.type === 'ACTIVE_KEY_CHANGED' && event.key === 'b') {
+      if (event.type === 'ACTIVE_KEY_CHANGED' && event.key === 'a') {
         stateAtDispatch.push({ key: engine.state.activeKey, index: activeIndex(select) });
       }
       return effects;
@@ -76,13 +76,14 @@ describe('EnhancedSelect active-key authority', () => {
 
     pressKey(select, 'ArrowDown');
 
-    expect(stateAtDispatch).toEqual([{ key: 'b', index: 0 }]);
-    expect(activeIndex(select)).toBe(1);
+    expect(stateAtDispatch).toEqual([{ key: 'a', index: -1 }]);
+    expect(activeIndex(select)).toBe(0);
   });
 
   it('dispatches ArrowUp to the engine before deriving activeIndex', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
     const engine = (select as any)._engine;
     const originalDispatch = engine.dispatch.bind(engine);
@@ -111,14 +112,15 @@ describe('EnhancedSelect active-key authority', () => {
 
     (select as any)._setActive(1, 'keyboard');
 
-    expect(activeKey(select)).toBe('a');
-    expect(activeIndex(select)).toBe(0);
+    expect(activeKey(select)).toBeNull();
+    expect(activeIndex(select)).toBe(-1);
   });
 
   it('clears activeKey when filtering hides the active item', () => {
     select.updateConfig({ searchable: true });
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
 
     filterTo(select, 'Apple');
@@ -133,6 +135,7 @@ describe('EnhancedSelect active-key authority', () => {
     select.setItems(makeItems());
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
 
     filterTo(select, 'Banana');
 
@@ -143,6 +146,7 @@ describe('EnhancedSelect active-key authority', () => {
   it('preserves activeKey across same-key replacement and derives its new index', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
 
     select.setItems([makeItems()[2], makeItems()[1], makeItems()[0]]);
@@ -156,6 +160,7 @@ describe('EnhancedSelect active-key authority', () => {
     select.setItems(items);
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
 
     select.setItems([items[0], items[2]]);
 
@@ -166,6 +171,7 @@ describe('EnhancedSelect active-key authority', () => {
   it('keeps aria-activedescendant aligned with engine activeKey', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
     const option = select.shadowRoot!.querySelector<HTMLElement>('[data-index="1"]');
 
@@ -186,6 +192,7 @@ describe('EnhancedSelect active-key authority', () => {
   it('uses engine activeKey for navigation even if the legacy index is corrupted', () => {
     select.setItems(makeItems());
     select.open();
+    pressKey(select, 'ArrowDown');
     pressKey(select, 'ArrowDown');
     expect(activeKey(select)).toBe('b');
     (select as any)._state.activeIndex = -1;
