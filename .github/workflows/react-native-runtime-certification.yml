@@ -1,0 +1,130 @@
+name: React Native Android Runtime Certification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/react-native-runtime-certification.yml'
+      - 'packages/core/**'
+      - 'packages/react-native/**'
+      - 'scripts/certify-react-native-android.mjs'
+      - 'scripts/compare-react-native-android-runtime.mjs'
+      - 'scripts/finalize-emulator-lifecycle.mjs'
+      - 'scripts/install-emulator-supervisor.mjs'
+      - 'scripts/supervise-emulator-process.mjs'
+      - 'scripts/install-gradle-distribution.mjs'
+      - 'tests/react-native-runtime/**'
+      - 'tests/react-native-runtime-control/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-runtime:
+    name: Controlled React Native emulator comparison (not certification)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore checksum-pinned Gradle distribution cache
+        id: gradle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
+          key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: tests/react-native-runtime/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Install checksum-pinned Gradle distribution with controlled fallback
+        id: gradle
+        run: node scripts/install-gradle-distribution.mjs
+
+      - name: Pin fixture package manager
+        run: npm install --global npm@10.8.2
+
+      - name: Verify pinned Node and npm toolchain
+        run: |
+          node --version
+          npm --version
+          test "$(node --version)" = 'v20.20.2'
+          test "$(npm --version)" = '10.8.2'
+          java --version
+
+      - name: Install locked repository dependencies
+        run: npm ci
+
+      - name: Enable Android KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build paired apps and execute matched Android workloads
+        id: emulator
+        continue-on-error: true
+        env:
+          NATIVE_CERTIFICATION_RESULTS_DIR: test-results/react-native-runtime-comparison
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          pre-emulator-launch-script: node scripts/install-emulator-supervisor.mjs
+          script: node scripts/compare-react-native-android-runtime.mjs
+
+      - name: Finalize supervised emulator termination evidence
+        if: always()
+        env:
+          EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
+          NATIVE_CERTIFICATION_RESULTS_DIR: test-results/react-native-runtime-comparison
+        run: node scripts/finalize-emulator-lifecycle.mjs
+
+      - name: Record comparison runner outcome
+        if: always()
+        env:
+          EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
+        run: |
+          mkdir -p test-results/react-native-runtime-comparison
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'test-results/react-native-runtime-comparison/runner-outcome.json';
+          fs.writeFileSync(path, JSON.stringify({
+            at: new Date().toISOString(),
+            emulatorRunnerOutcome: process.env.EMULATOR_OUTCOME,
+            qemuLifecycleAvailable: fs.existsSync('test-results/react-native-runtime-comparison/emulator-lifecycle.jsonl'),
+            comparisonReportAvailable: fs.existsSync('test-results/react-native-runtime-comparison/comparison.json'),
+          }, null, 2) + '\n');
+          NODE
+          test "$EMULATOR_OUTCOME" = success
+
+      - name: Save checksum-verified Gradle distribution cache
+        if: always() && steps.gradle.outputs.archive_ready == 'true' && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/gradle-8.10.2-bin.zip
+          key: gradle-8.10.2-bin-sha256-31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26
+
+      - name: Preserve Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-native-android-runtime-evidence
+          path: test-results/react-native-runtime-comparison/
+          if-no-files-found: warn
+          retention-days: 30
