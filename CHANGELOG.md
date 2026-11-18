@@ -23,6 +23,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Fixed
 
+- Avoided flickering at option edges by keeping hover hit-target geometry stable: remove hover-time translation and render hover borders as non-layout-changing outlines.
 - Opening an empty single-select no longer implicitly activates its first option or sets `aria-activedescendant`; ArrowDown activates the first selectable option, while reopening a select with a current selection still activates that selection.
 
 ### Added
