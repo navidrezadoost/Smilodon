@@ -300,6 +300,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _classMap?: ClassMap;
   private _rendererHelpers: RendererHelpers;
   private _customOptionBoundElements = new WeakSet<HTMLElement>();
+  private _customOptionManagedActiveClasses = new WeakMap<HTMLElement, string[]>();
   private _customOptionNormalizedIds = new WeakMap<HTMLElement, string>();
   private _customOptionNormalizedLabels = new WeakMap<HTMLElement, string>();
   private _mirrorGlobalStylesForCustomOptions = false;
@@ -4294,8 +4295,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         if ('setActive' in prevOption && typeof (prevOption as any).setActive === 'function') {
           (prevOption as SelectOption).setActive(false);
         } else {
-          // Lightweight option - remove active class
-          prevOption.classList.remove('active', 'smilodon-option--active');
+          this._syncCustomOptionActiveClasses(prevOption, false);
         }
       }
     }
@@ -4306,8 +4306,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       if ('setActive' in option && typeof (option as any).setActive === 'function') {
         (option as SelectOption).setActive(true);
       } else {
-        // Lightweight option - add active class
-        option.classList.add('active', 'smilodon-option--active');
+        this._syncCustomOptionActiveClasses(option, true);
       }
       
       if (typeof option.scrollIntoView === 'function') {
@@ -7067,6 +7066,23 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }
   }
 
+  /** Keep custom option active classes aligned with the engine, including previous class maps. */
+  private _syncCustomOptionActiveClasses(option: HTMLElement, active: boolean): void {
+    const mapped = (this.classMap?.active ?? 'active sm-active').split(/\s+/).filter(Boolean);
+    const styled = (this._config.styles.classNames?.activeOption ?? '').split(/\s+/).filter(Boolean);
+    const current = [...new Set([...mapped, ...styled, 'smilodon-option--active'])];
+    const previous = this._customOptionManagedActiveClasses.get(option) ?? [];
+    option.classList.remove(...new Set([...previous, ...current, 'active', 'sm-active', 'smilodon-option--active']));
+    if (active) option.classList.add(...current);
+    this._customOptionManagedActiveClasses.set(option, current);
+
+    const states = new Set((option.dataset.smState ?? '').split(/\s+/).filter(Boolean));
+    if (active) states.add('active');
+    else states.delete('active');
+    if (states.size) option.dataset.smState = [...states].join(' ');
+    else delete option.dataset.smState;
+  }
+
   private _normalizeCustomOptionElement(element: HTMLElement | null | undefined, meta: {
     index: number;
     value: unknown;
@@ -7105,7 +7121,6 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
     // Resolve classes from classMap or defaults
     const selectedClasses = (this.classMap?.selected ?? 'selected sm-selected').split(' ').filter(Boolean);
-    const activeClasses = (this.classMap?.active ?? 'active sm-active').split(' ').filter(Boolean);
     const disabledClasses = (this.classMap?.disabled ?? 'disabled sm-disabled').split(' ').filter(Boolean);
 
     if (isSelected) {
@@ -7122,19 +7137,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
     }
 
-    if (isActive) {
-      optionEl.classList.add(...activeClasses);
-      optionEl.classList.add('smilodon-option--active');
-      if (this._config.styles.classNames?.activeOption) {
-        optionEl.classList.add(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
-      }
-    } else {
-      optionEl.classList.remove(...activeClasses);
-      optionEl.classList.remove('smilodon-option--active');
-      if (this._config.styles.classNames?.activeOption) {
-        optionEl.classList.remove(...this._config.styles.classNames.activeOption.split(' ').filter(Boolean));
-      }
-    }
+    this._syncCustomOptionActiveClasses(optionEl, isActive);
 
     if (isDisabled) {
       optionEl.classList.add(...disabledClasses);

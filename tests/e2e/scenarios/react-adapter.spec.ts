@@ -6,6 +6,11 @@ async function waitForReactReady(page: import('@playwright/test').Page) {
   await expect.poll(() => page.evaluate(() => {
     return window.__smilodonReactCertification?.state()?.connected ?? false;
   })).toBe(true);
+  const params = new URL(page.url()).searchParams;
+  if (params.get('scenario') !== 'issue-82-active-class' && params.get('protocol') !== 'legacy') {
+    await expect.poll(async () => (await readEvents(page)).some((event) => event.type === 'search'))
+      .toBe(true);
+  }
 }
 
 async function readEvents(page: import('@playwright/test').Page) {
@@ -46,6 +51,45 @@ test.describe('React adapter browser certification @react-adapter', () => {
     await expect(page.locator('#controlled-value')).toHaveText('banana');
     await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.selectedValues()))
       .toEqual(['banana']);
+  });
+
+  test('clears stale custom active classes after selecting Tehran Darou and reopening', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=issue-82-active-class`);
+    await waitForReactReady(page);
+
+    const host = page.locator('enhanced-select');
+    const dana = host.locator('[data-index="1"]');
+    const tehran = host.locator('[data-index="3"]');
+    await host.evaluate((element) => {
+      const style = document.createElement('style');
+      style.textContent = `
+        .option { background-color: rgb(240, 240, 240) !important; }
+        .option.issue82-active { background-color: rgb(20, 180, 60) !important; }
+      `;
+      element.shadowRoot?.append(style);
+    });
+
+    const input = host.locator('input');
+    await input.click();
+    await input.press('ArrowDown');
+    await input.press('ArrowDown');
+    await expect(dana).toHaveClass(/issue82-active/);
+    await expect.poll(() => dana.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(20, 180, 60)');
+
+    await tehran.click();
+    await input.click();
+
+    await expect(tehran).toHaveClass(/issue82-active/);
+    await expect.poll(async () => host.locator('[data-sm-state~="active"]').count()).toBe(1);
+    await expect(host.locator('[data-sm-state~="active"]')).toHaveAttribute('data-index', '3');
+    await expect(dana).toHaveAttribute('aria-selected', 'false');
+    await expect(dana).not.toHaveClass(/(?:^|\s)(?:active|sm-active|smilodon-option--active|issue82-active)(?:\s|$)/);
+    await expect.poll(async () =>
+      (await dana.getAttribute('data-sm-state'))?.split(/\s+/).includes('active') ?? false,
+    ).toBe(false);
+    await expect.poll(() => dana.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(240, 240, 240)');
   });
 
   test('preserves legacy callback arguments without acknowledged request metadata', async ({ page }) => {
