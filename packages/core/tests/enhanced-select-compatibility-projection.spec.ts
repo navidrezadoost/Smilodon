@@ -51,6 +51,9 @@ describe('EnhancedSelect compatibility projections', () => {
     select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
     );
+    select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+    );
 
     expect((select as any)._engine.state.activeKey).toBe('b');
     expect((select as any)._state.activeIndex).toBe(1);
