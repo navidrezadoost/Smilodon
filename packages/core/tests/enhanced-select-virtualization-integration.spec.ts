@@ -159,6 +159,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
       key: 'ArrowDown', bubbles: true, cancelable: true,
     }));
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
     expect(engineActiveKey(select)).toBe('b');
 
     filterTo(select, 'Apple');
