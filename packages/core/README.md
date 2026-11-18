@@ -156,7 +156,7 @@ select.addEventListener('change', (event) => {
 
 ### Hover stability
 
-Option hover styling no longer moves the option hit target or introduces a layout-changing border. The default `--select-option-hover-transform` is `none`, and hover border tokens render as outlines. The former `styles.hoverOption.transform` setting no longer moves the selectable element on hover; animate inner content instead if motion is needed. Option selection and keyboard-active styling remain separate from hover.
+Option hover styling no longer moves the option hit target or introduces a layout-changing border. Hover border tokens render as outlines; hover-specific border-bottom and transform styling is not applied to the selectable option. The former `styles.hoverOption.transform` setting no longer moves the selectable element on hover; animate inner content instead if motion is needed. Option selection and keyboard-active styling remain separate from hover.
 
 ### Custom arrow slot
 
@@ -543,6 +543,8 @@ The component implements keyboard interaction paths including:
 | `Tab` | Close dropdown and move focus |
 | `Ctrl+A` (multi-select) | Select all options |
 | Type characters | Type-ahead search |
+
+When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.
 
 **Multi-Select Range Selection:**
 - `Shift + ↑/↓` - Range selection

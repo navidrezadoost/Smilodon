@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-The public npm registry provides Core, React, Vue, Solid, and Vanilla at `1.10.1`; `@smilodon/svelte@2.0.0` supports Svelte 5 only. The corrected package archives passed strict NodeNext and Bundler consumer checks with TypeScript 5.6.3, `strict: true`, and `skipLibCheck: false`. React Native is excluded from the web release because Android physical-device and iOS runtime qualification remain incomplete. See [Release consumer qualification](docs/RELEASE-CONSUMER-QUALIFICATION-2026-11-10.md) for the tested scope and package integrity values.
+The current web release provides `@smilodon/core@1.11.0` and `@smilodon/react@1.11.0`; install them together for the React custom-arrow API. Vue, Solid, and Vanilla remain at `1.10.1`, and `@smilodon/svelte@2.0.0` supports Svelte 5 only. This release adds empty single-select keyboard-state and stable option-hover fixes. React Native is excluded because Android physical-device and iOS runtime qualification remain incomplete. See [Release consumer qualification](docs/RELEASE-CONSUMER-QUALIFICATION-2026-11-10.md) for the earlier declaration-consumer scope; it does not qualify these new package versions.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
@@ -427,10 +427,10 @@ Install the core runtime plus the adapter for your platform.
 
 ```bash
 # Core runtime
-npm install @smilodon/core
+npm install @smilodon/core@1.11.0
 
 # React
-npm install @smilodon/react @smilodon/core
+npm install @smilodon/react@1.11.0 @smilodon/core@1.11.0
 
 # Vue
 npm install @smilodon/vue @smilodon/core
