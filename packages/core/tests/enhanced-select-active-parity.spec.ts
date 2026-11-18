@@ -177,6 +177,7 @@ describe('EnhancedSelect active-key shadow parity', () => {
     select.setItems(makeItems());
     select.open();
     pressKey(select, 'ArrowDown');
+    pressKey(select, 'ArrowDown');
 
     pressKey(select, 'Enter');
 
