@@ -4432,7 +4432,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _setInitialActiveOption(): void {
     const selectableIndices = this._getSelectableOptionIndices();
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
-    if (selectableIndices.length === 0 || (this._config.selection.mode === 'multi' && selected.length === 0)) {
+    // Opening an empty select must not implicitly assign an active descendant.
+    // Keyboard navigation and pointer interaction establish active identity.
+    if (selectableIndices.length === 0 || selected.length === 0) {
       this._dispatchActiveKey(null, 'open', 'initial active option');
       return;
     }

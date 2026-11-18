@@ -580,6 +580,8 @@ class ReactContractTests extends ContractTestRunner {
       const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
       await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
       element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(-1));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
       act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       await waitFor(() => expect(element?._state?.activeIndex).toBe(1));
@@ -595,6 +597,8 @@ class ReactContractTests extends ContractTestRunner {
       const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
       await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
       element.open();
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(-1));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
       act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       await waitFor(() => expect(element?._state?.activeIndex).toBe(1));
@@ -610,7 +614,8 @@ class ReactContractTests extends ContractTestRunner {
       const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
       await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(searchableItems.length));
       element.open();
-      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(-1));
+      act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       await waitFor(() => expect(element?._state?.activeIndex).toBe(2));
@@ -799,8 +804,8 @@ class ReactContractTests extends ContractTestRunner {
       const input = element?.shadowRoot?.querySelector('.select-input') as HTMLInputElement;
       await waitFor(() => expect(element?._state?.loadedItems).toHaveLength(6));
       element.open();
-      await waitFor(() => expect(element?._state?.activeIndex).toBe(0));
-      for (let index = 0; index < 3; index += 1) {
+      await waitFor(() => expect(element?._state?.activeIndex).toBe(-1));
+      for (let index = 0; index < 4; index += 1) {
         act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true })));
       }
       await waitFor(() => expect(element?._state?.activeIndex).toBe(3));
