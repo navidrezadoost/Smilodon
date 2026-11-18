@@ -113,6 +113,48 @@ describe('Select React Integration', () => {
     });
   });
 
+  it('does not leave a built-in active alias with customRenderer and classMap.active', async () => {
+    const classMap = {
+      selected: 'selectOptionSingleSelected',
+      active: 'selectOptionSingleActive',
+      disabled: 'selectOptionSingleDisabled',
+    };
+    const { container } = render(
+      <Select
+        items={testItems}
+        classMap={classMap}
+        customRenderer={(item) => <span>{item.label}</span>}
+      />,
+    );
+    const element = container.querySelector('enhanced-select') as any;
+    await waitFor(() => expect(element.shadowRoot?.querySelector('[data-index="3"]')).toBeTruthy());
+    await waitFor(() => expect(element.classMap).toEqual(classMap));
+
+    act(() => element.open());
+    const input = element.shadowRoot.querySelector<HTMLInputElement>('[part="input"]')!;
+    const down = () => input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+    );
+    act(() => { down(); down(); });
+    const oldOption = element.shadowRoot.querySelector<HTMLElement>('[data-index="1"]')!;
+    expect(oldOption.classList.contains('selectOptionSingleActive')).toBe(true);
+    expect(oldOption.classList.contains('active')).toBe(false);
+
+    act(() => element.shadowRoot.querySelector<HTMLElement>('[data-index="3"]')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+    await waitFor(() => expect(element.getSelectedValues()).toEqual(['4']));
+    act(() => element.open());
+
+    await waitFor(() => expect(element.shadowRoot.querySelector<HTMLElement>('[data-index="3"]')!
+      .getAttribute('aria-selected')).toBe('true'));
+    const previous = element.shadowRoot.querySelector<HTMLElement>('[data-index="1"]')!;
+    expect(previous.getAttribute('aria-selected')).toBe('false');
+    expect(previous.classList.contains('active')).toBe(false);
+    expect(previous.classList.contains('sm-active')).toBe(false);
+    expect(previous.classList.contains('selectOptionSingleActive')).toBe(false);
+    expect(previous.matches('.option.active')).toBe(false);
+  });
+
   it('should handle onChange callback', async () => {
     let selectedValue: string | number | (string | number)[] | undefined;
     const handleChange = (value: string | number | (string | number)[]) => {
