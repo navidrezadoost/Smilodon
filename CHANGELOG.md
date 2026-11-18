@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Added
+
+- Added the React `arrowIcon` prop and Core `arrow` slot for decorative custom dropdown icons. The built-in SVG remains the fallback; custom content does not rotate automatically.
+
 ### Fixed
 
 - Opening an empty single-select no longer implicitly activates its first option or sets `aria-activedescendant`; ArrowDown activates the first selectable option, while reopening a select with a current selection still activates that selection.

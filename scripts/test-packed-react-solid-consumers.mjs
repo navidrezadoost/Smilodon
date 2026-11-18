@@ -49,7 +49,7 @@ import { createElement, useRef } from 'react';
 const items: SelectItem[] = [{ value: 'one', label: 'One' }];
 export function ReactConsumer() {
   const ref = useRef<SelectHandle>(null);
-  return createElement(Select, { ref, items, value: 'one', onChange: (value) => String(value) });
+  return createElement(Select, { ref, items, value: 'one', arrowIcon: createElement('svg'), onChange: (value) => String(value) });
 }
 `);
   await writeFile(join(sourceDirectory, 'solid-consumer.tsx'), `

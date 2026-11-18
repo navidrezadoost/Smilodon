@@ -1895,10 +1895,20 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const container = document.createElement('div');
     container.className = 'dropdown-arrow-container';
     container.innerHTML = `
-      <svg class="dropdown-arrow" part="arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <slot name="arrow">
+        <svg class="dropdown-arrow" part="arrow" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </slot>
     `;
+    const slot = container.querySelector<HTMLSlotElement>('slot[name="arrow"]');
+    slot?.addEventListener('slotchange', () => {
+      if (slot.assignedElements({ flatten: true }).length > 0) {
+        this.setAttribute('data-custom-arrow', 'true');
+      } else {
+        this.removeAttribute('data-custom-arrow');
+      }
+    });
     return container;
   }
 
@@ -2628,6 +2638,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       
       .dropdown-arrow-container:hover {
         background-color: var(--select-arrow-hover-bg, rgba(15, 52, 96, 0.05));
+      }
+
+      :host([data-custom-arrow="true"]) .dropdown-arrow-container:hover {
+        background-color: transparent;
       }
       
       .dropdown-arrow {

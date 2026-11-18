@@ -141,6 +141,7 @@ interface SelectProps {
   // Styling
   className?: string;
   style?: React.CSSProperties;
+  arrowIcon?: React.ReactNode;
   
   // Advanced
   virtualized?: boolean;
@@ -168,6 +169,7 @@ interface SelectProps {
 | `estimatedItemHeight` | `number` | `48` | Passed to core config for the guarded viewport-windowing test path; it does not affect public chunk rendering |
 | `className` | `string` | `undefined` | CSS class name |
 | `style` | `React.CSSProperties` | `undefined` | Inline styles (CSS variables) |
+| `arrowIcon` | `React.ReactNode` | `undefined` | Decorative content for the native arrow slot; custom content does not rotate automatically |
 | `virtualized` | `boolean` | `false` | Enable incremental chunk rendering for large flat lists; not viewport windowing |
 | `customRenderer` | `function` | `undefined` | Custom option renderer |
 | `onOpen` | `() => void` | `undefined` | Called when dropdown opens |
