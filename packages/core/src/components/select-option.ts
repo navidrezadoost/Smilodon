@@ -104,14 +104,13 @@ export class SelectOption extends HTMLElement {
         transition: var(--select-option-transition, background-color 0.2s ease);
       }
 
-      :host(:hover):not(.smilodon-option--disabled):not([aria-disabled="true"]),
+      :host(:hover:not(.smilodon-option--disabled):not([aria-disabled="true"])),
       :host(.smilodon-option--disabled-hoverable:hover) {
         background: var(--select-option-hover-bg, #f0f0f0);
         color: var(--select-option-hover-color, var(--select-option-color, var(--select-text-color, #1f2937)));
-        border: var(--select-option-hover-border, var(--select-option-border, none));
-        border-bottom: var(--select-option-hover-border-bottom, var(--select-option-border-bottom, none));
+        outline: var(--select-option-hover-border, none);
+        outline-offset: -1px;
         box-shadow: var(--select-option-hover-shadow, var(--select-option-shadow, none));
-        transform: var(--select-option-hover-transform, var(--select-option-transform, none));
       }
 
       /* Keep the visual surface on the host so external utility classes applied
@@ -132,10 +131,9 @@ export class SelectOption extends HTMLElement {
       :host(.smilodon-option--selected:hover) {
         background: var(--select-option-selected-hover-bg, var(--select-option-selected-bg, #e3f2fd));
         color: var(--select-option-selected-hover-color, var(--select-option-selected-color, #1976d2));
-        border: var(--select-option-selected-hover-border, var(--select-option-selected-border, var(--select-option-border, none)));
-        border-bottom: var(--select-option-selected-hover-border-bottom, var(--select-option-selected-border-bottom, var(--select-option-border-bottom, none)));
+        outline: var(--select-option-selected-hover-border, var(--select-option-hover-border, none));
+        outline-offset: -1px;
         box-shadow: var(--select-option-selected-hover-shadow, var(--select-option-selected-shadow, var(--select-option-shadow, none)));
-        transform: var(--select-option-selected-hover-transform, var(--select-option-selected-transform, var(--select-option-transform, none)));
       }
 
       :host(.smilodon-option--active):not(.smilodon-option--disabled):not([aria-disabled="true"]),

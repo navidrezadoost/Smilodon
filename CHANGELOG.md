@@ -19,16 +19,24 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added
 
-- Added the React `arrowIcon` prop and Core `arrow` slot for decorative custom dropdown icons. The built-in SVG remains the fallback; custom content does not rotate automatically.
+- Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
 
-### Fixed
+## [1.11.0] - 2026-11-18
 
-- Avoided flickering at option edges by keeping hover hit-target geometry stable: remove hover-time translation and render hover borders as non-layout-changing outlines.
-- Opening an empty single-select no longer implicitly activates its first option or sets `aria-activedescendant`; ArrowDown activates the first selectable option, while reopening a select with a current selection still activates that selection.
+This release publishes `@smilodon/core@1.11.0` and `@smilodon/react@1.11.0`. It includes the fixes for Issues #74 and #77 and the custom-arrow API from Issue #76. Install Core and React together at `1.11.0` to use the React `arrowIcon` prop.
 
 ### Added
 
-- Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
+- Added the Core `arrow` slot and React `arrowIcon` prop for decorative custom dropdown icons. The built-in SVG remains the fallback; custom content does not rotate automatically.
+
+### Fixed
+
+- Opening an empty single-select no longer implicitly activates its first option or sets `aria-activedescendant`. ArrowDown activates the first selectable option; reopening a select with a current selection still activates that selection.
+- Prevented option-edge hover flicker by keeping hit-target geometry stable: hover no longer translates the selectable option, and hover borders render as outlines without changing layout.
+
+### Compatibility note
+
+- Hover-specific transforms and bottom borders no longer change the selectable option's geometry. The hover border is drawn as an outline; animate inner content when decorative movement is desired.
 
 ## [1.10.2] - 2026-11-13
 

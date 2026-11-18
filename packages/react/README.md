@@ -1426,7 +1426,7 @@ function OptimizedExample() {
 
 ### Custom arrow icon
 
-Pass any React node as `arrowIcon`. It is rendered in the native `arrow` slot and marked decorative; Core continues to own pointer and open/close behavior. The built-in SVG remains the fallback when the prop is omitted or `null`. Custom content is not automatically rotated; use the host's `data-open` attribute if it should rotate:
+Available in `@smilodon/react@1.11.0` with `@smilodon/core@1.11.0`, pass any React node as `arrowIcon`. It is rendered in the native `arrow` slot and marked decorative; Core continues to own pointer and open/close behavior. The built-in SVG remains the fallback when the prop is omitted or `null`. Custom content is not automatically rotated; use the host's `data-open` attribute if it should rotate:
 
 ```tsx
 <Select
