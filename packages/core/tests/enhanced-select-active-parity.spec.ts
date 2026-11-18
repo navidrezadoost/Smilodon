@@ -328,9 +328,10 @@ describe('EnhancedSelect active-key shadow parity', () => {
   it('clears aria-activedescendant when registration becomes empty', () => {
     select.setItems(makeItems());
     select.open();
-    expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(true);
+    expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(false);
 
     pressKey(select, 'ArrowDown');
+    expect(inputElement(select).hasAttribute('aria-activedescendant')).toBe(true);
     select.setItems([]);
 
     expect(activeIndex(select)).toBe(-1);

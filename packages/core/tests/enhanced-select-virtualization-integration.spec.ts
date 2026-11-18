@@ -177,6 +177,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
     getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
       key: 'ArrowDown', bubbles: true, cancelable: true,
     }));
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
     const activeKey = engineActiveKey(select);
     setGuardedWindow(select, 0, 1);
     (select as any)._renderOptions();
@@ -361,6 +364,9 @@ describe('EnhancedSelect pre-virtualization integration guards', () => {
   it('removes aria-activedescendant when the active target is absent', () => {
     select.setItems(makeItems());
     select.open();
+    getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'ArrowDown', bubbles: true, cancelable: true,
+    }));
     getInput(select).dispatchEvent(new KeyboardEvent('keydown', {
       key: 'ArrowDown', bubbles: true, cancelable: true,
     }));

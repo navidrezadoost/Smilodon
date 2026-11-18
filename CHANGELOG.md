@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- Opening an empty single-select no longer implicitly activates its first option or sets `aria-activedescendant`; ArrowDown activates the first selectable option, while reopening a select with a current selection still activates that selection.
+
 ### Added
 
 - Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
