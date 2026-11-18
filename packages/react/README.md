@@ -1403,6 +1403,7 @@ function OptimizedExample() {
 | `estimatedItemHeight` | `number` | `48` | Exposed estimate used only by the guarded viewport-windowing test path; not a production tuning control |
 | `maxSelections` | `number` | - | Max selections (multi-select) |
 | `toggleOnTriggerClick` | `boolean` | `true` | Allow repeated trigger clicks to toggle the dropdown |
+| `arrowIcon` | `React.ReactNode` | - | Decorative custom arrow content; defaults to the built-in chevron and does not rotate automatically |
 | `placement` | `string` | `"bottom-start"` | Dropdown placement |
 | `className` | `string` | - | Custom CSS class |
 | `style` | `CSSProperties` | - | Inline styles |
@@ -1422,6 +1423,31 @@ function OptimizedExample() {
 | `onLoadMore` | `(page) => void \| Promise<void>` | - | Load more callback |
 | `creatable` | `boolean` | `false` | Allow creating new options |
 | `onCreate` | `(label) => void` | - | Create option callback |
+
+### Custom arrow icon
+
+Pass any React node as `arrowIcon`. It is rendered in the native `arrow` slot and marked decorative; Core continues to own pointer and open/close behavior. The built-in SVG remains the fallback when the prop is omitted or `null`. Custom content is not automatically rotated; use the host's `data-open` attribute if it should rotate:
+
+```tsx
+<Select
+  className="custom-arrow-select"
+  items={items}
+  arrowIcon={<MyChevron />}
+/>
+```
+
+```css
+.custom-arrow-select > .smilodon-custom-arrow {
+  display: inline-flex;
+  transition: transform 180ms ease;
+}
+
+.custom-arrow-select[data-open="true"] > .smilodon-custom-arrow {
+  transform: rotate(180deg);
+}
+```
+
+The default arrow hover background is suppressed while custom arrow content is assigned. Custom icon color and transform are not set by Core.
 
 ### Multi-select chip styling
 

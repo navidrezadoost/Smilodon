@@ -154,6 +154,18 @@ select.addEventListener('change', (event) => {
 });
 ```
 
+### Custom arrow slot
+
+The default chevron remains in place unless a light-DOM child is assigned to the `arrow` slot:
+
+```html
+<enhanced-select id="my-select">
+  <span slot="arrow" aria-hidden="true">▼</span>
+</enhanced-select>
+```
+
+The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or hover background on assigned custom content.
+
 ### Framework Usage
 
 **In browser DOM frameworks, `@smilodon/core` can be used directly** as a Web Component; framework adapters are available for framework-specific APIs.

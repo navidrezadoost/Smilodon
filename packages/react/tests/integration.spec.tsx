@@ -27,6 +27,50 @@ describe('Select React Integration', () => {
     expect(element).toBeTruthy();
   });
 
+  it.each([false, true])('renders and updates a custom React arrow (multiple=%s)', async (multiple) => {
+    const { container, rerender } = render(
+      <React.StrictMode>
+        <Select
+          items={testItems}
+          multiple={multiple}
+          arrowIcon={<svg data-custom-icon="first" viewBox="0 0 16 16" />}
+        />
+      </React.StrictMode>,
+    );
+    const element = container.querySelector('enhanced-select')!;
+    const wrapper = element.querySelector<HTMLElement>('[slot="arrow"]');
+
+    expect(wrapper?.className).toBe('smilodon-custom-arrow');
+    expect(wrapper?.getAttribute('aria-hidden')).toBe('true');
+    expect(wrapper?.querySelector('[data-custom-icon="first"]')).toBeTruthy();
+    expect(element.getAttribute('data-custom-arrow')).toBe('true');
+
+    rerender(
+      <React.StrictMode>
+        <Select
+          items={testItems}
+          multiple={multiple}
+          arrowIcon={<svg data-custom-icon="second" viewBox="0 0 16 16" />}
+        />
+      </React.StrictMode>,
+    );
+
+    expect(container.querySelector('enhanced-select')).toBe(element);
+    expect(element.querySelectorAll('[slot="arrow"]')).toHaveLength(1);
+    expect(element.querySelector('[data-custom-icon="second"]')).toBeTruthy();
+    expect(element.querySelector('[data-custom-icon="first"]')).toBeNull();
+
+    rerender(
+      <React.StrictMode>
+        <Select items={testItems} multiple={multiple} />
+      </React.StrictMode>,
+    );
+
+    expect(element.querySelector('[slot="arrow"]')).toBeNull();
+    expect(element.hasAttribute('data-custom-arrow')).toBe(false);
+    expect(element.shadowRoot?.querySelector('slot[name="arrow"] [part="arrow"]')).toBeTruthy();
+  });
+
   it('should pass items prop to element', async () => {
     const { container } = render(<Select items={testItems} />);
     const element = container.querySelector('enhanced-select') as any;

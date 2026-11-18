@@ -159,6 +159,9 @@ export interface SelectComponentProps {
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
 
+  /** Custom decorative arrow icon rendered in the native arrow slot. */
+  arrowIcon?: React.ReactNode;
+
   /** Behavior overrides for visually disabled (dimmed) options */
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -455,6 +458,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     styles: stylesConfig,
     config: coreConfig,
     removeButtonIcon,
+    arrowIcon,
     disabledOptionBehavior,
     showSelectedIndicator = true,
     toggleOnTriggerClick = true,
@@ -1604,14 +1608,29 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       ? composeBusyToken(consumerAriaBusy, loading)
       : consumerAriaBusy;
 
-  return React.createElement("enhanced-select", {
-    ref: elementRef,
-    ...hostProps,
-    "aria-busy": renderedAriaBusy,
-    class: className,
-    dir: direction,
-    style,
-  } as React.HTMLAttributes<HTMLElement> & { class?: string });
+  return React.createElement(
+    "enhanced-select",
+    {
+      ref: elementRef,
+      ...hostProps,
+      "aria-busy": renderedAriaBusy,
+      "data-custom-arrow": arrowIcon != null ? "true" : undefined,
+      class: className,
+      dir: direction,
+      style,
+    } as React.HTMLAttributes<HTMLElement> & { class?: string },
+    arrowIcon != null
+      ? React.createElement(
+          "span",
+          {
+            slot: "arrow",
+            className: "smilodon-custom-arrow",
+            "aria-hidden": "true",
+          },
+          arrowIcon,
+        )
+      : null,
+  );
 });
 
 Select.displayName = "Select";
