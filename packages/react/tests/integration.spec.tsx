@@ -131,23 +131,23 @@ describe('Select React Integration', () => {
     await waitFor(() => expect(element.classMap).toEqual(classMap));
 
     act(() => element.open());
-    const input = element.shadowRoot.querySelector<HTMLInputElement>('[part="input"]')!;
+    const input = element.shadowRoot.querySelector('[part="input"]') as HTMLInputElement;
     const down = () => input.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
     );
     act(() => { down(); down(); });
-    const oldOption = element.shadowRoot.querySelector<HTMLElement>('[data-index="1"]')!;
+    const oldOption = element.shadowRoot.querySelector('[data-index="1"]') as HTMLElement;
     expect(oldOption.classList.contains('selectOptionSingleActive')).toBe(true);
     expect(oldOption.classList.contains('active')).toBe(false);
 
-    act(() => element.shadowRoot.querySelector<HTMLElement>('[data-index="3"]')!
+    act(() => (element.shadowRoot.querySelector('[data-index="3"]') as HTMLElement)
       .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
     await waitFor(() => expect(element.getSelectedValues()).toEqual(['4']));
     act(() => element.open());
 
-    await waitFor(() => expect(element.shadowRoot.querySelector<HTMLElement>('[data-index="3"]')!
+    await waitFor(() => expect((element.shadowRoot.querySelector('[data-index="3"]') as HTMLElement)
       .getAttribute('aria-selected')).toBe('true'));
-    const previous = element.shadowRoot.querySelector<HTMLElement>('[data-index="1"]')!;
+    const previous = element.shadowRoot.querySelector('[data-index="1"]') as HTMLElement;
     expect(previous.getAttribute('aria-selected')).toBe('false');
     expect(previous.classList.contains('active')).toBe(false);
     expect(previous.classList.contains('sm-active')).toBe(false);

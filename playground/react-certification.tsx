@@ -52,11 +52,23 @@ const items: SelectItem[] = [
 ];
 
 const query = new URLSearchParams(window.location.search);
+const issue82ActiveClassScenario = query.get('scenario') === 'issue-82-active-class';
+const issue82Items: SelectItem[] = [
+  { value: 'one', label: 'First' },
+  { value: 'two', label: 'Dana Pharmaceutical Group' },
+  { value: 'three', label: 'Third' },
+  { value: 'tehran', label: 'Tehran Darou' },
+];
+const issue82ClassMap = {
+  selected: 'issue82-selected',
+  active: 'issue82-active',
+  disabled: 'issue82-disabled',
+};
 const initialProtocol = query.get('protocol') === 'legacy' ? 'legacy' : 'acknowledged';
 const initialSearchMode = query.get('mode') === 'hybrid' ? 'hybrid' : 'remote';
 
 const initialOptions: FixtureOptions = {
-  config: {
+  config: issue82ActiveClassScenario ? {} : {
     dataLoading: {
       protocol: initialProtocol,
       searchMode: initialSearchMode,
@@ -64,7 +76,7 @@ const initialOptions: FixtureOptions = {
       fetchLimit: 3,
     },
   },
-  value: query.has('uncontrolled') ? null : 'apple',
+  value: issue82ActiveClassScenario || query.has('uncontrolled') ? null : 'apple',
   loading: false,
   consumerBusy: false,
   placeholder: 'Choose a fruit',
@@ -97,7 +109,7 @@ function CertificationApp() {
       <output id="controlled-value">{options.value ?? 'uncontrolled'}</output>
       <Select
         ref={handleRef}
-        items={items}
+        items={issue82ActiveClassScenario ? issue82Items : items}
         value={options.value === null ? undefined : options.value}
         searchable
         infiniteScroll
@@ -107,6 +119,8 @@ function CertificationApp() {
         className="react-certification-select"
         loading={options.loading}
         aria-busy={options.consumerBusy}
+        classMap={issue82ActiveClassScenario ? issue82ClassMap : undefined}
+        customRenderer={issue82ActiveClassScenario ? (item) => <span>{item.label}</span> : undefined}
         onSearch={(searchQuery, results, count, request) =>
           record('search', { searchQuery, results, count, request: request ?? null })
         }
