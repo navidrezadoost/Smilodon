@@ -1,6 +1,6 @@
 # Dropdown enter/exit animation — implementation and usage
 
-**Status:** merged into `main` by [PR #86](https://github.com/navidrezadoost/Smilodon/pull/86), merge commit `8dd48b2997016e3cb6258795d793a0f983cba0f9`, and locally qualified. Prepared for Core `1.12.0`; **npm publication remains pending**. Browser behavior was verified with Chrome 156; the pinned Playwright Chromium 147 binary was unavailable.
+**Status:** merged into `main` by [PR #86](https://github.com/navidrezadoost/Smilodon/pull/86), merge commit `8dd48b2997016e3cb6258795d793a0f983cba0f9`, locally qualified, and released as `@smilodon/core@1.12.0` on 2026-11-19. The pinned Playwright Chromium 147 binary was unavailable; Chrome 156 was used for the recorded browser verification.
 
 ## Problem and contract
 
@@ -58,7 +58,7 @@ The existing `prefers-reduced-motion: reduce` rule shortens animations. Core als
 4. **Accessibility:** verify `aria-expanded="false"` and no usable `aria-activedescendant` during closing; the panel must be inert and inaccessible. Do not delay the `close` event.
 5. **Tests:** Core regression coverage for close, reopen, duplicate-close, descendant animation event, zero-duration, disconnect, and timeout fallback; browser coverage for visual opacity and top/bottom placement.
 6. **Qualification:** `npm ci`, `npm run build`, `npm run lint`, `npx vitest run packages/core/tests/dropdown-exit-animation.spec.ts --config packages/core/vitest.config.ts`, existing active/ARIA suites, `npm test`, adapter contracts, and locally available Chrome browser scenarios. Do not invoke hosted CI.
-7. **Integration and release:** review Core and adapter behavior in a draft PR; merge normally after local results; publish separately only after package compatibility checks. Update release notes with the package version actually shipped.
+7. **Integration and release:** Core and adapter behavior was merged through PR #86 and Core `1.12.0` was published after package compatibility checks. Release notes record the shipped version and artifact integrity.
 
 ### Qualification evidence (reported for PR #86)
 
@@ -70,7 +70,7 @@ The existing `prefers-reduced-motion: reduce` rule shortens animations. Core als
 - Supplemental browser checks: Escape, outside-pointer close, option selection, inert exit, disabled animation, disconnect cleanup.
 - Pinned Chromium 147: **not tested** because the required binary was unavailable locally.
 - Clean post-merge worktree; packed Core tarball tested separately for imports, CSS exit tokens, immediate ARIA close, and inert exit.
-- Remaining release step: verify the 1.12.0 tarball and publish it under a unique version; never reuse the already occupied Core 1.11.1 version.
+- Publication: npm reports `@smilodon/core@1.12.0` with SRI `sha512-/aA5Y96rvbvk+iyF8qz+pHuN/Pum1o5wrQIY9y9jCTjYLyyb8+7vP65cSHlNskOAafS/SJeoa/d9HTAGYv7QpA==`; the registry value matches the locally packed archive. See the [release record](../releases/CORE-1.12.0-RELEASE.md).
 
 ### Release acceptance
 
@@ -83,7 +83,7 @@ The existing `prefers-reduced-motion: reduce` rule shortens animations. Core als
 - [x] Top and bottom placement checked in the PR browser scenarios
 - [x] Local tests and Chrome 156 qualification recorded
 - [ ] Pinned Chromium 147 qualification (optional release exception to document)
-- [ ] Core 1.12.0 npm publication and registry artifact verification
+- [x] Core 1.12.0 npm publication and registry artifact verification
 
 ## Related: React acknowledged items regression (#85)
 

@@ -17,7 +17,7 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Core fix availability:** three recent Core fixes span two releases: the stable option-hover geometry fix ([#77](https://github.com/navidrezadoost/Smilodon/issues/77)) shipped in Core `1.11.0`; custom active-class reconciliation ([#82](https://github.com/navidrezadoost/Smilodon/issues/82)) and configurable dropdown exit animation ([#86](https://github.com/navidrezadoost/Smilodon/pull/86)) are in the prepared Core `1.12.0` candidate. Core `1.12.0` is **not yet published**. See the [Core release checklist](docs/releases/CORE-1.12.0-RELEASE.md) before installing candidate versions.
+**Core fix availability:** the stable option-hover geometry fix ([#77](https://github.com/navidrezadoost/Smilodon/issues/77)) shipped in Core `1.11.0`; custom active-class reconciliation ([#82](https://github.com/navidrezadoost/Smilodon/issues/82)) shipped in `1.11.1`; configurable dropdown exit animation ([#86](https://github.com/navidrezadoost/Smilodon/pull/86)) ships in Core `1.12.0`, now available from npm. Install with `npm install @smilodon/core@1.12.0`. See the [Core release checklist](docs/releases/CORE-1.12.0-RELEASE.md) for artifact provenance and qualification scope.
 
 **Release scope:** the currently published React adapter remains `@smilodon/react@1.11.0`, whose Core peer range `^1.11.0` accepts Core `1.12.0`. The acknowledged infinite-scroll React fix (#85) is locally qualified on an **unmerged, unpushed branch** and is not part of this release. The `1.11.0` release also added empty single-select keyboard-state and the React custom-arrow API. Vue, Solid, and Vanilla remain at `1.10.1`, and `@smilodon/svelte@2.0.0` supports Svelte 5 only. React Native is excluded because Android physical-device and iOS runtime qualification remain incomplete. See [Release consumer qualification](docs/RELEASE-CONSUMER-QUALIFICATION-2026-11-10.md) for the earlier declaration-consumer scope; it does not qualify these new package versions.
 
@@ -827,10 +827,10 @@ export default {
 ## Recent changes and package availability
 
 - **Active class reconciliation (#82, Core):** When using `classMap.active` and custom-rendered option roots, previously active options no longer retain the legacy `active` class or stale custom mappings. See [Core guide](packages/core/README.md#active-state-on-custom-option-roots).
-- **Dropdown exit animation (Core 1.12.0 candidate):** Configure entry and exit independently with `--select-dropdown-animation` and `--select-dropdown-exit-animation`; the exit is noninteractive and does not delay close events or ARIA. See [Core guide](packages/core/README.md#dropdown-enter-and-exit-animations-core-1120-release-candidate) and [engineering notes](docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+- **Dropdown exit animation (Core 1.12.0):** Configure entry and exit independently with `--select-dropdown-animation` and `--select-dropdown-exit-animation`; the exit is noninteractive and does not delay close events or ARIA. See [Core guide](packages/core/README.md#dropdown-enter-and-exit-animations-core-1120) and [engineering notes](docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
 - **Acknowledged items on configuration rerenders (#85, React pending):** A separate React correction is locally qualified but not merged or published. Until its release, avoid treating it as part of the available React package. See [React guidance](packages/react/README.md#acknowledged-pagination-on-react-rerenders--issue-85-unreleased).
 
-**Publication:** The merged Core feature is qualified against Chrome 156, but no Core 1.12.0 npm publication has been verified. Read the [release checklist](docs/releases/CORE-1.12.0-RELEASE.md) before installing a version mentioned as a release candidate.
+**Publication:** Core `1.12.0` was published to npm on 2026-11-19. Its registry integrity matches the locally packed artifact; see the [release checklist](docs/releases/CORE-1.12.0-RELEASE.md). Chrome 156 scenarios passed; pinned Chromium 147 remains unverified.
 
 ## Styling and customization
 

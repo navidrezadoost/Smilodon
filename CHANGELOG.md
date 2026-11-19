@@ -19,30 +19,31 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Pending
 
-- The Core `1.12.0` release below is prepared and locally qualified but **not published on npm**.
 - **React acknowledged infinite-scroll synchronization (#85):** A separate locally qualified fix exists in unpushed branch `fix/85-react-acknowledged-items` at `29c67067b3bf345347f74e2dc074095dc9eb2ab9`. It is not present in `main`, has not been merged, and must not be attributed to React `1.11.0` or any new published version. Its React release will require a separate PR, qualification, and npm publication.
 - Remaining acknowledged-loading API parity and certification across adapters remain outside the completed release scope.
 
-## [1.12.0] - Pending npm publication
+## [1.12.0] - 2026-11-19
 
-**Core-only minor release prepared from merged PR #86.** The manifest and lockfile are updated to `@smilodon/core@1.12.0`; publication and registry integrity verification are still required. Do not reuse the existing npm `@smilodon/core@1.11.1` artifact for different content.
+**Core-only minor release published from `main` commit `d4711d4437b7a8809c8e672c46832b22a77cb069`.** The published artifact is `@smilodon/core@1.12.0`; its registry integrity and SHA-1 match the locally packed tarball. Core `1.11.1` remains unchanged.
 
-The three recent Core fixes are available across two release versions: the stable option-hover geometry correction (#77) was already published in Core `1.11.0`; this `1.12.0` candidate adds the custom active-class correction (#82) and configurable dropdown exit animation (#86). This release does not re-release or change the already-published `1.11.0` artifact.
+The three recent Core fixes are available across three release versions: stable option-hover geometry (#77) shipped in Core `1.11.0`; custom active-class correction (#82) shipped in Core `1.11.1`; configurable dropdown exit animation (#86) is new in Core `1.12.0`. This release does not re-release or change the already-published `1.11.0` or `1.11.1` artifacts.
 
 ### Added
 
-- **Configurable dropdown exit animation:** Added `dropdownExit` alongside the existing `dropdownEnter` animation and public CSS variables `--select-dropdown-exit-animation`, `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, `--select-dropdown-exit-from-transform`, `--select-dropdown-exit-to-transform`, and `--select-dropdown-top-exit-to-transform`. Entry remains configurable through `--select-dropdown-animation`.
+- **Configurable dropdown exit animation (#86):** Added `dropdownExit` alongside the existing `dropdownEnter` animation and public CSS variables `--select-dropdown-exit-animation`, `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, `--select-dropdown-exit-from-transform`, `--select-dropdown-exit-to-transform`, and `--select-dropdown-top-exit-to-transform`. Entry remains configurable through `--select-dropdown-animation`.
 - **Presentation-only close lifecycle:** Popup engine state, ARIA and `close` callbacks update immediately. The exiting panel is `inert`, `aria-hidden`, and pointer-inert until the animation finishes; rapid reopen cancels exit, disconnect cleans up, and disabled/reduced-motion settings skip the wait. Both top and bottom placement are supported.
 
 ### Included fixes
 
-- **Custom option active-state classes (#82):** The previously merged Core fix reconciles built-in and custom `classMap.active` classes across navigation and re-rendering. This change is included in the Core source packaged for `1.12.0`, regardless of the separately existing npm `1.11.1` artifact.
+- **Previously shipped behavior:** Core `1.12.0` retains the #77 and #82 fixes from `1.11.0` and `1.11.1`; neither is a new change in this release.
 - **Not included:** React acknowledged-loading rerender fix (#85), which remains outside `main`.
 
 ### Qualification
 
 - PR #86: local `npm ci`, build, lint (0 errors, 6 existing warnings), Core exit tests 8/8, React contracts 41 passed/6 skipped, full `npm test` 723 passed/7 skipped, Chrome 156 browser scenarios 4/4 plus supplemental interaction tests. Pinned Playwright Chromium 147 was unavailable and was not certified.
-- Post-merge Core tarball was packed and successfully smoke-tested in an isolated consumer for imports, animation CSS variables, immediate ARIA close and inert exit. Fresh `1.12.0` tarball and npm registry integrity still require verification.
+- Exact packed artifact: 52 files, no bundled dependencies; SHA-256 `0f672e6535a7483790249f44de6392ec715f7f32205f319470432168f4571049`, npm shasum `a9242b47c963f48550a0ce70417f16fa53556467`, SRI `sha512-/aA5Y96rvbvk+iyF8qz+pHuN/Pum1o5wrQIY9y9jCTjYLyyb8+7vP65cSHlNskOAafS/SJeoa/d9HTAGYv7QpA==`.
+- Published registry metadata matches the packed integrity and shasum. A clean consumer installed `@smilodon/core@1.12.0` directly from npm and verified package metadata and the packaged exit-animation documentation.
+- Core build and `npm ci` passed on the exact main source commit using Node `20.20.2` / npm `10.8.2`. The full local suite and Chrome 156 qualification results are recorded above; pinned Chromium 147 remains unverified.
 - See [Core release checklist](docs/releases/CORE-1.12.0-RELEASE.md) and [animation guide](docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
 
 ## [1.11.1] - 2026-11-18
