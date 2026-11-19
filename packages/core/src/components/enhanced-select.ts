@@ -321,6 +321,18 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _renderCycleWaiterTimeouts = new Map<number, number>();
   private _suppressNextOpenClick = false;
   private _resolvedDropdownPlacement: 'bottom' | 'top' = 'bottom';
+  // Presentation only: the popup engine is already closed while the exit runs.
+  private _dropdownExitTimer: number | null = null;
+  private _onDropdownExitAnimationEnd = (event: AnimationEvent): void => {
+    if (event.target !== this._dropdown || this._state.isOpen) return;
+    if (this._dropdown.getAttribute('data-motion') !== 'closing') return;
+    // A composite consumer animation must finish all timelines, not just the first.
+    const names = getComputedStyle(this._dropdown).animationName
+      .split(',').map((name) => name.trim()).filter((name) => name && name !== 'none');
+    if (names.length > 1) return; // bounded timeout waits for the longest timeline
+    if (event.animationName && names[0] && event.animationName !== names[0]) return;
+    this._finishDropdownExit();
+  };
   private _multiScrollDrag = {
     active: false,
     moved: false,
@@ -545,6 +557,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._state.isSearching = false;
       this._state.preserveScrollPosition = false;
     }
+
+    // A disconnected popup must not retain a visual exit or a live timer.
+    this._cancelDropdownExit();
+    this._dropdown.style.display = 'none';
+    this._dropdown.setAttribute('inert', '');
+    this._dropdown.setAttribute('aria-hidden', 'true');
 
     // unregister instance
     EnhancedSelect._instances.delete(this);
@@ -2069,6 +2087,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         --select-dropdown-top: calc(100% + 6px);
         --select-dropdown-bottom: calc(100% + 6px);
         --select-dropdown-animation: dropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        --select-dropdown-exit-animation: dropdownExit 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
+        --select-dropdown-exit-from-opacity: 1;
+        --select-dropdown-exit-from-transform: translateY(0) scale(1);
+        --select-dropdown-exit-to-opacity: 0;
+        --select-dropdown-exit-to-transform: translateY(-8px) scale(0.98);
+        --select-dropdown-top-exit-to-transform: translateY(8px) scale(0.98);
         --select-dropdown-enter-from-opacity: 0;
         --select-dropdown-enter-from-transform: translateY(-8px) scale(0.98);
         --select-dropdown-enter-to-opacity: 1;
@@ -2771,8 +2795,26 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
       .select-dropdown[data-placement="top"] {
         --select-dropdown-enter-from-transform: var(--select-dropdown-top-enter-from-transform, translateY(8px) scale(0.98));
+        --select-dropdown-exit-to-transform: var(--select-dropdown-top-exit-to-transform, translateY(8px) scale(0.98));
       }
-      
+
+      /* A closed popup stays visually mounted for exit, but cannot be interacted with. */
+      .select-dropdown[data-motion="closing"] {
+        animation: var(--select-dropdown-exit-animation);
+        pointer-events: none;
+      }
+
+      @keyframes dropdownExit {
+        from {
+          opacity: var(--select-dropdown-exit-from-opacity);
+          transform: var(--select-dropdown-exit-from-transform);
+        }
+        to {
+          opacity: var(--select-dropdown-exit-to-opacity);
+          transform: var(--select-dropdown-exit-to-transform);
+        }
+      }
+
       @keyframes dropdownEnter {
         0% {
           opacity: var(--select-dropdown-enter-from-opacity);
@@ -3833,6 +3875,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (!effects.some((effect) => effect.type === 'POPUP_OPENED')) return;
     this._runEngineEffects(effects);
 
+    // Reopening during exit cancels the old finish callback and restores interactivity.
+    this._cancelDropdownExit();
+    this._dropdown.removeAttribute('inert');
+    this._dropdown.removeAttribute('aria-hidden');
     this._markOpenStart();
     this.setAttribute('data-open', 'true');
     this._liftStackingAncestors();
@@ -3872,14 +3918,77 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
     this.removeAttribute('data-open');
     this._restoreLiftedAncestors();
-    this._dropdown.style.display = 'none';
     this._dropdown.setAttribute('data-placement', this._resolvedDropdownPlacement);
     this._updateArrowRotation();
+    // Engine + ARIA close immediately. Only the visual panel waits for exit.
     this._runEngineEffects(effects);
-    
+    this._beginDropdownExit(reason === 'disconnect' || !this.isConnected);
+
     this._emit('close', {});
     this._config.callbacks.onClose?.();
     this._announce('Options collapsed');
+  }
+
+  /** Stop an outstanding exit before reopening, disconnecting or starting another one. */
+  private _cancelDropdownExit(): void {
+    if (this._dropdownExitTimer !== null) {
+      window.clearTimeout(this._dropdownExitTimer);
+      this._dropdownExitTimer = null;
+    }
+    this._dropdown.removeEventListener('animationend', this._onDropdownExitAnimationEnd);
+    this._dropdown.removeAttribute('data-motion');
+  }
+
+  private _finishDropdownExit(): void {
+    if (this._state.isOpen || this._dropdown.getAttribute('data-motion') !== 'closing') return;
+    this._cancelDropdownExit();
+    this._dropdown.style.display = 'none';
+  }
+
+  private _beginDropdownExit(immediate: boolean): void {
+    this._cancelDropdownExit();
+    // Inert + aria-hidden apply at logical close, not at animation completion.
+    this._dropdown.setAttribute('inert', '');
+    this._dropdown.setAttribute('aria-hidden', 'true');
+    if (immediate || this._dropdown.style.display === 'none') {
+      this._dropdown.style.display = 'none';
+      return;
+    }
+    this._dropdown.setAttribute('data-motion', 'closing');
+    const duration = this._getDropdownExitDurationMs();
+    if (duration <= 0) {
+      this._finishDropdownExit();
+      return;
+    }
+    // animationend optimizes normal completion; timeout handles missing/cancelled events.
+    this._dropdown.addEventListener('animationend', this._onDropdownExitAnimationEnd);
+    this._dropdownExitTimer = window.setTimeout(() => this._finishDropdownExit(), duration + 34);
+  }
+
+  /** CSS animations may be disabled or customized by consumers; never wait forever. */
+  private _getDropdownExitDurationMs(): number {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 0;
+    const style = getComputedStyle(this._dropdown);
+    const names = style.animationName.split(',').map((value) => value.trim());
+    if (!names.length || names.every((name) => !name || name === 'none')) return 0;
+    const toMs = (value: string): number => {
+      const trimmed = value.trim();
+      const parsed = Number.parseFloat(trimmed);
+      if (!Number.isFinite(parsed)) return 0;
+      return trimmed.endsWith('ms') ? parsed : trimmed.endsWith('s') ? parsed * 1000 : 0;
+    };
+    const durations = style.animationDuration.split(',');
+    const delays = style.animationDelay.split(',');
+    const counts = style.animationIterationCount.split(',');
+    const maximum = names.reduce((max, name, index) => {
+      if (!name || name === 'none') return max;
+      const duration = toMs(durations[index % durations.length] ?? '0s');
+      const delay = toMs(delays[index % delays.length] ?? '0s');
+      const count = Number.parseFloat(counts[index % counts.length] ?? '1');
+      const iterations = Number.isFinite(count) ? Math.max(0, count) : 1;
+      return Math.max(max, Math.max(0, duration * iterations + delay));
+    }, 0);
+    return Math.min(maximum, 10_000);
   }
 
   private _updateDropdownVisibility(): void {

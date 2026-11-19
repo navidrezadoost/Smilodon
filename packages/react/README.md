@@ -1753,6 +1753,32 @@ interface SelectHandle {
 }
 ```
 
+## Dropdown animation controls (development branch)
+
+React consumers can customize entry and exit animations through inherited Core CSS variables, without a new React prop:
+
+```tsx
+<Select items={items} className="animated-select" />
+```
+
+```css
+enhanced-select.animated-select {
+  --select-dropdown-animation: dropdownEnter 250ms ease-out forwards;
+  --select-dropdown-exit-animation: dropdownExit 180ms ease-in forwards;
+  --select-dropdown-exit-to-opacity: 0;
+  --select-dropdown-exit-to-transform: translateY(-8px) scale(0.98);
+  --select-dropdown-top-exit-to-transform: translateY(8px) scale(0.98);
+}
+```
+
+Set either animation to `none` to disable it. The close event and ARIA close immediately, while the visual dropdown becomes inert and exits. Reopening cancels an unfinished exit; reduced-motion preferences are respected. **This behavior is pending Core release.** See [engineering notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+
+### Acknowledged pagination on React rerenders — Issue #85 (unreleased)
+
+The reported local fix for [Issue #85](https://github.com/navidrezadoost/Smilodon/issues/85) is qualified **but not yet pushed, merged, or published**. In acknowledged loading, React's `items` prop can supply the initial page while Core accepts cumulative pages using `completeDataRequest()`. Equivalent or newly allocated `config`, `multiSelectDisplay`, and `disabledOptionBehavior` objects must not force Core to revert its accepted cumulative snapshot to the initial `items`.
+
+The pending fix moves `items`/`groupedItems` synchronization into one identity-guarded effect, independent of presentation configuration, and applies uncontrolled `defaultValue` after item registration. New `items` or `groupedItems` identities still represent deliberate updates; `setItems()` alone is not an acknowledged coordinator reset. Keep input references stable where the input is unchanged, complete requests with their exact request IDs and generations, and consult the final release notes before expecting this fix in published packages.
+
 ## Styling
 
 The component uses Shadow DOM for style encapsulation. You can customize it using CSS custom properties:
