@@ -326,6 +326,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _onDropdownExitAnimationEnd = (event: AnimationEvent): void => {
     if (event.target !== this._dropdown || this._state.isOpen) return;
     if (this._dropdown.getAttribute('data-motion') !== 'closing') return;
+    // A composite consumer animation must finish all timelines, not just the first.
+    const names = getComputedStyle(this._dropdown).animationName
+      .split(',').map((name) => name.trim()).filter((name) => name && name !== 'none');
+    if (names.length > 1) return; // bounded timeout waits for the longest timeline
+    if (event.animationName && names[0] && event.animationName !== names[0]) return;
     this._finishDropdownExit();
   };
   private _multiScrollDrag = {
