@@ -1753,7 +1753,7 @@ interface SelectHandle {
 }
 ```
 
-## Dropdown animation controls (development branch)
+## Dropdown animation controls (Core 1.12.0 release candidate)
 
 React consumers can customize entry and exit animations through inherited Core CSS variables, without a new React prop:
 
@@ -1771,7 +1771,21 @@ enhanced-select.animated-select {
 }
 ```
 
-Set either animation to `none` to disable it. The close event and ARIA close immediately, while the visual dropdown becomes inert and exits. Reopening cancels an unfinished exit; reduced-motion preferences are respected. **This behavior is pending Core release.** See [engineering notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+Set either animation to `none` to disable it. The close event and ARIA close immediately, while the visual dropdown becomes inert and exits. Reopening cancels an unfinished exit; reduced-motion preferences are respected. **Core `1.12.0` is prepared but not yet published.** React `1.11.0` declares `@smilodon/core: ^1.11.0`, allowing Core `1.12.0` once available. See [engineering notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+
+### Custom active classes — Issue #82 (Core)
+
+When rendering custom option content, set `classMap.active` to the class names used by your application's active-state styles. Core now removes both legacy `active`/`sm-active` aliases and previously configured active classes as focus moves; an inactive option no longer matches `.option.active` accidentally.
+
+```tsx
+<Select
+  items={items}
+  customRenderer={(item) => <span>{item.label}</span>}
+  classMap={{ active: "my-option-active", selected: "my-option-selected" }}
+/>
+```
+
+The option's `data-sm-state`, `aria-selected`, and classes reflect independent active/selected semantics. The fix is in Core, not in React's renderer. See [Issue #82](https://github.com/navidrezadoost/Smilodon/issues/82) and the [Core rendering guide](../core/README.md#active-state-on-custom-option-roots).
 
 ### Acknowledged pagination on React rerenders — Issue #85 (unreleased)
 

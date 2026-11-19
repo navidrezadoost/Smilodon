@@ -679,6 +679,41 @@ function EventHandling() {
 
 ## Styling & Theming
 
+### Active class mapping for custom-rendered options (Core #82)
+
+Use `classMap.active` to supply application-specific active styles when using `customRenderer`. Core removes stale built-in aliases and old mapped classes when active focus changes:
+
+```tsx
+<Select
+  items={items}
+  customRenderer={(item) => <span>{item.label}</span>}
+  classMap={{ active: "my-active-option", selected: "my-selected-option" }}
+/>
+```
+
+Active and selected are distinct states; use `data-sm-state` or the mapped classes when styling. The correction is in Core. See the [Core rendering contract](../core/README.md#active-state-on-custom-option-roots).
+
+### Dropdown enter and exit animations (Core 1.12.0 release candidate)
+
+The shared Core supports independent animations controlled through inherited CSS variables:
+
+```css
+enhanced-select {
+  --select-dropdown-animation: dropdownEnter 220ms ease-out forwards;
+  --select-dropdown-exit-animation: dropdownExit 160ms ease-in forwards;
+  --select-dropdown-exit-to-transform: translateY(-8px) scale(0.98);
+  --select-dropdown-top-exit-to-transform: translateY(8px) scale(0.98);
+}
+```
+
+Exit updates `aria-expanded` and `close` synchronously while an inert visual panel finishes animating. Set `--select-dropdown-exit-animation: none` to disable exit. Reduced-motion preferences are honored. **Core 1.12.0 is not yet confirmed as published.**
+
+### Acknowledged pagination and rerender ownership (#85 — pending React release)
+
+The locally prepared React fix synchronizes `items`/`groupedItems` only for actual input identity changes; presentation config changes must not overwrite accepted cumulative pages. Keep initial item references stable and use `completeDataRequest()` for acknowledged page results with the request ID and query generation. That fix is **not merged or released**; the public React 1.11.0 package cannot be assumed to contain it.
+
+
+
 ### Inline Styles with CSS Variables
 
 ```tsx

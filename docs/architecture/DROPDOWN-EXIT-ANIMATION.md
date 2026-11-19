@@ -1,6 +1,6 @@
 # Dropdown enter/exit animation — implementation and usage
 
-**Status:** implemented on the `feat/select-dropdown-exit-animation` development branch; local browser and repository-wide qualification pending. Not yet a published API guarantee.
+**Status:** merged into `main` by [PR #86](https://github.com/navidrezadoost/Smilodon/pull/86), merge commit `8dd48b2997016e3cb6258795d793a0f983cba0f9`, and locally qualified. Prepared for Core `1.12.0`; **npm publication remains pending**. Browser behavior was verified with Chrome 156; the pinned Playwright Chromium 147 binary was unavailable.
 
 ## Problem and contract
 
@@ -50,7 +50,7 @@ React consumers can attach a class or custom properties to the `<Select>` host; 
 
 The existing `prefers-reduced-motion: reduce` rule shortens animations. Core also skips waiting for exit when reduced motion is requested. The exit duration is determined from computed CSS, and a bounded timer provides a completion fallback when `animationend` is not delivered.
 
-## Development and review steps
+## Implementation and review record
 
 1. **Core styles:** define `dropdownExit`, state selector `[data-motion="closing"]`, placement-aware transforms, and tunable CSS variables without changing existing entry keyframes.
 2. **Core lifecycle:** upon close, commit the engine state, ARIA, callbacks and arrow state immediately; keep the visual panel mounted, inert and aria-hidden until the exit finishes. Preserve all legacy close reasons.
@@ -60,17 +60,30 @@ The existing `prefers-reduced-motion: reduce` rule shortens animations. Core als
 6. **Qualification:** `npm ci`, `npm run build`, `npm run lint`, `npx vitest run packages/core/tests/dropdown-exit-animation.spec.ts --config packages/core/vitest.config.ts`, existing active/ARIA suites, `npm test`, adapter contracts, and locally available Chrome browser scenarios. Do not invoke hosted CI.
 7. **Integration and release:** review Core and adapter behavior in a draft PR; merge normally after local results; publish separately only after package compatibility checks. Update release notes with the package version actually shipped.
 
-### Acceptance checklist
+### Qualification evidence (reported for PR #86)
 
-- [ ] Existing entry behavior and CSS controls unchanged
-- [ ] Exit lasts for configured duration (or ends immediately for `none` or reduced motion)
-- [ ] `close` callback fired once, ARIA closed before exit completes
-- [ ] Closing panel inaccessible via pointer, focus and assistive technology
-- [ ] Escape, outside click, selection, and programmatic close behave consistently
-- [ ] Rapid close→open never hides the newly opened dropdown
-- [ ] Disconnect removes all pending exit work
-- [ ] Bottom and top placement transforms work
-- [ ] Local unit, adapter contracts, full suite, and browser qualification recorded
+- `npm ci`, full build, lint (zero errors and six pre-existing warnings), and `git diff --check`: passed.
+- Core exit-animation tests: **8/8** passed.
+- React contracts: **41 passed, 6 skipped**.
+- Full `npm test`: **723 passed, 7 skipped**.
+- Chrome 156 exit-animation browser scenarios: **4/4** passed.
+- Supplemental browser checks: Escape, outside-pointer close, option selection, inert exit, disabled animation, disconnect cleanup.
+- Pinned Chromium 147: **not tested** because the required binary was unavailable locally.
+- Clean post-merge worktree; packed Core tarball tested separately for imports, CSS exit tokens, immediate ARIA close, and inert exit.
+- Remaining release step: verify the 1.12.0 tarball and publish it under a unique version; never reuse the already occupied Core 1.11.1 version.
+
+### Release acceptance
+
+- [x] Existing entry behavior preserved in the qualified scenarios
+- [x] Exit honors configured duration and is disabled for `none` / reduced motion
+- [x] `close` and ARIA update before exit finishes
+- [x] Exiting panel is noninteractive and hidden from assistive technology
+- [x] Keyboard, outside pointer, selection, programmatic close, reconnect and disconnect paths qualified locally
+- [x] Rapid close/reopen cancels the old visual exit
+- [x] Top and bottom placement checked in the PR browser scenarios
+- [x] Local tests and Chrome 156 qualification recorded
+- [ ] Pinned Chromium 147 qualification (optional release exception to document)
+- [ ] Core 1.12.0 npm publication and registry artifact verification
 
 ## Related: React acknowledged items regression (#85)
 
