@@ -5,6 +5,7 @@
 ## Package scope and history
 
 - **Core `1.12.0`**: includes the merged custom active-class fix (#82) and configurable dropdown exit animations (PR #86). This is a minor release because it adds a new configurable feature.
+- The private monorepo root `package.json` and root lockfile metadata are aligned to `1.12.0` for repository consistency. **Adapter packages keep independent versions** (`@smilodon/react@1.11.0` until #85 is merged; other adapter versions unchanged). A private root version is not an npm publication.
 - **Core `1.11.1` is occupied on npm** with a different artifact integrity. Never publish a different tarball under the same version; npm does not allow overwriting published versions.
 - The existing published `@smilodon/react@1.11.0` has peer dependency `@smilodon/core: ^1.11.0`, compatible with Core `1.12.0`.
 - **React #85 is excluded**: its tested source is on an unpushed local branch `fix/85-react-acknowledged-items` at `29c67067b3bf345347f74e2dc074095dc9eb2ab9`. It must first be pushed and merged independently, then released under a fresh React version (potentially `1.11.1` if npm confirms it is vacant). Do not publish an unchanged React package as if it contained #85.
@@ -43,6 +44,7 @@ npm test
 npm run test:contracts:react
 
 # Verify exact manifest and lockfile versions.
+node -p "require('./package.json').version"
 node -p "require('./packages/core/package.json').version"
 node -p "require('./package-lock.json').packages['packages/core'].version"
 
