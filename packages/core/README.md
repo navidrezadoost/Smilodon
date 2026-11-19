@@ -336,7 +336,7 @@ select.optionRenderer = (item, index) => {
 
 ### Active state on custom option roots
 
-For custom-rendered options, `classMap.active` names the class or classes applied to the active option root. Core removes its built-in active aliases and previously configured active classes when another option becomes active, when the option is rendered again, or when `classMap` changes. The active `data-sm-state` token is reconciled with those classes, so an inactive option does not retain stale active styling.
+For custom-rendered options, `classMap.active` names the class or classes applied to the active option root. This fixes [Issue #82](https://github.com/navidrezadoost/Smilodon/issues/82) in the Core source (merged prior to this release). Core removes its built-in active aliases and previously configured active classes when another option becomes active, when the option is rendered again, or when `classMap` changes. The active `data-sm-state` token is reconciled with those classes, so an inactive option does not retain stale active styling.
 
 ```typescript
 select.classMap = { active: 'is-active keyboard-focus' };
@@ -389,7 +389,7 @@ const selectedItems = select.getSelectedItems();
 
 ## Advanced Usage
 
-### Dropdown exit animation (development branch)
+### Dropdown enter and exit animations (Core 1.12.0 release candidate)
 
 The default entry animation uses `--select-dropdown-animation`. The new exit animation mirrors that control through `--select-dropdown-exit-animation`, defaulting to `dropdownExit 160ms cubic-bezier(0.4, 0, 1, 1) forwards`.
 
@@ -408,7 +408,7 @@ enhanced-select.instant {
 
 Opacity and starting transform can be adjusted using `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, and `--select-dropdown-exit-from-transform`. Closing updates engine and ARIA immediately; the panel is inert and hidden from assistive technology while exiting. Reopening cancels the exit. Reduced-motion preferences are respected.
 
-**Unreleased:** the feature has not yet completed local qualification or publication. See [implementation and development checklist](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+**Release status:** merged and locally qualified on Chrome 156 (8/8 focused Core tests, 4/4 browser scenarios, 723 passed/7 skipped in the full suite, as reported for PR #86). Prepared for `@smilodon/core@1.12.0`; **npm publication is not yet confirmed**. The repository's pinned Playwright Chromium 147 run remains unverified. See [implementation and qualification notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
 
 ### Custom Styling
 
