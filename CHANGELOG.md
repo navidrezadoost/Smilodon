@@ -20,12 +20,11 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Added
 
 - **Development branch:** configurable dropdown exit animation using CSS variables matching the existing entry animation. Close/ARIA remain immediate, the exiting panel is inert, and reopen/disconnect cancel pending exit work. **Pending qualification and publication.** See `docs/architecture/DROPDOWN-EXIT-ANIMATION.md`.
+- Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
 
 ### Pending integration
 
 - **React acknowledged loading (#85):** a locally qualified but unpushed fix separates data-input effects from configuration updates so unrelated rerenders cannot revert accepted cumulative pages. The fix is **not yet merged or released**; see the React README for intended usage.
-
-- Future development: the acknowledged data-loading API and its examples remain outside the released packages and have not completed the full adapter and certification matrix.
 
 ## [1.11.1] - 2026-11-18
 
