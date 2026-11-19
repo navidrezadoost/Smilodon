@@ -5,6 +5,7 @@
 ## Package scope and history
 
 - **Core `1.12.0`**: includes the merged custom active-class fix (#82) and configurable dropdown exit animations (PR #86). This is a minor release because it adds a new configurable feature.
+- **Related hover fix (#77)**: stable option-hover geometry was already included in the published Core `1.11.0` release. The three fixes are therefore documented across versions `1.11.0` and `1.12.0`; `1.12.0` does not change or replace the published `1.11.0` artifact.
 - The private monorepo root `package.json` and root lockfile metadata are aligned to `1.12.0` for repository consistency. **Adapter packages keep independent versions** (`@smilodon/react@1.11.0` until #85 is merged; other adapter versions unchanged). A private root version is not an npm publication.
 - **Core `1.11.1` is occupied on npm** with a different artifact integrity. Never publish a different tarball under the same version; npm does not allow overwriting published versions.
 - The existing published `@smilodon/react@1.11.0` has peer dependency `@smilodon/core: ^1.11.0`, compatible with Core `1.12.0`.

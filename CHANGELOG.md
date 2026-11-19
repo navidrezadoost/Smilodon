@@ -27,6 +27,8 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 **Core-only minor release prepared from merged PR #86.** The manifest and lockfile are updated to `@smilodon/core@1.12.0`; publication and registry integrity verification are still required. Do not reuse the existing npm `@smilodon/core@1.11.1` artifact for different content.
 
+The three recent Core fixes are available across two release versions: the stable option-hover geometry correction (#77) was already published in Core `1.11.0`; this `1.12.0` candidate adds the custom active-class correction (#82) and configurable dropdown exit animation (#86). This release does not re-release or change the already-published `1.11.0` artifact.
+
 ### Added
 
 - **Configurable dropdown exit animation:** Added `dropdownExit` alongside the existing `dropdownEnter` animation and public CSS variables `--select-dropdown-exit-animation`, `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, `--select-dropdown-exit-from-transform`, `--select-dropdown-exit-to-transform`, and `--select-dropdown-top-exit-to-transform`. Entry remains configurable through `--select-dropdown-animation`.
