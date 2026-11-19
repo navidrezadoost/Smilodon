@@ -408,7 +408,7 @@ enhanced-select.instant {
 
 Opacity and starting transform can be adjusted using `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, and `--select-dropdown-exit-from-transform`. Closing updates engine and ARIA immediately; the panel is inert and hidden from assistive technology while exiting. Reopening cancels the exit. Reduced-motion preferences are respected.
 
-**Release status:** merged and locally qualified on Chrome 156 (8/8 focused Core tests, 4/4 browser scenarios, 723 passed/7 skipped in the full suite, as reported for PR #86). Prepared for `@smilodon/core@1.12.0`; **npm publication is not yet confirmed**. The repository's pinned Playwright Chromium 147 run remains unverified. See [implementation and qualification notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+**Qualification:** merged and locally qualified on Chrome 156 (8/8 focused Core tests, 4/4 browser scenarios, 723 passed/7 skipped in the full suite, as reported for PR #86). The repository's pinned Playwright Chromium 147 run remains unverified. This README is packaged with Core; check the npm registry for the availability of the version you intend to install. See [implementation and qualification notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
 
 For the related fixes, stable option-hover geometry shipped earlier in Core `1.11.0` ([Issue #77](https://github.com/navidrezadoost/Smilodon/issues/77)); custom active-class reconciliation is documented [above](#active-state-on-custom-option-roots) and is included in the `1.12.0` candidate. See the [release checklist](../../docs/releases/CORE-1.12.0-RELEASE.md) for exact package scope and publication status.
 
