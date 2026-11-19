@@ -389,6 +389,27 @@ const selectedItems = select.getSelectedItems();
 
 ## Advanced Usage
 
+### Dropdown exit animation (development branch)
+
+The default entry animation uses `--select-dropdown-animation`. The new exit animation mirrors that control through `--select-dropdown-exit-animation`, defaulting to `dropdownExit 160ms cubic-bezier(0.4, 0, 1, 1) forwards`.
+
+```css
+enhanced-select {
+  --select-dropdown-animation: dropdownEnter 250ms ease-out forwards;
+  --select-dropdown-exit-animation: dropdownExit 180ms ease-in forwards;
+  --select-dropdown-exit-to-transform: translateY(-10px) scale(0.98);
+  --select-dropdown-top-exit-to-transform: translateY(10px) scale(0.98);
+}
+enhanced-select.instant {
+  --select-dropdown-animation: none;
+  --select-dropdown-exit-animation: none;
+}
+```
+
+Opacity and starting transform can be adjusted using `--select-dropdown-exit-from-opacity`, `--select-dropdown-exit-to-opacity`, and `--select-dropdown-exit-from-transform`. Closing updates engine and ARIA immediately; the panel is inert and hidden from assistive technology while exiting. Reopening cancels the exit. Reduced-motion preferences are respected.
+
+**Unreleased:** the feature has not yet completed local qualification or publication. See [implementation and development checklist](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+
 ### Custom Styling
 
 Smilodon uses CSS custom properties (CSS variables) for easy theming and customization. The default theme is **light mode** with a clean white background.
