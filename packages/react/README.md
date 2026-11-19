@@ -1753,7 +1753,7 @@ interface SelectHandle {
 }
 ```
 
-## Dropdown animation controls (Core 1.12.0 release candidate)
+## Dropdown animation controls (Core 1.12.0)
 
 React consumers can customize entry and exit animations through inherited Core CSS variables, without a new React prop:
 
@@ -1771,7 +1771,7 @@ enhanced-select.animated-select {
 }
 ```
 
-Set either animation to `none` to disable it. The close event and ARIA close immediately, while the visual dropdown becomes inert and exits. Reopening cancels an unfinished exit; reduced-motion preferences are respected. **Core `1.12.0` is prepared but not yet published.** React `1.11.0` declares `@smilodon/core: ^1.11.0`, allowing Core `1.12.0` once available. See [engineering notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
+Set either animation to `none` to disable it. The close event and ARIA close immediately, while the visual dropdown becomes inert and exits. Reopening cancels an unfinished exit; reduced-motion preferences are respected. Core `1.12.0` is available on npm, and React `1.11.0` declares `@smilodon/core: ^1.11.0`, which accepts it. See [engineering notes](../../docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
 
 ### Custom active classes — Issue #82 (Core)
 

@@ -693,7 +693,7 @@ Use `classMap.active` to supply application-specific active styles when using `c
 
 Active and selected are distinct states; use `data-sm-state` or the mapped classes when styling. The correction is in Core. See the [Core rendering contract](../core/README.md#active-state-on-custom-option-roots).
 
-### Dropdown enter and exit animations (Core 1.12.0 release candidate)
+### Dropdown enter and exit animations (Core 1.12.0)
 
 The shared Core supports independent animations controlled through inherited CSS variables:
 
@@ -706,7 +706,7 @@ enhanced-select {
 }
 ```
 
-Exit updates `aria-expanded` and `close` synchronously while an inert visual panel finishes animating. Set `--select-dropdown-exit-animation: none` to disable exit. Reduced-motion preferences are honored. **Core 1.12.0 is not yet confirmed as published.**
+Exit updates `aria-expanded` and `close` synchronously while an inert visual panel finishes animating. Set `--select-dropdown-exit-animation: none` to disable exit. Reduced-motion preferences are honored. Core `1.12.0` is available from npm.
 
 ### Acknowledged pagination and rerender ownership (#85 — pending React release)
 

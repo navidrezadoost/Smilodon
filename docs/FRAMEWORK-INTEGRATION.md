@@ -147,7 +147,7 @@ app.mount('#app')
 
 ### Core exit animation and React acknowledged-loading status
 
-Core `1.12.0` is being prepared with a configurable exit animation. Apply `--select-dropdown-exit-animation` to the `enhanced-select` host; no React-only animation prop is required. Exit becomes inert immediately while visual motion completes. See the [Core guide](../packages/core/README.md#dropdown-enter-and-exit-animations-core-1120-release-candidate).
+Core `1.12.0` is available from npm with a configurable exit animation. Apply `--select-dropdown-exit-animation` to the `enhanced-select` host; no React-only animation prop is required. Exit becomes inert immediately while visual motion completes. See the [Core guide](../packages/core/README.md#dropdown-enter-and-exit-animations-core-1120).
 
 For acknowledged loading, React's `items` prop can provide initial input and `completeDataRequest()` accepts subsequent cumulative pages. The Issue #85 adapter correction prevents unrelated config-object identities from replacing the cumulative snapshot, but its tested branch has **not yet been merged or published**. See [React issue guidance](../packages/react/README.md#acknowledged-pagination-on-react-rerenders--issue-85-unreleased).
 
