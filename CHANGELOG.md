@@ -21,9 +21,9 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 - React Issue #85 remains outside `main` and is not part of the release candidate.
 
-## [1.17.0] - Release candidate; npm publication pending
+## [1.17.0] - 2026-11-21
 
-Candidate package versions: Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0`. These artifacts are not available from npm until publication and registry verification are complete.
+Published web package versions: Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0`. Registry versions, integrity values, consumer checks, and scope are recorded in the [release verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
 ### Added
 
@@ -40,7 +40,7 @@ Candidate package versions: Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.
 ### Scope
 
 - Svelte `2.1.0` supports Svelte 5 only. React Native Android/iOS runtime qualification and the separate React #85 fix are excluded.
-- This entry is release-candidate documentation. Replace its status with the publication date, registry integrity values, and verified-consumer results only after those actions succeed.
+- React Native Android/iOS runtime qualification remains outstanding; this web release does not qualify native runtime behavior.
 
 ## [1.12.0] - 2026-11-19
 

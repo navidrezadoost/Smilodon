@@ -276,9 +276,9 @@ console.log(validate(select));
 </html>
 ```
 
-### Latest-chip auto-scroll (Vanilla 1.11.0 candidate; Issue #100)
+### Latest-chip auto-scroll (Vanilla 1.11.0; Issue #100)
 
-For horizontal multi-selects, enable `scrollToLatestChip` in `multiSelectDisplay`. The option is disabled by default and respects reduced-motion preferences. It requires Core `1.17.0`, which is not yet published; track its status in the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md).
+For horizontal multi-selects, enable `scrollToLatestChip` in `multiSelectDisplay`. The option is disabled by default and respects reduced-motion preferences. It is available with Core `1.17.0`; see the [web release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
 
 ```ts
 select.updateConfig({
@@ -291,7 +291,7 @@ select.updateConfig({
 });
 ```
 
-### Custom empty-state content (Vanilla 1.11.0 candidate; Issue #93)
+### Custom empty-state content (Vanilla 1.11.0; Issue #93)
 
 Append a child with `slot="empty-state"` to customize terminal empty presentation. Core retains its built-in fallback when the slot has no assigned content. Listen for `emptyStateChange` to receive `{ context: { query, reason } }` or `{ context: null }`, and call `getEmptyStateContext()` for a readonly snapshot.
 

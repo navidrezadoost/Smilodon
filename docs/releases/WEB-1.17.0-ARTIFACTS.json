@@ -64,6 +64,7 @@
       "integrity": "sha512-nJDA7TvlMBsgMWYu07YYAzI/H63z5/qP8kkGAiJwcNQQbgslu+/+81LbwgxlmizAtMCq6vjY6Z/5/SIoMYk3eQ=="
     }
   ],
-  "publication": "pending",
-  "registryInstallVerification": "pending"
+  "publication": "published on 2026-11-21; all six versions verified on the public registry",
+  "registryInstallVerification": "passed; see WEB-1.17.0-REGISTRY-VERIFICATION.json",
+  "sourceCommit": "6c2e0f17d9cc0139081f75495d7871ec045a0e6b"
 }

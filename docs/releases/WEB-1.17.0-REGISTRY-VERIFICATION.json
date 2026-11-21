@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-11-21",
+  "registry": "https://registry.npmjs.org/",
+  "sourceCommit": "6c2e0f17d9cc0139081f75495d7871ec045a0e6b",
+  "pullRequest": 103,
+  "publishedPackages": [
+    {"name":"@smilodon/core","version":"1.17.0","latest":"1.17.0","integrity":"sha512-K45/GHkKV0JS5ylTHQJ4v9buqkW2BN+e8J/HPA6fi6ZAecxVHPj5wyZgDQCLGMsKhf0BLslSihhtWqSM1Haa6A==","shasum":"3aaf1726218a5cb0c61a490e7eb358613e563b04","sha256":"d72b0ab0b37189bd1c1c967a84f6d11156946ca4271b39dd18c5a78bbbfa5b61","registryTarballMatchesLocal":true},
+    {"name":"@smilodon/react","version":"1.12.0","latest":"1.12.0","integrity":"sha512-z0Z1NdooGIWMf08/UkJu7kGhUREKdPhJkyu69RmPkHADggz5nTTgGmX5lDszk53o3cE+JdieR9WKBs9n2LBsxQ==","shasum":"4968de297c056ca88b3993709f0f87c6d4cbef95","sha256":"7419474590d49da05494d967428e437b8e23e3c5f4205887e66af7da0ad78c93","registryTarballMatchesLocal":true},
+    {"name":"@smilodon/vue","version":"1.11.0","latest":"1.11.0","integrity":"sha512-iTRVyxtmaFck0uca3wO74lR0+ASzJm1pw8F7BSPh4RU+i/GPjfp/i1IYUFY40+aMhCXb5XhXUMjjeTFeTnDnVg==","shasum":"9fdb1fd924a0747592e6e4c5140fff82ccc047ad","sha256":"dff07265e8a8a6b162427ff5d56a16f4baf6dabef89662fa337d216d23f183eb","registryTarballMatchesLocal":true},
+    {"name":"@smilodon/solid","version":"1.11.0","latest":"1.11.0","integrity":"sha512-aBwF3HrpS/uaXnolnPdXCn/AiZQyPRUI1idk7sKbhZ4HiEnCAYgtS96Z/TzIu7qvOBcx7VQ4CjvsQMfRMXciXA==","shasum":"cc823da349e8da1e9af34bda8eba15bf8ce455cd","sha256":"6361895abe9abb2c53f6d850a0cf77b90c051a3d2624573d04cdb2bfdcd498f5","registryTarballMatchesLocal":true},
+    {"name":"@smilodon/vanilla","version":"1.11.0","latest":"1.11.0","integrity":"sha512-wuGqjRYDSy8XD4B3UXlDa0KMWKCrlSNGgpyOfuRZOVMUAMIYZNmJ6T6bjuQofTZ72e9rRB6x8Aairmqj7788ng==","shasum":"d2b74c0383b901d34dde13968ea1dd217874c986","sha256":"3558fc9c661d5b355cbb4c4b9dd3422213a49ba8309193f2074d6f5330919efd","registryTarballMatchesLocal":true},
+    {"name":"@smilodon/svelte","version":"2.1.0","latest":"2.1.0","integrity":"sha512-nJDA7TvlMBsgMWYu07YYAzI/H63z5/qP8kkGAiJwcNQQbgslu+/+81LbwgxlmizAtMCq6vjY6Z/5/SIoMYk3eQ==","shasum":"49988a03f08fc75ab5306da2d8253e860e9b8abe","sha256":"454e06fff4f363b20a8045069cad3594302e94971091e7726bdc726630ab0d56","registryTarballMatchesLocal":true}
+  ],
+  "consumerChecks": {
+    "packageInstall": "passed using a clean consumer and npm offline cache populated from public registry requests; package-lock resolved each exact registry URL and integrity",
+    "onlineInstallAttempt": "did not complete; proxy/network stalled during dependency reification and was stopped",
+    "typescript": "NodeNext and Bundler passed with strict true and skipLibCheck false for Core, React, Vue, Solid, Vanilla; Svelte 5 type consumer passed against the exact archive",
+    "runtime": "Vite production build and Chrome 133 headless module-load smoke passed for all six packages; modules were imported, framework components were not mounted",
+    "archiveIdentity": "npm pack downloaded every published registry tarball; each was byte-identical to its pre-publication qualified archive"
+  },
+  "scope": {
+    "includedIssues": [90, 92, 93, 96, 97, 100],
+    "excluded": ["React Issue #85 (unmerged)", "React Native Android/iOS runtime qualification"],
+    "sveltePeer": "Svelte 5 only",
+    "manualAccessibility": "not certified",
+    "pinnedPlaywrightBrowsers": "Chromium 147, Firefox, and WebKit not verified; browser regression used Chrome 133"
+  },
+  "documentationNote": "The published npm tarballs contain README snapshots that label the release as a candidate. The repository documentation was corrected after publication; npm does not allow changing the README for an already-published version."
+}

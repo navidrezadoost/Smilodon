@@ -1270,9 +1270,9 @@ Introduced in `@smilodon/svelte@2.1.0` for Svelte 5, `loadingIcon` and `loadingC
 
 Core controls spinner/message visibility, append or replace mode, accessible fallback, and minimum visual duration. The host remains responsible for transport and item updates.
 
-## Latest-chip auto-scroll (Svelte 2.1.0 candidate; Issue #100)
+## Latest-chip auto-scroll (Svelte 2.1.0; Issue #100)
 
-Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips in horizontal multi-select mode. The option is disabled by default and respects reduced-motion preferences. Svelte `2.1.0` continues to support Svelte 5 only; this candidate and Core `1.17.0` are not published yet. See the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md).
+Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips in horizontal multi-select mode. The option is disabled by default and respects reduced-motion preferences. Svelte `2.1.0` supports Svelte 5 only and is available with Core `1.17.0`; see the [web release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
 
 ```svelte
 <Select
@@ -1287,7 +1287,7 @@ Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips 
 />
 ```
 
-## Custom empty-state snippet (Svelte 2.1.0 candidate; Issue #93)
+## Custom empty-state snippet (Svelte 2.1.0; Issue #93)
 
 For Svelte 5, pass an `emptyState` snippet. Core supplies its readonly `query` and `reason` context while terminally empty. The adapter dispatches `emptyStateChange` with that context, then `null` when the state clears, and exposes `getEmptyStateContext()` on the component instance. If no snippet is supplied, Core displays its default fallback.
 

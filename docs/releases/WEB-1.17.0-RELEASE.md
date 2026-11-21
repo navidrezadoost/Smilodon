@@ -1,23 +1,23 @@
-# Smilodon Web Release 1.17.0 — Candidate Checklist
+# Smilodon Web Release 1.17.0 — Release Record
 
-Status: **Release candidate prepared; local qualification and npm publication are pending.**
+Status: **Published to npm; registry tarball and consumer verification passed. GitHub Release creation remains pending.**
 
 Source baseline: `main` at `8daaf642d382c7bc8129d51ebd4a4d79c07951b8` (includes PR #102 / Issue #100).
 
-This is a cumulative web-package release. Do not treat candidate versions as available until npm publication and clean registry-consumer verification are recorded here.
+This is a cumulative web-package release. All six packages were published on 2026-11-21. Registry integrity and consumer results are recorded in [registry verification](./WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
-## Candidate package versions
+## Published package versions
 
-| Package | Candidate version | npm latest at preflight | Candidate version preflight |
+| Package | Published version | Previous npm latest | Current npm latest |
 | --- | --- | --- | --- |
-| `@smilodon/core` | `1.17.0` | `1.13.0` | Not present (2026-11-21) |
-| `@smilodon/react` | `1.12.0` | `1.11.0` | Not present (2026-11-21) |
-| `@smilodon/vue` | `1.11.0` | `1.10.1` | Not present (2026-11-21) |
-| `@smilodon/solid` | `1.11.0` | `1.10.1` | Not present (2026-11-21) |
-| `@smilodon/vanilla` | `1.11.0` | `1.10.1` | Not present (2026-11-21) |
-| `@smilodon/svelte` | `2.1.0` | `2.0.0` | Not present (2026-11-21) |
+| `@smilodon/core` | `1.17.0` | `1.13.0` | Published; `latest` is `1.17.0` |
+| `@smilodon/react` | `1.12.0` | `1.11.0` | Published; `latest` is `1.12.0` |
+| `@smilodon/vue` | `1.11.0` | `1.10.1` | Published; `latest` is `1.11.0` |
+| `@smilodon/solid` | `1.11.0` | `1.10.1` | Published; `latest` is `1.11.0` |
+| `@smilodon/vanilla` | `1.11.0` | `1.10.1` | Published; `latest` is `1.11.0` |
+| `@smilodon/svelte` | `2.1.0` | `2.0.0` | Published; `latest` is `2.1.0` |
 
-Core moves from the published `1.13.0` to `1.17.0` because this candidate contains the accumulated Core changes through Issue #100. React Native is excluded. Svelte `2.1.0` supports Svelte 5 only; this release does not restore Svelte 3 or 4 compatibility.
+Core moved from the published `1.13.0` to `1.17.0` because this release contains the accumulated Core changes through Issue #100. React Native is excluded. Svelte `2.1.0` supports Svelte 5 only; this release does not restore Svelte 3 or 4 compatibility.
 
 ## Included merged changes
 
@@ -32,7 +32,7 @@ Issue #85 is not merged into this baseline and is excluded. Android and iOS Reac
 
 ## Qualification record
 
-Qualification below is local evidence on the source candidate at `8daaf642d382c7bc8129d51ebd4a4d79c07951b8`, plus the exact release-version packages built from this release branch. The package version and README/changelog changes are the only source-tree changes beyond that baseline. npm publication and registry-installed smoke tests remain pending.
+Qualification below is local evidence on the source baseline at `8daaf642d382c7bc8129d51ebd4a4d79c07951b8` and release packages built from the exact merged tree at `6c2e0f17d9cc0139081f75495d7871ec045a0e6b`.
 
 | Gate | Result |
 | --- | --- |
@@ -45,22 +45,23 @@ Qualification below is local evidence on the source candidate at `8daaf642d382c7
 | Packed Vue/Vanilla consumer | Passed: Vue `3.5.45`, TypeScript `5.9.3`, strict NodeNext and Bundler. |
 | Packed Svelte consumer | Passed: Svelte `5.57.3`, strict declaration check and production Vite build. Declared Svelte peer range is `^5.0.0`. |
 | Issue #100 browser regression | Passed: all 6 scenarios in installed Google Chrome `133`; includes visibility after entrance animation, RTL, reduced motion, keyboard selection, and manual drag. Pinned Chromium 147, Firefox, and WebKit were unavailable and are not certified. |
-| Tarball contents and integrity | Packed all six candidate versions; SHA-256 values are in [`WEB-1.17.0-SHA256SUMS.txt`](./WEB-1.17.0-SHA256SUMS.txt), with SHA-1 shasum, size, and SRI in [`WEB-1.17.0-ARTIFACTS.json`](./WEB-1.17.0-ARTIFACTS.json). Core: 52 files; React: 11; Vue: 11; Solid: 11; Vanilla: 8; Svelte: 10. |
-| Clean install from npm after publication | Pending publication. |
-| Registry-installed import, TypeScript, and runtime smoke tests | Pending publication. |
+| Tarball contents and integrity | Packed all six released versions; SHA-256 values are in [`WEB-1.17.0-SHA256SUMS.txt`](./WEB-1.17.0-SHA256SUMS.txt), with SHA-1 shasum, size, and SRI in [`WEB-1.17.0-ARTIFACTS.json`](./WEB-1.17.0-ARTIFACTS.json). Core: 52 files; React: 11; Vue: 11; Solid: 11; Vanilla: 8; Svelte: 10. |
+| Registry package installation | Passed in a clean consumer using npm’s cached registry metadata and tarballs fetched from npm; the lock resolves the six exact registry URLs and SRI values. A separate online install attempt stalled behind the environment proxy and was stopped. |
+| Registry consumer type checks | Passed NodeNext and Bundler with `strict: true` and `skipLibCheck: false` for Core/React/Vue/Solid/Vanilla; Svelte 5 consumer check also passed against the exact archive, which matched the registry tarball byte-for-byte. |
+| Registry browser runtime smoke | Passed Vite production build and Chrome 133 module-load smoke for all six published packages; this imported entry points but did not mount every framework component. |
 | GitHub release and attached provenance | Pending |
 
-For Issue #100 specifically, the local isolated-worktree qualification on commit `91bf39280b15e8a82d26a4d09ac6ab8d8075a497` passed the Core build, full `npm test`, strict packed React/Solid NodeNext and Bundler checks, lint, and six system-Chrome 133 browser scenarios. Pinned Playwright Chromium 147, Firefox, and WebKit were not available. The release-branch suite must be rerun after the version and documentation changes; this earlier result is scoped evidence, not a pass for the complete candidate.
+For Issue #100 specifically, all six browser regression scenarios passed on the release package source in installed Chrome 133, covering post-animation visibility, unchanged geometry when disabled, RTL, reduced motion, keyboard selection, and drag scrolling. Pinned Playwright Chromium 147, Firefox, and WebKit were unavailable and remain unverified.
 
-## Publication sequence
+## Post-publication verification
 
-1. Merge the release-preparation change through the repository's normal protected-branch process. Do not publish from a branch that is not integrated into `main`.
-2. On the exact merged commit, run the gates above and build/package the six versions from the workspace lockfile.
-3. Before each `npm publish`, confirm that the exact target version remains unoccupied. Publish Core first, then React, Vue, Solid, Vanilla, and Svelte.
-4. Record each published package's `dist.integrity`, `dist.shasum`, and downloaded tarball SHA-256. Compare these with the locally qualified archives.
-5. In a clean consumer project, install the actual registry versions and run package import, strict TypeScript (`skipLibCheck: false`), and runtime smoke checks. Keep Svelte 5 and all other peer versions explicit.
-6. Create the GitHub Release only after all six registry-installed consumer checks pass. Attach the checksums and qualification evidence; state that React Native is excluded and that pinned browser gaps remain.
+1. PR #103 merged into `main` at `6c2e0f17d9cc0139081f75495d7871ec045a0e6b`; its tree matches the qualified release tree.
+2. Published Core first, then React, Vue, Solid, Vanilla, and Svelte from the exact checksum-verified archives. All six npm `latest` tags point to the intended versions.
+3. Downloaded each package with `npm pack` from the public registry and compared the archive byte-for-byte with the pre-publication archive. Registry `dist.integrity` and `dist.shasum` also match.
+4. Installed all six exact versions in a clean consumer using npm's cache after fetching the registry metadata and tarballs. The lockfile records the public registry URLs and matching integrity values. A separate online install attempt stalled behind the environment proxy and did not complete.
+5. Strict NodeNext and Bundler consumer checks passed with `strict: true` and `skipLibCheck: false` for Core, React, Vue, Solid, and Vanilla. The Svelte 5 consumer type/build check passed against the exact Svelte archive. Vite production bundling and a Chrome 133 headless import smoke passed for all six packages; this smoke imports entry points but does not mount every adapter component.
+6. GitHub Release creation and attaching the provenance files remain pending; no GitHub Release was created as part of npm publication.
 
 The first Svelte fixture install stalled when the environment's npm proxy connections closed without completing the install. Rerunning the same fixture in npm offline mode using the populated local cache passed typecheck and production build. This is recorded as a transient registry-path issue; the package check itself passed.
 
-Publication status: **not performed by this candidate preparation.** npm authentication is available to the local maintainer account, but packages must not be published until this release commit is integrated into `main`. No credentials or registry tokens are recorded in this document.
+Publication status: **all six packages were published on 2026-11-21** after PR #103 merged. npm reports each target version as the `latest` dist-tag; all registry tarballs match the locally qualified archives by SHA-256, shasum, and SRI. The published package README snapshots retain the candidate-status wording that was present when those archives were built; repository documentation has been corrected after publication. npm does not allow changing README content for an existing version. No credentials or registry tokens are recorded here.
