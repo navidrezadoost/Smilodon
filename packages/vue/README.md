@@ -1697,3 +1697,20 @@ Introduced in `@smilodon/vue@1.11.0`, the Vue adapter forwards named slots into 
 ```
 
 Use `contentMode: 'replace'` when accessible custom content should replace the built-in message and icon. Core retains its “Loading…” fallback when replacement content is hidden or lacks an accessible name. Core controls spinner/message visibility and minimum visual duration; the host owns request transport and item updates.
+
+## Custom empty-state slot (unreleased)
+
+Use the `emptyState` slot to customize terminal no-options/no-results presentation. Its slot props are Core's readonly `query` and `reason` context. `emptyStateChange` emits the current context and then `null` when the terminal state clears; the component's exposed `getEmptyStateContext()` method reads the current snapshot.
+
+```vue
+<Select :items="items" searchable @empty-state-change="context => console.log(context)">
+  <template #emptyState="{ query, reason }">
+    <div role="status">
+      <EmptyResultsIcon aria-hidden="true" />
+      <span>{{ reason === 'no-options' ? 'No options yet' : `No results for “${query}”` }}</span>
+    </div>
+  </template>
+</Select>
+```
+
+Without this slot, Core's built-in fallback message remains. This API customizes presentation only.

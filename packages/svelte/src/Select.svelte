@@ -43,6 +43,8 @@
     GroupedItem,
     ClassMap,
     DiagnosticEventDetail,
+    EmptyStateContext,
+    EmptyStateChangeDetail,
     LimitationPolicyMap,
     GlobalSelectConfig,
     SelectionConfig,
@@ -98,6 +100,8 @@
   export let loadingIcon: Snippet | undefined = undefined;
   /** Svelte 5 snippet rendered in Core's loading-content slot. */
   export let loadingContent: Snippet | undefined = undefined;
+  /** Render the terminal empty state; receives the current query and stable reason. */
+  export let emptyState: Snippet<[EmptyStateContext]> | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
     change: { value: string | number | (string | number)[]; selectedItems: SelectItem[] };
@@ -109,11 +113,13 @@
     create: { value: string };
     clear: { clearedSelection: boolean; clearedSearch: boolean };
     diagnostic: DiagnosticEventDetail;
+    emptyStateChange: EmptyStateContext | null;
   }>();
 
   let selectRef: HTMLElement | undefined;
   let nativeListenersReady = false;
   let internalValue: string | number | (string | number)[] | undefined = defaultValue;
+  let emptyStateContext: EmptyStateContext | null = null;
 
   // Stable wrapper to handle optionRenderer updates without triggering infinite loops
   const resolvedOptionRenderer = (item: SelectItem, index: number, helpers: any) => {
@@ -184,6 +190,12 @@
     dispatch('diagnostic', customEvent.detail);
   }
 
+  function handleEmptyStateChange(e: Event) {
+    const detail = (e as CustomEvent<EmptyStateChangeDetail>).detail;
+    emptyStateContext = detail.context;
+    dispatch('emptyStateChange', detail.context);
+  }
+
   function listenForSelectEvents(element: HTMLElement) {
     selectRef = element;
     element.addEventListener('select', handleSelect as EventListener);
@@ -195,6 +207,10 @@
     element.addEventListener('create', handleCreate as EventListener);
     element.addEventListener('clear', handleClear as EventListener);
     element.addEventListener('diagnostic', handleDiagnostic as EventListener);
+    element.addEventListener('emptyStateChange', handleEmptyStateChange as EventListener);
+    emptyStateContext = (element as HTMLElement & {
+      getEmptyStateContext?: () => EmptyStateContext | null;
+    }).getEmptyStateContext?.() ?? null;
     nativeListenersReady = true;
 
     return {
@@ -208,6 +224,7 @@
         element.removeEventListener('create', handleCreate as EventListener);
         element.removeEventListener('clear', handleClear as EventListener);
         element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
+        element.removeEventListener('emptyStateChange', handleEmptyStateChange as EventListener);
         if (selectRef === element) selectRef = undefined;
         nativeListenersReady = false;
       },
@@ -451,6 +468,12 @@
     return (selectRef as any)?.getCapabilities?.();
   }
 
+  export function getEmptyStateContext(): EmptyStateContext | null {
+    return (selectRef as (HTMLElement & {
+      getEmptyStateContext?: () => EmptyStateContext | null;
+    }) | undefined)?.getEmptyStateContext?.() ?? null;
+  }
+
   export function getKnownLimitations() {
     return (selectRef as any)?.getKnownLimitations?.() || [];
   }
@@ -482,6 +505,11 @@
   {#if loadingContent}
     <div slot="loading-content">
       {@render loadingContent()}
+    </div>
+  {/if}
+  {#if emptyStateContext && emptyState}
+    <div slot="empty-state">
+      {@render emptyState(emptyStateContext)}
     </div>
   {/if}
 </enhanced-select>

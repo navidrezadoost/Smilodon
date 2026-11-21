@@ -32,6 +32,7 @@ import type {
   KnownLimitationId,
   TrackingSnapshot,
   TrackingEntry,
+  EmptyStateContext,
 } from '../types.js';
 import type { OptionRenderer as OptionRendererFn } from '../renderers/contracts.js';
 import type { CloseReason, SelectKey } from '../engine/contracts.js';
@@ -235,6 +236,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     intendedRenderKeys: [],
     filteredIndexByKey: new Map(),
   };
+  private _emptyStateContext: EmptyStateContext | null = null;
   // Null keeps the public/default renderer on its legacy full path. This
   // private state is only used by guarded virtualization integration.
   private _guardedVirtualWindow: { startIndex: number; endIndex: number } | null = null;
@@ -5139,12 +5141,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         classMap: true,
         optionRenderer: true,
         groupHeaderRenderer: true,
+        emptyStateSlot: true,
         cssCustomProperties: true,
         shadowParts: true,
         globalStyleMirroring: true,
       },
       events: {
-        emitted: ['select', 'open', 'close', 'search', 'change', 'loadMore', 'remove', 'clear', 'error', 'diagnostic'],
+        emitted: ['select', 'open', 'close', 'search', 'change', 'loadMore', 'remove', 'clear', 'emptyStateChange', 'error', 'diagnostic'],
         diagnosticEvent: true,
       },
       functionality: {
@@ -5159,6 +5162,43 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       },
       limitations: this.getKnownLimitations(),
     };
+  }
+
+  /** Return a detached immutable snapshot of the currently rendered empty state. */
+  getEmptyStateContext(): EmptyStateContext | null {
+    const context = this._emptyStateContext;
+    return context ? Object.freeze({ query: context.query, reason: context.reason }) : null;
+  }
+
+  private _syncEmptyStateContext(context: EmptyStateContext | null): void {
+    const current = this._emptyStateContext;
+    if (
+      current?.query === context?.query
+      && current?.reason === context?.reason
+      && Boolean(current) === Boolean(context)
+    ) return;
+
+    this._emptyStateContext = context
+      ? Object.freeze({ query: context.query, reason: context.reason })
+      : null;
+    const detail = Object.freeze({ context: this.getEmptyStateContext() });
+    this._emit('emptyStateChange', detail);
+  }
+
+  private _appendEmptyState(context: EmptyStateContext): void {
+    const empty = document.createElement('div');
+    empty.setAttribute('part', 'no-results');
+    empty.className = 'empty-state';
+    const slot = document.createElement('slot');
+    slot.name = 'empty-state';
+    slot.appendChild(document.createTextNode(
+      context.reason === 'no-results'
+        ? `No results found for "${context.query}"`
+        : 'No options available',
+    ));
+    empty.appendChild(slot);
+    this._optionsContainer.appendChild(empty);
+    this._syncEmptyStateContext(context);
   }
 
   private _emitChange(): void {
@@ -7010,6 +7050,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._optionsContainer.innerHTML = '';
     let filteredIndicesForScope: number[] = [];
     let guardedScrollTopToRestore: number | null = null;
+    let renderedEmptyStateContext: EmptyStateContext | null = null;
     
     // Ensure dropdown only contains options container (cleanup legacy direct children)
     // We need to preserve optionsContainer, so we can't just clear dropdown.innerHTML
@@ -7036,6 +7077,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       searching.setAttribute('part', 'loading');
       searching.textContent = 'Searching...';
       this._optionsContainer.appendChild(searching);
+      this._syncEmptyStateContext(null);
       this._resolveRenderCycle(renderCycleId, true);
       return;
     }
@@ -7150,16 +7192,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._refreshVirtualizationScope(filteredIndicesForScope);
       this._appendGuardedTopSpacer();
 
-      if (filteredIndices.length === 0 && !this._state.isBusy) {
-        const empty = document.createElement('div');
-        empty.setAttribute('part', 'no-results');
-        empty.className = 'empty-state';
-        if (this._state.searchQuery) {
-          empty.textContent = `No results found for "${this._state.searchQuery}"`;
-        } else {
-          empty.textContent = 'No options available';
-        }
-        this._optionsContainer.appendChild(empty);
+      if (this._renderPlan.filteredKeys.length === 0 && !this._state.isBusy) {
+        renderedEmptyStateContext = this._state.searchQuery
+          ? { query: this._state.searchQuery, reason: 'no-results' }
+          : { query: '', reason: 'no-options' };
+        this._appendEmptyState(renderedEmptyStateContext);
       } else {
         const shouldIncrementalRender =
           !this._guardedVirtualizer
@@ -7230,6 +7267,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
           };
 
           renderChunk();
+          this._syncEmptyStateContext(null);
           return;
         }
 
@@ -7258,6 +7296,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._optionsContainer.scrollTop = guardedScrollTopToRestore;
     }
 
+    this._syncEmptyStateContext(renderedEmptyStateContext);
     this._syncRenderedOptionAccessibility();
     this._syncLegacyActiveAria();
     this._syncGuardedOptionResizeTargets();

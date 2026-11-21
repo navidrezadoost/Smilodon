@@ -6,6 +6,32 @@ import { Select } from '@smilodon/vue';
 import { basicItems } from './fixtures/test-data';
 
 describe('Vue Adapter Contract Tests', () => {
+  it('exposes the typed empty-state slot and change event', async () => {
+    const onEmptyStateChange = vi.fn();
+    const { container, unmount } = render(Select, {
+      props: { items: [], onEmptyStateChange },
+      slots: {
+        emptyState: (context?: { query: string; reason: string }) => context
+          ? h('span', { 'data-testid': 'vue-empty-state' }, `${context.reason}:${context.query}`)
+          : null,
+      },
+    });
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element.getEmptyStateContext()).toEqual({ query: '', reason: 'no-options' });
+    });
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="empty-state"] [data-testid="vue-empty-state"]')?.textContent)
+        .toBe('no-options:');
+    });
+
+    element.setItems(basicItems);
+    await waitFor(() => expect(element.getEmptyStateContext()).toBeNull());
+    expect(onEmptyStateChange).toHaveBeenCalledWith(null);
+    unmount();
+  });
+
   it('forwards reactive loading slots into Core and removes them when the slot content changes or unmounts', async () => {
     const showIcon = ref(true);
     const showContent = ref(true);

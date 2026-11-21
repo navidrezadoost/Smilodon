@@ -5,9 +5,25 @@ import { fireEvent } from '@testing-library/dom';
 import '@smilodon/core';
 import { Select } from '@smilodon/svelte';
 import SvelteBusyBucketHarness from './fixtures/SvelteBusyBucketHarness.svelte';
+import SvelteEmptyStateHarness from './fixtures/SvelteEmptyStateHarness.svelte';
 import { basicItems } from './fixtures/test-data';
 
 describe('Svelte Adapter Contract Tests', () => {
+  it('projects the typed empty-state snippet and exposes its current context', async () => {
+    const { container, unmount } = render(SvelteEmptyStateHarness as any);
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="empty-state"] [data-testid="svelte-empty-state"]')?.textContent)
+        .toBe('no-options:');
+      expect(element.getEmptyStateContext()).toEqual({ query: '', reason: 'no-options' });
+    });
+
+    element.setItems(basicItems);
+    await waitFor(() => expect(element.getEmptyStateContext()).toBeNull());
+    unmount();
+  });
+
   it('forwards Svelte 5 snippets into Core slots and removes them on reactive updates and unmount', async () => {
     const { container, getByRole, unmount } = render(SvelteBusyBucketHarness as any);
     const element = container.querySelector('enhanced-select') as any;

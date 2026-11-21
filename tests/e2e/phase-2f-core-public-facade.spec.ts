@@ -2,6 +2,103 @@ import { expect, test } from '@playwright/test';
 
 const playgroundUrl = 'http://localhost:5173/vanilla-demo.html';
 
+test('custom SVG and text survive acknowledged loading-to-empty-to-results transitions', async ({ page }) => {
+  await page.goto(playgroundUrl);
+  await page.waitForLoadState('networkidle');
+  const result = await page.evaluate(async () => {
+    await customElements.whenDefined('enhanced-select');
+    const select = document.createElement('enhanced-select') as any;
+    select.updateConfig({
+      searchable: true,
+      infiniteScroll: { enabled: true, pageSize: 5 },
+      dataLoading: { protocol: 'acknowledged', searchMode: 'remote', fetchLimit: 5 },
+    });
+    const content = document.createElement('span');
+    content.slot = 'empty-state';
+    content.setAttribute('data-testid', 'custom-empty-state');
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('viewBox', '0 0 16 16');
+    const message = document.createElement('span');
+    message.textContent = 'No matching products';
+    content.append(icon, message);
+    select.append(content);
+    const changes: any[] = [];
+    const requests: any[] = [];
+    select.addEventListener('emptyStateChange', (event: CustomEvent) => changes.push(event.detail));
+    select.addEventListener('search', (event: CustomEvent) => requests.push(event.detail.request));
+    document.body.append(select);
+    select.startDataLoading();
+    (select as any)._handleSearch('missing');
+    const pendingRequest = requests[requests.length - 1];
+    const pendingContext = select.getEmptyStateContext();
+    const isSearching = Boolean(select.shadowRoot.querySelector('.searching-state'));
+    const waitForProjection = () => new Promise<void>((resolve) => {
+      const listener = (event: CustomEvent) => {
+        if (event.detail.status !== 'complete') return;
+        select.removeEventListener('dataProjection', listener);
+        resolve();
+      };
+      select.addEventListener('dataProjection', listener);
+    });
+    const emptyProjection = waitForProjection();
+    const emptyResult = select.completeDataRequest({
+      requestId: pendingRequest.requestId,
+      queryGeneration: pendingRequest.queryGeneration,
+      status: 'exhausted',
+      items: [],
+      hasMore: false,
+    });
+    await emptyProjection;
+    const context = select.getEmptyStateContext();
+    const slot = select.shadowRoot.querySelector('slot[name="empty-state"]') as HTMLSlotElement;
+    const assigned = slot?.assignedElements({ flatten: true }) ?? [];
+    const emptyContentVisible = Boolean(select.shadowRoot.querySelector('[part="no-results"]'));
+
+    (select as any)._handleSearch('match');
+    const resultRequest = requests[requests.length - 1];
+    const pendingAfterEmpty = select.getEmptyStateContext();
+    const resultProjection = waitForProjection();
+    const populatedResult = select.completeDataRequest({
+      requestId: resultRequest.requestId,
+      queryGeneration: resultRequest.queryGeneration,
+      status: 'succeeded',
+      items: [{ value: 'one', label: 'One' }],
+      hasMore: false,
+    });
+    await resultProjection;
+    return {
+      text: assigned[0]?.textContent,
+      hasCustomIcon: Boolean(assigned[0]?.querySelector('svg[aria-hidden="true"]')),
+      context,
+      pendingContext,
+      isSearching,
+      emptyResult,
+      emptyContentVisible,
+      event: changes[0],
+      pendingAfterEmpty,
+      populatedResult,
+      clearedContext: select.getEmptyStateContext(),
+      clearedEvent: changes[changes.length - 1],
+      populatedOptions: select.shadowRoot.querySelectorAll('[part="option"]').length,
+    };
+  });
+
+  expect(result.text).toBe('No matching products');
+  expect(result.hasCustomIcon).toBe(true);
+  expect(result.pendingContext).toBeNull();
+  expect(result.isSearching).toBe(true);
+  expect(result.emptyResult).toBe('accepted');
+  expect(result.context).toEqual({ query: 'missing', reason: 'no-results' });
+  expect(result.emptyContentVisible).toBe(true);
+  expect(result.event).toEqual({ context: { query: 'missing', reason: 'no-results' } });
+  expect(result.pendingAfterEmpty).toBeNull();
+  expect(result.populatedResult).toBe('accepted');
+  expect(result.clearedContext).toBeNull();
+  expect(result.clearedEvent).toEqual({ context: null });
+  expect(result.populatedOptions).toBe(1);
+});
+
 test('public core facade gates readiness and separates synchronous acceptance from browser projection', async ({ page }) => {
   await page.goto(playgroundUrl);
   await page.waitForLoadState('networkidle');

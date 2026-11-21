@@ -19,6 +19,7 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
+  EmptyStateContext,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -71,6 +72,8 @@ export interface SelectProps {
   autoMitigateRuntimeModeSwitch?: boolean;
   loadingIcon?: Snippet;
   loadingContent?: Snippet;
+  /** Render the terminal empty state with its current query and reason. */
+  emptyState?: Snippet<[EmptyStateContext]>;
 }
 
 export interface SelectEvents {
@@ -83,6 +86,7 @@ export interface SelectEvents {
   create: CustomEvent<{ value: string }>;
   clear: CustomEvent<{ clearedSelection: boolean; clearedSearch: boolean }>;
   diagnostic: CustomEvent<DiagnosticEventDetail>;
+  emptyStateChange: CustomEvent<EmptyStateContext | null>;
 }
 
 export interface SelectSlots {}
@@ -101,6 +105,7 @@ export default class Select extends SvelteComponentTyped<SelectProps, SelectEven
   setRequiredState(required: boolean): void;
   validate(): boolean;
   getCapabilities(): SelectCapabilitiesReport | undefined;
+  getEmptyStateContext(): EmptyStateContext | null;
   getKnownLimitations(): LimitationState[];
   getTrackingSnapshot(): TrackingSnapshot;
   clearTracking(source?: 'event' | 'style' | 'limitation' | 'all'): void;

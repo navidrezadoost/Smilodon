@@ -176,6 +176,12 @@ Core owns request state and projects native `loading-icon` and `loading-content`
 
 Other adapters can put children on the native element with `slot="loading-icon"` or `slot="loading-content"`. The icon does not change `arrowIcon`, and loading content is independent of the `items` prop. Custom nodes stay mounted while unprojected. `minDisplayTime` only holds the visual bucket after completion; it does not delay request acceptance, pagination, or `aria-busy`. The separate `Searching...` presentation remains unchanged.
 
+### Custom terminal empty-state content (unreleased)
+
+Core owns empty-state detection and provides the native `empty-state` slot plus a readonly `EmptyStateContext` containing `query` and `reason` (`no-options` or `no-results`). `getEmptyStateContext()` returns the current snapshot; `emptyStateChange` emits `{ context }` when the value changes and `{ context: null }` when the empty state clears. Core's default message remains the slot fallback. This API changes presentation only and does not make framework adapters responsible for result state.
+
+The adapter projections use framework-native APIs: React's `emptyStateRenderer`/`onEmptyStateChange`, Vue's `#emptyState` slot/`emptyStateChange` event, Svelte 5's `emptyState` snippet/`emptyStateChange` event, and Solid's `emptyStateRenderer`/`onEmptyStateChange`. Vanilla consumers assign a DOM child to `slot="empty-state"` and listen to the native event. Custom markup should preserve appropriate status semantics and avoid duplicate live announcements. React Native is outside this web slot API.
+
 
 
 React integration is more straightforward since it doesn't require custom element compiler configuration.

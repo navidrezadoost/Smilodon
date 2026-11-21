@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, on, type JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, on, type JSX } from 'solid-js'
 import { render } from 'solid-js/web'
 import type {
   SelectEventDetail,
@@ -19,6 +19,8 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
+  EmptyStateContext,
+  EmptyStateChangeDetail,
 } from '@smilodon/core'
 
 export interface SelectItem {
@@ -53,6 +55,7 @@ type EnhancedSelectElement = HTMLElement & {
   getTrackingSnapshot?: () => TrackingSnapshot
   clearTracking?: (source?: 'event' | 'style' | 'limitation' | 'all') => void
   setLimitationPolicies?: (policies: LimitationPolicyMap) => void
+  getEmptyStateContext?: () => EmptyStateContext | null
 }
 
 export interface SelectHandle {
@@ -75,6 +78,7 @@ export interface SelectHandle {
   getTrackingSnapshot: () => TrackingSnapshot
   clearTracking: (source?: 'event' | 'style' | 'limitation' | 'all') => void
   setLimitationPolicies: (policies: LimitationPolicyMap) => void
+  getEmptyStateContext: () => EmptyStateContext | null
 }
 
 export interface SelectProps {
@@ -122,6 +126,7 @@ export interface SelectProps {
   customRenderer?: (item: SelectItem, index: number) => JSX.Element
   loadingIcon?: JSX.Element
   loadingContent?: JSX.Element
+  emptyStateRenderer?: (context: EmptyStateContext) => JSX.Element
   trackingEnabled?: boolean
   trackEvents?: boolean
   trackStyling?: boolean
@@ -139,6 +144,7 @@ export interface SelectProps {
   onCreate?: (value: string) => void
   onClear?: (detail: { clearedSelection: boolean; clearedSearch: boolean }) => void
   onDiagnostic?: (detail: DiagnosticEventDetail) => void
+  onEmptyStateChange?: (context: EmptyStateContext | null) => void
   ref?: (handle: SelectHandle) => void
 }
 
@@ -176,6 +182,11 @@ export default function Select(rawProps: SelectProps) {
   let selectRef: EnhancedSelectElement | undefined
   let selectContainer: HTMLDivElement | undefined
   const [isElementReady, setIsElementReady] = createSignal(false)
+  const [emptyStateContext, setEmptyStateContext] = createSignal<EmptyStateContext | null>(null)
+  const renderedEmptyState = createMemo(() => {
+    const context = emptyStateContext()
+    return context ? rawProps.emptyStateRenderer?.(context) ?? null : null
+  })
   const [internalValue, setInternalValue] = createSignal<SelectValue | undefined>(props.defaultValue)
   const [resolvedOptionRenderer, setResolvedOptionRenderer] = createSignal<SelectProps['optionRenderer'] | ((item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement) | undefined>()
   const customRendererCache = new Map<number, { container: HTMLDivElement; dispose?: () => void }>()
@@ -528,6 +539,12 @@ export default function Select(rawProps: SelectProps) {
     rawProps.onDiagnostic?.(customEvent.detail)
   }
 
+  const handleEmptyStateChange = (event: Event) => {
+    const context = (event as CustomEvent<EmptyStateChangeDetail>).detail.context
+    setEmptyStateContext(context)
+    rawProps.onEmptyStateChange?.(context)
+  }
+
   const handleOpen = () => rawProps.onOpen?.()
   const handleClose = () => rawProps.onClose?.()
 
@@ -557,6 +574,7 @@ export default function Select(rawProps: SelectProps) {
     getTrackingSnapshot: () => selectRef?.getTrackingSnapshot?.() ?? { events: [], styles: [], limitations: [] },
     clearTracking: (source) => selectRef?.clearTracking?.(source),
     setLimitationPolicies: (policies) => selectRef?.setLimitationPolicies?.(policies),
+    getEmptyStateContext: () => selectRef?.getEmptyStateContext?.() ?? null,
   }
 
   onMount(async () => {
@@ -582,6 +600,8 @@ export default function Select(rawProps: SelectProps) {
     selectRef.addEventListener('create', handleCreate as EventListener)
     selectRef.addEventListener('clear', handleClear as EventListener)
     selectRef.addEventListener('diagnostic', handleDiagnostic as EventListener)
+    selectRef.addEventListener('emptyStateChange', handleEmptyStateChange as EventListener)
+    setEmptyStateContext(selectRef.getEmptyStateContext?.() ?? null)
   })
 
   onCleanup(() => {
@@ -599,6 +619,7 @@ export default function Select(rawProps: SelectProps) {
     selectRef.removeEventListener('create', handleCreate as EventListener)
     selectRef.removeEventListener('clear', handleClear as EventListener)
     selectRef.removeEventListener('diagnostic', handleDiagnostic as EventListener)
+    selectRef.removeEventListener('emptyStateChange', handleEmptyStateChange as EventListener)
   })
 
   return (
@@ -613,6 +634,9 @@ export default function Select(rawProps: SelectProps) {
         )}
         {rawProps.loadingContent != null && (
           <div slot="loading-content">{rawProps.loadingContent}</div>
+        )}
+        {renderedEmptyState() != null && (
+          <div slot="empty-state">{renderedEmptyState()}</div>
         )}
       </enhanced-select>
     </div>

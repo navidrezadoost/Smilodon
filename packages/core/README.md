@@ -215,6 +215,21 @@ The default chevron remains in place unless a light-DOM child is assigned to the
 
 The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or hover background on assigned custom content.
 
+### Custom empty-state content (unreleased)
+
+Core keeps the built-in no-options/no-results message as the slot fallback. Assign a light-DOM child to `empty-state` to render custom text, markup, or an icon while the result set is terminally empty:
+
+```html
+<enhanced-select id="products" searchable>
+  <div slot="empty-state" role="status">
+    <svg aria-hidden="true" viewBox="0 0 24 24"><!-- decorative icon --></svg>
+    <span>No matching products. Try a different search.</span>
+  </div>
+</enhanced-select>
+```
+
+`emptyStateChange` fires when the effective context changes. Its detail is `{ context: { query, reason } }`, or `{ context: null }` when the terminal empty state clears. `reason` is `no-options` for an empty option collection and `no-results` when a non-empty collection has no matches for the current query. `getEmptyStateContext()` returns the current detached, readonly snapshot or `null`. The slot is presentation-only: Core continues to own result state, selection, and accessibility synchronization. Provide suitable semantics for custom content (for example, `role="status"` for a concise announcement) and avoid duplicating announcements already made by the host application.
+
 ### Framework Usage
 
 **In browser DOM frameworks, `@smilodon/core` can be used directly** as a Web Component; framework adapters are available for framework-specific APIs.
