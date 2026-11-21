@@ -17,9 +17,9 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Published package status:** npm currently provides Core `1.13.0`, React `1.11.0`, Vue/Solid/Vanilla `1.10.1`, and Svelte `2.0.0`. Svelte `2.0.0` supports Svelte 5; the major-version change is breaking for Svelte 3/4 consumers. React Native Android and iOS runtime qualification is incomplete and is outside the web release scope.
+**Published package status (2026-11-21):** Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0` are available from npm. Svelte `2.1.0` supports Svelte 5 only; it does not restore Svelte 3/4 compatibility. React Native Android and iOS runtime qualification is incomplete and outside this web release scope.
 
-**Next web release candidate:** the merged #90, #92, #93, #96, #97, and #100 work is being prepared for Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0`. These versions are not published yet. The [web release checklist](docs/releases/WEB-1.17.0-RELEASE.md) records package scope, validation, and publication provenance; do not install these candidate versions from npm until the registry verification is complete. The separately developed React #85 fix is not merged and is not included.
+**Latest web release:** the #90, #92, #93, #96, #97, and #100 changes are included in those versions. See the [web release record](docs/releases/WEB-1.17.0-RELEASE.md) and [registry verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json) for checksums and tested scope. The separately developed React #85 fix is not merged and is not included.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 

@@ -496,9 +496,9 @@ Introduced in `@smilodon/solid@1.11.0`, `loadingIcon` and `loadingContent` JSX p
 
 Set `contentMode: 'replace'` to replace the built-in presentation when custom content has an accessible name. Core keeps its status fallback when replacement content is not accessible. The host owns data requests; `minDisplayTime` affects only the visual bucket.
 
-## Latest-chip auto-scroll (Solid 1.11.0 candidate; Issue #100)
+## Latest-chip auto-scroll (Solid 1.11.0; Issue #100)
 
-Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips in horizontal multi-select mode. It is disabled by default and respects reduced-motion preferences. This requires the pending Core `1.17.0` release; see the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md).
+Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips in horizontal multi-select mode. It is disabled by default and respects reduced-motion preferences. It is available with Core `1.17.0`; see the [web release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
 
 ```tsx
 <Select
@@ -513,7 +513,7 @@ Set `scrollToLatestChip` in `multiSelectDisplay` to reveal newly selected chips 
 />
 ```
 
-## Custom empty-state renderer (Solid 1.11.0 candidate; Issue #93)
+## Custom empty-state renderer (Solid 1.11.0; Issue #93)
 
 `emptyStateRenderer` receives Core's readonly `{ query, reason }` context while a terminal empty state is active. `onEmptyStateChange` receives each context change and `null` when the state clears. The `SelectHandle` exposes `getEmptyStateContext()` for an imperative snapshot. Without a renderer, Core retains its fallback message.
 
