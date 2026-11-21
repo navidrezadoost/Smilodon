@@ -657,10 +657,14 @@ Control badge scrolling behavior in multi-select mode with `multiSelectDisplay` 
     maxHeight: '160px', // used by vertical / horizontal modes
     overflowX: 'hidden',
     overflowY: 'hidden',
-    dragScroll: true    // Enable drag-to-scroll (horizontal mode)
+    dragScroll: true,   // Enable drag-to-scroll (horizontal mode)
+    scrollToLatestChip: false, // Opt in to revealing newly selected chips
+    scrollToLatestChipBehavior: 'smooth' // 'auto' | 'smooth'
   }
 }
 ```
+
+**Auto-scroll newly selected chips:** In `horizontal` mode, enable `scrollToLatestChip: true` to reveal a newly selected chip without scrolling the option list. The default is `false`. The viewport is not repositioned when an item is removed, the data is reloaded, or the component rerenders with unchanged selections. The default behavior is smooth (respects reduced motion); set `scrollToLatestChipBehavior: 'auto'` for instant movement. The setting is available through the shared Core `multiSelectDisplay` configuration in web adapters.
 
 **Display Modes:**
 - **`wrap`** (default) - Badges wrap naturally and the input shell grows with them; no internal chip scrollbar by default

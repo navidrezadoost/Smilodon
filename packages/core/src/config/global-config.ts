@@ -121,6 +121,10 @@ export interface MultiSelectDisplayConfig {
   overflowY?: 'auto' | 'scroll' | 'hidden';
   /** Enable drag-to-scroll interactions in horizontal mode */
   dragScroll?: boolean;
+  /** Scroll the chip viewport to newly added selections, without moving it on removal. */
+  scrollToLatestChip?: boolean;
+  /** Scrolling behavior for a newly selected chip; reduced-motion users get instant movement. */
+  scrollToLatestChipBehavior?: 'auto' | 'smooth';
 }
 
 /**
@@ -332,6 +336,8 @@ const defaultConfig: GlobalSelectConfig = {
     overflowX: 'hidden',
     overflowY: 'auto',
     dragScroll: true,
+    scrollToLatestChip: false,
+    scrollToLatestChipBehavior: 'smooth',
   },
   scrollToSelected: {
     enabled: true,
