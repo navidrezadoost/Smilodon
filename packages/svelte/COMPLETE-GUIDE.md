@@ -1323,9 +1323,9 @@ If you experience slow rendering with large datasets:
 
 *Last updated: February 9, 2026 - v1.3.6*
 
-## Custom busy content (Svelte 5, Issue #90 candidate)
+## Custom busy content (Svelte 5 2.1.0; Core 1.13.0)
 
-Pass Svelte 5 snippets through the `loadingIcon` and `loadingContent` props. The candidate requires Core `1.13.0`; the current published Svelte package does not yet contain these props.
+Starting in `@smilodon/svelte@2.1.0`, pass Svelte 5 snippets through the `loadingIcon` and `loadingContent` props. Requires `@smilodon/core@^1.13.0`.
 
 ```svelte
 {#snippet loadingIcon()}<span aria-hidden="true">⏳</span>{/snippet}
