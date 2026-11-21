@@ -19,6 +19,8 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added
 
+- **Horizontal chip auto-scroll ([#100](https://github.com/navidrezadoost/Smilodon/issues/100)):** Opt-in `multiSelectDisplay.scrollToLatestChip` reveals newly selected chips in horizontal multi-select mode, using configurable smooth/auto motion and respecting reduced-motion preferences. Removal, refresh and unchanged selection do not trigger auto-scroll. Unreleased; planned for 1.17.0.
+
 - **React remove icon components ([#97](https://github.com/navidrezadoost/Smilodon/issues/97)):** React's `removeButtonIcon` now accepts React nodes alongside legacy text/SVG strings, projecting JSX into the existing selected-chip and selected-option remove icon containers. The Core-owned buttons retain their parts, labels, and removal behavior. This change is unreleased and targeted for the planned 1.16.0 release.
 
 ### Fixed

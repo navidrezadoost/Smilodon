@@ -302,6 +302,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _pendingFirstRenderMark = false;
   private _pendingSearchRenderMark = false;
   private _rangeAnchorIndex: number | null = null;
+  /** Chip identity is tracked independently of dropdown option positions. */
+  private _lastRenderedChipKeys: Set<SelectKey> | null = null;
+  private _latestChipScrollGeneration = 0;
+  private _latestChipScrollFrame: number | null = null;
   private _optionRenderer?: OptionRendererFn;
   private _groupHeaderRenderer?: import('../types.js').GroupHeaderRenderer;
   private _classMap?: ClassMap;
@@ -556,6 +560,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   disconnectedCallback(): void {
+    this._cancelLatestChipScroll();
     this._cancelBusyPresentation();
     if (this._dataRequestCoordinator) {
       const actions = this._dataRequestCoordinator.disconnect();
@@ -4795,6 +4800,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _updateInputDisplay(): void {
     const selectedEntries = this._getSelectedEntries();
     const selectedItems = selectedEntries.map(({ item }) => item);
+    const nextKeys = new Set(selectedEntries.map(({ key }) => key));
+    const previousKeys = this._lastRenderedChipKeys;
+    const newlyAddedKey = previousKeys
+      ? [...nextKeys].find((key) => !previousKeys.has(key))
+      : undefined;
+    this._lastRenderedChipKeys = nextKeys;
+    const previousChipScrollLeft = this._inputContent.scrollLeft;
+    // Only a newly added selected key can initiate auto-scroll.
+    this._cancelLatestChipScroll();
     const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
     
     if (selectedItems.length === 0) {
@@ -4877,7 +4891,70 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (this._acknowledgedPendingSearchQuery !== null) {
       this._input.value = this._acknowledgedPendingSearchQuery;
     }
+    // Recreating the chip DOM must not reset manual scrolling. In particular,
+    // remove/clear, config rerenders, and item refreshes are not scroll intents.
+    if (this._config.selection.mode === 'multi') {
+      this._inputContent.scrollLeft = previousChipScrollLeft;
+      if (newlyAddedKey !== undefined) this._scheduleLatestChipScroll(newlyAddedKey);
+    }
     this._syncClearControlState();
+  }
+
+  private _cancelLatestChipScroll(): void {
+    this._latestChipScrollGeneration += 1;
+    if (this._latestChipScrollFrame !== null) {
+      cancelAnimationFrame(this._latestChipScrollFrame);
+      this._latestChipScrollFrame = null;
+    }
+  }
+
+  private _scheduleLatestChipScroll(key: SelectKey): void {
+    if (
+      !this.isConnected
+      || this._config.selection.mode !== 'multi'
+      || this._config.multiSelectDisplay.mode !== 'horizontal'
+      || this._config.multiSelectDisplay.scrollToLatestChip !== true
+      || this._config.multiSelectDisplay.overflowX === 'hidden'
+    ) return;
+
+    const generation = this._latestChipScrollGeneration;
+    this._latestChipScrollFrame = requestAnimationFrame(() => {
+      this._latestChipScrollFrame = null;
+      if (
+        generation !== this._latestChipScrollGeneration
+        || !this.isConnected
+        || this._multiScrollDrag.active
+        || this._config.selection.mode !== 'multi'
+        || this._config.multiSelectDisplay.mode !== 'horizontal'
+        || this._config.multiSelectDisplay.scrollToLatestChip !== true
+      ) return;
+
+      // Match the canonical selected-key sequence, not option indices:
+      // selected items may be reordered or detached from the loaded page.
+      const entries = this._getSelectedEntries();
+      const index = entries.findIndex((entry) => entry.key === key);
+      if (index < 0) return;
+      const chip = this._inputContent.querySelectorAll<HTMLElement>('.selection-badge')[index];
+      if (!chip) return;
+      const hostBounds = this._inputContent.getBoundingClientRect();
+      const chipBounds = chip.getBoundingClientRect();
+      const leftEdge = hostBounds.left + this._inputContent.clientLeft;
+      const rightEdge = leftEdge + this._inputContent.clientWidth;
+      const delta = chipBounds.right > rightEdge
+        ? chipBounds.right - rightEdge
+        : chipBounds.left < leftEdge
+          ? chipBounds.left - leftEdge
+          : 0;
+      if (Math.abs(delta) < 0.5) return;
+
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      const behavior = reducedMotion ? 'auto' : (this._config.multiSelectDisplay.scrollToLatestChipBehavior ?? 'smooth');
+      if (typeof this._inputContent.scrollBy === 'function') {
+        this._inputContent.scrollBy({ left: delta, behavior });
+      } else {
+        this._inputContent.scrollLeft += delta;
+      }
+    });
   }
 
   private _isActivelyEditingSearchInput(): boolean {
