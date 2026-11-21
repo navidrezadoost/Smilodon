@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Added
+
+- **React remove icon components ([#97](https://github.com/navidrezadoost/Smilodon/issues/97)):** React's `removeButtonIcon` now accepts React nodes alongside legacy text/SVG strings, projecting JSX into the existing selected-chip and selected-option remove icon containers. The Core-owned buttons retain their parts, labels, and removal behavior. This change is unreleased and targeted for the planned 1.16.0 release.
+
 ### Fixed
 
 - **Keyboard infinite-scroll pagination ([#96](https://github.com/navidrezadoost/Smilodon/issues/96)):** Pressing ArrowDown at the last selectable option requests the next acknowledged infinite-scroll page through the existing coordinator, without duplicate requests or focus changes while the page loads. Unreleased; targeted for the next planned Core minor release (1.15.0).

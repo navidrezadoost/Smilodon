@@ -1590,6 +1590,28 @@ You can replace the default chip remove icon with the `removeButtonIcon` prop:
 
 Markup strings are supported too, so inline SVG icons work.
 
+React components are also supported, including generated icon components:
+
+```tsx
+import TrashIcon from '@/generated/icons/Trash.icon';
+
+<Select
+  items={items}
+  multiple
+  defaultValue={['one']}
+  removeButtonIcon={<TrashIcon />}
+/>
+```
+
+The React node is displayed inside Core's existing remove buttons in selected
+chips and selected dropdown options. Remove behavior, accessibility labels, and
+`chip-remove` / `chip-remove-icon` parts remain Core-owned. Strings still
+render as the legacy text or inline SVG markup. The prop supports React nodes,
+**not** a component function passed directly: use `<TrashIcon />`, not
+`TrashIcon`. When `config.selection.removeButtonIcon` is explicitly
+supplied, that Core string configuration takes precedence. React nodes are
+supported by the React adapter only, not Core or other framework adapters.
+
 To style the icon separately from the round remove button, use the host `style` prop with these tokens:
 
 - `--select-badge-remove-icon-size`

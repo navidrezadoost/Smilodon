@@ -484,25 +484,27 @@ export class SelectOption extends HTMLElement {
   }
 
   private _attachEventListeners(): void {
-    // Click handler for selection
+    // One delegated handler survives all SelectOption re-renders. In
+    // particular, SVG descendants of the remove icon must remove the option,
+    // not accidentally activate the surrounding option.
     this._container.addEventListener('click', (e) => {
-      // Don't trigger selection if clicking remove button
-      if (e.target === this._removeButton) {
+      const target = e.target;
+      if (
+        this._removeButton
+        && target instanceof Node
+        && this._removeButton.contains(target)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._handleRemove();
         return;
       }
-      
+
       if (!this._isDisabledSelectionBlocked()) {
         this._handleSelect();
       }
     });
-    
-    // Remove button handler
-    if (this._removeButton) {
-      this._removeButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._handleRemove();
-      });
-    }
+
     
     // Keyboard handler
     this.addEventListener('keydown', (e) => {
@@ -572,7 +574,6 @@ export class SelectOption extends HTMLElement {
   updateConfig(updates: Partial<OptionConfig>): void {
     this._config = { ...this._config, ...updates };
     this._render();
-    this._attachEventListeners();
   }
 
   /**
