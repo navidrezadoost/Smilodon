@@ -12,6 +12,8 @@
 
 > **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
+> **Issue #100 availability:** `multiSelectDisplay.scrollToLatestChip` is documented in [Multi-Select Display Modes](#multi-select-display-modes) and is included in the Core `1.17.0` release candidate. npm currently provides Core `1.13.0`; do not expect this option from the published package until the [release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md) records successful publication and registry verification.
+
 ## Custom busy bucket (Core 1.13.0)
 
 Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:

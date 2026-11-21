@@ -17,28 +17,30 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Pending
+
+- React Issue #85 remains outside `main` and is not part of the release candidate.
+
+## [1.17.0] - Release candidate; npm publication pending
+
+Candidate package versions: Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0`. These artifacts are not available from npm until publication and registry verification are complete.
+
 ### Added
 
-- **Horizontal chip auto-scroll ([#100](https://github.com/navidrezadoost/Smilodon/issues/100)):** Opt-in `multiSelectDisplay.scrollToLatestChip` reveals newly selected chips in horizontal multi-select mode, using configurable smooth/auto motion and respecting reduced-motion preferences. Removal, refresh and unchanged selection do not trigger auto-scroll. Unreleased; planned for 1.17.0.
-
-- **React remove icon components ([#97](https://github.com/navidrezadoost/Smilodon/issues/97)):** React's `removeButtonIcon` now accepts React nodes alongside legacy text/SVG strings, projecting JSX into the existing selected-chip and selected-option remove icon containers. The Core-owned buttons retain their parts, labels, and removal behavior. This change is unreleased and targeted for the planned 1.16.0 release.
+- **Custom busy-bucket presentation (#90):** Core provides `loading-icon` and `loading-content` slots, append/replace modes, accessible fallback behavior, and a minimum visual display time that does not delay requests, pagination, or `aria-busy`. Web adapters expose their framework-native content APIs; React Native is excluded.
+- **Custom empty-state rendering ([#93](https://github.com/navidrezadoost/Smilodon/issues/93)):** Core exposes the `empty-state` slot, typed `EmptyStateContext` (`query` and `reason`), `getEmptyStateContext()`, and `emptyStateChange`. React, Vue, Svelte 5, Solid, and Vanilla can render custom text or markup while retaining Core's default fallback.
+- **React remove-button components ([#97](https://github.com/navidrezadoost/Smilodon/issues/97)):** React's `removeButtonIcon` accepts React nodes as well as legacy text and SVG strings, while preserving Core-owned button parts, accessible labels, and removal behavior.
+- **Horizontal chip auto-scroll ([#100](https://github.com/navidrezadoost/Smilodon/issues/100)):** Opt-in `multiSelectDisplay.scrollToLatestChip` reveals newly selected chips in horizontal multi-select mode. `scrollToLatestChipBehavior` selects smooth or automatic movement and smooth motion respects reduced-motion preferences. Removal, refresh, and unchanged selection do not trigger auto-scroll.
 
 ### Fixed
 
-- **Keyboard infinite-scroll pagination ([#96](https://github.com/navidrezadoost/Smilodon/issues/96)):** Pressing ArrowDown at the last selectable option requests the next acknowledged infinite-scroll page through the existing coordinator, without duplicate requests or focus changes while the page loads. Unreleased; targeted for the next planned Core minor release (1.15.0).
+- **Acknowledged remote-search empty state ([#92](https://github.com/navidrezadoost/Smilodon/issues/92)):** An exhausted remote search returning no items now renders its query-specific no-results state after the accepted snapshot settles, without affecting active loading or non-empty results.
+- **Keyboard infinite-scroll pagination ([#96](https://github.com/navidrezadoost/Smilodon/issues/96)):** ArrowDown at the final selectable option requests the next acknowledged page through the existing coordinator without duplicate requests or focus changes while that page loads.
 
-- **Acknowledged remote-search empty state ([#92](https://github.com/navidrezadoost/Smilodon/issues/92)):** Fixed a rendering synchronization issue where an exhausted remote search returning no items could leave the dropdown blank until reopened. Terminal empty results are now rendered after the accepted snapshot settles, without affecting active loading or non-empty results. Remote searches display the query-specific no-results message. This fix is unreleased and is not part of `@smilodon/core@1.13.0`.
+### Scope
 
-### Pending
-
-- **React acknowledged infinite-scroll synchronization (#85):** A separate locally qualified fix exists in unpushed branch `fix/85-react-acknowledged-items` at `29c67067b3bf345347f74e2dc074095dc9eb2ab9`. It is not present in `main`, has not been merged, and must not be attributed to React `1.11.0` or any new published version. Its React release will require a separate PR, qualification, and npm publication.
-- Remaining acknowledged-loading API parity and certification across adapters remain outside the completed release scope.
-
-### Added (unreleased)
-
-- **Custom empty-state rendering ([#93](https://github.com/navidrezadoost/Smilodon/issues/93)):** Core exposes the `empty-state` slot, typed `EmptyStateContext` (`query` and `reason`), `getEmptyStateContext()`, and `emptyStateChange`. React, Vue, Svelte 5, Solid, and Vanilla can render custom text or markup while preserving Core's default fallback when no custom content is provided. This change is unreleased and does not alter published package versions.
-
-- **Custom busy bucket slots (#90; merged, pending npm publication):** Core `1.13.0` adds native `loading-icon` and `loading-content` slots, append/replace presentation modes, explicit built-in message visibility, accessible fallback behavior, and minimum visual display timing without delaying request completion, pagination, or `aria-busy`. Companion adapter versions: React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, Svelte 5 `2.1.0`. React, Vue, Svelte 5 and Solid expose framework-native loading content; Vanilla uses the native DOM slots. React Native and the separate `Searching...` state remain outside scope. Versions are set in merged source; **npm publication and integrity verification remain pending**. This is not part of previous Core `1.12.0` or adapter versions.
+- Svelte `2.1.0` supports Svelte 5 only. React Native Android/iOS runtime qualification and the separate React #85 fix are excluded.
+- This entry is release-candidate documentation. Replace its status with the publication date, registry integrity values, and verified-consumer results only after those actions succeed.
 
 ## [1.12.0] - 2026-11-19
 

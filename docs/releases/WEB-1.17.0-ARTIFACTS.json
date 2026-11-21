@@ -1,0 +1,69 @@
+{
+  "sourceBaseline": "8daaf642d382c7bc8129d51ebd4a4d79c07951b8",
+  "node": "20.20.2",
+  "npm": "10.8.2",
+  "artifacts": [
+    {
+      "package": "@smilodon/core",
+      "version": "1.17.0",
+      "filename": "smilodon-core-1.17.0.tgz",
+      "files": 52,
+      "bytes": 1356305,
+      "sha256": "d72b0ab0b37189bd1c1c967a84f6d11156946ca4271b39dd18c5a78bbbfa5b61",
+      "shasum": "3aaf1726218a5cb0c61a490e7eb358613e563b04",
+      "integrity": "sha512-K45/GHkKV0JS5ylTHQJ4v9buqkW2BN+e8J/HPA6fi6ZAecxVHPj5wyZgDQCLGMsKhf0BLslSihhtWqSM1Haa6A=="
+    },
+    {
+      "package": "@smilodon/react",
+      "version": "1.12.0",
+      "filename": "smilodon-react-1.12.0.tgz",
+      "files": 11,
+      "bytes": 86446,
+      "sha256": "7419474590d49da05494d967428e437b8e23e3c5f4205887e66af7da0ad78c93",
+      "shasum": "4968de297c056ca88b3993709f0f87c6d4cbef95",
+      "integrity": "sha512-z0Z1NdooGIWMf08/UkJu7kGhUREKdPhJkyu69RmPkHADggz5nTTgGmX5lDszk53o3cE+JdieR9WKBs9n2LBsxQ=="
+    },
+    {
+      "package": "@smilodon/vue",
+      "version": "1.11.0",
+      "filename": "smilodon-vue-1.11.0.tgz",
+      "files": 11,
+      "bytes": 50505,
+      "sha256": "dff07265e8a8a6b162427ff5d56a16f4baf6dabef89662fa337d216d23f183eb",
+      "shasum": "9fdb1fd924a0747592e6e4c5140fff82ccc047ad",
+      "integrity": "sha512-iTRVyxtmaFck0uca3wO74lR0+ASzJm1pw8F7BSPh4RU+i/GPjfp/i1IYUFY40+aMhCXb5XhXUMjjeTFeTnDnVg=="
+    },
+    {
+      "package": "@smilodon/solid",
+      "version": "1.11.0",
+      "filename": "smilodon-solid-1.11.0.tgz",
+      "files": 11,
+      "bytes": 38260,
+      "sha256": "6361895abe9abb2c53f6d850a0cf77b90c051a3d2624573d04cdb2bfdcd498f5",
+      "shasum": "cc823da349e8da1e9af34bda8eba15bf8ce455cd",
+      "integrity": "sha512-aBwF3HrpS/uaXnolnPdXCn/AiZQyPRUI1idk7sKbhZ4HiEnCAYgtS96Z/TzIu7qvOBcx7VQ4CjvsQMfRMXciXA=="
+    },
+    {
+      "package": "@smilodon/vanilla",
+      "version": "1.11.0",
+      "filename": "smilodon-vanilla-1.11.0.tgz",
+      "files": 8,
+      "bytes": 27093,
+      "sha256": "3558fc9c661d5b355cbb4c4b9dd3422213a49ba8309193f2074d6f5330919efd",
+      "shasum": "d2b74c0383b901d34dde13968ea1dd217874c986",
+      "integrity": "sha512-wuGqjRYDSy8XD4B3UXlDa0KMWKCrlSNGgpyOfuRZOVMUAMIYZNmJ6T6bjuQofTZ72e9rRB6x8Aairmqj7788ng=="
+    },
+    {
+      "package": "@smilodon/svelte",
+      "version": "2.1.0",
+      "filename": "smilodon-svelte-2.1.0.tgz",
+      "files": 10,
+      "bytes": 42135,
+      "sha256": "454e06fff4f363b20a8045069cad3594302e94971091e7726bdc726630ab0d56",
+      "shasum": "49988a03f08fc75ab5306da2d8253e860e9b8abe",
+      "integrity": "sha512-nJDA7TvlMBsgMWYu07YYAzI/H63z5/qP8kkGAiJwcNQQbgslu+/+81LbwgxlmizAtMCq6vjY6Z/5/SIoMYk3eQ=="
+    }
+  ],
+  "publication": "pending",
+  "registryInstallVerification": "pending"
+}
