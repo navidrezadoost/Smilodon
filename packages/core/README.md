@@ -12,9 +12,9 @@
 
 > **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
-## Custom busy bucket (Issue #90 candidate for Core 1.13.0; not yet published)
+## Custom busy bucket (Core 1.13.0)
 
-The upcoming Core busy bucket keeps request state in Core and lets the host customize only its presentation. It is currently unreleased. Use the native slots with the Web Component or Vanilla API:
+Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:
 
 ```html
 <enhanced-select>
