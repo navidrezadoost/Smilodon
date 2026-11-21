@@ -4400,6 +4400,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       : delta >= 0
         ? -1
         : selectableIndices.length;
+    // The final selectable option is the keyboard pagination boundary.
+    // Keep the active option stable while the coordinator requests more data.
+    if (delta === 1 && currentPosition === selectableIndices.length - 1) {
+      this._requestKeyboardLoadMore();
+      return;
+    }
+
     const nextPosition = Math.max(0, Math.min(selectableIndices.length - 1, basePosition + delta));
     const next = selectableIndices[nextPosition];
     this._setActive(next);
@@ -4412,6 +4419,32 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
       this._selectRange(anchorIndex, next, { clear: !opts?.toggleKey });
     }
+  }
+
+  private _requestKeyboardLoadMore(): void {
+    if (
+      !this._state.isOpen
+      || !this._config.infiniteScroll.enabled
+      || this._dataLoadingConfig.protocol !== 'acknowledged'
+      || !this._dataRequestCoordinator
+      || !this._acknowledgedReady
+      || this._acknowledgedProjectionPending
+      || this._acknowledgedProjectionSettling
+    ) return;
+
+    const snapshot = this._dataRequestCoordinator.getSnapshot();
+    if (
+      !snapshot.connected
+      || snapshot.busy
+      || !snapshot.hasMore
+      || snapshot.error !== null
+      || snapshot.resourceLimit !== null
+      || (snapshot.status !== 'succeeded' && snapshot.status !== 'empty')
+    ) return;
+
+    // Reuse canonical pagination identity and duplicate-request guards;
+    // this explicit keyboard intent must not depend on sentinel visibility.
+    this._dispatchAcknowledgedActions(this._dataRequestCoordinator.requestLoadMore('manual'));
   }
 
   private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {
