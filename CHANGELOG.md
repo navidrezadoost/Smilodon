@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- **Custom-arrow hover background ([#104](https://github.com/navidrezadoost/Smilodon/issues/104)):** Custom slotted arrows now honor the existing `--select-arrow-hover-bg` token on hover, falling back to transparency when unset. Default-arrow hover behavior is unchanged. Unreleased; planned for Core 1.18.0.
+
 ### Pending
 
 - React Issue #85 remains outside `main` and is not part of the release candidate.

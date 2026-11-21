@@ -2679,7 +2679,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
 
       :host([data-custom-arrow="true"]) .dropdown-arrow-container:hover {
-        background-color: transparent;
+        background-color: var(--select-arrow-hover-bg, transparent);
       }
       
       .dropdown-arrow {
