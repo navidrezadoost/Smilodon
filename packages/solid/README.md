@@ -481,9 +481,9 @@ Common hooks:
 - [Performance guide](../../docs/PERFORMANCE.md)
 - [Browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) (declared compatibility targets are distinct from versions exercised by the current test matrix)
 
-## Custom busy bucket content (Issue #90 candidate)
+## Custom busy bucket content (Solid 1.11.0; requires Core 1.13.0)
 
-The unreleased Solid adapter accepts `loadingIcon` and `loadingContent` JSX props and forwards them to Core's named slots. The feature requires Core `1.13.0`; the currently published Solid package does not expose these props.
+Introduced in `@smilodon/solid@1.11.0`, `loadingIcon` and `loadingContent` JSX props forward content into Core's native loading slots. This requires `@smilodon/core@^1.13.0`.
 
 ```tsx
 <Select

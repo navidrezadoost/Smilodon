@@ -1619,9 +1619,9 @@ const items = computed(() => generateLargeDataset());
 
 *Last updated: February 9, 2026 - v1.3.6*
 
-## Custom busy content (Issue #90 candidate)
+## Custom busy content (Vue 1.11.0; Core 1.13.0)
 
-The candidate Vue adapter accepts `loadingIcon` and `loadingContent` named slots and forwards them to Core's `loading-icon` and `loading-content` slots. This requires Core `1.13.0` and is not included in the currently published Vue artifact.
+Starting in `@smilodon/vue@1.11.0`, the adapter accepts `loadingIcon` and `loadingContent` named slots and forwards them to Core's `loading-icon` and `loading-content` slots. Requires `@smilodon/core@^1.13.0`.
 
 ```vue
 <Select :items="items" :config="{ busyBucket: { enabled: true, showSpinner: false, minDisplayTime: 200, contentMode: 'append' } }">

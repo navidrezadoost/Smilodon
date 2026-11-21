@@ -184,9 +184,9 @@ The coordinator rejects stale responses by request ID and query generation; the 
 - **Legacy compatibility:** omit `config.dataLoading` to retain the legacy protocol. Existing `onSearch(query, results, count)` and `onLoadMore(page)` calls remain usable; the new request argument is optional in those callback signatures.
 - **Controlled selection:** keep `value` in application state and update it through `onChange`. Replacing remote result pages does not transfer ownership of the selected value from the application to the transport layer.
 
-### Custom busy bucket (Issue #90 release candidate; not in current npm versions)
+### Custom busy bucket (React 1.12.0; requires Core 1.13.0)
 
-React exposes Core's native loading slots through `loadingIcon` and `loadingContent`. These are React-owned light-DOM children; Core projects them into its Shadow DOM busy bucket without creating another React root.
+Introduced in `@smilodon/react@1.12.0`, `loadingIcon` and `loadingContent` expose Core's native loading slots. Use `@smilodon/core@^1.13.0`. These are React-owned light-DOM children; Core projects them into its Shadow DOM busy bucket without creating another React root.
 
 ```tsx
 <Select

@@ -1682,9 +1682,9 @@ MIT
 
 See the main [repository](https://github.com/yourusername/smilodon) for contribution guidelines.
 
-## Custom busy bucket slots (Issue #90 candidate)
+## Custom busy bucket slots (Vue 1.11.0; requires Core 1.13.0)
 
-The unreleased Vue adapter forwards named slots into Core's light-DOM slots. It requires Core `1.13.0`; the currently published Vue package does not include this wrapper API.
+Introduced in `@smilodon/vue@1.11.0`, the Vue adapter forwards named slots into Core's light-DOM slots. It requires `@smilodon/core@^1.13.0`.
 
 ```vue
 <Select :items="items" :config="{ busyBucket: {
