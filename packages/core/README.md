@@ -100,6 +100,20 @@ select.startDataLoading()
 
 For a paginated response, use `status: 'succeeded'` with `hasMore: true` and the next cursor when cursor pagination is configured. Use `status: 'exhausted'` with `hasMore: false` when the server reports end-of-data. On cancellation, abort the host request and do not complete it as a success. A stale completion result is not a signal to retry the old request.
 
+When an exhausted response contains no items, Core renders the terminal no-results message automatically after the accepted snapshot finishes projection. `completeDataRequest()` returning `accepted` only means the response passed coordinator validation; it does not mean the DOM has settled. Observe `dataProjection` and wait for `status: 'complete'` before reading projected DOM. A remote search uses its current query in the no-results message; an exhausted empty query displays “No options available.”
+
+```ts
+select.completeDataRequest({
+  requestId: request.requestId,
+  queryGeneration: request.queryGeneration,
+  status: 'exhausted',
+  items: [],
+  hasMore: false,
+})
+```
+
+An empty page with `status: 'empty'`, `hasMore: true`, and `advance: 'next'` is nonterminal and does not mean the search has no matches. It advances pagination; only an exhausted response establishes terminal absence of results.
+
 ## 📖 Documentation
 
 **Live documentation & interactive examples:** [navidrezadoost.github.io/Smilodon](https://navidrezadoost.github.io/Smilodon/)

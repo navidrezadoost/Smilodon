@@ -176,6 +176,7 @@ The coordinator rejects stale responses by request ID and query generation; the 
 
 ### Other useful scenarios
 
+- **Terminal empty remote search (#92):** When the host completes the matching acknowledged request with `status: 'exhausted'`, `items: []`, and `hasMore: false`, Core displays the query-specific no-results message after successful projection. React consumers do not need a manual rerender, popup toggle, or `setItems([])` workaround. Wait for `onDataProjection` with `status: 'complete'` before relying on the projected DOM; `completeDataRequest()` returning `accepted` reports response acceptance, not DOM settlement. An empty page with `status: 'empty'` and `hasMore: true` is nonterminal. This guidance does not include the separate React #85 fix.
 - **Empty query:** clearing search still invokes `onSearch` with `request.query === ''`. `URLSearchParams` serializes it as an explicit empty `q` parameter; do not omit it if the endpoint treats an empty query specially.
 - **Page-based pagination:** change `paginationMode` to `'page'`; the request's `position.page` is the page to request. Keep the API's page numbering consistent with `firstPage`.
 - **Hybrid search:** use `searchMode: 'hybrid'` only when the host intends the runtime's hybrid search behavior; the host still answers the remote request with its identity and generation.

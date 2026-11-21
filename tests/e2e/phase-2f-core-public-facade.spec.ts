@@ -75,3 +75,65 @@ test('public core facade gates readiness and separates synchronous acceptance fr
   await expect(select.getByRole('option', { name: 'One' })).toBeVisible();
   await expect(select.getByRole('option', { name: 'Two' })).toBeVisible();
 });
+
+test('@all keeps remote search open and renders terminal no-results before projection completion', async ({ page }) => {
+  await page.goto(playgroundUrl);
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(async () => {
+    await customElements.whenDefined('enhanced-select');
+    const select = document.createElement('enhanced-select') as any;
+    select.id = 'phase2f-empty-search-under-test';
+    select.updateConfig({
+      searchable: true,
+      infiniteScroll: { enabled: true, pageSize: 5 },
+      dataLoading: { protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 5 },
+    });
+    const requests: any[] = [];
+    const projections: any[] = [];
+    let emptyStateVisibleAtCompletion = false;
+    select.addEventListener('search', (event: CustomEvent) => requests.push(event.detail));
+    select.addEventListener('dataProjection', (event: CustomEvent) => {
+      projections.push(event.detail);
+      if (event.detail.status === 'complete') {
+        emptyStateVisibleAtCompletion = select.shadowRoot.querySelectorAll('[part="no-results"]').length === 1;
+      }
+    });
+    (window as any).__phase2fEmptySearch = { select, requests, projections, get emptyStateVisibleAtCompletion() {
+      return emptyStateVisibleAtCompletion;
+    } };
+    document.body.appendChild(select);
+    select.open();
+    select.startDataLoading();
+  });
+
+  const select = page.locator('#phase2f-empty-search-under-test');
+  await expect.poll(() => page.evaluate(() => (window as any).__phase2fEmptySearch.requests.length)).toBe(1);
+  await select.locator('input[role="combobox"]').fill('missing-product');
+  await expect.poll(() => page.evaluate(() => {
+    const requests = (window as any).__phase2fEmptySearch.requests;
+    return requests[requests.length - 1]?.request?.query;
+  })).toBe('missing-product');
+
+  const waiting = select.locator('.searching-state');
+  await expect(waiting).toBeVisible();
+  const completionResult = await page.evaluate(() => {
+    const { select, requests } = (window as any).__phase2fEmptySearch;
+    const request = requests[requests.length - 1].request;
+    return select.completeDataRequest({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      status: 'exhausted',
+      items: [],
+      hasMore: false,
+    });
+  });
+  expect(completionResult).toBe('accepted');
+
+  const emptyState = select.locator('[part="no-results"]');
+  await expect(emptyState).toHaveCount(1);
+  await expect(emptyState).toHaveText('No results found for "missing-product"');
+  await expect(select.locator('[aria-expanded="true"]')).toHaveCount(1);
+  await expect(select.locator('[role="listbox"]')).not.toHaveAttribute('aria-busy', 'true');
+  expect(await page.evaluate(() => (window as any).__phase2fEmptySearch.emptyStateVisibleAtCompletion)).toBe(true);
+  expect(await page.evaluate(() => (window as any).__phase2fEmptySearch.projections.at(-1)?.status)).toBe('complete');
+});
