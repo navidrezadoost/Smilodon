@@ -1104,4 +1104,104 @@ describe('React Adapter Contract Tests', () => {
 
     unmount();
   });
+
+  it('renders a context-aware React remove icon in both Core remove buttons', async () => {
+    const { createContext, useContext } = await import('react');
+    const IconContext = createContext('missing');
+    const RemoveIcon = () => createElement('svg', {
+      'data-testid': 'react-remove-icon',
+      'data-context': useContext(IconContext),
+      'aria-hidden': 'true',
+      viewBox: '0 0 16 16',
+    }, createElement('path', { d: 'M2 2 L14 14' }));
+
+    const onChange = vi.fn();
+    const { container, unmount } = render(
+      createElement(IconContext.Provider, { value: 'works' },
+        createElement(Select, {
+          items: reactItems,
+          multiple: true,
+          defaultValue: ['1'],
+          removeButtonIcon: createElement(RemoveIcon),
+          onChange,
+        })),
+    );
+    const host = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => expect(host.getSelectedValues()).toEqual(['1']));
+    const chipIcon = () => host.shadowRoot.querySelector(
+      '.selection-badge [part="chip-remove-icon"]',
+    ) as HTMLElement | null;
+    const option = () => host.shadowRoot.querySelector(
+      'select-option[data-index="0"]',
+    ) as HTMLElement | null;
+    const optionIcon = () => option()?.shadowRoot?.querySelector(
+      '[part="chip-remove-icon"]',
+    ) as HTMLElement | null;
+
+    await waitFor(() => {
+      expect(chipIcon()?.querySelector('svg[data-context="works"]')).toBeTruthy();
+      expect(optionIcon()?.querySelector('svg[data-context="works"]')).toBeTruthy();
+    });
+
+    const chipRemove = chipIcon()!.closest('button')!;
+    const optionRemove = optionIcon()!.closest('button')!;
+    expect(chipRemove.getAttribute('part')).toBe('chip-remove');
+    expect(optionRemove.getAttribute('part')).toBe('chip-remove');
+    expect(chipRemove.getAttribute('aria-label')).toMatch(/^Remove /);
+    expect(optionRemove.getAttribute('aria-label')).toBe('Remove option');
+    expect(chipRemove.getAttribute('type')).toBe('button');
+    expect(optionRemove.getAttribute('type')).toBe('button');
+
+    act(() => {
+      optionIcon()!.querySelector('path')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true }),
+      );
+    });
+    await waitFor(() => expect(host.getSelectedValues()).toEqual([]));
+    expect(onChange).toHaveBeenCalled();
+    unmount();
+  });
+
+  it('keeps legacy string icons and removes chips without activating an option', async () => {
+    const { container, rerender, unmount } = render(createElement(Select, {
+      items: reactItems,
+      multiple: true,
+      defaultValue: ['1'],
+      removeButtonIcon: '−',
+    }));
+    const host = container.querySelector('enhanced-select') as any;
+    await waitFor(() => expect(host.getSelectedValues()).toEqual(['1']));
+    const chipIcon = () => host.shadowRoot.querySelector(
+      '.selection-badge [part="chip-remove-icon"]',
+    ) as HTMLElement | null;
+    expect(chipIcon()?.textContent).toBe('−');
+
+    // Switching from legacy text to a React node and back must not leave a
+    // duplicate icon or an orphaned portal.
+    rerender(createElement(Select, {
+      items: reactItems,
+      multiple: true,
+      defaultValue: ['1'],
+      removeButtonIcon: createElement('svg', { 'data-testid': 'replacement-icon' }),
+    }));
+    await waitFor(() =>
+      expect(chipIcon()?.querySelector('svg[data-testid="replacement-icon"]')).toBeTruthy(),
+    );
+    rerender(createElement(Select, {
+      items: reactItems,
+      multiple: true,
+      defaultValue: ['1'],
+      removeButtonIcon: '×',
+    }));
+    await waitFor(() => expect(chipIcon()?.textContent).toBe('×'));
+    expect(chipIcon()?.querySelector('svg')).toBeNull();
+
+    act(() => {
+      chipIcon()!.closest('button')!.click();
+    });
+    await waitFor(() => expect(host.getSelectedValues()).toEqual([]));
+    unmount();
+  });
+
 });

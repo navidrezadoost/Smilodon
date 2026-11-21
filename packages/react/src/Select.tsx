@@ -10,6 +10,7 @@ import React, {
   useMemo,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { createPortal } from "react-dom";
 import type {
   SelectEventDetail,
   SearchEventDetail,
@@ -157,8 +158,8 @@ export interface SelectComponentProps {
   /** Per-instance core config, including opt-in acknowledged data loading */
   config?: SelectInstanceConfig;
 
-  /** Custom icon/markup for selected chip remove buttons */
-  removeButtonIcon?: string;
+  /** Custom chip and selected-option remove icon: a legacy string or React content. */
+  removeButtonIcon?: React.ReactNode;
 
   /** Custom decorative arrow icon rendered in the native arrow slot. */
   arrowIcon?: React.ReactNode;
@@ -765,6 +766,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
   const [emptyStateContext, setEmptyStateContext] = useState<EmptyStateContext | null>(null);
+  const [removeIconTargets, setRemoveIconTargets] = useState<HTMLElement[]>([]);
+  const shouldPortalRemoveIcon =
+    multiple
+    && removeButtonIcon != null
+    && typeof removeButtonIcon !== "string"
+    && typeof removeButtonIcon !== "boolean"
+    && coreConfig?.selection?.removeButtonIcon === undefined;
   const acknowledgedRequested =
     acceptedProtocol === "acknowledged" ||
     coreConfig?.dataLoading?.protocol === "acknowledged";
@@ -1167,7 +1175,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         ...selectionConfig,
         mode: multiple ? "multi" : "single",
         maxSelections: maxSelections,
-        removeButtonIcon,
+        removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
         disabledOptionBehavior,
         showSelectedIndicator,
         toggleOnTriggerClick,
@@ -1351,7 +1359,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         ...selectionConfig,
         mode: multiple ? "multi" : "single",
         maxSelections: maxSelections,
-        removeButtonIcon,
+        removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
         disabledOptionBehavior,
         showSelectedIndicator,
         toggleOnTriggerClick,
@@ -1429,6 +1437,68 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     isElementUsable,
     applyInstanceConfig,
   ]);
+
+  // React nodes cannot be passed through Core's string-only icon configuration.
+  // Instead, render the node into Core-owned icon spans using context-preserving
+  // portals. Observe both the select and its nested SelectOption shadow roots,
+  // since Core may recreate those spans during selection/configuration updates.
+  useEffect(() => {
+    const element = elementRef.current as HTMLElement | null;
+    const shadow = element?.shadowRoot;
+    if (!isElementUsable || !shouldPortalRemoveIcon || !shadow) {
+      setRemoveIconTargets((previous) => previous.length ? [] : previous);
+      return;
+    }
+
+    const observed = new Set<ShadowRoot>();
+    let currentTargets: HTMLElement[] = [];
+    let disposed = false;
+    const observer = new MutationObserver(() => refresh());
+
+    const refresh = () => {
+      if (disposed) return;
+      const optionRoots = Array.from(shadow.querySelectorAll("select-option"))
+        .map((option) => option.shadowRoot)
+        .filter((root): root is ShadowRoot => root !== null);
+      const roots = [shadow, ...optionRoots];
+      if (
+        roots.length !== observed.size
+        || roots.some((root) => !observed.has(root))
+      ) {
+        observer.disconnect();
+        observed.clear();
+        for (const root of roots) {
+          observer.observe(root, { childList: true, subtree: true });
+          observed.add(root);
+        }
+      }
+
+      const targets = [
+        ...Array.from(shadow.querySelectorAll<HTMLElement>('[part="chip-remove-icon"]')),
+        ...optionRoots.flatMap((root) =>
+          Array.from(root.querySelectorAll<HTMLElement>('[part="chip-remove-icon"]')),
+        ),
+      ];
+      if (
+        targets.length === currentTargets.length
+        && targets.every((target, index) => target === currentTargets[index])
+      ) return;
+
+      // Remove Core's fallback glyph only for *new* portal destinations.
+      // Previously mounted targets stay under React ownership.
+      for (const target of targets) {
+        if (!currentTargets.includes(target)) target.replaceChildren();
+      }
+      currentTargets = targets;
+      setRemoveIconTargets(targets);
+    };
+
+    refresh();
+    return () => {
+      disposed = true;
+      observer.disconnect();
+    };
+  }, [isElementUsable, shouldPortalRemoveIcon]);
 
   // Update error state
   useEffect(() => {
@@ -1696,6 +1766,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
           "div",
           { slot: "empty-state", className: "smilodon-empty-state" },
           renderedEmptyState,
+        )
+      : null,
+    shouldPortalRemoveIcon
+      ? removeIconTargets.map((target, index) =>
+          createPortal(
+            React.createElement("span", { "aria-hidden": "true" }, removeButtonIcon),
+            target,
+            index,
+          ),
         )
       : null,
   );
