@@ -1698,7 +1698,24 @@ Introduced in `@smilodon/vue@1.11.0`, the Vue adapter forwards named slots into 
 
 Use `contentMode: 'replace'` when accessible custom content should replace the built-in message and icon. Core retains its “Loading…” fallback when replacement content is hidden or lacks an accessible name. Core controls spinner/message visibility and minimum visual duration; the host owns request transport and item updates.
 
-## Custom empty-state slot (unreleased)
+## Latest-chip auto-scroll (Vue 1.11.0 candidate; Issue #100)
+
+For horizontal multi-selects, set `scrollToLatestChip` in `multiSelectDisplay` to reveal each newly selected chip. The setting is opt-in and respects reduced-motion preferences. It requires the pending Core `1.17.0` release; see the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md) for current availability.
+
+```vue
+<Select
+  :items="items"
+  multiple
+  :multiSelectDisplay="{
+    mode: 'horizontal',
+    overflowX: 'auto',
+    scrollToLatestChip: true,
+    scrollToLatestChipBehavior: 'smooth'
+  }"
+/>
+```
+
+## Custom empty-state slot (Vue 1.11.0 candidate; Issue #93)
 
 Use the `emptyState` slot to customize terminal no-options/no-results presentation. Its slot props are Core's readonly `query` and `reason` context. `emptyStateChange` emits the current context and then `null` when the terminal state clears; the component's exposed `getEmptyStateContext()` method reads the current snapshot.
 

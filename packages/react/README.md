@@ -2,6 +2,8 @@
 
 Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
+> **Upcoming web release:** React `1.12.0` and Core `1.17.0` are release candidates, not yet available from npm. Their cumulative changes and qualification limits are tracked in the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md).
+
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation
@@ -217,7 +219,24 @@ Use `contentMode: 'replace'` when accessible `loadingContent` should be the only
 
 `minDisplayTime` is a presentation policy for the busy bucket, not a request delay. Request acceptance, pagination state, and `aria-busy` update as soon as the request completes. The dedicated `Searching...` view remains unchanged and is not replaced by these props.
 
-### Custom empty-state renderer (unreleased)
+### Latest-chip auto-scroll (React 1.12.0 candidate; Issue #100)
+
+In horizontal multi-select mode, `multiSelectDisplay.scrollToLatestChip` reveals a newly selected chip. It is opt-in and respects reduced-motion preferences. This behavior requires the pending Core `1.17.0` release; the adapter versions listed in the [web release checklist](../../docs/releases/WEB-1.17.0-RELEASE.md) are not yet on npm.
+
+```tsx
+<Select
+  items={items}
+  multiple
+  multiSelectDisplay={{
+    mode: 'horizontal',
+    overflowX: 'auto',
+    scrollToLatestChip: true,
+    scrollToLatestChipBehavior: 'smooth',
+  }}
+/>
+```
+
+### Custom empty-state renderer (React 1.12.0 candidate; Issue #93)
 
 `emptyStateRenderer` receives Core's readonly `{ query, reason }` context only while a terminal empty state is active. React renders its result in Core's native `empty-state` slot; omit the prop to keep the built-in fallback. `onEmptyStateChange` receives the new context and receives `null` when the empty state clears. The imperative handle also exposes `getEmptyStateContext()`.
 
