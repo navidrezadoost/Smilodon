@@ -1,4 +1,4 @@
-import { DefineComponent } from 'vue';
+import type { DefineComponent, SlotsType } from 'vue';
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -15,7 +15,13 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
+  EmptyStateContext,
 } from '@smilodon/core';
+
+export interface SelectSlots {
+  /** Custom content for a terminal empty result. */
+  emptyState?: (props: EmptyStateContext) => unknown;
+}
 
 export interface SelectItem {
   value: string | number;
@@ -111,6 +117,8 @@ export interface SelectEmits {
   create: (value: string) => void;
   /** Emitted when core reports an error */
   error: (detail: ErrorEventDetail) => void;
+  /** Emitted when Core enters, updates, or clears its terminal empty state. */
+  emptyStateChange: (context: EmptyStateContext | null) => void;
 }
 
 export interface SelectExposed {
@@ -130,6 +138,8 @@ export interface SelectExposed {
   getSelectedItems: () => SelectItem[];
   /** Get selected values */
   getSelectedValues: () => Array<string | number>;
+  /** Get the current terminal empty-state context, if any. */
+  getEmptyStateContext: () => EmptyStateContext | null;
   /** Clear current search query */
   clearSearch: () => void;
   /** Apply partial core config at runtime */
@@ -144,6 +154,20 @@ export interface SelectExposed {
   validate: () => boolean;
 }
 
-declare const Select: DefineComponent<SelectProps, SelectExposed, SelectEmits>;
+declare const Select: DefineComponent<
+  SelectProps,
+  SelectExposed,
+  {},
+  {},
+  {},
+  {},
+  {},
+  SelectEmits,
+  keyof SelectEmits,
+  any,
+  any,
+  any,
+  SlotsType<SelectSlots>
+>;
 
 export default Select;

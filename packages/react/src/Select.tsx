@@ -37,6 +37,7 @@ import type {
   DataRequestCompletion,
   DataRequestCompletionResult,
   ResolvedDataLoadingConfig,
+  EmptyStateContext,
 } from "@smilodon/core";
 
 type CoreModule = typeof import("@smilodon/core");
@@ -168,6 +169,9 @@ export interface SelectComponentProps {
   /** Accessible custom busy UI projected into Core's native loading-content slot. */
   loadingContent?: React.ReactNode;
 
+  /** Render custom empty-state content while Core reports a terminal empty result. */
+  emptyStateRenderer?: (context: EmptyStateContext) => React.ReactNode;
+
   /** Behavior overrides for visually disabled (dimmed) options */
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -289,6 +293,9 @@ export interface SelectComponentProps {
   /** Called when the core rejects a data-loading config transition */
   onDataLoadingConfigError?: (detail: DataLoadingConfigErrorDetail) => void;
 
+  /** Called when Core enters, updates, or clears its terminal empty state. */
+  onEmptyStateChange?: (context: EmptyStateContext | null) => void;
+
   /** Enable runtime tracking */
   trackingEnabled?: boolean;
 
@@ -345,6 +352,8 @@ export interface SelectHandle {
 
   /** Get currently selected values */
   getSelectedValues: () => Array<string | number>;
+  /** Get the current terminal empty-state context, if any. */
+  getEmptyStateContext: () => EmptyStateContext | null;
 
   /** Programmatically set items */
   setItems: (items: SelectItem[]) => void;
@@ -467,6 +476,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     arrowIcon,
     loadingIcon,
     loadingContent,
+    emptyStateRenderer,
     disabledOptionBehavior,
     showSelectedIndicator = true,
     toggleOnTriggerClick = true,
@@ -494,6 +504,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onDataRequestCancel,
     onDataProjection,
     onDataLoadingConfigError,
+    onEmptyStateChange,
     trackingEnabled = false,
     trackEvents = true,
     trackStyling = true,
@@ -539,6 +550,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onDataRequestCancel,
     onDataProjection,
     onDataLoadingConfigError,
+    onEmptyStateChange,
     isControlled,
     multiple,
   });
@@ -554,6 +566,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     onDataRequestCancel,
     onDataProjection,
     onDataLoadingConfigError,
+    onEmptyStateChange,
     isControlled,
     multiple,
   };
@@ -751,6 +764,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
+  const [emptyStateContext, setEmptyStateContext] = useState<EmptyStateContext | null>(null);
   const acknowledgedRequested =
     acceptedProtocol === "acknowledged" ||
     coreConfig?.dataLoading?.protocol === "acknowledged";
@@ -980,6 +994,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         (event as CustomEvent<DataLoadingConfigErrorDetail>).detail,
       );
     };
+    const handleEmptyStateChange = (event: Event) => {
+      const context = (event as CustomEvent<{ context: EmptyStateContext | null }>).detail.context;
+      setEmptyStateContext(context);
+      callbackStateRef.current.onEmptyStateChange?.(context);
+    };
 
     const listeners: Array<[string, EventListener]> = [
       ["select", handleSelect],
@@ -993,10 +1012,15 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       ["dataRequestCancel", handleDataRequestCancel],
       ["dataProjection", handleDataProjection],
       ["dataLoadingConfigError", handleDataLoadingConfigError],
+      ["emptyStateChange", handleEmptyStateChange],
     ];
     for (const [name, listener] of listeners) {
       element.addEventListener(name, listener);
     }
+    setEmptyStateContext(
+      (element as HTMLElement & { getEmptyStateContext?: () => EmptyStateContext | null })
+        .getEmptyStateContext?.() ?? null,
+    );
     const dispose = () => {
       if (activeListenersRef.current?.dispose === dispose) {
         activeListenersRef.current = null;
@@ -1510,6 +1534,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     getSelectedValues: () => {
       return elementRef.current?.getSelectedValues() || [];
     },
+    getEmptyStateContext: () =>
+      (elementRef.current as (HTMLElement & {
+        getEmptyStateContext?: () => EmptyStateContext | null;
+      }) | null)?.getEmptyStateContext?.() ?? null,
     setItems: (items: SelectItem[]) => {
       elementRef.current?.setItems(items);
     },
@@ -1615,6 +1643,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     acceptedProtocol === "acknowledged" && !isUnusable
       ? composeBusyToken(consumerAriaBusy, loading)
       : consumerAriaBusy;
+  const renderedEmptyState =
+    emptyStateContext && emptyStateRenderer
+      ? emptyStateRenderer(emptyStateContext)
+      : null;
 
   return React.createElement(
     "enhanced-select",
@@ -1657,6 +1689,13 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
             className: "smilodon-loading-content",
           },
           loadingContent,
+        )
+      : null,
+    renderedEmptyState != null && typeof renderedEmptyState !== "boolean"
+      ? React.createElement(
+          "div",
+          { slot: "empty-state", className: "smilodon-empty-state" },
+          renderedEmptyState,
         )
       : null,
   );

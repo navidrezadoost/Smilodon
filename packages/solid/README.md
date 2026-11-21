@@ -495,3 +495,23 @@ Introduced in `@smilodon/solid@1.11.0`, `loadingIcon` and `loadingContent` JSX p
 ```
 
 Set `contentMode: 'replace'` to replace the built-in presentation when custom content has an accessible name. Core keeps its status fallback when replacement content is not accessible. The host owns data requests; `minDisplayTime` affects only the visual bucket.
+
+## Custom empty-state renderer (unreleased)
+
+`emptyStateRenderer` receives Core's readonly `{ query, reason }` context while a terminal empty state is active. `onEmptyStateChange` receives each context change and `null` when the state clears. The `SelectHandle` exposes `getEmptyStateContext()` for an imperative snapshot. Without a renderer, Core retains its fallback message.
+
+```tsx
+<Select
+  items={items}
+  searchable
+  emptyStateRenderer={(context) => (
+    <div role="status">
+      <EmptyResultsIcon aria-hidden="true" />
+      {context.reason === 'no-options' ? 'No options yet' : `No results for “${context.query}”`}
+    </div>
+  )}
+  onEmptyStateChange={(context) => console.log(context)}
+/>
+```
+
+The renderer is presentation-only; it does not take ownership of results or selection.

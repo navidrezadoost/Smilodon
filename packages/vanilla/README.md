@@ -276,6 +276,27 @@ console.log(validate(select));
 </html>
 ```
 
+### Custom empty-state content (unreleased)
+
+Append a child with `slot="empty-state"` to customize terminal empty presentation. Core retains its built-in fallback when the slot has no assigned content. Listen for `emptyStateChange` to receive `{ context: { query, reason } }` or `{ context: null }`, and call `getEmptyStateContext()` for a readonly snapshot.
+
+```ts
+const empty = document.createElement('div');
+empty.slot = 'empty-state';
+empty.setAttribute('role', 'status');
+const message = document.createElement('strong');
+message.textContent = 'No matches. Try another search.';
+empty.append(message);
+select.append(empty);
+
+select.addEventListener('emptyStateChange', (event) => {
+  const { context } = (event as CustomEvent<{ context: { query: string; reason: string } | null }>).detail;
+  console.log('Empty-state context:', context);
+});
+```
+
+The slot changes presentation only. Build DOM nodes when rendering dynamic values so text is not interpreted as HTML.
+
 ## Examples
 
 Every standalone helper example below imports `@smilodon/core` before calling `createSelect()`. In an application, one core side-effect import at the browser entry point is sufficient. When initializing an existing host with `initSelect()`, wait for `customElements.whenDefined('enhanced-select')` as shown above.

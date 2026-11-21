@@ -84,6 +84,9 @@ export type {
   DataLoadingStateSnapshot,
   DataProjectionEventDetail,
   SelectInstanceConfig,
+  EmptyStateContext,
+  EmptyStateReason,
+  EmptyStateChangeDetail,
 } from '@smilodon/core';
 
 export { configureSelect, resetSelectConfig, selectConfig } from '@smilodon/core';

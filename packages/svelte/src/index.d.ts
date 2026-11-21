@@ -17,6 +17,9 @@ export type {
   ChangeEventDetail,
   LoadMoreEventDetail,
   GroupedItem,
+  EmptyStateContext,
+  EmptyStateReason,
+  EmptyStateChangeDetail,
 } from '@smilodon/core';
 
 // Keep the declaration surface aligned with the runtime re-exports in index.ts.

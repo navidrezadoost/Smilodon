@@ -217,6 +217,26 @@ Use `contentMode: 'replace'` when accessible `loadingContent` should be the only
 
 `minDisplayTime` is a presentation policy for the busy bucket, not a request delay. Request acceptance, pagination state, and `aria-busy` update as soon as the request completes. The dedicated `Searching...` view remains unchanged and is not replaced by these props.
 
+### Custom empty-state renderer (unreleased)
+
+`emptyStateRenderer` receives Core's readonly `{ query, reason }` context only while a terminal empty state is active. React renders its result in Core's native `empty-state` slot; omit the prop to keep the built-in fallback. `onEmptyStateChange` receives the new context and receives `null` when the empty state clears. The imperative handle also exposes `getEmptyStateContext()`.
+
+```tsx
+<Select
+  items={items}
+  searchable
+  emptyStateRenderer={({ query, reason }) => (
+    <div role="status">
+      <EmptyResultsIcon aria-hidden="true" />
+      <span>{reason === 'no-options' ? 'No options yet' : `No results for “${query}”`}</span>
+    </div>
+  )}
+  onEmptyStateChange={(context) => console.log('Empty state:', context)}
+/>
+```
+
+This is a presentation API; it does not change the behavior of `items`, acknowledged request completion, or selection.
+
 ## Infinite Render Loop: Root-Cause Review (No External Dependencies)
 
 If you see `Maximum update depth exceeded`, follow this checklist before shipping:

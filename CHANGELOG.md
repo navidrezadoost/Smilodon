@@ -28,6 +28,8 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added (unreleased)
 
+- **Custom empty-state rendering ([#93](https://github.com/navidrezadoost/Smilodon/issues/93)):** Core exposes the `empty-state` slot, typed `EmptyStateContext` (`query` and `reason`), `getEmptyStateContext()`, and `emptyStateChange`. React, Vue, Svelte 5, Solid, and Vanilla can render custom text or markup while preserving Core's default fallback when no custom content is provided. This change is unreleased and does not alter published package versions.
+
 - **Custom busy bucket slots (#90; merged, pending npm publication):** Core `1.13.0` adds native `loading-icon` and `loading-content` slots, append/replace presentation modes, explicit built-in message visibility, accessible fallback behavior, and minimum visual display timing without delaying request completion, pagination, or `aria-busy`. Companion adapter versions: React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, Svelte 5 `2.1.0`. React, Vue, Svelte 5 and Solid expose framework-native loading content; Vanilla uses the native DOM slots. React Native and the separate `Searching...` state remain outside scope. Versions are set in merged source; **npm publication and integrity verification remain pending**. This is not part of previous Core `1.12.0` or adapter versions.
 
 ## [1.12.0] - 2026-11-19

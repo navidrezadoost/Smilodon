@@ -67,6 +67,17 @@ export interface ClearEventDetail {
   clearedSearch: boolean;
 }
 
+export type EmptyStateReason = 'no-options' | 'no-results';
+
+export interface EmptyStateContext {
+  readonly query: string;
+  readonly reason: EmptyStateReason;
+}
+
+export interface EmptyStateChangeDetail {
+  readonly context: EmptyStateContext | null;
+}
+
 export type LimitationPolicyMap = Partial<Record<KnownLimitationId, LimitationPolicy>>;
 
 export interface LimitationState {
@@ -96,6 +107,7 @@ export interface SelectCapabilitiesReport {
     classMap: boolean;
     optionRenderer: boolean;
     groupHeaderRenderer: boolean;
+    emptyStateSlot: boolean;
     cssCustomProperties: boolean;
     shadowParts: boolean;
     globalStyleMirroring: boolean;
@@ -135,6 +147,7 @@ export interface SelectEventsDetailMap {
   loadMore: LoadMoreEventDetail;
   remove: RemoveEventDetail;
   clear: ClearEventDetail;
+  emptyStateChange: EmptyStateChangeDetail;
   diagnostic: DiagnosticEventDetail;
 }
 

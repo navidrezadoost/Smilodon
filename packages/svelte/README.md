@@ -1269,3 +1269,20 @@ Introduced in `@smilodon/svelte@2.1.0` for Svelte 5, `loadingIcon` and `loadingC
 ```
 
 Core controls spinner/message visibility, append or replace mode, accessible fallback, and minimum visual duration. The host remains responsible for transport and item updates.
+
+## Custom empty-state snippet (unreleased)
+
+For Svelte 5, pass an `emptyState` snippet. Core supplies its readonly `query` and `reason` context while terminally empty. The adapter dispatches `emptyStateChange` with that context, then `null` when the state clears, and exposes `getEmptyStateContext()` on the component instance. If no snippet is supplied, Core displays its default fallback.
+
+```svelte
+{#snippet emptyState(context)}
+  <div role="status">
+    <EmptyResultsIcon aria-hidden="true" />
+    {context.reason === 'no-options' ? 'No options yet' : `No results for “${context.query}”`}
+  </div>
+{/snippet}
+
+<Select {items} searchable {emptyState} on:emptyStateChange={(event) => console.log(event.detail)} />
+```
+
+This snippet changes only the empty-state presentation, not request or selection behavior.

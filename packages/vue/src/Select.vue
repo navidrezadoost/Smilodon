@@ -33,6 +33,9 @@
     <div v-if="hasSlotContent('loadingContent')" slot="loading-content">
       <slot name="loadingContent" />
     </div>
+    <div v-if="emptyStateContext && hasSlotContent('emptyState', emptyStateContext)" slot="empty-state">
+      <slot name="emptyState" v-bind="emptyStateContext" />
+    </div>
   </enhanced-select>
 </template>
 
@@ -40,6 +43,11 @@
 defineOptions({
   inheritAttrs: false,
 });
+defineSlots<{
+  loadingIcon?: () => unknown;
+  loadingContent?: () => unknown;
+  emptyState?: (props: EmptyStateContext) => unknown;
+}>();
 
 import { Comment, ref, watch, onMounted, onBeforeUnmount, computed, render, isVNode, h, useSlots } from 'vue';
 import { arraysEqualByValue } from '@smilodon/core';
@@ -61,6 +69,8 @@ import type {
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
+  EmptyStateContext,
+  EmptyStateChangeDetail,
 } from '@smilodon/core';
 
 export interface SelectItem {
@@ -202,6 +212,8 @@ export interface SelectEmits {
   (e: 'clear', detail: { clearedSelection: boolean; clearedSearch: boolean }): void;
   /** Emitted when runtime diagnostics are enabled */
   (e: 'diagnostic', detail: DiagnosticEventDetail): void;
+  /** Emitted when Core enters, updates, or clears its terminal empty state. */
+  (e: 'emptyStateChange', context: EmptyStateContext | null): void;
 }
 
 const props = withDefaults(defineProps<SelectProps>(), {
@@ -230,10 +242,18 @@ const props = withDefaults(defineProps<SelectProps>(), {
 
 const emit = defineEmits<SelectEmits>();
 const slots = useSlots();
-const hasSlotContent = (name: 'loadingIcon' | 'loadingContent') =>
-  Boolean(slots[name]?.().some((node) => node.type !== Comment));
+const hasSlotContent = (
+  name: 'loadingIcon' | 'loadingContent' | 'emptyState',
+  slotProps?: EmptyStateContext | null,
+) => {
+  const props = name === 'emptyState'
+    ? slotProps ?? { query: '', reason: 'no-options' as const }
+    : undefined;
+  return Boolean(slots[name]?.(props).some((node) => node.type !== Comment));
+};
 
 const selectRef = ref<HTMLElement | null>(null);
+const emptyStateContext = ref<EmptyStateContext | null>(null);
 const isElementReady = ref(false);
 const internalValue = ref<string | number | (string | number)[] | undefined>(
   props.defaultValue
@@ -640,6 +660,12 @@ const handleDiagnostic = (e: Event) => {
   emit('diagnostic', customEvent.detail);
 };
 
+const handleEmptyStateChange = (e: Event) => {
+  const context = (e as CustomEvent<EmptyStateChangeDetail>).detail.context;
+  emptyStateContext.value = context;
+  emit('emptyStateChange', context);
+};
+
 // Setup event listeners
 onMounted(async () => {
   await waitForUpgrade();
@@ -670,6 +696,9 @@ onMounted(async () => {
     } else {
       element.setItems(props.items);
     }
+  } else if (!props.groupedItems?.length) {
+    // Explicitly synchronize an empty list so Core can expose its no-options state.
+    element.setItems(props.items ?? []);
   }
   if (props.groupedItems?.length) {
     element.setGroupedItems(props.groupedItems);
@@ -693,6 +722,8 @@ onMounted(async () => {
   element.addEventListener('create', handleCreate as EventListener);
   element.addEventListener('clear', handleClear as EventListener);
   element.addEventListener('diagnostic', handleDiagnostic as EventListener);
+  element.addEventListener('emptyStateChange', handleEmptyStateChange as EventListener);
+  emptyStateContext.value = element.getEmptyStateContext?.() ?? null;
 });
 
 onBeforeUnmount(() => {
@@ -713,6 +744,7 @@ onBeforeUnmount(() => {
   element.removeEventListener('create', handleCreate as EventListener);
   element.removeEventListener('clear', handleClear as EventListener);
   element.removeEventListener('diagnostic', handleDiagnostic as EventListener);
+  element.removeEventListener('emptyStateChange', handleEmptyStateChange as EventListener);
 });
 
 // Expose imperative API
@@ -755,6 +787,9 @@ defineExpose({
   getSelectedValues: () => {
     return (selectRef.value as any)?.getSelectedValues?.() || [];
   },
+  /** Get the current terminal empty-state context, if any. */
+  getEmptyStateContext: (): EmptyStateContext | null =>
+    (selectRef.value as any)?.getEmptyStateContext?.() ?? null,
   /** Clear current search query */
   clearSearch: () => {
     (selectRef.value as any)?.clearSearch?.();

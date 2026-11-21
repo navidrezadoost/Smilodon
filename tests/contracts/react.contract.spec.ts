@@ -935,6 +935,36 @@ class ReactContractTests extends ContractTestRunner {
 
 // Run the contract tests
 describe('React Adapter Contract Tests', () => {
+  it('renders the Core empty-state slot and reports its typed context', async () => {
+    const onEmptyStateChange = vi.fn();
+    const { container, rerender, unmount } = render(createElement(Select, {
+      items: [],
+      emptyStateRenderer: ({ query, reason }) => createElement('span', {
+        'data-testid': 'react-empty-state',
+      }, `${reason}:${query}`),
+      onEmptyStateChange,
+    }));
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="empty-state"] [data-testid="react-empty-state"]')?.textContent)
+        .toBe('no-options:');
+      expect(element.getEmptyStateContext()).toEqual({ query: '', reason: 'no-options' });
+    });
+
+    rerender(createElement(Select, { items: [], emptyStateRenderer: () => null, onEmptyStateChange }));
+    await waitFor(() => {
+      expect(element.querySelector('[slot="empty-state"]')).toBeNull();
+      expect(element.shadowRoot?.querySelector('[part="no-results"]')?.textContent)
+        .toContain('No options available');
+    });
+
+    element.setItems(reactItems);
+    await waitFor(() => expect(element.getEmptyStateContext()).toBeNull());
+    expect(onEmptyStateChange).toHaveBeenCalledWith(null);
+    unmount();
+  });
+
   it('implements SelectContract correctly', async () => {
     const runner = new ReactContractTests();
     const results = await runner.runAll();

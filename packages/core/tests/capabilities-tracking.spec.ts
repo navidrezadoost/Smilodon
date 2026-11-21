@@ -26,6 +26,8 @@ describe('Capabilities, Tracking and Limitations', () => {
     expect(capabilities).toBeTruthy();
     expect(capabilities?.events?.diagnosticEvent).toBe(true);
     expect(capabilities?.styling?.classMap).toBe(true);
+    expect(capabilities?.styling?.emptyStateSlot).toBe(true);
+    expect(capabilities?.events?.emitted).toContain('emptyStateChange');
 
     const limitations = el.getKnownLimitations?.() || [];
     expect(Array.isArray(limitations)).toBe(true);

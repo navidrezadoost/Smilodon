@@ -37,6 +37,25 @@ afterEach(() => {
 });
 
 describe('Solid Adapter Contract Tests', () => {
+  it('projects a typed custom empty-state renderer and reports transitions', async () => {
+    const onEmptyStateChange = vi.fn();
+    let handle: SelectHandle | undefined;
+    const { element } = mount({
+      items: [],
+      emptyStateRenderer: ({ query, reason }: { query: string; reason: string }) => `${reason}:${query}`,
+      onEmptyStateChange,
+      ref: (value: SelectHandle) => { handle = value; },
+    });
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="empty-state"]')?.textContent).toBe('no-options:');
+      expect(handle?.getEmptyStateContext()).toEqual({ query: '', reason: 'no-options' });
+    });
+    element.setItems(basicItems);
+    await waitFor(() => expect(handle?.getEmptyStateContext()).toBeNull());
+    expect(onEmptyStateChange).toHaveBeenCalledWith(null);
+  });
+
   it('mounts the custom element and synchronizes the provided items', async () => {
     const { element } = mount({ items: basicItems, placeholder: 'Choose a fruit' });
 
