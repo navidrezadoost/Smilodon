@@ -1248,9 +1248,9 @@ select.addEventListener('search', (event) => {
 
 *Last updated: February 9, 2026 - v1.3.6*
 
-## Native busy-bucket slots (Issue #90 candidate)
+## Native busy-bucket slots (Core 1.13.0; Vanilla 1.11.0)
 
-The Vanilla helper returns the Core custom element, so add custom presentation nodes directly. No new helper option is needed. This requires Core `1.13.0` and is not available in the current published Core artifact.
+The Vanilla helper returns the Core custom element, so add custom presentation nodes directly. No new helper option is needed. The slots were introduced in `@smilodon/core@1.13.0`; `@smilodon/vanilla@1.11.0` declares a compatible Core peer requirement.
 
 ```ts
 const select = createSelect({ items, config: {
