@@ -24,7 +24,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added (unreleased)
 
-- **Custom busy bucket slots (#90, unreleased):** Core adds native `loading-icon` and `loading-content` slots, append/replace presentation modes, explicit built-in message visibility, and a minimum visual display time that does not delay request acceptance or pagination. React, Vue, Svelte 5, and Solid adapters expose framework-native content interfaces; Vanilla uses the native DOM slots. React Native remains outside this web feature's scope. Adapter qualification and package publication remain pending. The separate `Searching...` state is unchanged. This is not included in published Core `1.12.0`, React `1.11.0`, Vue/Solid/Vanilla `1.10.1`, or Svelte `2.0.0`.
+- **Custom busy bucket slots (#90; merged, pending npm publication):** Core `1.13.0` adds native `loading-icon` and `loading-content` slots, append/replace presentation modes, explicit built-in message visibility, accessible fallback behavior, and minimum visual display timing without delaying request completion, pagination, or `aria-busy`. Companion adapter versions: React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, Svelte 5 `2.1.0`. React, Vue, Svelte 5 and Solid expose framework-native loading content; Vanilla uses the native DOM slots. React Native and the separate `Searching...` state remain outside scope. Versions are set in merged source; **npm publication and integrity verification remain pending**. This is not part of previous Core `1.12.0` or adapter versions.
 
 ## [1.12.0] - 2026-11-19
 
