@@ -1250,9 +1250,9 @@ MIT © [Navid Rezadoost](https://github.com/navidrezadoost)
 
 Contributions are welcome! Please see the [main repository](https://github.com/navidrezadoost/smilodon) for guidelines.
 
-## Custom busy bucket snippets (Issue #90 candidate)
+## Custom busy bucket snippets (Svelte 2.1.0; requires Core 1.13.0)
 
-The unreleased Svelte 5 candidate accepts `loadingIcon` and `loadingContent` snippet props and forwards them to Core's native loading slots. It requires Core `1.13.0`; these props are not in the currently published Svelte artifact.
+Introduced in `@smilodon/svelte@2.1.0` for Svelte 5, `loadingIcon` and `loadingContent` snippet props forward content into Core's native loading slots. This requires `@smilodon/core@^1.13.0`.
 
 ```svelte
 <script lang="ts">
