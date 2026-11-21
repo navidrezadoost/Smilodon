@@ -620,9 +620,9 @@ Check that:
 - [../../docs/PERFORMANCE.md](../../docs/PERFORMANCE.md)
 - [../../docs/STYLING.md](../../docs/STYLING.md)
 
-## Custom busy content (Issue #90 candidate)
+## Custom busy content (Solid 1.11.0; Core 1.13.0)
 
-Solid consumers can pass JSX through `loadingIcon` and `loadingContent`. The candidate requires Core `1.13.0`; this is not part of the currently published Solid artifact.
+Starting in `@smilodon/solid@1.11.0`, consumers can pass JSX through `loadingIcon` and `loadingContent`. Requires `@smilodon/core@^1.13.0`.
 
 ```tsx
 <Select
