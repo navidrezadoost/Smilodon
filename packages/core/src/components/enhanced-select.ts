@@ -4400,6 +4400,14 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       : delta >= 0
         ? -1
         : selectableIndices.length;
+    // The final selectable option is the keyboard pagination boundary.
+    // Keep the active option stable while the coordinator requests more data.
+    if (
+      delta === 1
+      && currentPosition === selectableIndices.length - 1
+      && this._requestKeyboardLoadMore()
+    ) return;
+
     const nextPosition = Math.max(0, Math.min(selectableIndices.length - 1, basePosition + delta));
     const next = selectableIndices[nextPosition];
     this._setActive(next);
@@ -4412,6 +4420,34 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
       this._selectRange(anchorIndex, next, { clear: !opts?.toggleKey });
     }
+  }
+
+  /** Return true only when boundary navigation is held for an in-flight/new page. */
+  private _requestKeyboardLoadMore(): boolean {
+    if (
+      !this._state.isOpen
+      || !this._config.infiniteScroll.enabled
+      || this._dataLoadingConfig.protocol !== 'acknowledged'
+      || !this._dataRequestCoordinator
+      || !this._acknowledgedReady
+    ) return false;
+
+    if (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling) return true;
+    const snapshot = this._dataRequestCoordinator.getSnapshot();
+    if (!snapshot.connected) return false;
+    if (snapshot.busy) return true;
+    if (
+      !snapshot.hasMore
+      || snapshot.error !== null
+      || snapshot.resourceLimit !== null
+      || (snapshot.status !== 'succeeded' && snapshot.status !== 'empty')
+    ) return false;
+
+    // Delegate identity, pagination, and in-flight protection to the coordinator.
+    const actions = this._dataRequestCoordinator.requestLoadMore('manual');
+    if (actions.length === 0) return false;
+    this._dispatchAcknowledgedActions(actions);
+    return true;
   }
 
   private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {

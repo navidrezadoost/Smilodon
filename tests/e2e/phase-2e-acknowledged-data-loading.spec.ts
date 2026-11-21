@@ -137,6 +137,121 @@ async function createRemoteSearchSelect(page: import('@playwright/test').Page) {
 }
 
 test.describe('Phase 2E acknowledged data-loading browser integration', () => {
+  test('requests one acknowledged page at the ArrowDown boundary and preserves active-descendant state', async ({ page }) => {
+    await page.goto(playgroundUrl);
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(async () => {
+      await customElements.whenDefined('enhanced-select');
+      const select = document.createElement('enhanced-select') as any;
+      select.id = 'phase-2e-keyboard-pagination-select';
+      select.updateConfig({
+        searchable: true,
+        selection: { mode: 'multi', closeOnSelect: false },
+        infiniteScroll: { enabled: true, pageSize: 6 },
+      });
+      document.body.appendChild(select);
+      const options = select.shadowRoot.querySelector('.options-container') as HTMLElement;
+      options.style.height = '112px';
+      options.style.maxHeight = '112px';
+      options.style.overflowY = 'auto';
+      select.open();
+
+      (window as any).__phase2eKeyboardSearches = [];
+      (window as any).__phase2eKeyboardLoads = [];
+      select.addEventListener('search', (event: CustomEvent) => {
+        (window as any).__phase2eKeyboardSearches.push(event.detail.request);
+      });
+      select.addEventListener('loadMore', (event: CustomEvent) => {
+        (window as any).__phase2eKeyboardLoads.push(event.detail.request);
+      });
+      select._enableAcknowledgedDataLoadingForTest({
+        dataLoading: { protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 6 },
+        infiniteScroll: { pageSize: 6, initialPage: 1 },
+      });
+      await select._setAcknowledgedDataLoadingReadyForTest();
+    });
+
+    const select = page.locator('#phase-2e-keyboard-pagination-select');
+    const input = select.locator('[part="input"]');
+    const initialRequest = await page.evaluate(() => (window as any).__phase2eKeyboardSearches[0]);
+    expect(initialRequest).toBeTruthy();
+    expect(await select.evaluate(async (element: any, request) => {
+      const items = Array.from({ length: 6 }, (_, index) => ({
+        id: `keyboard-${index + 1}`,
+        value: `keyboard-${index + 1}`,
+        label: `Keyboard option ${index + 1}`,
+      }));
+      return element._completeDataRequestForTest({
+        requestId: request.requestId,
+        queryGeneration: request.queryGeneration,
+        status: 'succeeded',
+        items,
+        hasMore: true,
+      });
+    }, initialRequest)).toBe('accepted');
+    await select.evaluate((element: any) => element.setSelectedValues(['keyboard-3']));
+    await select.evaluate((element: any) => element.open());
+    await input.focus();
+    for (let index = 0; index < 6; index += 1) await input.press('ArrowDown');
+
+    const sixthOptionId = await input.getAttribute('aria-activedescendant');
+    expect(sixthOptionId).toBeTruthy();
+    const sixthOption = await select.evaluate((element: any, id) => {
+      const option = element.shadowRoot.getElementById(id);
+      return option && {
+        text: option.textContent?.trim(),
+        ariaLabel: option.getAttribute('aria-label'),
+        dataValue: option.getAttribute('data-value'),
+        role: option.getAttribute('role'),
+      };
+    }, sixthOptionId);
+    expect(sixthOption).toBeTruthy();
+    expect(sixthOption?.role).toBe('option');
+    expect(sixthOption?.dataValue).toBe('keyboard-6');
+    const selectedBeforeLoading = await select.evaluate((element: any) => element.getSelectedValues());
+    expect(selectedBeforeLoading).toEqual(['keyboard-3']);
+
+    await input.press('ArrowDown');
+    const loads = () => page.evaluate(() => (window as any).__phase2eKeyboardLoads);
+    await expect.poll(async () => (await loads()).length).toBe(1);
+    const pageTwoRequest = (await loads())[0];
+    expect(pageTwoRequest).toMatchObject({ kind: 'loadMore', position: { mode: 'page', page: 2 } });
+
+    for (let index = 0; index < 4; index += 1) await input.press('ArrowDown');
+    expect((await loads()).length).toBe(1);
+    await expect(input).toBeFocused();
+    await expect(input).toHaveAttribute('aria-activedescendant', sixthOptionId!);
+    expect(await select.evaluate((element: any) => element.getSelectedValues())).toEqual(selectedBeforeLoading);
+
+    const completion = await select.evaluate(async (element: any, request) => {
+      const items = Array.from({ length: 7 }, (_, index) => ({
+        id: `keyboard-${index + 1}`,
+        value: `keyboard-${index + 1}`,
+        label: `Keyboard option ${index + 1}`,
+      }));
+      return element._completeDataRequestForTest({
+        requestId: request.requestId,
+        queryGeneration: request.queryGeneration,
+        status: 'exhausted',
+        items,
+        hasMore: false,
+      });
+    }, pageTwoRequest);
+    expect(completion).toBe('accepted');
+
+    await input.press('ArrowDown');
+    const seventhOptionId = await input.getAttribute('aria-activedescendant');
+    expect(seventhOptionId).toBeTruthy();
+    expect(await select.evaluate((element: any, id) => element.shadowRoot.getElementById(id)?.getAttribute('data-value'), seventhOptionId))
+      .toBe('keyboard-7');
+    await expect(input).toBeFocused();
+    expect(await select.evaluate((element: any) => element.getSelectedValues())).toEqual(selectedBeforeLoading);
+
+    await input.press('ArrowDown');
+    await expect(input).toHaveAttribute('aria-activedescendant', seventhOptionId!);
+    expect((await loads()).length).toBe(1);
+  });
+
   test('routes remote search, preserves selection and ARIA, and retries accepted projection canonically', async ({ page }) => {
     const select = await createRemoteSearchSelect(page);
     const eventCount = () => page.evaluate(() => (window as any).__phase2eSearchEvents.length);
