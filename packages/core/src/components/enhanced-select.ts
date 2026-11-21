@@ -4803,7 +4803,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const nextKeys = new Set(selectedEntries.map(({ key }) => key));
     const previousKeys = this._lastRenderedChipKeys;
     const newlyAddedKey = previousKeys
-      ? [...nextKeys].find((key) => !previousKeys.has(key))
+      ? [...nextKeys].filter((key) => !previousKeys.has(key)).at(-1)
       : undefined;
     this._lastRenderedChipKeys = nextKeys;
     const previousChipScrollLeft = this._inputContent.scrollLeft;
