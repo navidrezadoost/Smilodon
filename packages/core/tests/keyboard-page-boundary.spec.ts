@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { EnhancedSelect } from '../src/components/enhanced-select.js';
 import { resetSelectConfig } from '../src/config/global-config.js';
-import type { DataRequest, DataProjectionEventDetail } from '../src/data-loading/public-types.js';
+import type { DataRequest } from '../src/data-loading/public-types.js';
 
 if (!customElements.get('enhanced-select')) {
   customElements.define('enhanced-select', EnhancedSelect);
@@ -23,17 +23,14 @@ function arrowDown(select: EnhancedSelect): void {
   input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 }
 
-function completeAndWait(select: EnhancedSelect, completion: Parameters<EnhancedSelect['completeDataRequest']>[0]): Promise<void> {
-  const projected = new Promise<void>((resolve) => {
-    const listener = (event: Event) => {
-      if ((event as CustomEvent<DataProjectionEventDetail>).detail.status !== 'complete') return;
-      select.removeEventListener('dataProjection', listener);
-      resolve();
-    };
-    select.addEventListener('dataProjection', listener);
-  });
-  expect(select.completeDataRequest(completion)).toBe('accepted');
-  return projected;
+async function completeAndWait(select: EnhancedSelect, completion: Parameters<EnhancedSelect['completeDataRequest']>[0]): Promise<void> {
+  expect(await (select as any)._completeDataRequestForTest(completion)).toBe('accepted');
+}
+
+async function startAndWait(select: EnhancedSelect): Promise<void> {
+  select.startDataLoading();
+  const readinessTask = (select as any)._acknowledgedStartTask as Promise<void> | null;
+  if (readinessTask) await readinessTask;
 }
 
 describe('keyboard-triggered acknowledged pagination (#96)', () => {
@@ -49,7 +46,7 @@ describe('keyboard-triggered acknowledged pagination (#96)', () => {
     const loadMore: DataRequest[] = [];
     select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail.request));
     select.addEventListener('loadMore', (event) => loadMore.push((event as CustomEvent).detail.request));
-    select.startDataLoading();
+    await startAndWait(select);
     const initial = searches[0];
 
     await completeAndWait(select, {
@@ -82,7 +79,7 @@ describe('keyboard-triggered acknowledged pagination (#96)', () => {
       requestId: next.requestId,
       queryGeneration: next.queryGeneration,
       status: 'exhausted',
-      items: [{ value: '6', label: 'Item 6' }, { value: '7', label: 'Item 7' }],
+      items: Array.from({ length: 8 }, (_, i) => ({ value: String(i), label: `Item ${i}` })),
       hasMore: false,
     });
     arrowDown(select);
@@ -99,7 +96,7 @@ describe('keyboard-triggered acknowledged pagination (#96)', () => {
     const loadMore: DataRequest[] = [];
     select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail.request));
     select.addEventListener('loadMore', (event) => loadMore.push((event as CustomEvent).detail.request));
-    select.startDataLoading();
+    await startAndWait(select);
     const initial = searches[0];
     await completeAndWait(select, {
       requestId: initial.requestId,
@@ -123,7 +120,7 @@ describe('keyboard-triggered acknowledged pagination (#96)', () => {
     const loadMore: DataRequest[] = [];
     select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail.request));
     select.addEventListener('loadMore', (event) => loadMore.push((event as CustomEvent).detail.request));
-    select.startDataLoading();
+    await startAndWait(select);
     const initial = searches[0];
     await completeAndWait(select, {
       requestId: initial.requestId,
