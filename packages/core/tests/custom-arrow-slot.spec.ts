@@ -41,7 +41,11 @@ describe('EnhancedSelect custom arrow slot', () => {
 
     icon.remove();
     slot.dispatchEvent(new Event('slotchange'));
+    // A slot with no directly assigned nodes still contains the fallback SVG.
+    // Flattening must not mistake that fallback for a custom arrow.
+    expect(slot.assignedElements()).toHaveLength(0);
     expect(select.hasAttribute('data-custom-arrow')).toBe(false);
+    expect(slot.querySelector('[part="arrow"]')).toBeTruthy();
   });
 
   it('respects the public arrow hover background token for custom arrows (#104)', () => {
