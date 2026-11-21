@@ -41,7 +41,23 @@ describe('EnhancedSelect custom arrow slot', () => {
 
     icon.remove();
     slot.dispatchEvent(new Event('slotchange'));
+    // A slot with no directly assigned nodes still contains the fallback SVG.
+    // Flattening must not mistake that fallback for a custom arrow.
+    expect(slot.assignedElements()).toHaveLength(0);
     expect(select.hasAttribute('data-custom-arrow')).toBe(false);
+    expect(slot.querySelector('[part="arrow"]')).toBeTruthy();
+  });
+
+  it('respects the public arrow hover background token for custom arrows (#104)', () => {
+    const css = [...select.shadowRoot!.querySelectorAll('style')]
+      .map((style) => style.textContent ?? '')
+      .join('\n');
+    const defaultHover = css.match(/\.dropdown-arrow-container:hover\s*\{([^}]*)\}/)?.[1] ?? '';
+    const customHover = css.match(/:host\(\[data-custom-arrow="true"\]\)\s*\.dropdown-arrow-container:hover\s*\{([^}]*)\}/)?.[1] ?? '';
+
+    expect(defaultHover).toContain('background-color: var(--select-arrow-hover-bg, rgba(15, 52, 96, 0.05))');
+    expect(customHover).toContain('background-color: var(--select-arrow-hover-bg, transparent)');
+    expect(customHover).not.toMatch(/background-color:\s*transparent\s*;/);
   });
 
   it('keeps the arrow container pointer target working for slotted content', () => {

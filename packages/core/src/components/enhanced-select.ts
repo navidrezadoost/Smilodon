@@ -1935,7 +1935,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     `;
     const slot = container.querySelector<HTMLSlotElement>('slot[name="arrow"]');
     slot?.addEventListener('slotchange', () => {
-      if (slot.assignedElements({ flatten: true }).length > 0) {
+      // Do not flatten: flattening can expose the built-in SVG fallback
+      // as an assigned element after the last custom arrow is removed.
+      if (slot.assignedElements().length > 0) {
         this.setAttribute('data-custom-arrow', 'true');
       } else {
         this.removeAttribute('data-custom-arrow');
@@ -2679,7 +2681,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
 
       :host([data-custom-arrow="true"]) .dropdown-arrow-container:hover {
-        background-color: transparent;
+        background-color: var(--select-arrow-hover-bg, transparent);
       }
       
       .dropdown-arrow {
