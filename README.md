@@ -403,17 +403,17 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 
 ### Busy-bucket custom content (Issue #90)
 
-The unreleased Issue #90 candidate adds Core's `loading-icon` and `loading-content` slots, controlled by `busyBucket` configuration. Framework wrappers forward those slots through React props, Vue named slots, Svelte 5 snippets, and Solid JSX props. Vanilla consumers can append native slotted DOM nodes directly. The feature requires Core `1.13.0`; it is not part of the currently published package artifacts. React Native's separate WebView/native API does not expose these slots, and no React Native parity is claimed.
+Issue #90 introduces Core's `loading-icon` and `loading-content` slots in `@smilodon/core@1.13.0`. Framework integrations add React `1.12.0` props, Vue `1.11.0` named slots, Svelte 5 `2.1.0` snippets, and Solid `1.11.0` JSX props; Vanilla `1.11.0` uses the native light-DOM slots. The release source is merged, but npm publication of these six versions must be verified separately. React Native's WebView/native API does not expose these slots, and no React Native parity is claimed.
 
-| Adapter | Candidate interface | Status |
+| Adapter | API | Version introducing Issue #90 |
 | --- | --- | --- |
-| Core | Native light-DOM `slot="loading-icon"` and `slot="loading-content"` | Locally qualified; release pending |
-| React | `loadingIcon` and `loadingContent` props | Locally qualified; release pending |
-| Vue | `#loadingIcon` and `#loadingContent` named slots | Contract and build checks pass locally |
-| Svelte 5 | `loadingIcon` and `loadingContent` `Snippet` props | Contract and build checks pass locally |
-| Solid | `loadingIcon` and `loadingContent` JSX props | Contract and build checks pass locally |
-| Vanilla | Append nodes with the two native slot names | Contract smoke check passed locally |
-| React Native | No corresponding props on native or WebView path | Separate compatibility decision |
+| Core | Native light-DOM `slot="loading-icon"` and `slot="loading-content"` | `1.13.0` |
+| React | `loadingIcon` and `loadingContent` props | `1.12.0` |
+| Vue | `#loadingIcon` and `#loadingContent` named slots | `1.11.0` |
+| Svelte 5 | `loadingIcon` and `loadingContent` `Snippet` props | `2.1.0` |
+| Solid | `loadingIcon` and `loadingContent` JSX props | `1.11.0` |
+| Vanilla | Append nodes with the two native slot names | `1.11.0` (Core `1.13.0` required) |
+| React Native | Not exposed in native or WebView path | Out of scope |
 
 ### Compatibility notes by integration style
 
