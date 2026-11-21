@@ -4802,9 +4802,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const selectedItems = selectedEntries.map(({ item }) => item);
     const nextKeys = new Set(selectedEntries.map(({ key }) => key));
     const previousKeys = this._lastRenderedChipKeys;
-    const newlyAddedKey = previousKeys
-      ? [...nextKeys].filter((key) => !previousKeys.has(key)).at(-1)
-      : undefined;
+    let newlyAddedKey: SelectKey | undefined;
+    if (previousKeys) {
+      for (const key of nextKeys) {
+        if (!previousKeys.has(key)) newlyAddedKey = key;
+      }
+    }
     this._lastRenderedChipKeys = nextKeys;
     const previousChipScrollLeft = this._inputContent.scrollLeft;
     // Only a newly added selected key can initiate auto-scroll.
@@ -4940,11 +4943,28 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       const chipBounds = chip.getBoundingClientRect();
       const leftEdge = hostBounds.left + this._inputContent.clientLeft;
       const rightEdge = leftEdge + this._inputContent.clientWidth;
-      const delta = chipBounds.right > rightEdge
-        ? chipBounds.right - rightEdge
-        : chipBounds.left < leftEdge
-          ? chipBounds.left - leftEdge
-          : 0;
+      let delta: number;
+      if (chip.parentElement === this._inputContent && chip.offsetWidth > 0) {
+        // getBoundingClientRect() includes the chip's entry animation transform.
+        // Use layout dimensions so the scroll target remains correct while the
+        // chip scales into its final size. In RTL layouts, offsetLeft and
+        // scrollLeft are both negative relative to the inline-start origin, so
+        // the same subtraction maps the chip into the viewport's coordinates.
+        const chipLeft = chip.offsetLeft - this._inputContent.scrollLeft;
+        const chipRight = chipLeft + chip.offsetWidth;
+        delta = chipRight > this._inputContent.clientWidth
+          ? chipRight - this._inputContent.clientWidth
+          : chipLeft < 0
+            ? chipLeft
+            : 0;
+      } else {
+        // DOM test environments without layout use the measurable rectangle.
+        delta = chipBounds.right > rightEdge
+          ? chipBounds.right - rightEdge
+          : chipBounds.left < leftEdge
+            ? chipBounds.left - leftEdge
+            : 0;
+      }
       if (Math.abs(delta) < 0.5) return;
 
       const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
