@@ -751,9 +751,9 @@ The versions listed below are repository compatibility targets, not browser vers
 
 MIT © [Navid Rezadoost](https://github.com/navidrezadoost)
 
-## Core loading slots (Issue #90 candidate)
+## Core loading slots (Core 1.13.0; Vanilla 1.11.0)
 
-Vanilla needs no adapter-specific content prop: append DOM nodes to the helper-created `enhanced-select` with Core's native slot names. The slots require Core `1.13.0`; the current published Core package does not yet include them.
+Vanilla needs no adapter-specific content prop: append DOM nodes to the helper-created `enhanced-select` with Core's native slot names. These slots were introduced in `@smilodon/core@1.13.0`; `@smilodon/vanilla@1.11.0` is the accompanying release with compatible Core peer requirements.
 
 ```ts
 const select = createSelect({
