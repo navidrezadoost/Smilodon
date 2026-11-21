@@ -31,8 +31,9 @@ New diagnostic event:
 | Runtime capability report | API | imperative handle | exposed method | exported method | handle | handle | helper function |
 | Runtime limitation policy control | API | prop/handle | prop/method | prop/method | prop/handle | config/handle | helper function |
 | Runtime tracking snapshot control | API | prop/handle | prop/method | prop/method | prop/handle | config/handle | helper function |
+| Busy-bucket custom content (Issue #90 candidate; unreleased) | Native Core slots | `loadingIcon` / `loadingContent` props | `#loadingIcon` / `#loadingContent` slots | Svelte 5 `Snippet` props | JSX props | Not exposed; separate decision | Native slotted DOM nodes |
 
-`API` means the source exposes the corresponding surface; it does not mean every branch is comprehensively tested. The `select` event/callback path now has focused regression tests, but adapter suites remain small and unequal: React's shared contract runner currently has 43 pending cases, while Vue, Svelte, and Vanilla contract files each have two focused tests. Solid and React Native have no equivalent contract suites. React Native's native WebView and React Native Web paths also require platform-specific verification. The current framework Playwright projects filter a shared scenario suite that boots the Vanilla playground; their project names do not constitute browser tests of each wrapper.
+`API` means the source exposes the corresponding surface; it does not mean every branch is comprehensively tested. Issue #90 adapter contract tests cover Core, React, Vue, Svelte, Solid, and Vanilla locally. The browser layout assertion has been run against the React adapter fixture on local Chrome 133; Vue, Svelte, and Solid have build and DOM-contract results, not separate real-browser qualification. React Native's native WebView and React Native Web paths are excluded from this web feature. The configured framework Playwright projects filter shared scenarios that boot the Vanilla playground; their project names do not constitute browser tests of each wrapper.
 
 ## Known Limitations (Tracked + User-Controllable)
 

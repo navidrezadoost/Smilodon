@@ -1,11 +1,37 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
 import { waitFor } from '@testing-library/dom';
+import { fireEvent } from '@testing-library/dom';
 import '@smilodon/core';
 import { Select } from '@smilodon/svelte';
+import SvelteBusyBucketHarness from './fixtures/SvelteBusyBucketHarness.svelte';
 import { basicItems } from './fixtures/test-data';
 
 describe('Svelte Adapter Contract Tests', () => {
+  it('forwards Svelte 5 snippets into Core slots and removes them on reactive updates and unmount', async () => {
+    const { container, getByRole, unmount } = render(SvelteBusyBucketHarness as any);
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="loading-icon"] [data-testid="svelte-loading-icon"]')).toBeTruthy();
+      expect(element?.querySelector('[slot="loading-content"] [data-testid="svelte-loading-content"]')).toBeTruthy();
+    });
+    element._setBusy(true);
+    expect(element.shadowRoot.querySelector('slot[name="loading-icon"]')?.assignedNodes({ flatten: true }))
+      .toHaveLength(1);
+    expect(element.shadowRoot.querySelector('slot[name="loading-content"]')?.assignedNodes({ flatten: true }))
+      .toHaveLength(1);
+
+    await fireEvent.click(getByRole('button', { name: 'Toggle loading slots' }));
+    await waitFor(() => {
+      expect(element.querySelector('[slot="loading-icon"]')).toBeNull();
+      expect(element.querySelector('[slot="loading-content"]')).toBeNull();
+    });
+
+    unmount();
+    expect(element.isConnected).toBe(false);
+  });
+
   it('forwards option selection through the Svelte select event with item and index', async () => {
     const { component, container, unmount } = render(Select as any, {
       props: { items: basicItems },

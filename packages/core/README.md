@@ -12,6 +12,37 @@
 
 > **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
+## Custom busy bucket (Issue #90 candidate for Core 1.13.0; not yet published)
+
+The upcoming Core busy bucket keeps request state in Core and lets the host customize only its presentation. It is currently unreleased. Use the native slots with the Web Component or Vanilla API:
+
+```html
+<enhanced-select>
+  <span slot="loading-icon" aria-hidden="true">⏳</span>
+  <div slot="loading-content">
+    <strong>Loading more products…</strong>
+    <span>Please wait.</span>
+  </div>
+</enhanced-select>
+```
+
+```ts
+select.updateConfig({
+  busyBucket: {
+    enabled: true,
+    showSpinner: false,
+    showMessage: true,
+    message: 'Loading…',
+    minDisplayTime: 200,
+    contentMode: 'append', // or 'replace'
+  },
+})
+```
+
+`append` keeps the built-in spinner/message with custom slot content. `replace` shows only accessible custom content and hides the icon and message regions; if no accessible replacement is supplied, Core keeps a “Loading…” fallback. `showSpinner` affects only the built-in spinner, so a supplied `loading-icon` remains visible in append mode when the fallback spinner is disabled. The existing `Searching...` state remains separate from the busy bucket.
+
+The bucket exposes `::part(loading)`, `::part(loading-icon)`, `::part(loading-spinner)`, `::part(loading-message)`, and `::part(loading-content)`. Layout can be adjusted with `--select-busy-gap`, `--select-busy-padding`, `--select-busy-color`, `--select-busy-bg`, and the existing `--select-spinner-size` token. `minDisplayTime` is a visual minimum after request completion; it does not delay acceptance, pagination, or `aria-busy` updates.
+
 ## Acknowledged data loading (Phase 2F-D development candidate)
 
 The local Phase 2F-D candidate adds a public, per-instance data-loading configuration and completion surface to `EnhancedSelect`. This API is not included in the published `1.10.0` package. The legacy protocol remains the default; remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. Cross-browser certification and independent review remain pending, so these examples are illustrative and have not been certified for release.

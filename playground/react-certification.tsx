@@ -53,6 +53,8 @@ const items: SelectItem[] = [
 
 const query = new URLSearchParams(window.location.search);
 const issue82ActiveClassScenario = query.get('scenario') === 'issue-82-active-class';
+const busyBucketScenario = query.get('scenario') === 'busy-bucket';
+const busyBucketWithoutIcon = busyBucketScenario && query.get('busy-icon') === 'none';
 const issue82Items: SelectItem[] = [
   { value: 'one', label: 'First' },
   { value: 'two', label: 'Dana Pharmaceutical Group' },
@@ -75,6 +77,16 @@ const initialOptions: FixtureOptions = {
       paginationMode: 'cursor',
       fetchLimit: 3,
     },
+    ...(busyBucketScenario ? {
+      busyBucket: {
+        enabled: true,
+        showSpinner: !busyBucketWithoutIcon,
+        showMessage: true,
+        message: 'Loading page…',
+        minDisplayTime: 1000,
+        contentMode: query.get('busy-mode') === 'replace' ? 'replace' : 'append',
+      },
+    } : {}),
   },
   value: issue82ActiveClassScenario || query.has('uncontrolled') ? null : 'apple',
   loading: false,
@@ -121,6 +133,15 @@ function CertificationApp() {
         aria-busy={options.consumerBusy}
         classMap={issue82ActiveClassScenario ? issue82ClassMap : undefined}
         customRenderer={issue82ActiveClassScenario ? (item) => <span>{item.label}</span> : undefined}
+        loadingIcon={busyBucketScenario && !busyBucketWithoutIcon
+          ? <span data-testid="busy-icon-child">●</span>
+          : undefined}
+        loadingContent={busyBucketScenario ? (
+          <div data-testid="busy-content-child">
+            <strong>Loading another page</strong>
+            <span>More options are on the way.</span>
+          </div>
+        ) : undefined}
         onSearch={(searchQuery, results, count, request) =>
           record('search', { searchQuery, results, count, request: request ?? null })
         }

@@ -49,6 +49,45 @@ describe('Solid Adapter Contract Tests', () => {
     expect(element.shadowRoot?.querySelector('input')?.getAttribute('placeholder')).toBe('Choose a fruit');
   });
 
+  it('forwards reactive loading JSX into Core slots and disposes it with the Solid owner', async () => {
+    const iconNode = document.createElement('span');
+    iconNode.textContent = 'spinner';
+    const contentNode = document.createElement('strong');
+    contentNode.textContent = 'Loading more';
+    const [icon, setIcon] = createSignal<HTMLElement | undefined>(iconNode);
+    const [content, setContent] = createSignal<HTMLElement | undefined>(contentNode);
+    const { element, dispose } = mount({
+      items: basicItems,
+      get loadingIcon() { return icon(); },
+      get loadingContent() { return content(); },
+    });
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="loading-icon"]')).toBeTruthy();
+      expect(element?.querySelector('[slot="loading-content"]')).toBeTruthy();
+    });
+    element._setBusy(true);
+    expect(element.shadowRoot.querySelector('slot[name="loading-icon"]')?.assignedNodes({ flatten: true }))
+      .toContain(element.querySelector('[slot="loading-icon"]'));
+    expect(element.shadowRoot.querySelector('slot[name="loading-content"]')?.assignedNodes({ flatten: true }))
+      .toContain(element.querySelector('[slot="loading-content"]'));
+
+    setIcon(undefined);
+    setContent(undefined);
+    await waitFor(() => {
+      expect(element.querySelector('[slot="loading-icon"]')).toBeNull();
+      expect(element.querySelector('[slot="loading-content"]')).toBeNull();
+    });
+
+    setIcon(iconNode);
+    setContent(contentNode);
+    await waitFor(() => expect(element.querySelectorAll('[slot]').length).toBeGreaterThanOrEqual(2));
+    dispose();
+    expect(element.isConnected).toBe(false);
+    expect(iconNode.isConnected).toBe(false);
+    expect(contentNode.isConnected).toBe(false);
+  });
+
   it('synchronizes controlled values reactively', async () => {
     const [value, setValue] = createSignal<string | number>('1');
     const { element } = mount({

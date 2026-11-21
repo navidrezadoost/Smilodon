@@ -1,11 +1,49 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/vue';
 import { waitFor } from '@testing-library/dom';
-import { defineComponent, onMounted, ref } from 'vue';
+import { defineComponent, h, nextTick, onMounted, ref } from 'vue';
 import { Select } from '@smilodon/vue';
 import { basicItems } from './fixtures/test-data';
 
 describe('Vue Adapter Contract Tests', () => {
+  it('forwards reactive loading slots into Core and removes them when the slot content changes or unmounts', async () => {
+    const showIcon = ref(true);
+    const showContent = ref(true);
+    const { container, unmount } = render(Select, {
+      props: { items: basicItems },
+      slots: {
+        loadingIcon: () => showIcon.value ? h('i', { 'data-testid': 'vue-loading-icon' }, 'spinner') : null,
+        loadingContent: () => showContent.value
+          ? h('span', { 'data-testid': 'vue-loading-content' }, 'Loading more')
+          : null,
+      },
+    });
+    const element = container.querySelector('enhanced-select') as any;
+
+    await waitFor(() => {
+      expect(element?.querySelector('[slot="loading-icon"] [data-testid="vue-loading-icon"]')).toBeTruthy();
+      expect(element?.querySelector('[slot="loading-content"] [data-testid="vue-loading-content"]')).toBeTruthy();
+    });
+    element._setBusy(true);
+    expect(element.shadowRoot.querySelector('slot[name="loading-icon"]')?.assignedNodes({ flatten: true }))
+      .toHaveLength(1);
+    expect(element.shadowRoot.querySelector('slot[name="loading-content"]')?.assignedNodes({ flatten: true }))
+      .toHaveLength(1);
+
+    showIcon.value = false;
+    showContent.value = false;
+    await nextTick();
+    await waitFor(() => {
+      expect(element.querySelector('[slot="loading-icon"]')).toBeNull();
+      expect(element.querySelector('[slot="loading-content"]')).toBeNull();
+    });
+
+    unmount();
+    expect(element.isConnected).toBe(false);
+    expect(element.querySelector('[slot="loading-icon"]')).toBeNull();
+    expect(element.querySelector('[slot="loading-content"]')).toBeNull();
+  });
+
   it('forwards option selection through the Vue select event with item and index', async () => {
     const onSelect = vi.fn();
     const Harness = defineComponent({

@@ -210,6 +210,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _loadMoreTrigger?: HTMLElement;
   private _acknowledgedSentinel?: HTMLDivElement;
   private _busyBucket?: HTMLElement;
+  private _busyBucketContentObserver?: MutationObserver;
+  private _busyPresentationVisible = false;
+  private _busyPresentationStartedAt: number | null = null;
+  private _busyPresentationGeneration = 0;
+  private _busyPresentationHideTimer: number | null = null;
   private _liveRegion?: HTMLElement;
   private _errorDescription?: HTMLElement;
   private _state: SelectState;
@@ -549,6 +554,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   disconnectedCallback(): void {
+    this._cancelBusyPresentation();
     if (this._dataRequestCoordinator) {
       const actions = this._dataRequestCoordinator.disconnect();
       this._acknowledgedReady = false;
@@ -3063,11 +3069,39 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
       
       .busy-bucket {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--select-busy-gap, 8px);
         padding: var(--select-busy-padding, 20px);
         text-align: center;
         color: var(--select-busy-color, var(--select-text-muted));
         background: var(--select-busy-bg, transparent);
         font-size: var(--select-busy-font-size, 0.8667em);
+      }
+
+      .busy-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .busy-icon[hidden] {
+        display: none;
+      }
+
+      .busy-message {
+        text-align: center;
+      }
+
+      .busy-content[hidden] {
+        display: none;
+      }
+
+      .busy-bucket--replace .busy-icon,
+      .busy-bucket--replace .busy-message {
+        display: none;
       }
       
       .spinner {
@@ -4942,6 +4976,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _setBusy(busy: boolean): void {
+    if (busy) this._beginBusyPresentation();
     this._state.isBusy = busy;
     this._syncListboxAccessibility();
     
@@ -6249,6 +6284,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _dispatchAcknowledgedActions(actions: readonly DataCoordinatorAction[]): void {
     for (const action of actions) {
       if (action.type === 'cancel') {
+        this._cancelBusyPresentation();
         this._dispatchAcknowledgedEvent('dataRequestCancel', action.notification);
         try {
           this._dataRequestCancelCallback?.(action.notification);
@@ -6272,6 +6308,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         this._state.preserveScrollPosition = false;
         this._state.isSearching = true;
       }
+      this._beginBusyPresentation();
       this._state.isBusy = true;
       this._acknowledgedLastRequest = request;
       this._syncListboxAccessibility();
@@ -6424,7 +6461,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
       this._state.isBusy = snapshot.busy;
       if (!snapshot.busy) {
-        this._optionsContainer.querySelector('.busy-bucket')?.remove();
+        this._syncBusyPresentation();
+        if (!this._busyPresentationVisible) {
+          this._optionsContainer.querySelector('.busy-bucket')?.remove();
+        }
         if (this._shouldRenderLoadMoreTrigger()) this._addLoadMoreTrigger();
       }
       this._optionsContainer.scrollTop = this._acknowledgedProjectionScrollTop;
@@ -6757,7 +6797,182 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._virtualizationScope = this._deriveVirtualizationScope(filteredIndices);
   }
 
+  private _clearBusyPresentationHideTimer(): void {
+    if (this._busyPresentationHideTimer === null) return;
+    window.clearTimeout(this._busyPresentationHideTimer);
+    this._lifecycleTimers.delete(this._busyPresentationHideTimer);
+    this._busyPresentationHideTimer = null;
+  }
+
+  private _beginBusyPresentation(): void {
+    this._busyPresentationGeneration += 1;
+    this._clearBusyPresentationHideTimer();
+    this._busyPresentationVisible = this._config.busyBucket.enabled;
+    this._busyPresentationStartedAt = this._busyBucket?.isConnected ? Date.now() : null;
+  }
+
+  private _syncBusyPresentation(): void {
+    if (!this._config.busyBucket.enabled) {
+      this._cancelBusyPresentation();
+      return;
+    }
+
+    if (this._state.isBusy) {
+      if (!this._busyPresentationVisible || this._busyPresentationHideTimer !== null) {
+        this._beginBusyPresentation();
+      }
+      return;
+    }
+
+    if (!this._busyPresentationVisible || this._busyPresentationHideTimer !== null) return;
+
+    const configuredMinimum = Number(this._config.busyBucket.minDisplayTime ?? 0);
+    const minimum = Number.isFinite(configuredMinimum) ? Math.max(0, configuredMinimum) : 0;
+    if (this._busyPresentationStartedAt === null) this._busyPresentationStartedAt = Date.now();
+    const shownAt = this._busyPresentationStartedAt;
+    const remaining = minimum - Math.max(0, Date.now() - shownAt);
+    if (remaining <= 0) {
+      this._busyPresentationGeneration += 1;
+      this._busyPresentationVisible = false;
+      this._busyPresentationStartedAt = null;
+      return;
+    }
+
+    const generation = this._busyPresentationGeneration;
+    this._busyPresentationHideTimer = this._setLifecycleTimeout(() => {
+      if (generation !== this._busyPresentationGeneration || this._state.isBusy) return;
+      this._busyPresentationHideTimer = null;
+      this._busyPresentationVisible = false;
+      this._busyPresentationStartedAt = null;
+      this._busyBucket = undefined;
+      this._clearBusyBucketContentObserver();
+      this._renderOptions();
+    }, remaining);
+  }
+
+  private _clearBusyBucketContentObserver(): void {
+    this._busyBucketContentObserver?.disconnect();
+    this._busyBucketContentObserver = undefined;
+  }
+
+  private _cancelBusyPresentation(): void {
+    this._busyPresentationGeneration += 1;
+    this._clearBusyPresentationHideTimer();
+    this._busyPresentationVisible = false;
+    this._busyPresentationStartedAt = null;
+    this._clearBusyBucketContentObserver();
+    this._busyBucket = undefined;
+    this._optionsContainer?.querySelector('.busy-bucket')?.remove();
+  }
+
+  private _hasAccessibleBusyContent(nodes: readonly Node[]): boolean {
+    return nodes.some((node) => {
+      if (node.nodeType === Node.TEXT_NODE) return Boolean(node.textContent?.trim());
+      if (!(node instanceof Element)) return false;
+      if (
+        node.hasAttribute('hidden')
+        || node.hasAttribute('inert')
+        || node.getAttribute('aria-hidden')?.toLowerCase() === 'true'
+      ) return false;
+      if (['aria-label', 'aria-labelledby', 'alt', 'title'].some((name) => Boolean(node.getAttribute(name)?.trim()))) {
+        return true;
+      }
+      return this._hasAccessibleBusyContent(Array.from(node.childNodes));
+    });
+  }
+
+  private _syncBusyBucketContent(bucket: HTMLElement): void {
+    if (bucket !== this._busyBucket) return;
+    const contentSlot = bucket.querySelector<HTMLSlotElement>('slot[name="loading-content"]');
+    const iconSlot = bucket.querySelector<HTMLSlotElement>('slot[name="loading-icon"]');
+    if (!contentSlot || !iconSlot) return;
+    const contentNodes = contentSlot.assignedNodes({ flatten: true });
+    const iconNodes = iconSlot.assignedNodes({ flatten: true });
+    const hasContent = contentNodes.length > 0;
+    const hasAccessibleContent = this._hasAccessibleBusyContent(contentNodes);
+    const icon = bucket.querySelector<HTMLElement>('.busy-icon');
+    icon?.toggleAttribute(
+      'hidden',
+      this._config.busyBucket.showSpinner === false && iconNodes.length === 0,
+    );
+    const content = bucket.querySelector<HTMLElement>('.busy-content');
+    content?.toggleAttribute('hidden', !hasContent);
+    bucket.classList.toggle(
+      'busy-bucket--replace',
+      this._config.busyBucket.contentMode === 'replace' && hasAccessibleContent,
+    );
+    const message = bucket.querySelector<HTMLElement>('.busy-message');
+    if (message) {
+      const needsAccessibleFallback = this._config.busyBucket.contentMode === 'replace' && !hasAccessibleContent;
+      message.toggleAttribute('hidden', this._config.busyBucket.showMessage === false && !needsAccessibleFallback);
+      if (needsAccessibleFallback && !message.textContent?.trim()) {
+        message.textContent = this._config.busyBucket.message || 'Loading...';
+      }
+    }
+  }
+
+  private _createBusyBucket(): HTMLElement {
+    const bucket = document.createElement('div');
+    bucket.setAttribute('part', 'loading');
+    bucket.className = 'busy-bucket';
+    this._busyBucket = bucket;
+
+    const icon = document.createElement('div');
+    icon.className = 'busy-icon';
+    icon.setAttribute('part', 'loading-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    const iconSlot = document.createElement('slot');
+    iconSlot.name = 'loading-icon';
+    if (this._config.busyBucket.showSpinner !== false) {
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      spinner.setAttribute('part', 'loading-spinner');
+      spinner.setAttribute('aria-hidden', 'true');
+      iconSlot.appendChild(spinner);
+    }
+    icon.appendChild(iconSlot);
+    bucket.appendChild(icon);
+
+    const message = document.createElement('div');
+    message.className = 'busy-message';
+    message.setAttribute('part', 'loading-message');
+    message.textContent = this._config.busyBucket.message ?? 'Loading...';
+    message.toggleAttribute('hidden', this._config.busyBucket.showMessage === false);
+    bucket.appendChild(message);
+
+    const content = document.createElement('div');
+    content.className = 'busy-content';
+    content.setAttribute('part', 'loading-content');
+    const contentSlot = document.createElement('slot');
+    contentSlot.name = 'loading-content';
+    content.appendChild(contentSlot);
+    bucket.appendChild(content);
+
+    const syncContent = () => this._syncBusyBucketContent(bucket);
+    contentSlot.addEventListener('slotchange', syncContent);
+    iconSlot.addEventListener('slotchange', syncContent);
+    syncContent();
+    if (typeof MutationObserver !== 'undefined') {
+      this._clearBusyBucketContentObserver();
+      this._busyBucketContentObserver = new MutationObserver(syncContent);
+      this._busyBucketContentObserver.observe(this, { childList: true, subtree: true, characterData: true });
+    }
+
+    return bucket;
+  }
+
+  private _appendBusyBucket(): HTMLElement {
+    const bucket = this._createBusyBucket();
+    this._optionsContainer.appendChild(bucket);
+    if (this._busyPresentationStartedAt === null) this._busyPresentationStartedAt = Date.now();
+    this._syncBusyBucketContent(bucket);
+    return bucket;
+  }
+
   private _renderOptions(): void {
+    this._syncBusyPresentation();
+    this._clearBusyBucketContentObserver();
+    this._busyBucket = undefined;
     this._ensureRegistryCurrent();
     const scrollTopBeforeRender = this._optionsContainer.scrollTop;
     this._renderCycleId += 1;
@@ -6966,12 +7181,21 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
             }
 
             const renderedTargets = Array.from(fragment.children);
-            this._optionsContainer.appendChild(fragment);
+            const existingBusyBucket = this._optionsContainer.querySelector('.busy-bucket');
+            if (existingBusyBucket) this._optionsContainer.insertBefore(fragment, existingBusyBucket);
+            else this._optionsContainer.appendChild(fragment);
             this._appendMountedVirtualizationTargets(renderedTargets);
             this._syncRenderedOptionAccessibility();
             this._syncLegacyActiveAria();
 
             if (cursor < filteredIndices.length) {
+              if (
+                this._busyPresentationVisible
+                && this._config.busyBucket.enabled
+                && !this._optionsContainer.querySelector('.busy-bucket')
+              ) {
+                this._appendBusyBucket();
+              }
               this._requestLifecycleFrame(renderChunk);
             } else {
               if (renderCycleId !== this._renderCycleId) {
@@ -7001,28 +7225,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }
     
     this._refreshMountedVirtualizationScope();
-    // Append Busy Indicator if busy
-    if (this._state.isBusy && this._config.busyBucket.enabled) {
-      const busyBucket = document.createElement('div');
-      busyBucket.setAttribute('part', 'loading');
-      busyBucket.className = 'busy-bucket';
-      
-      if (this._config.busyBucket.showSpinner) {
-        const spinner = document.createElement('div');
-        spinner.className = 'spinner';
-        busyBucket.appendChild(spinner);
-      }
-      
-      if (this._config.busyBucket.message) {
-        const message = document.createElement('div');
-        message.textContent = this._config.busyBucket.message;
-        busyBucket.appendChild(message);
-      }
-      
-      this._optionsContainer.appendChild(busyBucket);
+    if (this._busyPresentationVisible && this._config.busyBucket.enabled) {
+      this._appendBusyBucket();
     }
-    // Append Load More Trigger (Button or Sentinel) if enabled and not busy
-    else if ((!this._dataRequestCoordinator || !this._state.isBusy) && this._shouldRenderLoadMoreTrigger()) {
+    // The load-more trigger follows logical busy state, not any optional
+    // visual minimum-display hold after a request has already completed.
+    if ((!this._dataRequestCoordinator || !this._state.isBusy) && this._shouldRenderLoadMoreTrigger()) {
       this._addLoadMoreTrigger();
     }
 

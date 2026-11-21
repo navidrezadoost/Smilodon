@@ -226,8 +226,10 @@ configureSelect({
   busyBucket: {
     enabled: true,
     showSpinner: true,
+    showMessage: true,
     message: 'Loading...',
-    minDisplayTime: 200, // ms
+    minDisplayTime: 200, // visual minimum; does not delay request completion
+    contentMode: 'append', // or 'replace'
   },
   
   // Server-side data
@@ -265,6 +267,12 @@ configureSelect({
   placeholder: 'Select an option...',
 });
 ```
+
+### Busy bucket slots and styling
+
+The native busy bucket supports `slot="loading-icon"` and `slot="loading-content"`. The default `contentMode: 'append'` keeps the built-in spinner/message and appends slotted content. Use `contentMode: 'replace'` to show only accessible custom content; Core hides the icon and message regions, and retains a “Loading…” fallback when no accessible replacement is present. `showSpinner` affects only the built-in spinner, while `showMessage` controls the built-in message except for that fallback.
+
+The bucket exposes `::part(loading)`, `::part(loading-icon)`, `::part(loading-spinner)`, `::part(loading-message)`, and `::part(loading-content)`. Spacing, padding, color, and background use `--select-busy-gap`, `--select-busy-padding`, `--select-busy-color`, and `--select-busy-bg`; spinner size remains `--select-spinner-size`. `minDisplayTime` is presentation-only: request acceptance, pagination state, and `aria-busy` update immediately. The existing `Searching...` state is a separate presentation path.
 
 Data fetching, pagination, request cancellation, and page caching belong to the host application. In the current public `EnhancedSelect` path, `virtualize` controls legacy chunked rendering for large flat lists; it does not enable viewport-windowed virtualization. See [Known Limitations](./KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 

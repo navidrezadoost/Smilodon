@@ -1681,3 +1681,19 @@ MIT
 ## Contributing
 
 See the main [repository](https://github.com/yourusername/smilodon) for contribution guidelines.
+
+## Custom busy bucket slots (Issue #90 candidate)
+
+The unreleased Vue adapter forwards named slots into Core's light-DOM slots. It requires Core `1.13.0`; the currently published Vue package does not include this wrapper API.
+
+```vue
+<Select :items="items" :config="{ busyBucket: {
+  enabled: true, showSpinner: false, showMessage: true,
+  minDisplayTime: 200, contentMode: 'append'
+} }">
+  <template #loadingIcon><span aria-hidden="true">⏳</span></template>
+  <template #loadingContent><strong>Loading more products…</strong></template>
+</Select>
+```
+
+Use `contentMode: 'replace'` when accessible custom content should replace the built-in message and icon. Core retains its “Loading…” fallback when replacement content is hidden or lacks an accessible name. Core controls spinner/message visibility and minimum visual duration; the host owns request transport and item updates.

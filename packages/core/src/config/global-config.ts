@@ -35,10 +35,14 @@ export interface BusyBucketConfig {
   enabled: boolean;
   /** Show spinner in bucket */
   showSpinner?: boolean;
+  /** Show the built-in loading message */
+  showMessage?: boolean;
   /** Custom loading message */
   message?: string;
-  /** Minimum display time (ms) to prevent flashing */
+  /** Minimum visual display time (ms); does not delay request completion */
   minDisplayTime?: number;
+  /** Append custom loading content or replace the built-in presentation */
+  contentMode?: 'append' | 'replace';
 }
 
 export interface ExpandableConfig {
@@ -344,8 +348,10 @@ const defaultConfig: GlobalSelectConfig = {
   busyBucket: {
     enabled: true,
     showSpinner: true,
+    showMessage: true,
     message: 'Loading...',
     minDisplayTime: 200,
+    contentMode: 'append',
   },
   styles: {
     classNames: {},

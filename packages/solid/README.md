@@ -480,3 +480,18 @@ Common hooks:
 - [Known limitations](../../docs/KNOWN-LIMITATIONS.md)
 - [Performance guide](../../docs/PERFORMANCE.md)
 - [Browser support policy](../../docs/compliance/BROWSER-SUPPORT.md) (declared compatibility targets are distinct from versions exercised by the current test matrix)
+
+## Custom busy bucket content (Issue #90 candidate)
+
+The unreleased Solid adapter accepts `loadingIcon` and `loadingContent` JSX props and forwards them to Core's named slots. The feature requires Core `1.13.0`; the currently published Solid package does not expose these props.
+
+```tsx
+<Select
+  items={items}
+  config={{ busyBucket: { enabled: true, showSpinner: false, minDisplayTime: 200, contentMode: 'append' } }}
+  loadingIcon={<span aria-hidden="true">⏳</span>}
+  loadingContent={<strong>Loading more products…</strong>}
+/>
+```
+
+Set `contentMode: 'replace'` to replace the built-in presentation when custom content has an accessible name. Core keeps its status fallback when replacement content is not accessible. The host owns data requests; `minDisplayTime` affects only the visual bucket.

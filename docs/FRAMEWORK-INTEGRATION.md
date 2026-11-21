@@ -151,6 +151,31 @@ Core `1.12.0` is available from npm with a configurable exit animation. Apply `-
 
 For acknowledged loading, React's `items` prop can provide initial input and `completeDataRequest()` accepts subsequent cumulative pages. The Issue #85 adapter correction prevents unrelated config-object identities from replacing the cumulative snapshot, but its tested branch has **not yet been merged or published**. See [React issue guidance](../packages/react/README.md#acknowledged-pagination-on-react-rerenders--issue-85-unreleased).
 
+### Busy bucket slots (next Core/React release; not in current npm versions)
+
+Core owns request state and projects native `loading-icon` and `loading-content` slots from the Web Component's light DOM. React exposes these through `loadingIcon` and `loadingContent`; it does not create a second React root.
+
+```tsx
+<Select
+  items={items}
+  infiniteScroll
+  config={{
+    busyBucket: {
+      enabled: true,
+      showSpinner: false,
+      showMessage: true,
+      message: 'Loading…',
+      minDisplayTime: 200,
+      contentMode: 'append',
+    },
+  }}
+  loadingIcon={<MyLoadingIcon />}
+  loadingContent={<strong>Loading another page…</strong>}
+/>
+```
+
+Other adapters can put children on the native element with `slot="loading-icon"` or `slot="loading-content"`. The icon does not change `arrowIcon`, and loading content is independent of the `items` prop. Custom nodes stay mounted while unprojected. `minDisplayTime` only holds the visual bucket after completion; it does not delay request acceptance, pagination, or `aria-busy`. The separate `Searching...` presentation remains unchanged.
+
 
 
 React integration is more straightforward since it doesn't require custom element compiler configuration.

@@ -162,6 +162,12 @@ export interface SelectComponentProps {
   /** Custom decorative arrow icon rendered in the native arrow slot. */
   arrowIcon?: React.ReactNode;
 
+  /** Decorative custom icon projected into Core's native busy-bucket slot. */
+  loadingIcon?: React.ReactNode;
+
+  /** Accessible custom busy UI projected into Core's native loading-content slot. */
+  loadingContent?: React.ReactNode;
+
   /** Behavior overrides for visually disabled (dimmed) options */
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -459,6 +465,8 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     config: coreConfig,
     removeButtonIcon,
     arrowIcon,
+    loadingIcon,
+    loadingContent,
     disabledOptionBehavior,
     showSelectedIndicator = true,
     toggleOnTriggerClick = true,
@@ -1628,6 +1636,27 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
             "aria-hidden": "true",
           },
           arrowIcon,
+        )
+      : null,
+    loadingIcon != null
+      ? React.createElement(
+          "span",
+          {
+            slot: "loading-icon",
+            className: "smilodon-loading-icon",
+            "aria-hidden": "true",
+          },
+          loadingIcon,
+        )
+      : null,
+    loadingContent != null
+      ? React.createElement(
+          "div",
+          {
+            slot: "loading-content",
+            className: "smilodon-loading-content",
+          },
+          loadingContent,
         )
       : null,
   );

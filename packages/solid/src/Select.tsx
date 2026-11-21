@@ -120,6 +120,8 @@ export interface SelectProps {
   classMap?: ClassMap
   optionRenderer?: (item: SelectItem, index: number, helpers?: RendererHelpers) => HTMLElement
   customRenderer?: (item: SelectItem, index: number) => JSX.Element
+  loadingIcon?: JSX.Element
+  loadingContent?: JSX.Element
   trackingEnabled?: boolean
   trackEvents?: boolean
   trackStyling?: boolean
@@ -605,7 +607,14 @@ export default function Select(rawProps: SelectProps) {
         class={rawProps.class ?? rawProps.className}
         style={rawProps.style as JSX.CSSProperties}
         dir={rawProps.direction}
-      />
+      >
+        {rawProps.loadingIcon != null && (
+          <span slot="loading-icon" aria-hidden="true">{rawProps.loadingIcon}</span>
+        )}
+        {rawProps.loadingContent != null && (
+          <div slot="loading-content">{rawProps.loadingContent}</div>
+        )}
+      </enhanced-select>
     </div>
   )
 }
