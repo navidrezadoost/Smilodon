@@ -1249,3 +1249,23 @@ MIT © [Navid Rezadoost](https://github.com/navidrezadoost)
 ## Contributing
 
 Contributions are welcome! Please see the [main repository](https://github.com/navidrezadoost/smilodon) for guidelines.
+
+## Custom busy bucket snippets (Issue #90 candidate)
+
+The unreleased Svelte 5 candidate accepts `loadingIcon` and `loadingContent` snippet props and forwards them to Core's native loading slots. It requires Core `1.13.0`; these props are not in the currently published Svelte artifact.
+
+```svelte
+<script lang="ts">
+  import { Select } from '@smilodon/svelte';
+  const items = [{ value: 'one', label: 'One' }];
+</script>
+
+{#snippet loadingIcon()}<span aria-hidden="true">⏳</span>{/snippet}
+{#snippet loadingContent()}<strong>Loading more products…</strong>{/snippet}
+
+<Select {items} {loadingIcon} {loadingContent} config={{ busyBucket: {
+  enabled: true, showSpinner: false, showMessage: true, minDisplayTime: 200, contentMode: 'append'
+} }} />
+```
+
+Core controls spinner/message visibility, append or replace mode, accessible fallback, and minimum visual duration. The host remains responsible for transport and item updates.

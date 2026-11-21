@@ -619,3 +619,18 @@ Check that:
 - [../../docs/KNOWN-LIMITATIONS.md](../../docs/KNOWN-LIMITATIONS.md)
 - [../../docs/PERFORMANCE.md](../../docs/PERFORMANCE.md)
 - [../../docs/STYLING.md](../../docs/STYLING.md)
+
+## Custom busy content (Issue #90 candidate)
+
+Solid consumers can pass JSX through `loadingIcon` and `loadingContent`. The candidate requires Core `1.13.0`; this is not part of the currently published Solid artifact.
+
+```tsx
+<Select
+  items={items}
+  config={{ busyBucket: { enabled: true, showSpinner: false, minDisplayTime: 200, contentMode: 'replace' } }}
+  loadingIcon={<span aria-hidden="true">⏳</span>}
+  loadingContent={<strong>Loading more…</strong>}
+/>
+```
+
+Core owns slot projection, append/replace presentation, accessible fallback, and minimum display timing. The application owns async transport and result state.

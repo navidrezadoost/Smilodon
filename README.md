@@ -397,9 +397,23 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 | ------------ | --------------------------------------------------------------------------- |
 | React        | React `>=16.8.0`, React DOM `>=16.8.0`                                      |
 | Vue          | Vue `^3.0.0`                                                                |
-| Svelte       | Svelte `>=3`, `>=4`, or `>=5`                                               |
+| Svelte       | Svelte `^5.0.0` for the maintained package artifact                          |
 | SolidJS      | SolidJS `^1.9.0`                                                            |
 | React Native | React `>=18.2.0`, React Native `>=0.74.0`, `react-native-webview >=13.12.0` |
+
+### Busy-bucket custom content (Issue #90)
+
+The unreleased Issue #90 candidate adds Core's `loading-icon` and `loading-content` slots, controlled by `busyBucket` configuration. Framework wrappers forward those slots through React props, Vue named slots, Svelte 5 snippets, and Solid JSX props. Vanilla consumers can append native slotted DOM nodes directly. The feature requires Core `1.13.0`; it is not part of the currently published package artifacts. React Native's separate WebView/native API does not expose these slots, and no React Native parity is claimed.
+
+| Adapter | Candidate interface | Status |
+| --- | --- | --- |
+| Core | Native light-DOM `slot="loading-icon"` and `slot="loading-content"` | Locally qualified; release pending |
+| React | `loadingIcon` and `loadingContent` props | Locally qualified; release pending |
+| Vue | `#loadingIcon` and `#loadingContent` named slots | Contract and build checks pass locally |
+| Svelte 5 | `loadingIcon` and `loadingContent` `Snippet` props | Contract and build checks pass locally |
+| Solid | `loadingIcon` and `loadingContent` JSX props | Contract and build checks pass locally |
+| Vanilla | Append nodes with the two native slot names | Contract smoke check passed locally |
+| React Native | No corresponding props on native or WebView path | Separate compatibility decision |
 
 ### Compatibility notes by integration style
 

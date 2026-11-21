@@ -304,6 +304,103 @@ test.describe('React adapter browser certification @react-adapter', () => {
     expect(await page.evaluate(() => window.__smilodonReactCertification?.state()?.hasMore)).toBe(false);
   });
 
+  test('projects React busy slots through Shadow DOM and retains them during a large load-more projection', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=busy-bucket&busy-mode=replace`);
+    await waitForReactReady(page);
+
+    const initialRequest = (await readEvents(page)).find((event) => event.type === 'search')?.request as {
+      requestId: string;
+      queryGeneration: number;
+    };
+    expect(await page.evaluate((request) => window.__smilodonReactCertification?.complete({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      status: 'succeeded',
+      items: [
+        { value: 'apple', label: 'Apple' },
+        { value: 'banana', label: 'Banana' },
+        { value: 'cherry', label: 'Cherry' },
+      ],
+      hasMore: true,
+      nextCursor: 'cursor-one',
+    }), initialRequest)).toBe('accepted');
+    await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.state()?.busy))
+      .toBe(false);
+
+    await page.evaluate(() => window.__smilodonReactCertification?.open());
+    await expect.poll(async () => (await readEvents(page)).filter((event) => event.type === 'loadMore').length)
+      .toBe(1);
+    const loadRequest = (await readEvents(page)).find((event) => event.type === 'loadMore')?.request as {
+      requestId: string;
+      queryGeneration: number;
+    };
+    const host = page.locator('enhanced-select');
+    const listbox = host.locator('[role="listbox"]');
+    const bucket = host.locator('.busy-bucket');
+    await expect(bucket).toBeVisible();
+    await expect(listbox).toHaveAttribute('aria-busy', 'true');
+    await expect(bucket).toHaveClass(/busy-bucket--replace/);
+    await expect(bucket.locator('[part="loading-icon"]')).toBeHidden();
+    await expect(bucket.locator('[part="loading-message"]')).toBeHidden();
+    await expect(host.locator('[slot="loading-content"]')).toContainText('Loading another page');
+    expect(await host.locator('[slot="loading-icon"]').count()).toBe(1);
+    expect(await host.locator('[slot="loading-content"]').count()).toBe(1);
+
+    const nextPage = Array.from({ length: 360 }, (_, index) => ({
+      value: `page-two-${index}`,
+      label: `Page two option ${index}`,
+    }));
+    expect(await page.evaluate(({ request, items }) => window.__smilodonReactCertification?.complete({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      status: 'exhausted',
+      items,
+      hasMore: false,
+    }), { request: loadRequest, items: nextPage })).toBe('accepted');
+
+    await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.state()?.busy))
+      .toBe(false);
+    await expect.poll(async () => host.locator('[part="option"]').count()).toBeGreaterThan(300);
+    await expect(listbox).not.toHaveAttribute('aria-busy', 'true');
+    await expect(bucket).toBeVisible();
+    await expect(host.locator('.busy-bucket')).toHaveCount(1);
+    await expect(host.locator('[slot="loading-content"]')).toContainText('Loading another page');
+    await expect(bucket.locator('[part="loading-spinner"]')).toBeHidden();
+
+    await expect(bucket).toHaveCount(0, { timeout: 2000 });
+  });
+
+  test('removes the icon row from layout when spinner and custom icon are absent', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=busy-bucket&busy-icon=none`);
+    await waitForReactReady(page);
+
+    const host = page.locator('enhanced-select');
+    const bucket = host.locator('.busy-bucket');
+    await host.evaluate((element) => {
+      const select = element as HTMLElement & {
+        _state: { isSearching: boolean };
+        _setBusy(busy: boolean): void;
+        setItems(items: Array<{ value: string; label: string }>): void;
+      };
+      select._state.isSearching = false;
+      select.setItems([{ value: 'apple', label: 'Apple' }]);
+    });
+    await page.evaluate(() => window.__smilodonReactCertification?.open());
+    await host.evaluate((element) => {
+      const select = element as HTMLElement & { _setBusy(busy: boolean): void };
+      select._setBusy(true);
+    });
+    const icon = bucket.locator('.busy-icon');
+    await expect(bucket).toBeVisible();
+    await expect(bucket.locator('[part="loading-spinner"]')).toHaveCount(0);
+    await expect(host.locator('[slot="loading-icon"]')).toHaveCount(0);
+    await expect(icon).toBeHidden();
+
+    const iconBox = await icon.boundingBox();
+    expect(iconBox).toBeNull();
+    await expect(bucket.locator('[part="loading-message"]')).toBeVisible();
+  });
+
   test('composes external loading, consumer aria-busy, and core busy independently', async ({ page }) => {
     const host = page.locator('enhanced-select');
     const listbox = host.locator('[role="listbox"]');

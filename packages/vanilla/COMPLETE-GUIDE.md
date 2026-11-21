@@ -1247,3 +1247,19 @@ select.addEventListener('search', (event) => {
 **Built with ❤️ by the Smilodon team**
 
 *Last updated: February 9, 2026 - v1.3.6*
+
+## Native busy-bucket slots (Issue #90 candidate)
+
+The Vanilla helper returns the Core custom element, so add custom presentation nodes directly. No new helper option is needed. This requires Core `1.13.0` and is not available in the current published Core artifact.
+
+```ts
+const select = createSelect({ items, config: {
+  busyBucket: { enabled: true, showSpinner: false, contentMode: 'replace', minDisplayTime: 200 },
+} });
+const status = document.createElement('strong');
+status.slot = 'loading-content';
+status.textContent = 'Loading more results…';
+select.append(status);
+```
+
+Provide an accessible name for replacement content; otherwise Core shows its built-in status fallback. The application remains responsible for requests and item updates.

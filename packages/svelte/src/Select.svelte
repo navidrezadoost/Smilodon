@@ -31,6 +31,7 @@
 
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
+  import type { Snippet } from 'svelte';
   import type {
     SelectEventDetail,
     OpenEventDetail,
@@ -93,6 +94,10 @@
   export let trackingMaxEntries: number = 200;
   export let limitationPolicies: LimitationPolicyMap | undefined = undefined;
   export let autoMitigateRuntimeModeSwitch: boolean = true;
+  /** Svelte 5 snippet rendered in Core's decorative loading-icon slot. */
+  export let loadingIcon: Snippet | undefined = undefined;
+  /** Svelte 5 snippet rendered in Core's loading-content slot. */
+  export let loadingContent: Snippet | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
     change: { value: string | number | (string | number)[]; selectedItems: SelectItem[] };
@@ -468,7 +473,18 @@
   bind:this={selectRef}
   class={className}
   {style}
-/>
+>
+  {#if loadingIcon}
+    <span slot="loading-icon" aria-hidden="true">
+      {@render loadingIcon()}
+    </span>
+  {/if}
+  {#if loadingContent}
+    <div slot="loading-content">
+      {@render loadingContent()}
+    </div>
+  {/if}
+</enhanced-select>
 
 <style>
   /* Component uses web component styling from @smilodon/core */

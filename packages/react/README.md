@@ -184,6 +184,38 @@ The coordinator rejects stale responses by request ID and query generation; the 
 - **Legacy compatibility:** omit `config.dataLoading` to retain the legacy protocol. Existing `onSearch(query, results, count)` and `onLoadMore(page)` calls remain usable; the new request argument is optional in those callback signatures.
 - **Controlled selection:** keep `value` in application state and update it through `onChange`. Replacing remote result pages does not transfer ownership of the selected value from the application to the transport layer.
 
+### Custom busy bucket (Issue #90 release candidate; not in current npm versions)
+
+React exposes Core's native loading slots through `loadingIcon` and `loadingContent`. These are React-owned light-DOM children; Core projects them into its Shadow DOM busy bucket without creating another React root.
+
+```tsx
+<Select
+  items={items}
+  infiniteScroll
+  config={{
+    busyBucket: {
+      enabled: true,
+      showSpinner: false,
+      showMessage: true,
+      message: 'Loading…',
+      minDisplayTime: 200,
+      contentMode: 'append',
+    },
+  }}
+  loadingIcon={<MyLoadingIcon />}
+  loadingContent={(
+    <div>
+      <strong>Loading more products…</strong>
+      <span>Please wait.</span>
+    </div>
+  )}
+/>
+```
+
+Use `contentMode: 'replace'` when accessible `loadingContent` should be the only visible bucket content; Core hides the icon and message regions. If no accessible replacement is supplied, Core retains a “Loading…” fallback. In append mode, `loadingIcon` is decorative and does not affect `arrowIcon`; `loadingContent` is independent of `items`. React keeps both custom nodes mounted in the light DOM while busy UI is hidden, so start expensive work only from the request callback or explicit application state.
+
+`minDisplayTime` is a presentation policy for the busy bucket, not a request delay. Request acceptance, pagination state, and `aria-busy` update as soon as the request completes. The dedicated `Searching...` view remains unchanged and is not replaced by these props.
+
 ## Infinite Render Loop: Root-Cause Review (No External Dependencies)
 
 If you see `Maximum update depth exceeded`, follow this checklist before shipping:

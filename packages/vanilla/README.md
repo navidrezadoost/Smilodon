@@ -750,3 +750,24 @@ The versions listed below are repository compatibility targets, not browser vers
 ## License
 
 MIT © [Navid Rezadoost](https://github.com/navidrezadoost)
+
+## Core loading slots (Issue #90 candidate)
+
+Vanilla needs no adapter-specific content prop: append DOM nodes to the helper-created `enhanced-select` with Core's native slot names. The slots require Core `1.13.0`; the current published Core package does not yet include them.
+
+```ts
+const select = createSelect({
+  items,
+  config: { busyBucket: { enabled: true, showSpinner: false, message: 'Loading…', contentMode: 'append' } },
+});
+const icon = document.createElement('span');
+icon.slot = 'loading-icon';
+icon.setAttribute('aria-hidden', 'true');
+icon.textContent = '⏳';
+const content = document.createElement('strong');
+content.slot = 'loading-content';
+content.textContent = 'Loading more products…';
+select.append(icon, content);
+```
+
+Core controls spinner/message visibility, append versus replace mode, accessible fallback, and minimum visual duration. Remove or update the light-DOM nodes with normal DOM APIs when the host state changes.

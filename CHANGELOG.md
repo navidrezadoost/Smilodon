@@ -22,6 +22,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 - **React acknowledged infinite-scroll synchronization (#85):** A separate locally qualified fix exists in unpushed branch `fix/85-react-acknowledged-items` at `29c67067b3bf345347f74e2dc074095dc9eb2ab9`. It is not present in `main`, has not been merged, and must not be attributed to React `1.11.0` or any new published version. Its React release will require a separate PR, qualification, and npm publication.
 - Remaining acknowledged-loading API parity and certification across adapters remain outside the completed release scope.
 
+### Added (unreleased)
+
+- **Custom busy bucket slots (#90, unreleased):** Core adds native `loading-icon` and `loading-content` slots, append/replace presentation modes, explicit built-in message visibility, and a minimum visual display time that does not delay request acceptance or pagination. React, Vue, Svelte 5, and Solid adapters expose framework-native content interfaces; Vanilla uses the native DOM slots. React Native remains outside this web feature's scope. Adapter qualification and package publication remain pending. The separate `Searching...` state is unchanged. This is not included in published Core `1.12.0`, React `1.11.0`, Vue/Solid/Vanilla `1.10.1`, or Svelte `2.0.0`.
+
 ## [1.12.0] - 2026-11-19
 
 **Core-only minor release published from `main` commit `d4711d4437b7a8809c8e672c46832b22a77cb069`.** The published artifact is `@smilodon/core@1.12.0`; its registry integrity and SHA-1 match the locally packed tarball. Core `1.11.1` remains unchanged.

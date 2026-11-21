@@ -1277,6 +1277,38 @@ function AsyncSelect() {
 }
 ```
 
+### Customizing the Core busy bucket
+
+`loadingIcon` and `loadingContent` provide React nodes to Core's native `loading-icon` and `loading-content` slots. The adapter keeps these nodes in the custom element's light DOM and React owns their lifecycle; Core controls when the slot projection is visible.
+
+```tsx
+<Select
+  items={items}
+  infiniteScroll
+  config={{
+    busyBucket: {
+      enabled: true,
+      showSpinner: false,
+      showMessage: true,
+      message: 'Loading…',
+      minDisplayTime: 200,
+      contentMode: 'replace',
+    },
+  }}
+  loadingIcon={<MyLoadingIcon />}
+  loadingContent={(
+    <div>
+      <strong>Loading more options…</strong>
+      <span>Additional results will appear shortly.</span>
+    </div>
+  )}
+/>
+```
+
+`append` is the default `contentMode` and shows the built-in UI alongside custom content. `replace` shows only accessible custom content and hides the icon and message regions; otherwise Core retains its “Loading…” fallback. Keep meaningful text in replacement content so assistive technology has a status to announce. In append mode, the icon is decorative and separate from `arrowIcon`.
+
+The busy bucket is presentation only. `minDisplayTime` may keep it visible briefly after completion, but never delays the data coordinator, page advancement, or `aria-busy`. Custom nodes remain mounted while the bucket is hidden; gate animation or expensive work through application state. The existing `Searching...` state has its own rendering path.
+
 ### With React Hook Form
 
 ```tsx

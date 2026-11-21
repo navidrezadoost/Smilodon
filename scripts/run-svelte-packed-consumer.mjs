@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = join(root, 'tests/consumers/svelte-v5');
 const temp = mkdtempSync(join(tmpdir(), 'smilodon-svelte-v5-consumer-'));
+const expectedSveltePackageVersion = JSON.parse(readFileSync(join(root, 'packages/svelte/package.json'), 'utf8')).version;
 
 function run(command, args, cwd = root) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', stdio: 'inherit' });
@@ -57,7 +58,9 @@ run('npm', ['run', 'build'], consumer);
 const lockPath = join(consumer, 'package-lock.json');
 const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
 const installedSveltePackage = JSON.parse(readFileSync(join(consumer, 'node_modules/@smilodon/svelte/package.json'), 'utf8'));
-if (installedSveltePackage.version !== '2.0.0') throw new Error(`Expected @smilodon/svelte 2.0.0, got ${installedSveltePackage.version}`);
+if (installedSveltePackage.version !== expectedSveltePackageVersion) {
+  throw new Error(`Expected @smilodon/svelte ${expectedSveltePackageVersion}, got ${installedSveltePackage.version}`);
+}
 if (installedSveltePackage.peerDependencies?.svelte !== '^5.0.0') {
   throw new Error(`Packed Svelte peer range must be ^5.0.0, got ${installedSveltePackage.peerDependencies?.svelte}`);
 }

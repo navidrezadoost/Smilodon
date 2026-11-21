@@ -26,7 +26,14 @@
     :class="className"
     :dir="direction"
     :style="style"
-  />
+  >
+    <span v-if="hasSlotContent('loadingIcon')" slot="loading-icon" aria-hidden="true">
+      <slot name="loadingIcon" />
+    </span>
+    <div v-if="hasSlotContent('loadingContent')" slot="loading-content">
+      <slot name="loadingContent" />
+    </div>
+  </enhanced-select>
 </template>
 
 <script setup lang="ts">
@@ -34,7 +41,7 @@ defineOptions({
   inheritAttrs: false,
 });
 
-import { ref, watch, onMounted, onBeforeUnmount, computed, render, isVNode, h } from 'vue';
+import { Comment, ref, watch, onMounted, onBeforeUnmount, computed, render, isVNode, h, useSlots } from 'vue';
 import { arraysEqualByValue } from '@smilodon/core';
 import type {
   SelectEventDetail,
@@ -222,6 +229,9 @@ const props = withDefaults(defineProps<SelectProps>(), {
 });
 
 const emit = defineEmits<SelectEmits>();
+const slots = useSlots();
+const hasSlotContent = (name: 'loadingIcon' | 'loadingContent') =>
+  Boolean(slots[name]?.().some((node) => node.type !== Comment));
 
 const selectRef = ref<HTMLElement | null>(null);
 const isElementReady = ref(false);

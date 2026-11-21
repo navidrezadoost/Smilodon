@@ -1322,3 +1322,15 @@ If you experience slow rendering with large datasets:
 **Built with ❤️ by the Smilodon team**
 
 *Last updated: February 9, 2026 - v1.3.6*
+
+## Custom busy content (Svelte 5, Issue #90 candidate)
+
+Pass Svelte 5 snippets through the `loadingIcon` and `loadingContent` props. The candidate requires Core `1.13.0`; the current published Svelte package does not yet contain these props.
+
+```svelte
+{#snippet loadingIcon()}<span aria-hidden="true">⏳</span>{/snippet}
+{#snippet loadingContent()}<strong>Loading more…</strong>{/snippet}
+<Select {items} {loadingIcon} {loadingContent} config={{ busyBucket: { enabled: true, showSpinner: false, minDisplayTime: 200, contentMode: 'replace' } }} />
+```
+
+Use replace mode only with accessible custom content; Core retains its built-in status message as a fallback otherwise. Core owns timing and presentation; the application owns async requests and results.

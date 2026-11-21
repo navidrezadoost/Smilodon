@@ -1,4 +1,5 @@
 import { SvelteComponentTyped } from 'svelte';
+import type { Snippet } from 'svelte';
 import type {
   SelectEventDetail,
   OpenEventDetail,
@@ -68,6 +69,8 @@ export interface SelectProps {
   trackingMaxEntries?: number;
   limitationPolicies?: LimitationPolicyMap;
   autoMitigateRuntimeModeSwitch?: boolean;
+  loadingIcon?: Snippet;
+  loadingContent?: Snippet;
 }
 
 export interface SelectEvents {

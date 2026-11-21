@@ -8,7 +8,15 @@
   let value = 'alpha';
 </script>
 
+{#snippet loadingIcon()}
+  <span aria-hidden="true">⌛</span>
+{/snippet}
+
+{#snippet loadingContent()}
+  <span>Loading another page…</span>
+{/snippet}
+
 <main>
-  <Select {items} bind:value searchable />
+  <Select {items} bind:value searchable {loadingIcon} {loadingContent} />
   <output>{value}</output>
 </main>

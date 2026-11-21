@@ -1618,3 +1618,16 @@ const items = computed(() => generateLargeDataset());
 **Built with ❤️ by the Smilodon team**
 
 *Last updated: February 9, 2026 - v1.3.6*
+
+## Custom busy content (Issue #90 candidate)
+
+The candidate Vue adapter accepts `loadingIcon` and `loadingContent` named slots and forwards them to Core's `loading-icon` and `loading-content` slots. This requires Core `1.13.0` and is not included in the currently published Vue artifact.
+
+```vue
+<Select :items="items" :config="{ busyBucket: { enabled: true, showSpinner: false, minDisplayTime: 200, contentMode: 'append' } }">
+  <template #loadingIcon><MySpinner /></template>
+  <template #loadingContent><span>Loading more…</span></template>
+</Select>
+```
+
+Core controls append versus replace mode, its built-in spinner/message, the accessible fallback, and minimum visual duration. The host still owns asynchronous loading and `items` updates.

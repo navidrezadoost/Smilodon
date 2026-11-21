@@ -382,3 +382,7 @@ Use these when you need runtime observability during QA or production debugging.
 - [Known limitations](../../docs/KNOWN-LIMITATIONS.md)
 - [Feature-contract audit](../../docs/architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md)
 - [Browser support policy](../../docs/compliance/BROWSER-SUPPORT.md)
+
+## Issue #90 busy-bucket compatibility boundary
+
+The Core loading slots are a browser custom-element feature. `@smilodon/react-native` does not currently expose `loadingIcon` or `loadingContent` props through either its native WebView bridge or its React Native Web path. Do not infer React web adapter parity from the shared Core bundle. Native loading presentation remains a separate design and qualification decision; this package is not part of the Issue #90 web release.

@@ -12,6 +12,35 @@ import {
 import { basicItems } from './fixtures/test-data';
 
 describe('Vanilla Adapter Contract Tests', () => {
+  it('projects native loading slot nodes from the helper-created custom element', async () => {
+    const element = createSelect({
+      items: basicItems,
+      config: { busyBucket: { enabled: true, showSpinner: false, message: '', contentMode: 'append' } },
+    }) as any;
+    const icon = document.createElement('span');
+    icon.slot = 'loading-icon';
+    icon.textContent = 'spinner';
+    icon.setAttribute('aria-hidden', 'true');
+    const content = document.createElement('strong');
+    content.slot = 'loading-content';
+    content.textContent = 'Loading more';
+    element.append(icon, content);
+    document.body.appendChild(element);
+    element._setBusy(true);
+
+    const bucket = element.shadowRoot.querySelector('.busy-bucket');
+    await waitFor(() => {
+      expect(bucket.querySelector('slot[name="loading-icon"]')?.assignedNodes({ flatten: true })).toContain(icon);
+      expect(bucket.querySelector('slot[name="loading-content"]')?.assignedNodes({ flatten: true })).toContain(content);
+    });
+    expect(bucket.querySelector('[part="loading-spinner"]')).toBeNull();
+    expect(bucket.querySelector('[part="loading-message"]')?.textContent).toBe('');
+
+    element.remove();
+    expect(icon.isConnected).toBe(false);
+    expect(content.isConnected).toBe(false);
+  });
+
   it('forwards option selection through the vanilla helper callback with item and index', async () => {
     const onSelect = vi.fn();
     const element = createSelect({ items: basicItems, onSelect }) as any;
