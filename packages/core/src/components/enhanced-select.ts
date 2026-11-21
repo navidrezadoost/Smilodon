@@ -6462,10 +6462,27 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._state.isBusy = snapshot.busy;
       if (!snapshot.busy) {
         this._syncBusyPresentation();
-        if (!this._busyPresentationVisible) {
-          this._optionsContainer.querySelector('.busy-bucket')?.remove();
+        const shouldReconcileEmptyState =
+          snapshot.status === 'exhausted'
+          && this._renderPlan.filteredKeys.length === 0;
+
+        if (shouldReconcileEmptyState) {
+          // The first projection rendered while logically busy, so the empty
+          // state was intentionally suppressed. Reconcile only this terminal
+          // empty case after settlement; keep any minimum-duration busy
+          // presentation and its timer intact.
+          this._renderOptions();
+          const emptyStateRenderCycleId = this._renderCycleId;
+          const emptyStateRenderCompleted = await this._waitForRenderCycle(emptyStateRenderCycleId);
+          if (!emptyStateRenderCompleted) {
+            throw new Error('Acknowledged empty-state render was superseded before completion');
+          }
+        } else {
+          if (!this._busyPresentationVisible) {
+            this._optionsContainer.querySelector('.busy-bucket')?.remove();
+          }
+          if (this._shouldRenderLoadMoreTrigger()) this._addLoadMoreTrigger();
         }
-        if (this._shouldRenderLoadMoreTrigger()) this._addLoadMoreTrigger();
       }
       this._optionsContainer.scrollTop = this._acknowledgedProjectionScrollTop;
       this._syncListboxAccessibility();
@@ -6808,7 +6825,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._busyPresentationGeneration += 1;
     this._clearBusyPresentationHideTimer();
     this._busyPresentationVisible = this._config.busyBucket.enabled;
-    this._busyPresentationStartedAt = this._busyBucket?.isConnected ? Date.now() : null;
+    this._busyPresentationStartedAt = Date.now();
   }
 
   private _syncBusyPresentation(): void {
@@ -7137,7 +7154,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         const empty = document.createElement('div');
         empty.setAttribute('part', 'no-results');
         empty.className = 'empty-state';
-        if (query) {
+        if (this._state.searchQuery) {
           empty.textContent = `No results found for "${this._state.searchQuery}"`;
         } else {
           empty.textContent = 'No options available';

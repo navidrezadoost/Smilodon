@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- **Acknowledged remote-search empty state ([#92](https://github.com/navidrezadoost/Smilodon/issues/92)):** Fixed a rendering synchronization issue where an exhausted remote search returning no items could leave the dropdown blank until reopened. Terminal empty results are now rendered after the accepted snapshot settles, without affecting active loading or non-empty results. Remote searches display the query-specific no-results message. This fix is unreleased and is not part of `@smilodon/core@1.13.0`.
+
 ### Pending
 
 - **React acknowledged infinite-scroll synchronization (#85):** A separate locally qualified fix exists in unpushed branch `fix/85-react-acknowledged-items` at `29c67067b3bf345347f74e2dc074095dc9eb2ab9`. It is not present in `main`, has not been merged, and must not be attributed to React `1.11.0` or any new published version. Its React release will require a separate PR, qualification, and npm publication.

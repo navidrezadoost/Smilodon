@@ -31,6 +31,7 @@ describe('EnhancedSelect public acknowledged data-loading facade', () => {
   afterEach(() => {
     document.body.replaceChildren();
     resetSelectConfig();
+    vi.useRealTimers();
   });
 
   it('waits for explicit readiness and classifies completion synchronously before projection', async () => {
@@ -99,6 +100,155 @@ describe('EnhancedSelect public acknowledged data-loading facade', () => {
     });
     expect(order.slice(-2)).toEqual(['projection-event:complete', 'projection-callback:complete']);
     expect(select.getDataLoadingState()).toMatchObject({ busy: false, projectionPending: false });
+  });
+
+  it('renders an exhausted remote-search empty state before notifying projection completion', async () => {
+    const select = createSelect();
+    select.updateConfig({ searchable: true });
+    select.open();
+
+    const searches: Array<{ request: DataRequest }> = [];
+    let completedProjection: DataProjectionEventDetail | undefined;
+    let emptyStateWasVisibleAtCompletion = false;
+    select.addEventListener('search', (event) => {
+      searches.push((event as CustomEvent<{ request: DataRequest }>).detail);
+    });
+    select.addEventListener('dataProjection', (event) => {
+      const detail = (event as CustomEvent<DataProjectionEventDetail>).detail;
+      if (detail.status === 'complete') {
+        completedProjection = detail;
+        emptyStateWasVisibleAtCompletion =
+          select.shadowRoot?.querySelectorAll('[part="no-results"]').length === 1;
+      }
+    });
+
+    select.startDataLoading();
+    (select as any)._handleSearch('missing-product');
+    expect(searches).toHaveLength(2);
+    const request = searches[1].request;
+    expect(request.query).toBe('missing-product');
+
+    expect(select.completeDataRequest({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      status: 'exhausted',
+      items: [],
+      hasMore: false,
+    })).toBe('accepted');
+
+    await vi.waitFor(() => expect(completedProjection?.status).toBe('complete'));
+    expect(select.shadowRoot?.querySelector('[aria-expanded="true"]')).not.toBeNull();
+    expect(emptyStateWasVisibleAtCompletion).toBe(true);
+    expect(select.shadowRoot?.querySelectorAll('[part="no-results"]')).toHaveLength(1);
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')?.textContent)
+      .toBe('No results found for "missing-product"');
+
+    (select as any)._handleSearch('next-query');
+    expect(select.shadowRoot?.querySelector('.searching-state')).not.toBeNull();
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')).toBeNull();
+  });
+
+  it('uses the default empty-list message when an empty query is exhausted', async () => {
+    const select = createSelect();
+    let request: DataRequest | undefined;
+    let projectionCompleted = false;
+    select.addEventListener('search', (event) => {
+      request = (event as CustomEvent<{ request: DataRequest }>).detail.request;
+    });
+    select.addEventListener('dataProjection', (event) => {
+      if ((event as CustomEvent<DataProjectionEventDetail>).detail.status === 'complete') {
+        projectionCompleted = true;
+      }
+    });
+    select.startDataLoading();
+    expect(request?.query).toBe('');
+
+    expect(select.completeDataRequest({
+      requestId: request!.requestId,
+      queryGeneration: request!.queryGeneration,
+      status: 'exhausted',
+      items: [],
+      hasMore: false,
+    })).toBe('accepted');
+
+    await vi.waitFor(() => expect(projectionCompleted).toBe(true));
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')?.textContent).toBe('No options available');
+  });
+
+  it('keeps the minimum busy presentation timer while reconciling an exhausted empty state', async () => {
+    vi.useFakeTimers();
+    const select = createSelect();
+    select.updateConfig({
+      busyBucket: { enabled: true, minDisplayTime: 200 },
+      searchable: true,
+    });
+
+    const requests: DataRequest[] = [];
+    select.addEventListener('search', (event) => {
+      requests.push((event as CustomEvent<{ request: DataRequest }>).detail.request);
+    });
+    const nextProjection = () => new Promise<void>((resolve) => {
+      const listener = (event: Event) => {
+        if ((event as CustomEvent<DataProjectionEventDetail>).detail.status !== 'complete') return;
+        select.removeEventListener('dataProjection', listener);
+        resolve();
+      };
+      select.addEventListener('dataProjection', listener);
+    });
+
+    select.startDataLoading();
+    expect(requests).toHaveLength(1);
+    (select as any)._handleSearch('missing-product');
+    expect(requests).toHaveLength(2);
+    const request = requests[1];
+    expect(request.query).toBe('missing-product');
+    await vi.advanceTimersByTimeAsync(50);
+
+    const projectionCompleted = nextProjection();
+    expect(select.completeDataRequest({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      status: 'exhausted',
+      items: [],
+      hasMore: false,
+    })).toBe('accepted');
+    await projectionCompleted;
+
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')).not.toBeNull();
+    expect(select.getDataLoadingState().busy).toBe(false);
+    expect(select.shadowRoot?.querySelector('[role="listbox"]')?.getAttribute('aria-busy')).not.toBe('true');
+    expect(select.shadowRoot?.querySelector('.busy-bucket')).not.toBeNull();
+
+    await vi.advanceTimersByTimeAsync(149);
+    expect(select.shadowRoot?.querySelector('.busy-bucket')).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(select.shadowRoot?.querySelector('.busy-bucket')).toBeNull();
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')).not.toBeNull();
+  });
+
+  it('does not show terminal no-results for a nonterminal empty page', async () => {
+    const select = createSelect();
+    const projections: DataProjectionEventDetail[] = [];
+    let request: DataRequest | undefined;
+    select.addEventListener('search', (event) => {
+      request = (event as CustomEvent<{ request: DataRequest }>).detail.request;
+    });
+    select.addEventListener('dataProjection', (event) => {
+      projections.push((event as CustomEvent<DataProjectionEventDetail>).detail);
+    });
+    select.startDataLoading();
+    expect(request).toBeDefined();
+
+    expect(select.completeDataRequest({
+      requestId: request!.requestId,
+      queryGeneration: request!.queryGeneration,
+      status: 'empty',
+      hasMore: true,
+      advance: 'next',
+    })).toBe('accepted');
+
+    await vi.waitFor(() => expect(projections[0]?.status).toBe('complete'));
+    expect(select.shadowRoot?.querySelector('[part="no-results"]')).toBeNull();
   });
 
   it('rejects stale and duplicate completions at the public facade', async () => {
