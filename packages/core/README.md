@@ -997,6 +997,8 @@ select.updateConfig({
 
 RTL support mirrors the shell and dropdown layout, including arrow placement, clear control placement, separator side, selected indicator side, and chip remove spacing. The host `dir` attribute is kept in sync automatically.
 
+Set direction through `configureSelect({ direction })` or `select.updateConfig({ direction })`. The host `dir` attribute reflects the configured direction; a `dir` value supplied before connection can be replaced by the configured default, and a later configuration update can replace a directly assigned attribute. Use the configuration API when setting direction so it remains consistent across updates.
+
 **Badge Remove/Delete Button (Multi-Select)**
 The × button that removes selected items in multi-select mode is fully customizable:
 

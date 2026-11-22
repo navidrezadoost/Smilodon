@@ -90,6 +90,38 @@ test.describe('RTL group header alignment (#115)', () => {
     await expectAlignment(header, 'ltr', 'left');
     await select.evaluate((node: any) => node.updateConfig({ direction: 'rtl' }));
     await expectAlignment(header, 'rtl', 'right');
+    await select.evaluate((node: any) => node.updateConfig({ direction: 'ltr' }));
+    await expectAlignment(header, 'ltr', 'left');
+    await select.evaluate((node) => node.remove());
+  });
+
+  test('configuration owns direction when dir is present before connection', async ({ page }) => {
+    await page.goto(demo);
+    await page.evaluate(async () => {
+      await customElements.whenDefined('enhanced-select');
+      const select = document.createElement('enhanced-select') as any;
+      select.id = 'group-dir-before-connect';
+      select.setAttribute('dir', 'rtl');
+      document.body.append(select);
+      select.setGroupedItems([{ label: 'Fruits', options: [{ value: 'apple', label: 'Apple' }] }]);
+      select.open();
+    });
+    const select = page.locator('#group-dir-before-connect');
+    const header = select.locator('[part="group-header"]');
+    // connectedCallback mirrors the configured default (LTR) onto the host.
+    await expectAlignment(header, 'ltr', 'left');
+    await select.evaluate((node: any) => node.updateConfig({ direction: 'rtl' }));
+    await expectAlignment(header, 'rtl', 'right');
+  });
+
+  test('dir set after connection affects layout until the next config sync', async ({ page }) => {
+    await page.goto(demo);
+    const select = await mount(page, 'group-dir-after-connect', 'ltr');
+    const header = select.locator('[part="group-header"]');
+    await select.evaluate((node) => node.setAttribute('dir', 'rtl'));
+    await expectAlignment(header, 'rtl', 'right');
+    await select.evaluate((node: any) => node.updateConfig({ direction: 'ltr' }));
+    await expectAlignment(header, 'ltr', 'left');
     await select.evaluate((node) => node.remove());
   });
 });
