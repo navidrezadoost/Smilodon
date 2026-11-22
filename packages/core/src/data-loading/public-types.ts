@@ -10,6 +10,8 @@ export interface DataLoadingConfig {
   paginationMode?: 'page' | 'cursor';
   firstPage?: number;
   fetchLimit?: number;
+  /** Minimum trimmed Unicode code points before acknowledged remote search dispatches. */
+  minSearchCharacters?: number;
 }
 
 export interface ResolvedDataLoadingConfig {
@@ -17,6 +19,7 @@ export interface ResolvedDataLoadingConfig {
   readonly searchMode: 'local' | 'remote' | 'hybrid';
   readonly paginationMode: 'page' | 'cursor';
   readonly firstPage: number;
+  readonly minSearchCharacters: number;
   readonly fetchLimit?: number;
 }
 

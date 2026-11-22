@@ -17,7 +17,9 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-No unreleased package changes are currently listed.
+### Added
+
+- **Acknowledged remote-search minimum length ([#109](https://github.com/navidrezadoost/Smilodon/issues/109)):** Core adds the per-instance `dataLoading.minSearchCharacters` option for remote and hybrid search. Below-threshold text creates no search request or search busy state; unfiltered items and pagination are retained and restored when a qualifying query is cleared or shortened. Default `0` preserves prior behavior. This is unreleased and not yet available from npm.
 
 ## [1.18.0] - 2026-11-21
 

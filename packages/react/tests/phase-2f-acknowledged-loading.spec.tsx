@@ -163,6 +163,45 @@ describe("React acknowledged data-loading facade", () => {
     expect(host.getDataLoadingState().busy).toBe(true);
   });
 
+  it("forwards minimum search length to Core without dispatching short-query callbacks", async () => {
+    const ref = createRef<SelectHandle>();
+    const onSearch = createSearchSpy();
+    const config: SelectInstanceConfig = {
+      dataLoading: {
+        protocol: "acknowledged",
+        searchMode: "remote",
+        fetchLimit: 6,
+        minSearchCharacters: 3,
+      },
+    };
+    const { container } = render(
+      <Select ref={ref} searchable config={config} onSearch={onSearch} />,
+    );
+    const host = container.querySelector("enhanced-select") as EnhancedSelect;
+    const input = host.shadowRoot?.querySelector<HTMLInputElement>("input");
+    expect(input).toBeTruthy();
+
+    await waitFor(() => expect((host as any)._acknowledgedReady).toBe(true));
+    expect((host as any)._dataLoadingConfig.minSearchCharacters).toBe(3);
+    expect(onSearch).not.toHaveBeenCalled();
+    for (const query of ["a", "ab"]) {
+      act(() => {
+        input!.value = query;
+        input!.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+      });
+    }
+    expect(onSearch).not.toHaveBeenCalled();
+    expect(ref.current!.getDataLoadingState().busy).toBe(false);
+
+    act(() => {
+      input!.value = "abc";
+      input!.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+    });
+    await waitFor(() => expect(onSearch).toHaveBeenCalledTimes(1));
+    expect(onSearch.mock.calls[0][0]).toBe("abc");
+    expect(onSearch.mock.calls[0][3]).toMatchObject({ kind: "search", normalizedQuery: "abc" });
+  });
+
   it("forwards completion and projection through the ref without changing request identity", async () => {
     const ref = createRef<SelectHandle>();
     const onSearch = createSearchSpy();

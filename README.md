@@ -295,6 +295,8 @@ The protocol is opt-in per instance. Omitting `config.dataLoading` preserves the
 
 The following is a configuration fragment, not a complete component; the full React request/completion example is in the [React guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
+Issue #109 adds the opt-in `dataLoading.minSearchCharacters` setting for acknowledged remote/hybrid search. Core suppresses requests and search-owned busy state until the trimmed query reaches the configured Unicode code-point length, while preserving unfiltered items and their `loadMore` continuation. The default `0` keeps existing behavior. This change is in development and is not available in a published package; see the [Core guide](./packages/core/README.md#minimum-length-for-acknowledged-remote-search--issue-109) for semantics and the [qualification record](./docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md) for evidence.
+
 ```tsx
 <Select
   searchable

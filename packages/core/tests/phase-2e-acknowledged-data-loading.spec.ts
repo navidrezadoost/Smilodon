@@ -164,6 +164,72 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     expect(events[0].request.position).toEqual({ mode: 'page', page: 1 });
   });
 
+  it('suppresses short remote queries before busy state and restores unfiltered pages on clear', async () => {
+    const select = createSelect([]);
+    const searches: any[] = [];
+    const loads: any[] = [];
+    const cancellations: any[] = [];
+    select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail));
+    select.addEventListener('loadMore', (event) => loads.push((event as CustomEvent).detail));
+    select.addEventListener('dataRequestCancel', (event) => cancellations.push((event as CustomEvent).detail));
+    document.body.appendChild(select);
+    enableAcknowledged(select, {
+      dataLoading: {
+        protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 2,
+        minSearchCharacters: 3,
+      },
+      infiniteScroll: { pageSize: 2, initialPage: 1 },
+    }, { hasMore: true });
+    await markReady(select);
+
+    expect(searches).toHaveLength(0);
+    expect((select as any)._state.isBusy).toBe(false);
+    setInputQuery(select, 'a');
+    setInputQuery(select, 'ab');
+    expect(searches).toHaveLength(0);
+    expect((select as any)._state.isBusy).toBe(false);
+
+    (select as any)._loadMoreItems('manual');
+    expect(loads).toHaveLength(1);
+    const browseRequest = loads[0].request;
+    await complete(select, browseRequest, {
+      status: 'succeeded',
+      items: Array.from({ length: 12 }, (_, index) => ({ id: String(index), value: String(index), label: `Item ${index}` })),
+      hasMore: true,
+    });
+    expect((select as any)._dataRequestCoordinator.getSnapshot().nextEligiblePosition).toEqual({ mode: 'page', page: 3 });
+
+    setInputQuery(select, 'abc');
+    expect(searches).toHaveLength(1);
+    expect((select as any)._state.isBusy).toBe(true);
+    const searchRequest = searches[0].request;
+    await complete(select, searchRequest, {
+      status: 'succeeded',
+      items: [{ id: 'match', value: 'match', label: 'Match' }],
+      hasMore: true,
+    });
+
+    setInputQuery(select, 'ab');
+    expect(cancellations).toHaveLength(0);
+    await vi.waitFor(() => expect((select as any)._acknowledgedProjectionPending).toBe(false));
+    expect(select.loadedItems).toHaveLength(12);
+    expect((select as any)._dataRequestCoordinator.getSnapshot()).toMatchObject({
+      busy: false,
+      hasMore: true,
+      nextEligiblePosition: { mode: 'page', page: 3 },
+    });
+    expect((select as any)._state.isBusy).toBe(false);
+
+    setInputQuery(select, 'abcd');
+    const active = searches[1].request;
+    select.clearSearch();
+    expect((select as any)._state.searchQuery).toBe('');
+    expect(cancellations.at(-1)).toMatchObject({ requestId: active.requestId, reason: 'query-changed' });
+    await vi.waitFor(() => expect((select as any)._acknowledgedProjectionPending).toBe(false));
+    expect(select.loadedItems).toHaveLength(12);
+    expect(searches).toHaveLength(2);
+  });
+
   it('cancels before announcing a superseding query and rejects the older response without mutation', async () => {
     const select = createSelect([]);
     const order: string[] = [];

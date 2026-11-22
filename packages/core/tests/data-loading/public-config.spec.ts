@@ -14,6 +14,7 @@ describe('public data-loading configuration validation', () => {
         searchMode: 'local',
         paginationMode: 'page',
         firstPage: 1,
+        minSearchCharacters: 0,
       },
     });
     expect(candidate).toEqual({});
@@ -32,6 +33,7 @@ describe('public data-loading configuration validation', () => {
         searchMode: 'remote',
         paginationMode: 'cursor',
         firstPage: 3,
+        minSearchCharacters: 0,
       },
     });
   });
@@ -77,6 +79,20 @@ describe('public data-loading configuration validation', () => {
         expect.objectContaining({ path: 'firstPage', code: 'invalid-type' }),
         expect.objectContaining({ path: 'fetchLimit', code: 'invalid-type' }),
       ]));
+    }
+  });
+
+  it('accepts zero and non-negative safe minimum lengths and rejects invalid values', () => {
+    expect(validateDataLoadingConfig({ protocol: 'acknowledged', minSearchCharacters: 0 })).toMatchObject({
+      valid: true,
+      value: { minSearchCharacters: 0 },
+    });
+    expect(validateDataLoadingConfig({ protocol: 'acknowledged', minSearchCharacters: 3 })).toMatchObject({
+      valid: true,
+      value: { minSearchCharacters: 3 },
+    });
+    for (const value of [-1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1, '3']) {
+      expect(validateDataLoadingConfig({ minSearchCharacters: value })).toMatchObject({ valid: false });
     }
   });
 

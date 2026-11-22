@@ -108,9 +108,12 @@ const LEGACY_DATA_LOADING_CONFIG: ResolvedDataLoadingConfig = {
   searchMode: 'local',
   paginationMode: 'page',
   firstPage: 1,
+  minSearchCharacters: 0,
 };
 
-const DATA_LOADING_CONFIG_FIELDS = ['protocol', 'searchMode', 'paginationMode', 'firstPage', 'fetchLimit'] as const;
+const DATA_LOADING_CONFIG_FIELDS = [
+  'protocol', 'searchMode', 'paginationMode', 'firstPage', 'fetchLimit', 'minSearchCharacters',
+] as const;
 const INVALID_OBJECT_VALUE = Object.freeze({ kind: 'object' });
 const INVALID_ARRAY_VALUE = Object.freeze({ kind: 'array' });
 const INVALID_FUNCTION_VALUE = Object.freeze({ kind: 'function' });
@@ -4229,14 +4232,36 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._dataLoadingConfig.protocol === 'acknowledged'
       && (this._dataLoadingConfig.searchMode === 'remote' || this._dataLoadingConfig.searchMode === 'hybrid')
     ) {
+      const wasEligible = Array.from(this._state.searchQuery.trim()).length
+        >= this._dataLoadingConfig.minSearchCharacters;
+      const isEligible = Array.from(query.trim()).length >= this._dataLoadingConfig.minSearchCharacters;
+      if (wasEligible && !isEligible) this._cancelBusyPresentation();
       this._state.searchQuery = query;
       this._syncClearControlState();
       this._state.lastNotifiedQuery = query;
       this._state.lastNotifiedResultCount = 0;
       if (this._dataRequestCoordinator) {
+        const beforeSnapshot = this._dataRequestCoordinator.getSnapshot();
         const actions = this._dataRequestCoordinator.setQuery(query);
         if (this._acknowledgedReady) this._dispatchAcknowledgedActions(actions);
-        else this._renderOptions();
+        const startsRequest = actions.some((action) => action.type === 'request');
+        if (this._acknowledgedReady && !startsRequest) {
+          const snapshot = this._dataRequestCoordinator.getSnapshot();
+          const restoredDataChanged = beforeSnapshot.items.length !== snapshot.items.length
+            || beforeSnapshot.items.some((item, index) => item !== snapshot.items[index])
+            || beforeSnapshot.hasMore !== snapshot.hasMore
+            || JSON.stringify(beforeSnapshot.nextEligiblePosition) !== JSON.stringify(snapshot.nextEligiblePosition);
+          this._state.isBusy = snapshot.busy || this._acknowledgedProjectionPending;
+          this._state.isSearching = snapshot.activeRequest?.kind === 'search';
+          this._syncListboxAccessibility();
+          if (actions.some((action) => action.type === 'cancel') || restoredDataChanged) {
+            void this._projectAcknowledgedSnapshot(snapshot, null, false);
+          } else {
+            this._renderOptions();
+          }
+        } else if (!this._acknowledgedReady) {
+          this._renderOptions();
+        }
       } else if (!this._state.isOpen) {
         this._handleOpen();
       } else {
@@ -5559,6 +5584,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
    * Clear search query and restore full option list
    */
   clearSearch(): void {
+    if (
+      this._dataLoadingConfig.protocol === 'acknowledged'
+      && (this._dataLoadingConfig.searchMode === 'remote' || this._dataLoadingConfig.searchMode === 'hybrid')
+      && this._dataRequestCoordinator
+    ) {
+      this._input.value = '';
+      this._handleSearch('');
+      return;
+    }
     this._state.searchQuery = '';
     if (this._config.searchable) {
       this._input.value = '';
@@ -5592,6 +5626,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const previousMode = this._config.selection.mode;
     const previousEnabled = this._config.enabled;
     const previousDataLoadingConfig = this._dataLoadingConfig;
+    let searchEligibilityBecameInactive = false;
 
     const { dataLoading, callbacks, ...legacyConfig } = config;
     const legacyUpdate = { ...legacyConfig } as Partial<GlobalSelectConfig>;
@@ -5629,6 +5664,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       const validation = validateDataLoadingConfig(candidate);
 
       if (validation.valid) {
+        const wasRemoteEligible = previousDataLoadingConfig.protocol === 'acknowledged'
+          && (previousDataLoadingConfig.searchMode === 'remote' || previousDataLoadingConfig.searchMode === 'hybrid')
+          && Array.from(this._state.searchQuery.trim()).length >= previousDataLoadingConfig.minSearchCharacters;
+        const becomesRemoteEligible = validation.value.protocol === 'acknowledged'
+          && (validation.value.searchMode === 'remote' || validation.value.searchMode === 'hybrid')
+          && Array.from(this._state.searchQuery.trim()).length >= validation.value.minSearchCharacters;
+        searchEligibilityBecameInactive = wasRemoteEligible && !becomesRemoteEligible;
         this._dataLoadingConfig = validation.value;
         this._hasLastInvalidDataLoadingCandidate = false;
         this._lastInvalidDataLoadingCandidate = undefined;
@@ -5725,6 +5767,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const acknowledgedModeChanged = previousDataLoadingConfig.protocol !== this._dataLoadingConfig.protocol
       || previousDataLoadingConfig.searchMode !== this._dataLoadingConfig.searchMode
       || previousDataLoadingConfig.paginationMode !== this._dataLoadingConfig.paginationMode;
+    if (searchEligibilityBecameInactive) this._cancelBusyPresentation();
 
     if (coordinator && switchesToLegacy) {
       if (this._acknowledgedReady && !this._acknowledgedProjectionPending && !this._acknowledgedProjectionSettling) {
@@ -5927,14 +5970,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
   private _ensureDataRequestCoordinator(): DataRequestCoordinator | null {
     if (!this._dataRequestCoordinator) {
-      const isRemote = this._dataLoadingConfig.searchMode === 'remote'
-        || this._dataLoadingConfig.searchMode === 'hybrid';
       try {
         this._dataRequestCoordinator = new DataRequestCoordinator({
           config: this._createCoordinatorConfig(),
           initialQuery: this._state.searchQuery,
           initialItems: this._state.loadedItems,
-          hasMore: !isRemote && (this._config.infiniteScroll.enabled || this._config.loadMore.enabled),
+          hasMore: this._config.infiniteScroll.enabled || this._config.loadMore.enabled,
         });
       } catch (error) {
         const detail: DataLoadingConfigErrorDetail = {
@@ -6407,6 +6448,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       searchMode: dataLoading?.searchMode ?? 'local',
       paginationMode: dataLoading?.paginationMode ?? 'page',
       firstPage: dataLoading?.firstPage ?? 1,
+      minSearchCharacters: dataLoading?.minSearchCharacters ?? 0,
       ...(dataLoading?.fetchLimit === undefined ? {} : { fetchLimit: dataLoading.fetchLimit }),
     };
     this._acknowledgedSearchMode = config.dataLoading?.searchMode ?? 'local';
@@ -6460,6 +6502,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     for (const action of actions) {
       if (action.type === 'cancel') {
         this._cancelBusyPresentation();
+        const snapshot = this._dataRequestCoordinator?.getSnapshot();
+        if (snapshot) {
+          this._state.isBusy = snapshot.busy || this._acknowledgedProjectionPending;
+          this._state.isSearching = snapshot.activeRequest?.kind === 'search';
+          this._syncListboxAccessibility();
+        }
         this._dispatchAcknowledgedEvent('dataRequestCancel', action.notification);
         try {
           this._dataRequestCancelCallback?.(action.notification);
@@ -6625,6 +6673,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         !this._state.searchQuery
         && this._acknowledgedPendingSearchQuery === null
         && !this._isActivelyEditingSearchInput()
+        && !(
+          this._dataLoadingConfig.protocol === 'acknowledged'
+          && (this._dataLoadingConfig.searchMode === 'remote' || this._dataLoadingConfig.searchMode === 'hybrid')
+          && this._dataLoadingConfig.minSearchCharacters > 0
+        )
       ) {
         this._updateInputDisplay();
       }
