@@ -2884,7 +2884,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         font-weight: var(--select-group-header-weight, 600);
         color: var(--select-group-header-color, var(--select-text-muted));
         background: var(--select-group-header-bg, #f3f4f6);
-        text-align: var(--select-group-header-text-align, left);
+        text-align: var(--select-group-header-text-align, start);
         font-size: var(--select-group-header-font-size, 0.7333em);
         text-transform: var(--select-group-header-text-transform, uppercase);
         letter-spacing: var(--select-group-header-letter-spacing, 0.08em);

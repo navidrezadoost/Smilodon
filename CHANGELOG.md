@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- **RTL group header alignment ([#115](https://github.com/navidrezadoost/Smilodon/issues/115)):** Group headers now use logical `start` alignment by default, following their effective LTR or RTL direction while preserving explicit alignment-token overrides.
+
 ### Added
 
 - **Arrow container positioning ([#114](https://github.com/navidrezadoost/Smilodon/issues/114)):** Core exposes `--select-arrow-container-position` to customize the dropdown arrow container's CSS positioning. It defaults to `absolute`; existing RTL and multi-select placement rules are retained. This change is unreleased and not yet available from npm.

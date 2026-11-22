@@ -624,7 +624,7 @@ enhanced-select.dark-mode {
 --select-group-header-color    /* Text color (#6b7280) */
 --select-group-header-bg       /* Background (#f3f4f6) */
 --select-group-header-font-size
---select-group-header-text-align /* Header text alignment (left default) */
+--select-group-header-text-align /* Header text alignment (logical start by default) */
 --select-group-header-text-transform
 --select-group-header-letter-spacing
 --select-group-header-border-bottom
@@ -1002,6 +1002,8 @@ The × button that removes selected items in multi-select mode is fully customiz
 
 **Group Header & No‑Results Parts**
 Both the group header and the no-results message are exposed as shadow parts (`group-header` and `no-results`) so you can target them with `::part()` selectors or CSS variables. This makes it straightforward to match the look of your host framework or UI kit.
+
+Group headers default to logical `start` alignment, so they appear left-aligned in LTR and right-aligned in RTL. Override the default when needed, for example `--select-group-header-text-align: left`; `right` and `center` are also supported. The default follows direction changes dynamically.
 
 
 ```css

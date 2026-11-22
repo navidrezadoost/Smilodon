@@ -243,7 +243,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-group-header-weight` | `600` | typography | Group header weight. |
 | `--select-group-header-color` | `var(--select-text-muted)` | color | Group header text color. |
 | `--select-group-header-bg` | `transparent` | color | Group header background. |
-| `--select-group-header-text-align` | `left` | layout | Group header alignment. |
+| `--select-group-header-text-align` | `start` | layout | Group header alignment follows the effective text direction (left in LTR, right in RTL); explicit `left`, `right`, and `center` values are supported. |
 | `--select-group-header-font-size` | `11px` | typography | Group header size. |
 | `--select-group-header-text-transform` | `uppercase` | transform | Group header text casing. |
 | `--select-group-header-letter-spacing` | `0.08em` | typography | Group header tracking. |
