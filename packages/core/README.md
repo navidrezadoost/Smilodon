@@ -238,6 +238,16 @@ The default chevron remains in place unless a light-DOM child is assigned to the
 
 The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or transform on assigned custom content. A custom arrow container honors `--select-arrow-hover-bg` on hover; if the token is unset, its background remains transparent. This behavior is available in `@smilodon/core@1.18.0` and fixes [Issue #104](https://github.com/navidrezadoost/Smilodon/issues/104).
 
+The arrow container uses absolute positioning by default. Set `--select-arrow-container-position` to change its CSS `position` without reaching into the component's Shadow DOM:
+
+```css
+enhanced-select {
+  --select-arrow-container-position: static;
+}
+```
+
+The default value is `absolute`, preserving the existing layout. Values such as `static` or `relative` make the arrow participate in the input shell's flex layout, so adjust other spacing tokens if needed. The CSS fallback applies when the token is unset; an invalid value is not normalized to `absolute`.
+
 ```css
 enhanced-select {
   --select-arrow-hover-bg: rgb(0 0 0 / 8%);
@@ -603,6 +613,7 @@ enhanced-select.dark-mode {
 --select-arrow-hover-color     /* Icon color when hovered (#667eea) */
 --select-arrow-hover-bg        /* Background when hover (rgba(102,126,234,0.08)) */
 --select-arrow-width           /* Container width (40px) */
+--select-arrow-container-position /* Arrow container position (absolute) */
 --select-arrow-border-radius   /* Container border radius */
 
 /* Group headers (when using groupedItems or flat items with `group` property) */

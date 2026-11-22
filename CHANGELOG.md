@@ -19,6 +19,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added
 
+- **Arrow container positioning ([#114](https://github.com/navidrezadoost/Smilodon/issues/114)):** Core exposes `--select-arrow-container-position` to customize the dropdown arrow container's CSS positioning. It defaults to `absolute`; existing RTL and multi-select placement rules are retained. This change is unreleased and not yet available from npm.
 - **Acknowledged remote-search minimum length ([#109](https://github.com/navidrezadoost/Smilodon/issues/109)):** Core adds the per-instance `dataLoading.minSearchCharacters` option for remote and hybrid search. Below-threshold text creates no search request or search busy state; unfiltered items and pagination are retained and restored when a qualifying query is cleared, shortened, or made ineligible by a runtime threshold update, with the accepted snapshot projected into the visible options. Cold-start page browsing with no initial items starts at `initialPage`; preloaded initial items continue at `initialPage + 1`. Default `0` preserves prior search behavior. This is unreleased and not yet available from npm.
 
 ## [1.18.0] - 2026-11-21

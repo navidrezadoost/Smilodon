@@ -2575,7 +2575,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
        ───────────────────────────────────────────────────────────────────────── */
       
       .dropdown-arrow-container {
-        position: absolute;
+        position: var(--select-arrow-container-position, absolute);
         top: 0;
         right: 0;
         bottom: 0;

@@ -32,6 +32,18 @@ describe('EnhancedSelect Styling Contract', () => {
         el.remove();
     });
 
+    it('exposes arrow-container positioning with the absolute default', () => {
+        const styles = Array.from(el.shadowRoot!.querySelectorAll('style'))
+            .map((style) => style.textContent ?? '')
+            .join('\n');
+        const arrowRule = Array.from(styles.matchAll(/\.dropdown-arrow-container\s*\{([^}]*)\}/g))
+            .map((match) => match[1])
+            .find((rule) => rule.includes('--select-arrow-container-position'));
+
+        expect(arrowRule).toBeDefined();
+        expect(arrowRule).toContain('position: var(--select-arrow-container-position, absolute);');
+    });
+
     it('applies correct parts to shadow DOM elements', async () => {
         // Trigger render
         (el as any)._config.searchable = true;

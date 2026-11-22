@@ -179,6 +179,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-separator-position-with-clear` | `calc(var(--select-arrow-right-with-clear) + var(--select-arrow-width))` | spacing | Separator offset when clear control is visible. |
 | `--select-arrow-width` | `42px` | size | Arrow hit area width. |
 | `--select-arrow-height` | `auto` | layout | Arrow container height. |
+| `--select-arrow-container-position` | `absolute` | layout | CSS `position` for the dropdown arrow container. `static` and `relative` change its participation in the input shell's flex layout. |
 | `--select-arrow-border-radius` | `0 var(--select-radius-md) var(--select-radius-md) 0` | radius | Arrow-side corner radius. |
 | `--select-arrow-border-radius-rtl` | `var(--select-radius-md) 0 0 var(--select-radius-md)` | radius | Arrow-side corner radius in RTL layout. |
 | `--select-arrow-size` | `18px` | size | Arrow icon size. |
