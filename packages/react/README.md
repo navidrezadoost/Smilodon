@@ -4,6 +4,8 @@ Select component for React applications. The shared core has scoped automated Ph
 
 > **Published package versions:** React `1.12.1` and Core `1.18.0` are available from npm. React `1.12.1` includes Issue #107 data-synchronization behavior; Core `1.17.0` includes Issue #100 chip auto-scroll, and Core `1.18.0` includes Issue #104 custom-arrow hover styling. See the [React 1.12.1 release record](../../docs/releases/REACT-1.12.1-RELEASE.md) and [web 1.17.0 release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
 
+> **Unpublished React 1.12.2 candidate:** Issue #112 preserves React custom option and group-header renderer roots while Core retains cumulative acknowledged pages across controlled rerenders. The candidate was locally checked with Core 1.18.0; Core 1.19.0 compatibility has not been verified. See [renderer lifecycle details](../../docs/architecture/ISSUE-112-REACT-RENDERER-CACHE-LIFECYCLE.md) and the [combined release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
+
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## 📖 Documentation

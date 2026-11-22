@@ -14,6 +14,8 @@
 
 > **Issue #100:** `multiSelectDisplay.scrollToLatestChip` is available in `@smilodon/core@1.17.0`. See [Multi-Select Display Modes](#multi-select-display-modes) and the [release verification](../../docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
+> **Unpublished Core 1.19.0 candidate:** Adds `--select-arrow-container-position` (default `absolute`) and makes group-header `start` alignment follow Core's effective direction. These changes are not available from npm yet. See [arrow container positioning](#arrow-container-positioning) and [group header alignment](#group-headers).
+
 ## Custom busy bucket (Core 1.13.0)
 
 Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:

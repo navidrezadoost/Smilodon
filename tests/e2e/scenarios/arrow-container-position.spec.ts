@@ -158,7 +158,7 @@ test.describe('Arrow container positioning CSS token @all', () => {
     await host.locator('.dropdown-arrow-container').click();
     await host.getByRole('option', { name: 'Alpha' }).click();
     await expect.poll(() => host.evaluate((element: any) => element.getSelectedValues())).toEqual(['alpha']);
-    await expect(host).toHaveAttribute('data-open', 'true');
+    await expect(host).not.toHaveAttribute('data-open');
     const arrowRect = await host.locator('.dropdown-arrow-container').boundingBox();
     const clearRect = await host.locator('.clear-control-button').boundingBox();
     expect(arrowRect).not.toBeNull();
