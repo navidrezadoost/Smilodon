@@ -228,6 +228,148 @@ describe("React acknowledged data-loading facade", () => {
     expect(ref.current!.completeDataRequest(completion)).toBe("unknown-request");
   });
 
+  it("does not replace acknowledged data on fresh equivalent source and config props", async () => {
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const ref = createRef<SelectHandle>();
+    const onSearch = createSearchSpy();
+    const source = Array.from({ length: 6 }, (_, index) => ({
+      value: `item-${index + 1}`,
+      label: `Item ${index + 1}`,
+      metadata: { rank: index + 1 },
+    }));
+    const renderSelect = (
+      items: SelectItem[],
+      value: string[] = [],
+      disabled = false,
+    ) => (
+      <Select
+        ref={ref}
+        items={items}
+        multiple
+        value={value}
+        disabled={disabled}
+        onSearch={onSearch}
+        removeButtonIcon={<span aria-hidden="true">×</span>}
+        multiSelectDisplay={{ mode: "horizontal", overflowX: "auto" }}
+        config={{
+          dataLoading: { protocol: "acknowledged", searchMode: "remote" },
+        }}
+      />
+    );
+    const view = render(renderSelect(source));
+    const host = view.container.querySelector("enhanced-select") as EnhancedSelect;
+
+    await waitFor(() => expect(onSearch).toHaveBeenCalledTimes(1));
+    const initialRequest = onSearch.mock.calls[0][3]!;
+    act(() => ref.current!.completeDataRequest({
+      requestId: initialRequest.requestId,
+      queryGeneration: initialRequest.queryGeneration,
+      status: "succeeded",
+      items: source,
+      hasMore: true,
+    }));
+    const setItems = vi.spyOn(host, "setItems");
+    const setGroupedItems = vi.spyOn(host, "setGroupedItems");
+    const updateConfig = vi.spyOn(host, "updateConfig");
+    const setSelectedValues = vi.spyOn(host, "setSelectedValues");
+    const equivalentFreshItems = source.map((item) => ({
+      ...item,
+      metadata: { ...item.metadata },
+    }));
+
+    view.rerender(renderSelect(equivalentFreshItems));
+
+    expect(setItems).not.toHaveBeenCalled();
+    expect(setGroupedItems).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
+    expect(host.loadedItems).toHaveLength(6);
+
+    await act(async () => view.rerender(renderSelect(equivalentFreshItems, ["item-1"])));
+    expect(setItems).not.toHaveBeenCalled();
+    expect(setSelectedValues).toHaveBeenCalledTimes(1);
+    expect(host.getSelectedValues()).toEqual(["item-1"]);
+
+    const changedItems = equivalentFreshItems.map((item) => ({ ...item }));
+    changedItems[2] = {
+      ...changedItems[2],
+      metadata: { rank: 300 },
+    };
+    view.rerender(renderSelect(changedItems, ["item-1"]));
+    expect(setItems).toHaveBeenCalledTimes(1);
+    expect(host.loadedItems[2]).toMatchObject({ metadata: { rank: 300 } });
+
+    view.rerender(renderSelect([], ["item-1"]));
+    expect(setItems).toHaveBeenCalledTimes(2);
+    expect(host.loadedItems).toEqual([]);
+
+    await act(async () => view.rerender(renderSelect([], ["item-1"], true)));
+    expect(updateConfig).toHaveBeenCalledTimes(2);
+    expect(setItems).toHaveBeenCalledTimes(2);
+  });
+
+  it("compares grouped source snapshots semantically and treats empty groups as data", async () => {
+    const groups = [{
+      label: "Fruit",
+      options: [{ value: "pear", label: "Pear", metadata: { color: "green" } }],
+    }];
+    const view = render(<Select groupedItems={groups} />);
+    const host = view.container.querySelector("enhanced-select") as EnhancedSelect;
+    await waitFor(() => expect(host.loadedItems).toHaveLength(1));
+    const setGroupedItems = vi.spyOn(host, "setGroupedItems");
+    const equivalentGroups = groups.map((group) => ({
+      ...group,
+      options: group.options.map((item) => ({ ...item, metadata: { ...item.metadata } })),
+    }));
+
+    view.rerender(<Select groupedItems={equivalentGroups} />);
+    expect(setGroupedItems).not.toHaveBeenCalled();
+
+    view.rerender(<Select groupedItems={[{ ...equivalentGroups[0], label: "Produce" }]} />);
+    expect(setGroupedItems).toHaveBeenCalledTimes(1);
+    expect((host as any)._state.groupedItems[0].label).toBe("Produce");
+
+    view.rerender(<Select groupedItems={[]} />);
+    expect(setGroupedItems).toHaveBeenCalledTimes(2);
+    expect(host.loadedItems).toEqual([]);
+  });
+
+  it("keeps single-select source data independent from controlled-value updates", async () => {
+    const onSearch = createSearchSpy();
+    const items = [
+      { value: "north", label: "North", metadata: { region: "N" } },
+      { value: "south", label: "South", metadata: { region: "S" } },
+    ];
+    const renderSelect = (source: SelectItem[], value: string) => (
+      <Select
+        items={source}
+        value={value}
+        onSearch={onSearch}
+        config={{ dataLoading: { protocol: "acknowledged", searchMode: "remote" } }}
+      />
+    );
+    const view = render(renderSelect(items, "north"));
+    const host = view.container.querySelector("enhanced-select") as EnhancedSelect;
+    await waitFor(() => expect(onSearch).toHaveBeenCalledTimes(1));
+    const setItems = vi.spyOn(host, "setItems");
+    const updateConfig = vi.spyOn(host, "updateConfig");
+
+    view.rerender(renderSelect(items.map((item) => ({
+      ...item,
+      metadata: { ...item.metadata },
+    })), "south"));
+
+    expect(setItems).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
+    expect(host.getSelectedValues()).toEqual(["south"]);
+  });
+
   it("forwards failed and recovered projection notifications without reaccepting completion", async () => {
     const ref = createRef<SelectHandle>();
     const onSearch = createSearchSpy();

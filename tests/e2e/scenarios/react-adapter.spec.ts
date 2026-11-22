@@ -491,3 +491,89 @@ test.describe('React adapter browser certification @react-adapter', () => {
     expect((await readEvents(page)).filter((event) => event.type === 'search')).toHaveLength(2);
   });
 });
+
+test('keeps acknowledged pages and latest-chip scroll through fresh equivalent React props @react-adapter', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.IntersectionObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() { return []; }
+    };
+  });
+  await page.goto(`${fixtureUrl}?scenario=issue-107`);
+  await waitForReactReady(page);
+  const host = page.locator('enhanced-select');
+  const events = async () => readEvents(page);
+  const requestFrom = async (type: string, occurrence: number) => {
+    const event = (await events()).filter((entry) => entry.type === type)[occurrence];
+    return event?.request as { requestId: string; queryGeneration: number };
+  };
+  const complete = async (
+    request: { requestId: string; queryGeneration: number },
+    items: Array<{ value: string; label: string; metadata: { ordinal: number } }>,
+  ) => page.evaluate(({ request, items }) => window.__smilodonReactCertification?.complete({
+    requestId: request.requestId,
+    queryGeneration: request.queryGeneration,
+    status: 'succeeded',
+    items,
+    hasMore: true,
+  }), { request, items });
+  const waitForProjection = async (count: number) => {
+    await expect.poll(async () => (await events()).filter((event) => event.type === 'projection').length)
+      .toBe(count);
+  };
+
+  const firstPage = Array.from({ length: 6 }, (_, index) => ({
+    value: `issue107-${index + 1}`,
+    label: `Issue 107 option ${index + 1}`,
+    metadata: { ordinal: index + 1 },
+  }));
+  const firstRequest = await requestFrom('search', 0);
+  expect(await complete(firstRequest, firstPage)).toBe('accepted');
+  await waitForProjection(1);
+  await page.evaluate(() => window.__smilodonReactCertification?.open());
+
+  const cumulative = [...firstPage];
+  for (let pageNumber = 2; pageNumber <= 3; pageNumber += 1) {
+    await host.locator('.load-more-button').click();
+    await expect.poll(async () => (await events()).filter((event) => event.type === 'loadMore').length)
+      .toBe(pageNumber - 1);
+    const pageRequest = await requestFrom('loadMore', pageNumber - 2);
+    const nextPage = Array.from({ length: 6 }, (_, index) => {
+      const ordinal = (pageNumber - 1) * 6 + index + 1;
+      return {
+        value: `issue107-${ordinal}`,
+        label: `Issue 107 option ${ordinal}`,
+        metadata: { ordinal },
+      };
+    });
+    cumulative.push(...nextPage);
+    expect(await complete(pageRequest, cumulative)).toBe('accepted');
+    await waitForProjection(pageNumber);
+  }
+
+  await expect.poll(() => host.evaluate((element: any) => element.loadedItems.length)).toBe(18);
+  await page.locator('#issue107-rerender').click();
+  await expect.poll(() => host.evaluate((element: any) => element.loadedItems.length)).toBe(18);
+  await expect(host.locator('select-option')).toHaveCount(18);
+
+  await page.evaluate(() => window.__smilodonReactCertification?.open());
+  await host.evaluate((element: any) => {
+    const latestOption = element.shadowRoot?.querySelector('[data-value="issue107-18"]') as HTMLElement | null;
+    if (!latestOption) throw new Error('The third-page option is not rendered');
+    latestOption.click();
+  });
+  await expect(page.locator('#issue107-selected')).toHaveText('issue107-18');
+  await expect.poll(() => host.evaluate((element: any) => {
+    const viewport = element._inputContent as HTMLElement;
+    const chip = viewport.querySelectorAll<HTMLElement>('.selection-badge').item(0);
+    if (!chip) return false;
+    const viewportBounds = viewport.getBoundingClientRect();
+    const chipBounds = chip.getBoundingClientRect();
+    return chipBounds.left >= viewportBounds.left - 1 && chipBounds.right <= viewportBounds.right + 1;
+  })).toBe(true);
+  await expect.poll(() => host.evaluate((element: any) => element.loadedItems.length)).toBe(18);
+  expect(await page.evaluate(() => window.__smilodonReactCertification?.state()?.nextEligiblePosition))
+    .toEqual({ mode: 'page', page: 4 });
+});

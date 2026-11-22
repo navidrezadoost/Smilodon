@@ -58,6 +58,76 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return prototype === Object.prototype || prototype === null;
 }
 
+function areSemanticallyEqual(
+  left: unknown,
+  right: unknown,
+  seen = new WeakMap<object, WeakMap<object, boolean>>(),
+): boolean {
+  if (Object.is(left, right)) return true;
+  if (left === null || right === null || typeof left !== "object" || typeof right !== "object") {
+    return false;
+  }
+
+  const leftArray = Array.isArray(left);
+  const rightArray = Array.isArray(right);
+  if (leftArray !== rightArray) return false;
+  if (!leftArray && (!isPlainRecord(left) || !isPlainRecord(right))) return false;
+  if (leftArray && !Array.isArray(right)) return false;
+  if (leftArray && rightArray && left.length !== right.length) return false;
+
+  const leftPrototype = Object.getPrototypeOf(left);
+  const rightPrototype = Object.getPrototypeOf(right);
+  if (leftPrototype !== rightPrototype && !(isPlainRecord(left) && isPlainRecord(right))) return false;
+
+  const prior = seen.get(left)?.get(right);
+  if (prior !== undefined) return prior;
+  let rightPairs = seen.get(left);
+  if (!rightPairs) {
+    rightPairs = new WeakMap<object, boolean>();
+    seen.set(left, rightPairs);
+  }
+  // Mark the pair before descending so equivalent cyclic plain data can compare.
+  rightPairs.set(right, true);
+
+  const enumerableKeys = (value: object) =>
+    Reflect.ownKeys(value).filter((key) => Object.getOwnPropertyDescriptor(value, key)?.enumerable);
+  const leftKeys = enumerableKeys(left);
+  const rightKeys = enumerableKeys(right);
+  const rightKeySet = new Set(rightKeys);
+  if (leftKeys.length !== rightKeys.length) {
+    rightPairs.set(right, false);
+    return false;
+  }
+
+  for (const key of leftKeys) {
+    if (!rightKeySet.has(key)) {
+      rightPairs.set(right, false);
+      return false;
+    }
+    const leftDescriptor = Object.getOwnPropertyDescriptor(left, key)!;
+    const rightDescriptor = Object.getOwnPropertyDescriptor(right, key)!;
+    if ("value" in leftDescriptor !== ("value" in rightDescriptor)) {
+      rightPairs.set(right, false);
+      return false;
+    }
+    if ("value" in leftDescriptor) {
+      if (!areSemanticallyEqual(leftDescriptor.value, rightDescriptor.value, seen)) {
+        rightPairs.set(right, false);
+        return false;
+      }
+    } else if (
+      leftDescriptor.get !== rightDescriptor.get ||
+      leftDescriptor.set !== rightDescriptor.set
+    ) {
+      rightPairs.set(right, false);
+      return false;
+    }
+  }
+  return true;
+}
+
+const EMPTY_ITEMS: SelectItem[] = [];
+
 function isBusyToken(value: unknown): boolean {
   return value === true || value === "true";
 }
@@ -92,7 +162,12 @@ export type StyleConfig = {
  * Props for the Select component
  */
 export interface SelectComponentProps {
-  /** Array of items to display in the dropdown */
+  /**
+   * Array of items to display. Supply immutable plain-object records; React
+   * compares equivalent arrays/records by their enumerable own data. Functions
+   * and non-plain metadata (for example Date, Map, or class instances) compare
+   * by identity and should be memoized when used as item metadata.
+   */
   items?: SelectItem[];
 
   /** Grouped items (alternative to flat items array) */
@@ -452,7 +527,7 @@ export interface SelectHandle {
  */
 export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   const {
-    items = [],
+    items = EMPTY_ITEMS,
     groupedItems,
     value,
     defaultValue,
@@ -1143,183 +1218,127 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     return () => activeListenersRef.current?.dispose();
   }, []);
 
-  // Initialize component
-  useEffect(() => {
-    const element = elementRef.current;
-    if (!element || !isElementUsable) return;
-
-    // Wait for the element to be fully upgraded
-    if (!element.setItems) {
-      console.warn("Enhanced select element not fully initialized yet");
-      return;
-    }
-
-    // Set initial items
-    if (groupedItems) {
-      element.setGroupedItems(groupedItems);
-    } else if (items.length > 0) {
-      element.setItems(items);
-    }
-
-    // Configure component
-    const config = {
-      searchable,
-      placeholder,
-      virtualize: virtualized,
-      estimatedItemHeight,
-      enabled: !disabled,
-      dropdownPlacement: {
-        mode: resolvedDropdownPlacement,
-      },
-      selection: {
-        ...selectionConfig,
-        mode: multiple ? "multi" : "single",
-        maxSelections: maxSelections,
-        removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
-        disabledOptionBehavior,
-        showSelectedIndicator,
-        toggleOnTriggerClick,
-      },
-      direction,
-      multiSelectDisplay,
-      infiniteScroll: {
-        enabled: infiniteScroll,
-        pageSize: pageSize,
-      },
-      scrollToSelected: {
-        enabled: true,
-        ...scrollToSelected,
-      },
-      creatable: creatable,
-      styles: stylesConfig,
-      clearControl: {
-        enabled: clearable,
-        clearSelection: clearSelectionOnClear,
-        clearSearch: clearSearchOnClear,
-        ariaLabel: clearAriaLabel,
-        icon: clearIcon,
-      },
-      tracking: {
-        enabled: trackingEnabled,
-        events: trackEvents,
-        styling: trackStyling,
-        limitations: trackLimitations,
-        emitDiagnostics,
-        maxEntries: trackingMaxEntries,
-      },
-      limitations: {
-        policies: limitationPolicies,
-        autoMitigateRuntimeModeSwitch,
-      },
-    };
-
-    applyInstanceConfig(element, config as SelectInstanceConfig);
-    if (coreConfig) {
-      applyInstanceConfig(element, coreConfig);
-    }
-
-    // Set initial uncontrolled value only once
-    if (
-      !isControlled &&
-      !hasAppliedInitialValueRef.current &&
-      internalValue !== undefined
-    ) {
-      const values = Array.isArray(internalValue)
-        ? internalValue
-        : [internalValue];
-      const currentValues = element.getSelectedValues?.() || [];
-      if (!areValuesEqual(values, currentValues)) {
-        element.setSelectedValues(values);
-      }
-      hasAppliedInitialValueRef.current = true;
-    }
-
-    // Set error state
-    if (error) {
-      element.setError(errorMessage || "Invalid selection");
-    } else {
-      element.clearError();
-    }
-
-    // Set required state
-    if (required) {
-      element.setRequired(true);
-    }
-  }, [
-    isElementUsable,
-    items,
-    groupedItems,
+  const componentConfig = {
     searchable,
     placeholder,
-    virtualized,
+    virtualize: virtualized,
     estimatedItemHeight,
-    disabled,
-    multiple,
-    maxSelections,
-    selectionConfig,
-    multiSelectDisplay,
-    scrollToSelected,
-    stylesConfig,
-    coreConfig,
-    removeButtonIcon,
-    disabledOptionBehavior,
-    showSelectedIndicator,
-    toggleOnTriggerClick,
-    infiniteScroll,
-    pageSize,
-    creatable,
-    clearable,
-    clearSelectionOnClear,
-    clearSearchOnClear,
-    clearAriaLabel,
-    clearIcon,
-    trackingEnabled,
-    trackEvents,
-    trackStyling,
-    trackLimitations,
-    emitDiagnostics,
-    trackingMaxEntries,
-    limitationPolicies,
-    autoMitigateRuntimeModeSwitch,
+    enabled: !disabled,
+    dropdownPlacement: { mode: resolvedDropdownPlacement },
+    selection: {
+      ...selectionConfig,
+      mode: multiple ? "multi" : "single",
+      maxSelections,
+      removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
+      disabledOptionBehavior,
+      showSelectedIndicator,
+      toggleOnTriggerClick,
+    },
     direction,
-    resolvedDropdownPlacement,
-    error,
-    errorMessage,
-    required,
-    internalValue,
-    isControlled,
-    areValuesEqual,
-    applyInstanceConfig,
-  ]);
+    multiSelectDisplay,
+    infiniteScroll: { enabled: infiniteScroll, pageSize },
+    scrollToSelected: { enabled: true, ...scrollToSelected },
+    creatable,
+    styles: stylesConfig,
+    clearControl: {
+      enabled: clearable,
+      clearSelection: clearSelectionOnClear,
+      clearSearch: clearSearchOnClear,
+      ariaLabel: clearAriaLabel,
+      icon: clearIcon,
+    },
+    tracking: {
+      enabled: trackingEnabled,
+      events: trackEvents,
+      styling: trackStyling,
+      limitations: trackLimitations,
+      emitDiagnostics,
+      maxEntries: trackingMaxEntries,
+    },
+    limitations: { policies: limitationPolicies, autoMitigateRuntimeModeSwitch },
+  };
+  const configCandidate = { component: componentConfig, core: coreConfig };
+  const appliedConfigRef = useRef<{
+    hasComponent: boolean;
+    component: typeof componentConfig | null;
+    hasCore: boolean;
+    core: SelectComponentProps["config"];
+  }>({ hasComponent: false, component: null, hasCore: false, core: undefined });
 
-  // Update items when they change
+  // Configuration has one owner and is reconciled before data and selection.
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || !isElementUsable || !element.updateConfig) return;
+    const previous = appliedConfigRef.current;
+    const componentChanged = !previous.hasComponent
+      || !areSemanticallyEqual(previous.component, configCandidate.component);
+    const coreChanged = !previous.hasCore
+      || !areSemanticallyEqual(previous.core, configCandidate.core);
+    if (!componentChanged && !coreChanged) return;
+
+    if (componentChanged) {
+      applyInstanceConfig(element, configCandidate.component as SelectInstanceConfig);
+      // Preserve the existing precedence: explicit Core config is layered on
+      // top of the adapter defaults after an adapter-level change.
+      if (configCandidate.core) applyInstanceConfig(element, configCandidate.core);
+    } else if (coreChanged) {
+      if (configCandidate.core) {
+        applyInstanceConfig(element, configCandidate.core);
+      } else {
+        applyInstanceConfig(element, configCandidate.component as SelectInstanceConfig);
+      }
+    }
+    appliedConfigRef.current = {
+      hasComponent: true,
+      component: configCandidate.component,
+      hasCore: true,
+      core: configCandidate.core,
+    };
+  });
+
+  const sourceCandidate = groupedItems !== undefined
+    ? { kind: "grouped" as const, data: groupedItems }
+    : { kind: "items" as const, data: items };
+  const synchronizedSourceRef = useRef<typeof sourceCandidate | null>(null);
+
+  // Prop data is synchronized through this path only. Compare against the last
+  // React source snapshot, never against Core's acknowledged cumulative data.
   useEffect(() => {
     const element = elementRef.current;
     if (!element || !isElementUsable || !element.setItems) return;
-    if (groupedItems) {
-      element.setGroupedItems(groupedItems);
-    } else if (
-      items &&
-      items.length &&
-      (items as any)[0] &&
-      (items as any)[0].group !== undefined
-    ) {
-      // Auto-convert flat items with `group` property into groupedItems
-      const map = new Map<string, SelectItem[]>();
-      (items as SelectItem[]).forEach((it) => {
-        const g = (it as any).group ?? "Ungrouped";
-        if (!map.has(g)) map.set(g, []);
-        map.get(g)!.push(it);
-      });
-      const groups = Array.from(map.entries()).map(([label, options]) => ({
-        label,
-        options,
-      }));
-      element.setGroupedItems(groups as GroupedItem[]);
+    if (areSemanticallyEqual(synchronizedSourceRef.current, sourceCandidate)) return;
+
+    if (sourceCandidate.kind === "grouped") {
+      element.setGroupedItems(sourceCandidate.data as GroupedItem[]);
     } else {
-      element.setItems(items);
+      const sourceItems = sourceCandidate.data as SelectItem[];
+      if (sourceItems.length > 0 && sourceItems[0]?.group !== undefined) {
+        const groups = new Map<string, SelectItem[]>();
+        sourceItems.forEach((item) => {
+          const label = item.group ?? "Ungrouped";
+          if (!groups.has(label)) groups.set(label, []);
+          groups.get(label)!.push(item);
+        });
+        element.setGroupedItems(
+          Array.from(groups, ([label, options]) => ({ label, options })) as GroupedItem[],
+        );
+      } else {
+        element.setItems(sourceItems);
+      }
     }
-  }, [items, groupedItems, isElementUsable]);
+    synchronizedSourceRef.current = sourceCandidate;
+  });
+
+  // Apply an uncontrolled default only after the initial source data is registered.
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || !isElementUsable || isControlled || hasAppliedInitialValueRef.current) return;
+    if (internalValue === undefined) return;
+    const values = Array.isArray(internalValue) ? internalValue : [internalValue];
+    const currentValues = element.getSelectedValues?.() || [];
+    if (!areValuesEqual(values, currentValues)) element.setSelectedValues(values);
+    hasAppliedInitialValueRef.current = true;
+  }, [isElementUsable, isControlled, internalValue, areValuesEqual]);
 
   // Update selected value when it changes (controlled mode)
   useEffect(() => {
@@ -1340,103 +1359,6 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       }
     }
   }, [value, isControlled, isElementUsable, areValuesEqual]);
-
-  // Update config when props change
-  useEffect(() => {
-    const element = elementRef.current;
-    if (!element || !isElementUsable || !element.updateConfig) return;
-
-    const config = {
-      searchable,
-      placeholder,
-      virtualize: virtualized,
-      estimatedItemHeight,
-      enabled: !disabled,
-      dropdownPlacement: {
-        mode: resolvedDropdownPlacement,
-      },
-      selection: {
-        ...selectionConfig,
-        mode: multiple ? "multi" : "single",
-        maxSelections: maxSelections,
-        removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
-        disabledOptionBehavior,
-        showSelectedIndicator,
-        toggleOnTriggerClick,
-      },
-      direction,
-      multiSelectDisplay,
-      infiniteScroll: {
-        enabled: infiniteScroll,
-        pageSize: pageSize,
-      },
-      scrollToSelected: {
-        enabled: true,
-        ...scrollToSelected,
-      },
-      styles: stylesConfig,
-      clearControl: {
-        enabled: clearable,
-        clearSelection: clearSelectionOnClear,
-        clearSearch: clearSearchOnClear,
-        ariaLabel: clearAriaLabel,
-        icon: clearIcon,
-      },
-      tracking: {
-        enabled: trackingEnabled,
-        events: trackEvents,
-        styling: trackStyling,
-        limitations: trackLimitations,
-        emitDiagnostics,
-        maxEntries: trackingMaxEntries,
-      },
-      limitations: {
-        policies: limitationPolicies,
-        autoMitigateRuntimeModeSwitch,
-      },
-    };
-
-    applyInstanceConfig(element, config as SelectInstanceConfig);
-    if (coreConfig) {
-      applyInstanceConfig(element, coreConfig);
-    }
-  }, [
-    searchable,
-    placeholder,
-    virtualized,
-    estimatedItemHeight,
-    disabled,
-    multiple,
-    maxSelections,
-    selectionConfig,
-    multiSelectDisplay,
-    scrollToSelected,
-    stylesConfig,
-    coreConfig,
-    removeButtonIcon,
-    disabledOptionBehavior,
-    showSelectedIndicator,
-    toggleOnTriggerClick,
-    infiniteScroll,
-    pageSize,
-    clearable,
-    clearSelectionOnClear,
-    clearSearchOnClear,
-    clearAriaLabel,
-    clearIcon,
-    trackingEnabled,
-    trackEvents,
-    trackStyling,
-    trackLimitations,
-    emitDiagnostics,
-    trackingMaxEntries,
-    limitationPolicies,
-    autoMitigateRuntimeModeSwitch,
-    direction,
-    resolvedDropdownPlacement,
-    isElementUsable,
-    applyInstanceConfig,
-  ]);
 
   // React nodes cannot be passed through Core's string-only icon configuration.
   // Instead, render the node into Core-owned icon spans using context-preserving
@@ -1549,11 +1471,6 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     isElementUsable,
     acceptedProtocol,
     acknowledgedRequested,
-    coreConfig,
-    items,
-    groupedItems,
-    value,
-    defaultValue,
     loading,
     consumerAriaBusy,
     syncHostBusy,
