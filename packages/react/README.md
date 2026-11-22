@@ -2,7 +2,7 @@
 
 Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
-> **Web release:** React `1.12.0` and Core `1.17.0` are available from npm. This release adds the React remove-button node API and horizontal latest-chip auto-scroll; see the [web release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
+> **Published package versions:** React `1.12.1` and Core `1.18.0` are available from npm. React `1.12.1` includes Issue #107 data-synchronization behavior; Core `1.17.0` includes Issue #100 chip auto-scroll, and Core `1.18.0` includes Issue #104 custom-arrow hover styling. See the [React 1.12.1 release record](../../docs/releases/REACT-1.12.1-RELEASE.md) and [web 1.17.0 release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
 
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
@@ -1889,11 +1889,11 @@ When rendering custom option content, set `classMap.active` to the class names u
 
 The option's `data-sm-state`, `aria-selected`, and classes reflect independent active/selected semantics. The fix is in Core, not in React's renderer. See [Issue #82](https://github.com/navidrezadoost/Smilodon/issues/82) and the [Core rendering guide](../core/README.md#active-state-on-custom-option-roots).
 
-### Acknowledged pagination on React rerenders — Issue #85 (unreleased)
+### Acknowledged data synchronization on React rerenders — Issue #107
 
-The reported local fix for [Issue #85](https://github.com/navidrezadoost/Smilodon/issues/85) is qualified **but not yet pushed, merged, or published**. In acknowledged loading, React's `items` prop can supply the initial page while Core accepts cumulative pages using `completeDataRequest()`. Equivalent or newly allocated `config`, `multiSelectDisplay`, and `disabledOptionBehavior` objects must not force Core to revert its accepted cumulative snapshot to the initial `items`.
+In acknowledged loading, Core owns the cumulative accepted result pages, while React owns the source records and configuration passed by the application. React `1.12.1` compares incoming source/configuration values with the last values it successfully synchronized. Equivalent newly allocated arrays and plain configuration objects do not reset accepted pages during an incidental rerender; changed item fields, grouping, and an explicit empty source still synchronize.
 
-The pending fix moves `items`/`groupedItems` synchronization into one identity-guarded effect, independent of presentation configuration, and applies uncontrolled `defaultValue` after item registration. New `items` or `groupedItems` identities still represent deliberate updates; `setItems()` alone is not an acknowledged coordinator reset. Keep input references stable where the input is unchanged, complete requests with their exact request IDs and generations, and consult the final release notes before expecting this fix in published packages.
+Controlled selection remains synchronized separately. Core's acknowledged request protocol and imperative `setItems()` behavior are unchanged. Functions and non-plain metadata values compare by identity; keep them stable when they have not changed. Consumers should replace records immutably when changing their contents. See [Issue #107](https://github.com/navidrezadoost/Smilodon/issues/107), the [implementation and qualification record](../../docs/architecture/REACT-DATA-SYNC-OWNERSHIP-107.md), and the [React 1.12.1 release record](../../docs/releases/REACT-1.12.1-RELEASE.md).
 
 ## Styling
 

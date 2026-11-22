@@ -215,7 +215,13 @@ The default chevron remains in place unless a light-DOM child is assigned to the
 </enhanced-select>
 ```
 
-The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or hover background on assigned custom content.
+The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or transform on assigned custom content. A custom arrow container honors `--select-arrow-hover-bg` on hover; if the token is unset, its background remains transparent. This behavior is available in `@smilodon/core@1.18.0` and fixes [Issue #104](https://github.com/navidrezadoost/Smilodon/issues/104).
+
+```css
+enhanced-select {
+  --select-arrow-hover-bg: rgb(0 0 0 / 8%);
+}
+```
 
 ### Custom empty-state content (unreleased)
 

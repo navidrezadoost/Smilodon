@@ -1,6 +1,6 @@
 # React Data Synchronization Ownership — Issue #107
 
-Status: locally qualified; Draft PR preparation. Not merged or released. No release version is assigned.
+Status: merged into `main` by PR #108; shipped in `@smilodon/react@1.12.1`. See the [release record](../releases/REACT-1.12.1-RELEASE.md) for package qualification and registry verification.
 
 ## Ownership contract
 
@@ -35,7 +35,7 @@ Issue #100's `scrollToLatestChip` behavior is separately checked under a control
 
 ## Qualification record
 
-The React integration regression reproduces against baseline `65eff03b747482e3859511defe2f9770c3e29384`: one equivalent-props rerender called `setItems()` twice. The required regression asserts zero data/config writes for equivalent fresh props, then one write for a changed item field and one for an explicit empty dataset. Related grouped-data, controlled-value, acknowledged request, Strict Mode, stale-response, and browser scroll assertions must pass before this work is called qualified.
+The React integration regression reproduces against baseline `65eff03b747482e3859511defe2f9770c3e29384`: one equivalent-props rerender called `setItems()` twice. The regression asserts zero data/config writes for equivalent fresh props, then one write for a changed item field and one for an explicit empty dataset. Grouped-data, controlled-value, acknowledged-request, Strict Mode, stale-response, and browser scroll assertions passed in the qualification recorded below.
 
 The browser fixture drives cumulative 6 → 12 → 18 acknowledged snapshots, rerenders the controlled multi-select with fresh equivalent source/config/icon values, selects an item from the third page, and checks that its chip remains visible and pagination state remains at page 4.
 
@@ -45,6 +45,6 @@ Issue #85's historical candidate at `29c67067b3bf345347f74e2dc074095dc9eb2ab9` w
 
 ## Release boundary
 
-This change is React adapter behavior. It does not alter Core request protocol semantics, package versions, public peer ranges, tags, or npm artifacts. Assign a React release version only after checking registry availability and qualifying the exact packed package. This document does not authorize merge or publication.
+This change is React adapter behavior. It does not alter Core request protocol semantics or public peer ranges. It is included in the React `1.12.1` release candidate; package publication status and exact registry integrity are recorded in the release record. It does not republish Core or change Core's `1.18.0` artifact.
 
 The investigation baseline declares workspace React `1.12.0` and Core `1.17.0`. A direct npm registry query confirms `@smilodon/core@1.18.0` exists with integrity `sha512-RW0JqFLAD/ntLK2L+lqAEcadVj0xF74Q86hN1YXIHgD75kdb/GNSBbumNz3nkqXgEEBVFKDr0XBVTgdrzS+ypA==`; registry React `1.12.0` declares Core peer range `^1.13.0`, which permits Core `1.18.0`. The reporter's exact installed package pair remains unverified because no consumer lockfile or `npm ls` output was supplied. This repository's regression tests run against the checked-out workspace source, not an inferred reporter installation.
