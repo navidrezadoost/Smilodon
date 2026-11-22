@@ -43,6 +43,11 @@ import type {
 
 type CoreModule = typeof import("@smilodon/core");
 
+interface ReactRendererCacheEntry {
+  container: HTMLElement;
+  root: Root;
+}
+
 const DEFAULT_DATA_LOADING_CONFIG: ResolvedDataLoadingConfig = {
   protocol: "legacy",
   searchMode: "local",
@@ -662,10 +667,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
   }, [placement]);
 
   const reactRendererCache = useRef(
-    new Map<number, { container: HTMLElement; root: Root }>(),
+    new Map<number, ReactRendererCacheEntry>(),
   );
   const groupHeaderRendererCache = useRef(
-    new Map<number, { container: HTMLElement; root: Root }>(),
+    new Map<number, ReactRendererCacheEntry>(),
   );
 
   const areValuesEqual = useCallback(
@@ -713,6 +718,20 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
     Promise.resolve().then(() => root.unmount());
   }, []);
+
+  const reconcileRendererCache = useCallback((
+    cache: Map<number, ReactRendererCacheEntry>,
+    renderedOptions: HTMLElement,
+  ) => {
+    for (const [index, entry] of cache) {
+      if (renderedOptions.contains(entry.container)) continue;
+
+      // Delete synchronously so a later render at the same index cannot reuse
+      // a root that has already been scheduled for disposal.
+      if (cache.get(index) === entry) cache.delete(index);
+      scheduleRootUnmount(entry.root);
+    }
+  }, [scheduleRootUnmount]);
 
   // Use refs for renderers to avoid reconstructing the wrapper function on every render
   const customRendererRef = useRef(customRenderer ?? renderItem);
@@ -797,29 +816,6 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     };
   }, [scheduleRootUnmount]);
 
-  useEffect(() => {
-    const totalItems = groupedItems
-      ? groupedItems.reduce((count, group) => count + group.options.length, 0)
-      : items.length;
-
-    reactRendererCache.current.forEach((entry, index) => {
-      if (index >= totalItems) {
-        scheduleRootUnmount(entry.root);
-        reactRendererCache.current.delete(index);
-      }
-    });
-  }, [items, groupedItems, scheduleRootUnmount]);
-
-  useEffect(() => {
-    const totalGroups = groupedItems?.length ?? 0;
-
-    groupHeaderRendererCache.current.forEach((entry, index) => {
-      if (index >= totalGroups) {
-        scheduleRootUnmount(entry.root);
-        groupHeaderRendererCache.current.delete(index);
-      }
-    });
-  }, [groupedItems, scheduleRootUnmount]);
 
   useEffect(() => {
     if (groupHeaderRenderer) return;
@@ -859,6 +855,40 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     (!acknowledgedRequested || isAcknowledgedQualified) &&
     (!coreFacadeRequired || isCoreModuleLoaded) &&
     !isUnusable;
+
+  useEffect(() => {
+    if (!isElementReady) return;
+    const shadow = (elementRef.current as HTMLElement | null)?.shadowRoot;
+    const renderedOptions = shadow?.querySelector<HTMLElement>(".options-container");
+    if (!renderedOptions) return;
+
+    let disposed = false;
+    let reconciliationQueued = false;
+    const reconcile = () => {
+      reconciliationQueued = false;
+      if (disposed) return;
+      reconcileRendererCache(reactRendererCache.current, renderedOptions);
+      reconcileRendererCache(groupHeaderRendererCache.current, renderedOptions);
+    };
+    const queueReconciliation = () => {
+      if (reconciliationQueued || disposed) return;
+      reconciliationQueued = true;
+      if (typeof queueMicrotask === "function") {
+        queueMicrotask(reconcile);
+      } else {
+        Promise.resolve().then(reconcile);
+      }
+    };
+    const observer = new MutationObserver(queueReconciliation);
+    observer.observe(renderedOptions, { childList: true });
+    queueReconciliation();
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+    };
+  }, [isElementReady, reconcileRendererCache]);
+
 
   const markUnusable = useCallback(
     (message: string) => {
