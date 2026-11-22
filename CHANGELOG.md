@@ -20,10 +20,11 @@ Historical Angular-related changelog entries below are preserved for reference o
 ### Fixed
 
 - **Custom-arrow hover background ([#104](https://github.com/navidrezadoost/Smilodon/issues/104)):** Custom slotted arrows now honor the existing `--select-arrow-hover-bg` token on hover, falling back to transparency when unset. Default-arrow hover behavior is unchanged. Unreleased; planned for Core 1.18.0.
+- **React acknowledged-data synchronization ([#107](https://github.com/navidrezadoost/Smilodon/issues/107)):** The adapter now separates source data, configuration, and controlled selection synchronization. Equivalent fresh item arrays and configuration objects no longer replace Core-accepted pages; actual item and grouping changes, including an explicit empty array, still synchronize. This is unreleased React work and does not change Core's acknowledged request or imperative `setItems()` semantics.
 
 ### Pending
 
-- React Issue #85 remains outside `main` and is not part of the release candidate.
+- The historical React #85 candidate was not integrated; the broader no-memoization data-ownership correction is tracked in #107 and remains unreleased.
 
 ## [1.17.0] - 2026-11-21
 

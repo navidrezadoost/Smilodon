@@ -176,6 +176,14 @@ export function RemoteSelect() {
 
 The coordinator rejects stale responses by request ID and query generation; the host should still abort cancelled network work to save resources. An accepted response does not mean projection is finished: observe `onDataProjection` for the projection result. A failed request remains failed until a new explicit request is made; the sample deliberately does not retry automatically.
 
+### React item synchronization and acknowledged pagination
+
+The adapter treats React props as the source snapshot and the Core data coordinator as the owner of accepted acknowledged responses. Rerendering with a newly allocated array of equivalent plain-object records does not call `setItems()` and cannot reset pages accepted by Core. Meaningful changes to an item's enumerable fields, nested plain-object metadata, array metadata, or group structure synchronize as source updates; an empty array is also an intentional update.
+
+Use immutable plain-object item records. Functions and non-plain metadata values such as `Date`, `Map`, and class instances compare by identity, so memoize them if they are part of item metadata. Enumerable symbol keys and accessor identity are included in comparison. When data is semantically unchanged, React cannot infer that the application intends to restart pagination; initiate a new acknowledged search/generation for that intent instead of relying on a render or a fresh array.
+
+The adapter applies configuration, source data, and controlled selection through separate lifecycle paths. Fresh equivalent configuration objects and inline React `removeButtonIcon` nodes do not reapply Core configuration. Actual selection, layout, styling, disabled-state, and data-loading configuration changes remain active. See the [React data synchronization ownership record](../../docs/architecture/REACT-DATA-SYNC-OWNERSHIP-107.md).
+
 ### Other useful scenarios
 
 - **Terminal empty remote search (#92):** When the host completes the matching acknowledged request with `status: 'exhausted'`, `items: []`, and `hasMore: false`, Core displays the query-specific no-results message after successful projection. React consumers do not need a manual rerender, popup toggle, or `setItems([])` workaround. Wait for `onDataProjection` with `status: 'complete'` before relying on the projected DOM; `completeDataRequest()` returning `accepted` reports response acceptance, not DOM settlement. An empty page with `status: 'empty'` and `hasMore: true` is nonterminal. This guidance does not include the separate React #85 fix.
