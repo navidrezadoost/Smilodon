@@ -618,11 +618,9 @@ test('keeps later-page custom React content through controlled selection and equ
   await waitForRenderedItems(6);
 
   for (let pageNumber = 2; pageNumber <= 3; pageNumber += 1) {
-    await host.evaluate((element) => {
-      const button = element.shadowRoot?.querySelector<HTMLButtonElement>('.load-more-button');
-      if (!button) throw new Error('The acknowledged Load More control is missing');
-      button.click();
-    });
+    const loadMore = host.locator('.load-more-button');
+    await loadMore.focus();
+    await page.keyboard.press('Enter');
     await expect.poll(async () => (await events()).filter((event) => event.type === 'loadMore').length)
       .toBe(pageNumber - 1);
     const request = await requestFrom('loadMore', pageNumber - 2);
