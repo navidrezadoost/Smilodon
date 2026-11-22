@@ -1,6 +1,6 @@
 # React Data Synchronization Ownership — Issue #107
 
-Status: merged into `main` by PR #108; React `1.12.1` release preparation. See the [release record](../releases/REACT-1.12.1-RELEASE.md) for package qualification and registry status.
+Status: merged into `main` by PR #108; shipped in `@smilodon/react@1.12.1`. See the [release record](../releases/REACT-1.12.1-RELEASE.md) for package qualification and registry verification.
 
 ## Ownership contract
 

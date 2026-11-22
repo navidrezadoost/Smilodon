@@ -1,6 +1,6 @@
 # React 1.12.1 — Release and Registry Verification
 
-Status: **locally qualified; npm publication and registry-consumer verification pending**
+Status: **published and registry-verified**
 
 This is a React-only patch release for Issue #107. The source correction was merged in PR #108. The package version is advanced from `1.12.0` to `1.12.1`; the public peer ranges and all other package versions are unchanged.
 
@@ -21,6 +21,7 @@ The Core `1.17.0` and `1.18.0` versions are already published. This release publ
 - Merged source PR: [#108](https://github.com/navidrezadoost/Smilodon/pull/108)
 - Source commit on `main`: `01378ea18ec56dac7fac18803e1384c6cf729114`
 - Source tree: `dd2ca396d6ebbce9edd8159a6b15a3538bd9b052`
+- Release metadata/evidence commit: `270f96a36f199637741ee05b0023556be8a3fdca`
 - Release-preparation branch: `release/react-1.12.1-issues-100-104-107`
 - Package: `@smilodon/react@1.12.1`
 - Registry: `https://registry.npmjs.org/`
@@ -37,7 +38,7 @@ Qualification on this versioned tree used Node `20.20.2` and npm `10.8.2`:
 - React browser suite: 14/14 passed on system Chrome `133.0.6943.126`; pinned Playwright Chromium 147, Firefox, and WebKit were unavailable
 - `npm pack --workspace @smilodon/react`: 11 files, 90.5 kB compressed, 378.1 kB unpacked; SHA-256 `d901a4724513aa2090b781abd4f8f8d9198e39609bb83c50ed5484498eda86ab`, SHA-1 `21db455b37498b75810a5ace8c2c896d133188fa`
 - Packed React installed in a clean consumer alongside registry Core `1.18.0`, React/React DOM `18.3.1`; strict NodeNext and Bundler type checks passed with `skipLibCheck: false`
-- JSDOM runtime import smoke passed for Core and React; the `Select` export produced a valid React element
+- Registry-installed Chrome `133.0.6943.126` smoke mounted the React adapter, registered the custom element, found its shadow-root input with selected value `Alpha`, and recorded no page errors
 - `npm ci` reported 14 existing lockfile audit findings (1 low, 13 moderate); no dependency changes were made
 
 Test results: React integration tests 46/46; React contracts 44 passed, 6 skipped; the full suite passed with 655 Core tests and 40 data-loading tests plus 66 contracts, with 7 skipped total; packed React/Solid strict NodeNext/Bundler checks passed; full workspace build passed; lint passed with zero errors and six existing warnings; `git diff --check` passed. The full build rewrote the tracked React Native bundle; its baseline SHA-256 `e221dc43cdf8c5529a76c479ce855af2eb3c608cd6c04fe96f99fdab4dfb3fc1` was restored and verified.
@@ -46,7 +47,14 @@ Hosted GitHub Actions are not part of this qualification. Preserve test output, 
 
 ## npm publication record
 
-Publication has not yet been recorded. After publishing, add the registry-returned version, `dist.integrity`, shasum, local SHA-256, publication timestamp, and the result of installing `@smilodon/react@1.12.1` with `@smilodon/core@1.18.0` in a clean consumer. Do not claim registry verification based on a local tarball install.
+Published to `https://registry.npmjs.org/` on `2026-11-22T11:04:51.701Z` by the authenticated package owner. Registry metadata reports:
+
+- Version: `1.12.1`
+- `dist.integrity`: `sha512-lt8MqZqlYCBLyDOZcFxkhclC/cO/ZsNXSbAv64zbkYYUuUc9ZQuBDyyEDsegi4Yez8h/g+su/mjQ6C0+JLTxKg==`
+- npm shasum (SHA-1): `21db455b37498b75810a5ace8c2c896d133188fa`
+- SHA-256 of the local packed archive: `d901a4724513aa2090b781abd4f8f8d9198e39609bb83c50ed5484498eda86ab`
+- The archive downloaded back from npm is byte-identical to the locally published tarball (same SHA-256 and SHA-1).
+- A clean consumer installed registry React `1.12.1` and registry Core `1.18.0`; strict NodeNext and Bundler checks passed with `skipLibCheck: false`, and the browser runtime smoke passed on Chrome 133.
 
 ## Limitations
 

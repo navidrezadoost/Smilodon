@@ -29,7 +29,7 @@ Core patch release for the custom-arrow hover correction. `@smilodon/core@1.18.0
 
 ## [1.12.1] - 2026-11-22
 
-React patch release containing the adapter synchronization correction from Issue #107. This version retains the existing Core peer range (`^1.13.0`) and works with the already published Core `1.18.0`.
+React patch release published to npm on 2026-11-22, containing the adapter synchronization correction from Issue #107. This version retains the existing Core peer range (`^1.13.0`) and works with the already published Core `1.18.0`. Registry integrity and clean-consumer verification are in the [React 1.12.1 release record](docs/releases/REACT-1.12.1-RELEASE.md).
 
 ### Fixed
 
