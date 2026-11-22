@@ -11,7 +11,10 @@ test('@vanilla keeps browse pagination while acknowledged searches are below thr
     select.id = 'issue109-min-search';
     select.updateConfig({
       searchable: true,
-      infiniteScroll: { enabled: true, pageSize: 6 },
+      // Keep the browser test deterministic: exercise manual pagination below
+      // without an in-view sentinel starting a concurrent request.
+      infiniteScroll: { enabled: false, pageSize: 6 },
+      loadMore: { enabled: true, itemsPerLoad: 6 },
       dataLoading: {
         protocol: 'acknowledged',
         searchMode: 'remote',

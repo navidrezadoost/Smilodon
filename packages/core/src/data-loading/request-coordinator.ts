@@ -507,12 +507,16 @@ export class DataRequestCoordinator {
     this.hasMore = options.hasMore ?? false;
     this.nextEligiblePosition = this.initialPosition();
     this.lastCommittedPage = this.config.paginationMode === 'page'
-      ? (remote && searchEligible ? undefined : this.config.initialPage)
+      ? (remote && searchEligible
+        ? undefined
+        : this.items.length > 0 ? this.config.initialPage : undefined)
       : undefined;
     this.needsInitialRemoteSearch = remote && searchEligible;
     if (remote && searchEligible) {
       const browse = this.captureDataState();
-      browse.lastCommittedPage = this.config.paginationMode === 'page' ? this.config.initialPage : undefined;
+      browse.lastCommittedPage = this.config.paginationMode === 'page' && this.items.length > 0
+        ? this.config.initialPage
+        : undefined;
       browse.nextEligiblePosition = this.browseInitialPosition();
       browse.needsInitialRemoteSearch = false;
       this.browseState = browse;
@@ -582,7 +586,9 @@ export class DataRequestCoordinator {
       this.query = query;
       this.queryGeneration += 1;
       this.resetQueryMetadata();
-      this.lastCommittedPage = this.config.paginationMode === 'page' ? this.config.initialPage : undefined;
+      this.lastCommittedPage = this.config.paginationMode === 'page' && this.items.length > 0
+        ? this.config.initialPage
+        : undefined;
       this.nextEligiblePosition = this.initialPosition();
       this.needsInitialRemoteSearch = false;
       return immutableActions(actions);
@@ -708,7 +714,7 @@ export class DataRequestCoordinator {
     this.resourceLimit = null;
     this.sentinelBlocked = false;
     this.hasMore = this.isRemoteMode() ? false : this.hasMore;
-    this.lastCommittedPage = this.config.paginationMode === 'page' && !this.isRemoteMode()
+    this.lastCommittedPage = this.config.paginationMode === 'page' && !this.isRemoteMode() && this.items.length > 0
       ? this.config.initialPage
       : undefined;
     this.nextEligiblePosition = this.initialPosition();
@@ -959,7 +965,7 @@ export class DataRequestCoordinator {
     this.items = asFrozenItems([]);
     this.hasMore = false;
     this.status = 'idle';
-    this.lastCommittedPage = this.config.paginationMode === 'page' ? this.config.initialPage : undefined;
+    this.lastCommittedPage = undefined;
     this.nextEligiblePosition = this.browseInitialPosition();
     this.committedCursors.clear();
     this.generationHasAcceptedResult = false;
@@ -989,7 +995,7 @@ export class DataRequestCoordinator {
     }
     const page = this.isRemoteMode() && this.isSearchEligible(this.query)
       ? this.config.firstPage
-      : this.config.initialPage + 1;
+      : this.items.length > 0 ? this.config.initialPage + 1 : this.config.initialPage;
     return Object.freeze({ mode: 'page' as const, page });
   }
 
@@ -997,7 +1003,10 @@ export class DataRequestCoordinator {
     if (this.config.paginationMode === 'cursor') {
       return Object.freeze({ mode: 'cursor' as const, ordinal: 1 });
     }
-    return Object.freeze({ mode: 'page' as const, page: this.config.initialPage + 1 });
+    return Object.freeze({
+      mode: 'page' as const,
+      page: this.items.length > 0 ? this.config.initialPage + 1 : this.config.initialPage,
+    });
   }
 
   private resetPaginationForRemoteQuery(clearItems: boolean): void {

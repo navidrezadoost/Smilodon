@@ -60,6 +60,11 @@ function latestRequest(details: any[]): any {
   return detail.request;
 }
 
+function renderedOptionLabels(select: EnhancedSelect): string[] {
+  return Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'))
+    .map((option) => option.shadowRoot?.querySelector('.option-content')?.textContent?.trim() ?? '');
+}
+
 function setInputQuery(select: EnhancedSelect, query: string): void {
   const input = select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!;
   input.value = query;
@@ -197,7 +202,7 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
       items: Array.from({ length: 12 }, (_, index) => ({ id: String(index), value: String(index), label: `Item ${index}` })),
       hasMore: true,
     });
-    expect((select as any)._dataRequestCoordinator.getSnapshot().nextEligiblePosition).toEqual({ mode: 'page', page: 3 });
+    expect((select as any)._dataRequestCoordinator.getSnapshot().nextEligiblePosition).toEqual({ mode: 'page', page: 2 });
 
     setInputQuery(select, 'abc');
     expect(searches).toHaveLength(1);
@@ -216,7 +221,7 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     expect((select as any)._dataRequestCoordinator.getSnapshot()).toMatchObject({
       busy: false,
       hasMore: true,
-      nextEligiblePosition: { mode: 'page', page: 3 },
+      nextEligiblePosition: { mode: 'page', page: 2 },
     });
     expect((select as any)._state.isBusy).toBe(false);
 
@@ -228,6 +233,144 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     await vi.waitFor(() => expect((select as any)._acknowledgedProjectionPending).toBe(false));
     expect(select.loadedItems).toHaveLength(12);
     expect(searches).toHaveLength(2);
+  });
+
+  it('projects the restored browse snapshot after a runtime threshold update', async () => {
+    const browseItems = Array.from({ length: 6 }, (_, index) => ({
+      id: `browse-${index + 1}`,
+      value: `browse-${index + 1}`,
+      label: `Browse ${index + 1}`,
+    }));
+    const select = createSelect(browseItems);
+    const searches: any[] = [];
+    const loads: any[] = [];
+    select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail));
+    select.addEventListener('loadMore', (event) => loads.push((event as CustomEvent).detail));
+    document.body.appendChild(select);
+    enableAcknowledged(select, {
+      dataLoading: {
+        protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 6,
+        minSearchCharacters: 3,
+      },
+      infiniteScroll: { pageSize: 6, initialPage: 1 },
+    }, { hasMore: true });
+    await markReady(select);
+
+    setInputQuery(select, 'abc');
+    const filteredRequest = latestRequest(searches);
+    await complete(select, filteredRequest, {
+      status: 'succeeded',
+      items: [{ id: 'filtered', value: 'filtered', label: 'Filtered result' }],
+      hasMore: true,
+    });
+    expect(select.loadedItems).toHaveLength(1);
+
+    select.updateConfig({ dataLoading: { minSearchCharacters: 5 } });
+    expect(searches).toHaveLength(1);
+    await vi.waitFor(() => expect(select.loadedItems).toEqual(browseItems));
+    await vi.waitFor(() => expect((select as any)._acknowledgedProjectionPending).toBe(false));
+    expect((select as any)._dataRequestCoordinator.getSnapshot().items).toEqual(browseItems);
+    select.open();
+    expect(renderedOptionLabels(select)).toEqual(browseItems.map((item) => item.label));
+
+    (select as any)._loadMoreItems('manual');
+    const browsePage2 = latestRequest(loads);
+    expect(browsePage2).toMatchObject({ query: '', normalizedQuery: '', position: { mode: 'page', page: 2 } });
+    const browseItemsAfterPage2 = Array.from({ length: 12 }, (_, index) => ({
+      id: `browse-${index + 1}`,
+      value: `browse-${index + 1}`,
+      label: `Browse ${index + 1}`,
+    }));
+    await complete(select, browsePage2, {
+      status: 'succeeded',
+      items: browseItemsAfterPage2,
+      hasMore: true,
+    });
+
+    select.updateConfig({ dataLoading: { minSearchCharacters: 2 } });
+    expect(searches).toHaveLength(2);
+    const restartedSearch = latestRequest(searches);
+    expect(restartedSearch).toMatchObject({ query: 'abc', position: { mode: 'page', page: 1 } });
+    select.updateConfig({ dataLoading: { minSearchCharacters: 5 } });
+    expect(await complete(select, restartedSearch, {
+      status: 'succeeded',
+      items: [{ id: 'stale', value: 'stale', label: 'Stale search result' }],
+      hasMore: true,
+    })).toBe('stale');
+    await vi.waitFor(() => expect(select.loadedItems).toEqual(browseItemsAfterPage2));
+    expect((select as any)._dataRequestCoordinator.getSnapshot().items).toEqual(browseItemsAfterPage2);
+  });
+
+  it('projects the latest browse snapshot when a threshold update is deferred during projection', async () => {
+    const browseItems = Array.from({ length: 6 }, (_, index) => ({
+      id: `browse-${index + 1}`,
+      value: `browse-${index + 1}`,
+      label: `Browse ${index + 1}`,
+    }));
+    const select = createSelect(browseItems);
+    const searches: any[] = [];
+    select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail));
+    document.body.appendChild(select);
+    enableAcknowledged(select, {
+      dataLoading: {
+        protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 6,
+        minSearchCharacters: 3,
+      },
+      infiniteScroll: { pageSize: 6, initialPage: 1 },
+    }, { hasMore: true });
+    await markReady(select);
+
+    setInputQuery(select, 'abc');
+    const filteredRequest = latestRequest(searches);
+    expect(select.completeDataRequest({
+      requestId: filteredRequest.requestId,
+      queryGeneration: filteredRequest.queryGeneration,
+      status: 'succeeded',
+      items: [{ id: 'filtered', value: 'filtered', label: 'Filtered result' }],
+      hasMore: true,
+    })).toBe('accepted');
+    expect((select as any)._acknowledgedProjectionPending).toBe(true);
+    select.updateConfig({ dataLoading: { minSearchCharacters: 5 } });
+
+    await vi.waitFor(() => {
+      expect((select as any)._acknowledgedProjectionPending).toBe(false);
+      expect(select.loadedItems).toEqual(browseItems);
+    });
+    expect((select as any)._dataRequestCoordinator.getSnapshot().items).toEqual(browseItems);
+    expect(searches).toHaveLength(1);
+    expect(renderedOptionLabels(select)).toEqual(browseItems.map((item) => item.label));
+  });
+
+  it('starts unfiltered browsing at the configured first page when there are no initial items', async () => {
+    const select = createSelect([]);
+    const loads: any[] = [];
+    select.addEventListener('loadMore', (event) => loads.push((event as CustomEvent).detail));
+    document.body.appendChild(select);
+    enableAcknowledged(select, {
+      dataLoading: {
+        protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'page', fetchLimit: 6,
+        minSearchCharacters: 3,
+      },
+      infiniteScroll: { pageSize: 6, initialPage: 4 },
+    }, { hasMore: true });
+    await markReady(select);
+
+    (select as any)._loadMoreItems('manual');
+    const firstBrowseRequest = latestRequest(loads);
+    expect(firstBrowseRequest).toMatchObject({
+      query: '', normalizedQuery: '', position: { mode: 'page', page: 4 },
+    });
+    await complete(select, firstBrowseRequest, {
+      status: 'succeeded',
+      items: [{ id: 'first', value: 'first', label: 'First browse result' }],
+      hasMore: true,
+    });
+    expect(select.loadedItems).toEqual([{ id: 'first', value: 'first', label: 'First browse result' }]);
+
+    (select as any)._loadMoreItems('manual');
+    expect(latestRequest(loads)).toMatchObject({
+      query: '', normalizedQuery: '', position: { mode: 'page', page: 5 },
+    });
   });
 
   it('cancels before announcing a superseding query and rejects the older response without mutation', async () => {

@@ -5799,7 +5799,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
           this._state.isBusy = snapshot.busy;
           this._state.isSearching = snapshot.activeRequest?.kind === 'search';
           this._syncListboxAccessibility();
-          if (update.actions.every((action) => action.type !== 'request')) this._renderOptions();
+          if (update.actions.every((action) => action.type !== 'request')) {
+            if (this._acknowledgedSnapshotDiffersFromLoadedItems(snapshot)) {
+              this._reconcileAcknowledgedSnapshot(snapshot);
+            } else {
+              this._renderOptions();
+            }
+          }
         }
       }
     }
@@ -6600,6 +6606,33 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     );
   }
 
+  private _acknowledgedSnapshotDiffersFromLoadedItems(snapshot: DataCoordinatorSnapshot): boolean {
+    const loadedItems = this._state.loadedItems;
+    return loadedItems.length !== snapshot.items.length
+      || loadedItems.some((item, index) => item !== snapshot.items[index]);
+  }
+
+  private _reconcileAcknowledgedSnapshot(snapshot: DataCoordinatorSnapshot): void {
+    if (!this._acknowledgedSnapshotDiffersFromLoadedItems(snapshot)) return;
+    const activeProjection = this._acknowledgedProjectionTask;
+    if (this._acknowledgedProjectionRunning && activeProjection) {
+      // Deferred config is reconciled from inside the current projection's
+      // settlement callback. Wait until that task releases its running guard,
+      // then project the coordinator's latest accepted snapshot.
+      void activeProjection.then(() => {
+        if (!this.isConnected) return;
+        const latestSnapshot = this._dataRequestCoordinator?.getSnapshot() ?? snapshot;
+        if (this._acknowledgedSnapshotDiffersFromLoadedItems(latestSnapshot)) {
+          void this._projectAcknowledgedSnapshot(latestSnapshot, null, false);
+        } else {
+          this._dispatchPendingAcknowledgedSearchIntent();
+        }
+      });
+      return;
+    }
+    void this._projectAcknowledgedSnapshot(snapshot, null, false);
+  }
+
   private _projectAcknowledgedSnapshot(
     snapshot: DataCoordinatorSnapshot,
     request: DataRequest | null,
@@ -6848,6 +6881,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._state.isBusy = state.busy;
       this._state.isSearching = state.activeRequest?.kind === 'search';
       this._syncListboxAccessibility();
+      if (
+        update.actions.every((action) => action.type !== 'request')
+        && this._acknowledgedSnapshotDiffersFromLoadedItems(state)
+      ) {
+        this._reconcileAcknowledgedSnapshot(state);
+        return;
+      }
     }
 
     this._dispatchPendingAcknowledgedSearchIntent();
