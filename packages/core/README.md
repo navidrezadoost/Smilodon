@@ -14,7 +14,7 @@
 
 > **Issue #100:** `multiSelectDisplay.scrollToLatestChip` is available in `@smilodon/core@1.17.0`. See [Multi-Select Display Modes](#multi-select-display-modes) and the [release verification](../../docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
-> **Unpublished Core 1.19.0 candidate:** Adds `--select-arrow-container-position` (default `absolute`) and makes group-header `start` alignment follow Core's effective direction. These changes are not available from npm yet. See [arrow container positioning](#arrow-container-positioning) and [group header alignment](#group-headers).
+> **Core 1.19.0:** Published to npm with `--select-arrow-container-position` (default `absolute`) and direction-aware group-header `start` alignment. The release also includes Issue #109's acknowledged remote-search threshold. See [arrow container positioning](#custom-arrow-slot), the [styling-token reference](../../docs/STYLING-TOKENS.md), and the [release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
 
 ## Custom busy bucket (Core 1.13.0)
 
@@ -47,9 +47,9 @@ select.updateConfig({
 
 The bucket exposes `::part(loading)`, `::part(loading-icon)`, `::part(loading-spinner)`, `::part(loading-message)`, and `::part(loading-content)`. Layout can be adjusted with `--select-busy-gap`, `--select-busy-padding`, `--select-busy-color`, `--select-busy-bg`, and the existing `--select-spinner-size` token. `minDisplayTime` is a visual minimum after request completion; it does not delay acceptance, pagination, or `aria-busy` updates.
 
-## Acknowledged data loading (Phase 2F-D development candidate)
+## Acknowledged data loading
 
-The local Phase 2F-D candidate adds a public, per-instance data-loading configuration and completion surface to `EnhancedSelect`. This API is not included in the published `1.10.0` package. The legacy protocol remains the default; remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. Cross-browser certification and independent review remain pending, so these examples are illustrative and have not been certified for release.
+The acknowledged protocol provides per-instance data-loading configuration and request completion on `EnhancedSelect`. It is included in the published Core package; the legacy protocol remains the default. Remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. See the [Core 1.19.0 release record](../../docs/releases/WEB-1.19.0-RELEASE.md) for the tested scope and browser limitations.
 
 The host owns transport, cancellation, and retry decisions. `completeDataRequest()` accepts a response only when its request identity and query generation are current. A return value of `accepted` means the canonical response was accepted; DOM projection completes separately and is reported by `dataProjection`.
 
@@ -72,7 +72,7 @@ The default is `0`, which preserves existing behavior. The threshold applies to 
 
 Below the threshold, the current text remains visible while Core displays the unfiltered browsing dataset. Search requests are suppressed, but explicit unfiltered pagination still uses `loadMore`. When input crosses into eligible search, Core starts at the configured first page and retains the independent browse items and continuation. Returning below threshold or calling `clearSearch()` cancels an active qualifying search and restores that browse state; completions from the canceled query are stale. An accepted runtime threshold update also projects a changed restored snapshot into the visible options, including when the update is deferred until an in-progress result projection settles. Page-mode browsing treats nonempty initial items as the configured `initialPage` and continues at the next page; with no initial items, the first unfiltered request starts at `initialPage`. The host must complete load-more requests with `hasMore: true` or `status: 'exhausted'`/`hasMore: false` to advance or end browsing; Core does not infer server exhaustion from the item count.
 
-This is an opt-in Core candidate until the Issue #109 qualification and release are complete. See [the Issue #109 qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md).
+This opt-in behavior is available in `@smilodon/core@1.19.0`. See [the Issue #109 qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md) and [release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
 
 ```ts
 import { EnhancedSelect } from '@smilodon/core'
