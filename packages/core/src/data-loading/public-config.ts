@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: ResolvedDataLoadingConfig = {
   searchMode: 'local',
   paginationMode: 'page',
   firstPage: 1,
+  minSearchCharacters: 0,
 };
 
 const ALLOWED_FIELDS = new Set([
@@ -17,6 +18,7 @@ const ALLOWED_FIELDS = new Set([
   'paginationMode',
   'firstPage',
   'fetchLimit',
+  'minSearchCharacters',
 ]);
 
 function issue(path: string, code: DataLoadingConfigIssue['code'], message: string): DataLoadingConfigIssue {
@@ -42,6 +44,22 @@ function validatePositiveSafeInteger(
   }
   if (!Number.isSafeInteger(value) || value <= 0) {
     issues.push(issue(key, 'invalid-positive-integer', `${key} must be a positive safe integer.`));
+  }
+}
+
+function validateNonNegativeSafeInteger(candidate: Record<string, unknown>, issues: DataLoadingConfigIssue[]): void {
+  const value = candidate.minSearchCharacters;
+  if (value === undefined) return;
+  if (typeof value !== 'number') {
+    issues.push(issue('minSearchCharacters', 'invalid-type', 'minSearchCharacters must be a number.'));
+    return;
+  }
+  if (!Number.isSafeInteger(value) || value < 0) {
+    issues.push(issue(
+      'minSearchCharacters',
+      'invalid-value',
+      'minSearchCharacters must be a non-negative safe integer.',
+    ));
   }
 }
 
@@ -85,6 +103,7 @@ export function validateDataLoadingConfig(candidate: unknown): DataLoadingConfig
 
   validatePositiveSafeInteger(candidate, 'firstPage', issues);
   validatePositiveSafeInteger(candidate, 'fetchLimit', issues);
+  validateNonNegativeSafeInteger(candidate, issues);
 
   if (protocol === 'legacy' && (searchMode === 'remote' || searchMode === 'hybrid')) {
     issues.push(issue('searchMode', 'requires-acknowledged-protocol', 'Remote and hybrid search require the acknowledged protocol.'));
@@ -100,6 +119,9 @@ export function validateDataLoadingConfig(candidate: unknown): DataLoadingConfig
     searchMode: searchMode as ResolvedDataLoadingConfig['searchMode'],
     paginationMode: paginationMode as ResolvedDataLoadingConfig['paginationMode'],
     firstPage: candidate.firstPage === undefined ? DEFAULT_CONFIG.firstPage : candidate.firstPage as number,
+    minSearchCharacters: candidate.minSearchCharacters === undefined
+      ? DEFAULT_CONFIG.minSearchCharacters
+      : candidate.minSearchCharacters as number,
     ...(candidate.fetchLimit === undefined ? {} : { fetchLimit: candidate.fetchLimit as number }),
   };
 

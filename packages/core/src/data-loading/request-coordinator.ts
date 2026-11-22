@@ -23,6 +23,7 @@ export interface DataLoadingConfig {
   paginationMode?: DataPaginationMode;
   firstPage?: number;
   fetchLimit?: number;
+  minSearchCharacters?: number;
   /** Internal acknowledged-cursor policy; not a public component option yet. */
   maxCursorPages?: number;
   /** UTF-8 bytes per opaque cursor; internal until component integration is authorized. */
@@ -154,6 +155,7 @@ export interface ResolvedDataCoordinatorConfig {
   readonly searchMode: DataSearchMode;
   readonly paginationMode: DataPaginationMode;
   readonly firstPage: number;
+  readonly minSearchCharacters: number;
   readonly initialPage: number;
   readonly fetchLimit?: number;
   readonly maxCursorPages: number;
@@ -208,11 +210,29 @@ interface ConfigValidationInput {
   searchMode: unknown;
   paginationMode: unknown;
   firstPage: unknown;
+  minSearchCharacters: unknown;
   initialPage: unknown;
   fetchLimit: unknown;
   maxCursorPages: unknown;
   maxCursorTokenBytes: unknown;
   pageSize: unknown;
+}
+
+interface CoordinatorDataState {
+  items: readonly unknown[];
+  hasMore: boolean;
+  status: DataCoordinatorStatus;
+  lastCommittedPage: number | undefined;
+  nextEligiblePosition: PagePosition;
+  committedCursors: Set<PageCursor>;
+  generationHasAcceptedResult: boolean;
+  needsInitialRemoteSearch: boolean;
+  retryAvailable: boolean;
+  retryPosition: PagePosition | undefined;
+  retryKind: DataRequest['kind'] | undefined;
+  error: DataRequestError | null;
+  resourceLimit: DataCoordinatorResourceLimit | null;
+  sentinelBlocked: boolean;
 }
 
 let coordinatorInstanceSequence = 0;
@@ -315,6 +335,7 @@ function configInput(config: DataCoordinatorConfig = {}): ConfigValidationInput 
     searchMode: dataLoading.searchMode === undefined ? 'local' : dataLoading.searchMode,
     paginationMode: dataLoading.paginationMode === undefined ? 'page' : dataLoading.paginationMode,
     firstPage: dataLoading.firstPage === undefined ? 1 : dataLoading.firstPage,
+    minSearchCharacters: dataLoading.minSearchCharacters === undefined ? 0 : dataLoading.minSearchCharacters,
     initialPage: infiniteScroll.initialPage === undefined ? 1 : infiniteScroll.initialPage,
     fetchLimit: dataLoading.fetchLimit,
     maxCursorPages: dataLoading.maxCursorPages === undefined
@@ -353,6 +374,9 @@ export function validateDataCoordinatorConfig(config: DataCoordinatorConfig = {}
   }
   if (!isPositiveSafeInteger(input.firstPage)) {
     add('dataLoading.firstPage', 'must be a positive safe integer');
+  }
+  if (!isNonNegativeSafeInteger(input.minSearchCharacters)) {
+    add('dataLoading.minSearchCharacters', 'must be a non-negative safe integer');
   }
   if (!isPositiveSafeInteger(input.initialPage)) {
     add('infiniteScroll.initialPage', 'must be a positive safe integer');
@@ -404,6 +428,7 @@ export function validateDataCoordinatorConfig(config: DataCoordinatorConfig = {}
       searchMode: input.searchMode as DataSearchMode,
       paginationMode: input.paginationMode as DataPaginationMode,
       firstPage: input.firstPage as number,
+      minSearchCharacters: input.minSearchCharacters as number,
       initialPage: input.initialPage as number,
       fetchLimit: resolvedFetchLimit,
       maxCursorPages: input.maxCursorPages as number,
@@ -464,6 +489,8 @@ export class DataRequestCoordinator {
   private resourceLimit: DataCoordinatorResourceLimit | null = null;
   private sentinelBlocked = false;
   private sentinelIntersecting = false;
+  /** Unfiltered items and continuation are independent from each filtered query. */
+  private browseState: CoordinatorDataState | null = null;
 
   constructor(options: DataRequestCoordinatorOptions = {}) {
     const initialConfig = options.config === undefined ? {} : options.config;
@@ -476,12 +503,24 @@ export class DataRequestCoordinator {
     this.query = options.initialQuery ?? '';
     this.items = asFrozenItems(options.initialItems ?? []);
     const remote = this.isRemoteMode();
-    this.hasMore = remote ? false : options.hasMore ?? false;
+    const searchEligible = this.isSearchEligible(this.query);
+    this.hasMore = options.hasMore ?? false;
     this.nextEligiblePosition = this.initialPosition();
-    this.lastCommittedPage = this.config.paginationMode === 'page' && !remote
-      ? this.config.initialPage
+    this.lastCommittedPage = this.config.paginationMode === 'page'
+      ? (remote && searchEligible
+        ? undefined
+        : this.items.length > 0 ? this.config.initialPage : undefined)
       : undefined;
-    this.needsInitialRemoteSearch = remote;
+    this.needsInitialRemoteSearch = remote && searchEligible;
+    if (remote && searchEligible) {
+      const browse = this.captureDataState();
+      browse.lastCommittedPage = this.config.paginationMode === 'page' && this.items.length > 0
+        ? this.config.initialPage
+        : undefined;
+      browse.nextEligiblePosition = this.browseInitialPosition();
+      browse.needsInitialRemoteSearch = false;
+      this.browseState = browse;
+    }
   }
 
   getSnapshot(): DataCoordinatorSnapshot {
@@ -516,7 +555,7 @@ export class DataRequestCoordinator {
     this.connected = true;
     this.hasConnected = true;
 
-    if (this.isRemoteMode() && this.needsInitialRemoteSearch) {
+    if (this.isSearchEligible(this.query) && this.needsInitialRemoteSearch) {
       this.resetPaginationForRemoteQuery(true);
       const request = this.createSearchRequest();
       if (request) actions.push(Object.freeze({ type: 'request', request }));
@@ -540,33 +579,60 @@ export class DataRequestCoordinator {
   setQuery(query: string): readonly DataCoordinatorAction[] {
     if (typeof query !== 'string' || query === this.query) return immutableActions([]);
 
-    const actions: DataCoordinatorAction[] = [];
-    const cancellation = this.invalidateActive('query-changed');
-    if (cancellation) actions.push(cancellation);
-
-    this.query = query;
-    this.queryGeneration += 1;
-    this.error = null;
-    this.status = 'idle';
-    this.generationHasAcceptedResult = false;
-    this.retryAvailable = false;
-    this.retryPosition = undefined;
-    this.retryKind = undefined;
-    this.committedCursors.clear();
-    this.resourceLimit = null;
-    this.sentinelBlocked = false;
-
-    if (this.isRemoteMode()) {
-      this.resetPaginationForRemoteQuery(true);
-      this.needsInitialRemoteSearch = true;
-      if (this.connected) {
-        const request = this.createSearchRequest();
-        if (request) actions.push(Object.freeze({ type: 'request', request }));
-      }
-    } else {
-      this.lastCommittedPage = this.config.paginationMode === 'page' ? this.config.initialPage : undefined;
+    if (!this.isRemoteMode()) {
+      const actions: DataCoordinatorAction[] = [];
+      const cancellation = this.invalidateActive('query-changed');
+      if (cancellation) actions.push(cancellation);
+      this.query = query;
+      this.queryGeneration += 1;
+      this.resetQueryMetadata();
+      this.lastCommittedPage = this.config.paginationMode === 'page' && this.items.length > 0
+        ? this.config.initialPage
+        : undefined;
       this.nextEligiblePosition = this.initialPosition();
       this.needsInitialRemoteSearch = false;
+      return immutableActions(actions);
+    }
+
+    const actions: DataCoordinatorAction[] = [];
+    const wasSearchEligible = this.isSearchEligible(this.query);
+    const willSearchBeEligible = this.isSearchEligible(query);
+    const activeKind = this.active?.request.kind;
+    // Edits that remain below threshold are presentation-only while browsing.
+    // Do not cancel a legitimate unfiltered loadMore operation for those edits.
+    const preserveBrowseLoad = !wasSearchEligible && !willSearchBeEligible && activeKind === 'loadMore';
+    const enteringSearch = !wasSearchEligible && willSearchBeEligible;
+    if (enteringSearch || !preserveBrowseLoad) {
+      const cancellation = this.invalidateActive('query-changed');
+      if (cancellation) actions.push(cancellation);
+    }
+    if (enteringSearch) this.browseState = this.captureDataState();
+
+    this.query = query;
+    // Below-threshold edits do not change browse request ownership. Keep the
+    // generation stable while an unfiltered loadMore is in flight so its valid
+    // completion is not made stale by presentation-only input.
+    if (!preserveBrowseLoad) this.queryGeneration += 1;
+    if (!wasSearchEligible && !willSearchBeEligible) {
+      this.error = null;
+      if (!this.active) this.status = 'idle';
+      // Current state remains the unfiltered browse state. Keep its pagination
+      // and accepted items intact while the user edits a short query.
+      return immutableActions(actions);
+    }
+
+    if (wasSearchEligible && !willSearchBeEligible) {
+      this.restoreBrowseState();
+      this.needsInitialRemoteSearch = false;
+      return immutableActions(actions);
+    }
+
+    this.resetQueryMetadata();
+    this.resetPaginationForRemoteQuery(true);
+    this.needsInitialRemoteSearch = true;
+    if (this.connected) {
+      const request = this.createSearchRequest();
+      if (request) actions.push(Object.freeze({ type: 'request', request }));
     }
     return immutableActions(actions);
   }
@@ -596,12 +662,41 @@ export class DataRequestCoordinator {
       previous.protocol !== next.protocol ||
       previous.searchMode !== next.searchMode ||
       previous.paginationMode !== next.paginationMode;
+    const thresholdChanged = previous.minSearchCharacters !== next.minSearchCharacters;
 
     this.rawConfig = copyCoordinatorConfig(candidate);
     this.config = next;
-    if (!protocolChanged) {
+    if (!protocolChanged && !thresholdChanged) {
       this.refreshCursorDepthLimit();
       return Object.freeze({ status: 'accepted', actions: immutableActions([]) });
+    }
+
+    if (!protocolChanged && thresholdChanged) {
+      const wasEligible = this.isSearchEligible(this.query, previous);
+      const willBeEligible = this.isSearchEligible(this.query, next);
+      if (wasEligible === willBeEligible) {
+        this.refreshCursorDepthLimit();
+        return Object.freeze({ status: 'accepted', actions: immutableActions([]) });
+      }
+      const actions: DataCoordinatorAction[] = [];
+      const cancellation = this.invalidateActive('config-changed');
+      if (cancellation) actions.push(cancellation);
+      this.queryGeneration += 1;
+      if (wasEligible && !willBeEligible) {
+        this.resetQueryMetadata();
+        this.restoreBrowseState();
+        this.needsInitialRemoteSearch = false;
+      } else {
+        this.browseState = this.captureDataState();
+        this.resetQueryMetadata();
+        this.resetPaginationForRemoteQuery(true);
+        this.needsInitialRemoteSearch = true;
+        if (this.connected) {
+          const request = this.createSearchRequest();
+          if (request) actions.push(Object.freeze({ type: 'request', request }));
+        }
+      }
+      return Object.freeze({ status: 'accepted', actions: immutableActions(actions) });
     }
 
     const actions: DataCoordinatorAction[] = [];
@@ -619,13 +714,14 @@ export class DataRequestCoordinator {
     this.resourceLimit = null;
     this.sentinelBlocked = false;
     this.hasMore = this.isRemoteMode() ? false : this.hasMore;
-    this.lastCommittedPage = this.config.paginationMode === 'page' && !this.isRemoteMode()
+    this.lastCommittedPage = this.config.paginationMode === 'page' && !this.isRemoteMode() && this.items.length > 0
       ? this.config.initialPage
       : undefined;
     this.nextEligiblePosition = this.initialPosition();
     this.needsInitialRemoteSearch = this.isRemoteMode();
 
-    if (this.connected && this.isRemoteMode()) {
+    this.browseState = null;
+    if (this.connected && this.isSearchEligible(this.query)) {
       const request = this.createSearchRequest();
       if (request) actions.push(Object.freeze({ type: 'request', request }));
     }
@@ -819,12 +915,98 @@ export class DataRequestCoordinator {
     return this.config.searchMode === 'remote' || this.config.searchMode === 'hybrid';
   }
 
+  private isSearchEligible(query: string, config: ResolvedDataCoordinatorConfig = this.config): boolean {
+    if (
+      config.protocol !== 'acknowledged' ||
+      (config.searchMode !== 'remote' && config.searchMode !== 'hybrid')
+    ) return true;
+    return Array.from(query.trim()).length >= config.minSearchCharacters;
+  }
+
+  private captureDataState(): CoordinatorDataState {
+    return {
+      items: this.items,
+      hasMore: this.hasMore,
+      status: this.status,
+      lastCommittedPage: this.lastCommittedPage,
+      nextEligiblePosition: this.nextEligiblePosition,
+      committedCursors: new Set(this.committedCursors),
+      generationHasAcceptedResult: this.generationHasAcceptedResult,
+      needsInitialRemoteSearch: this.needsInitialRemoteSearch,
+      retryAvailable: this.retryAvailable,
+      retryPosition: this.retryPosition,
+      retryKind: this.retryKind,
+      error: this.error,
+      resourceLimit: this.resourceLimit,
+      sentinelBlocked: this.sentinelBlocked,
+    };
+  }
+
+  private restoreBrowseState(): void {
+    if (this.browseState) {
+      const state = this.browseState;
+      this.items = state.items;
+      this.hasMore = state.hasMore;
+      this.status = state.status;
+      this.lastCommittedPage = state.lastCommittedPage;
+      this.nextEligiblePosition = state.nextEligiblePosition;
+      this.committedCursors = new Set(state.committedCursors);
+      this.generationHasAcceptedResult = state.generationHasAcceptedResult;
+      this.needsInitialRemoteSearch = state.needsInitialRemoteSearch;
+      this.retryAvailable = state.retryAvailable;
+      this.retryPosition = state.retryPosition;
+      this.retryKind = state.retryKind;
+      this.error = state.error;
+      this.resourceLimit = state.resourceLimit;
+      this.sentinelBlocked = state.sentinelBlocked;
+      this.browseState = null;
+      return;
+    }
+    this.items = asFrozenItems([]);
+    this.hasMore = false;
+    this.status = 'idle';
+    this.lastCommittedPage = undefined;
+    this.nextEligiblePosition = this.browseInitialPosition();
+    this.committedCursors.clear();
+    this.generationHasAcceptedResult = false;
+    this.retryAvailable = false;
+    this.retryPosition = undefined;
+    this.retryKind = undefined;
+    this.error = null;
+    this.resourceLimit = null;
+    this.sentinelBlocked = false;
+  }
+
+  private resetQueryMetadata(): void {
+    this.error = null;
+    this.status = 'idle';
+    this.generationHasAcceptedResult = false;
+    this.retryAvailable = false;
+    this.retryPosition = undefined;
+    this.retryKind = undefined;
+    this.committedCursors.clear();
+    this.resourceLimit = null;
+    this.sentinelBlocked = false;
+  }
+
   private initialPosition(): PagePosition {
     if (this.config.paginationMode === 'cursor') {
       return Object.freeze({ mode: 'cursor' as const, ordinal: 1 });
     }
-    const page = this.isRemoteMode() ? this.config.firstPage : this.config.initialPage + 1;
+    const page = this.isRemoteMode() && this.isSearchEligible(this.query)
+      ? this.config.firstPage
+      : this.items.length > 0 ? this.config.initialPage + 1 : this.config.initialPage;
     return Object.freeze({ mode: 'page' as const, page });
+  }
+
+  private browseInitialPosition(): PagePosition {
+    if (this.config.paginationMode === 'cursor') {
+      return Object.freeze({ mode: 'cursor' as const, ordinal: 1 });
+    }
+    return Object.freeze({
+      mode: 'page' as const,
+      page: this.items.length > 0 ? this.config.initialPage + 1 : this.config.initialPage,
+    });
   }
 
   private resetPaginationForRemoteQuery(clearItems: boolean): void {
@@ -867,7 +1049,12 @@ export class DataRequestCoordinator {
   }
 
   private createSearchRequest(position = this.nextEligiblePosition): DataRequest | null {
-    if (!this.connected || !this.isRemoteMode() || this.config.protocol !== 'acknowledged') return null;
+    if (
+      !this.connected
+      || !this.isRemoteMode()
+      || this.config.protocol !== 'acknowledged'
+      || !this.isSearchEligible(this.query)
+    ) return null;
     const request = this.createRequest({ kind: 'search', mode: this.config.searchMode as 'remote' | 'hybrid' }, position);
     if (request) {
       this.needsInitialRemoteSearch = false;
@@ -896,12 +1083,17 @@ export class DataRequestCoordinator {
       this.queryGeneration,
       this.requestSequence,
     );
+    const requestQuery = kind.kind === 'loadMore'
+      && this.isRemoteMode()
+      && !this.isSearchEligible(this.query)
+      ? ''
+      : this.query;
     const requestId = `data-${this.instanceId}-generation-${this.queryGeneration}-request-${this.requestSequence}-${check}`;
     const base: DataRequestBase = Object.freeze({
       requestId,
       queryGeneration: this.queryGeneration,
-      query: this.query,
-      normalizedQuery: this.query.trim(),
+      query: requestQuery,
+      normalizedQuery: requestQuery.trim(),
       fetchLimit,
       position: frozenPosition(position),
     });

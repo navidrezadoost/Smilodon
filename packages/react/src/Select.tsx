@@ -48,6 +48,7 @@ const DEFAULT_DATA_LOADING_CONFIG: ResolvedDataLoadingConfig = {
   searchMode: "local",
   paginationMode: "page",
   firstPage: 1,
+  minSearchCharacters: 0,
 } as const;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

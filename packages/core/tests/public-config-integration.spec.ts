@@ -27,6 +27,7 @@ describe('EnhancedSelect per-instance data-loading configuration', () => {
       searchMode: 'local',
       paginationMode: 'page',
       firstPage: 1,
+      minSearchCharacters: 0,
     });
     expect((select as any)._dataRequestCoordinator).toBeNull();
     expect((select as any)._acknowledgedReady).toBe(false);
@@ -75,6 +76,7 @@ describe('EnhancedSelect per-instance data-loading configuration', () => {
       searchMode: 'local',
       paginationMode: 'page',
       firstPage: 1,
+      minSearchCharacters: 0,
     });
     expect((select as any)._dataRequestCoordinator).toBeNull();
     expect(emitted).toHaveLength(1);
@@ -139,6 +141,7 @@ describe('EnhancedSelect per-instance data-loading configuration', () => {
       searchMode: 'hybrid',
       paginationMode: 'page',
       firstPage: 1,
+      minSearchCharacters: 0,
       fetchLimit: 12,
     });
     expect((select as any)._dataRequestCoordinator).toBeNull();

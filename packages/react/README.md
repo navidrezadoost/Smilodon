@@ -53,6 +53,31 @@ The current local Phase 2F-D candidate integrates the core acknowledged-loading 
 
 Acknowledged loading is opt-in through per-instance `config.dataLoading`; there is no global acknowledged-loading default. If the config is omitted, the adapter keeps the legacy protocol and existing callback behavior. The host owns fetch, cancellation, and retry policy; the core owns request identity, stale-completion rejection, canonical acceptance, and subsequent DOM projection.
 
+### Minimum remote-search length — Issue #109
+
+Configure the Core coordinator through the existing `config` prop. React does not filter or suppress callbacks itself; short queries never become Core search requests, so they do not invoke `onSearch` or enter search busy state.
+
+```tsx
+<Select
+  searchable
+  infiniteScroll
+  pageSize={6}
+  config={{
+    dataLoading: {
+      protocol: 'acknowledged',
+      searchMode: 'remote',
+      paginationMode: 'page',
+      fetchLimit: 6,
+      minSearchCharacters: 3,
+    },
+  }}
+  onSearch={handleSearch}
+  onLoadMore={handleLoadMore}
+/>
+```
+
+The default `0` retains the existing request behavior. `3` counts three Unicode code points after trimming surrounding whitespace; it does not count grapheme clusters. When the query is shorter, Core restores the unfiltered item and pagination snapshot and continues to route browse pagination through `onLoadMore`. Crossing the threshold starts a search at its first page. Deleting back below threshold or calling the imperative `clearSearch()` cancels eligible search work and restores browsing state; canceled late responses cannot replace it. Runtime threshold updates use the same transitions. See the [Core contract and qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md).
+
 ### Remote cursor search with cancellation and failures
 
 This illustrative component handles remote search and load-more requests through one host function. It sends the exact query (including an empty string), passes page/cursor position and fetch limit to the server, echoes request identity on completion, aborts cancelled requests, and reports failures without an automatic retry.

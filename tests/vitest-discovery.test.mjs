@@ -51,6 +51,7 @@ test('data-loading suites are discovered by their DOM-free Node config', async (
       .sort();
 
     assert.deepEqual(files, [
+      'packages/core/tests/data-loading/min-search-characters.spec.ts',
       'packages/core/tests/data-loading/public-config.spec.ts',
       'packages/core/tests/data-loading/request-coordinator.spec.ts',
     ]);

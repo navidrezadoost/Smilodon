@@ -51,6 +51,27 @@ The local Phase 2F-D candidate adds a public, per-instance data-loading configur
 
 The host owns transport, cancellation, and retry decisions. `completeDataRequest()` accepts a response only when its request identity and query generation are current. A return value of `accepted` means the canonical response was accepted; DOM projection completes separately and is reported by `dataProjection`.
 
+### Minimum length for acknowledged remote search — Issue #109
+
+Set `dataLoading.minSearchCharacters` to keep short input from creating a remote search request. Core checks the setting in the request coordinator before it allocates a request ID or enters the search busy state:
+
+```ts
+select.updateConfig({
+  dataLoading: {
+    protocol: 'acknowledged',
+    searchMode: 'remote',
+    fetchLimit: 25,
+    minSearchCharacters: 3,
+  },
+})
+```
+
+The default is `0`, which preserves existing behavior. The threshold applies to acknowledged `remote` and `hybrid` search only; legacy and local search are unchanged. Core trims surrounding whitespace and counts Unicode code points with `Array.from(query.trim()).length` (not UTF-16 code units or user-perceived grapheme clusters). A value must be a non-negative safe integer. An invalid update is rejected atomically and does not cancel valid work.
+
+Below the threshold, the current text remains visible while Core displays the unfiltered browsing dataset. Search requests are suppressed, but explicit unfiltered pagination still uses `loadMore`. When input crosses into eligible search, Core starts at the configured first page and retains the independent browse items and continuation. Returning below threshold or calling `clearSearch()` cancels an active qualifying search and restores that browse state; completions from the canceled query are stale. An accepted runtime threshold update also projects a changed restored snapshot into the visible options, including when the update is deferred until an in-progress result projection settles. Page-mode browsing treats nonempty initial items as the configured `initialPage` and continues at the next page; with no initial items, the first unfiltered request starts at `initialPage`. The host must complete load-more requests with `hasMore: true` or `status: 'exhausted'`/`hasMore: false` to advance or end browsing; Core does not infer server exhaustion from the item count.
+
+This is an opt-in Core candidate until the Issue #109 qualification and release are complete. See [the Issue #109 qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md).
+
 ```ts
 import { EnhancedSelect } from '@smilodon/core'
 
