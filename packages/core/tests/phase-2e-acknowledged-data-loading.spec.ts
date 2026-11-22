@@ -60,9 +60,12 @@ function latestRequest(details: any[]): any {
   return detail.request;
 }
 
-function renderedOptionLabels(select: EnhancedSelect): string[] {
+function renderedOptions(select: EnhancedSelect): Array<{ value: string | null; label: string }> {
   return Array.from(select.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]'))
-    .map((option) => option.shadowRoot?.querySelector('.option-content')?.textContent?.trim() ?? '');
+    .map((option) => ({
+      value: option.getAttribute('data-value'),
+      label: option.shadowRoot?.querySelector('.option-content')?.textContent?.trim() ?? '',
+    }));
 }
 
 function setInputQuery(select: EnhancedSelect, query: string): void {
@@ -244,8 +247,10 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     const select = createSelect(browseItems);
     const searches: any[] = [];
     const loads: any[] = [];
+    const projections: any[] = [];
     select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail));
     select.addEventListener('loadMore', (event) => loads.push((event as CustomEvent).detail));
+    select.addEventListener('dataProjection', (event) => projections.push((event as CustomEvent).detail));
     document.body.appendChild(select);
     enableAcknowledged(select, {
       dataLoading: {
@@ -264,6 +269,7 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
       hasMore: true,
     });
     expect(select.loadedItems).toHaveLength(1);
+    expect(projections.filter(({ status }) => status === 'complete')).toHaveLength(1);
 
     select.updateConfig({ dataLoading: { minSearchCharacters: 5 } });
     expect(searches).toHaveLength(1);
@@ -271,7 +277,8 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     await vi.waitFor(() => expect((select as any)._acknowledgedProjectionPending).toBe(false));
     expect((select as any)._dataRequestCoordinator.getSnapshot().items).toEqual(browseItems);
     select.open();
-    expect(renderedOptionLabels(select)).toEqual(browseItems.map((item) => item.label));
+    expect(renderedOptions(select)).toEqual(browseItems.map((item) => ({ value: item.value, label: item.label })));
+    expect(projections.filter(({ status }) => status === 'complete')).toHaveLength(2);
 
     (select as any)._loadMoreItems('manual');
     const browsePage2 = latestRequest(loads);
@@ -309,7 +316,9 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     }));
     const select = createSelect(browseItems);
     const searches: any[] = [];
+    const projections: any[] = [];
     select.addEventListener('search', (event) => searches.push((event as CustomEvent).detail));
+    select.addEventListener('dataProjection', (event) => projections.push((event as CustomEvent).detail));
     document.body.appendChild(select);
     enableAcknowledged(select, {
       dataLoading: {
@@ -338,7 +347,10 @@ describe('Phase 2E private acknowledged EnhancedSelect integration', () => {
     });
     expect((select as any)._dataRequestCoordinator.getSnapshot().items).toEqual(browseItems);
     expect(searches).toHaveLength(1);
-    expect(renderedOptionLabels(select)).toEqual(browseItems.map((item) => item.label));
+    expect(renderedOptions(select)).toEqual(browseItems.map((item) => ({ value: item.value, label: item.label })));
+    await vi.waitFor(() => {
+      expect(projections.filter(({ status }) => status === 'complete')).toHaveLength(2);
+    });
   });
 
   it('starts unfiltered browsing at the configured first page when there are no initial items', async () => {
