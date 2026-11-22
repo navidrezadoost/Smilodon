@@ -1889,11 +1889,11 @@ When rendering custom option content, set `classMap.active` to the class names u
 
 The option's `data-sm-state`, `aria-selected`, and classes reflect independent active/selected semantics. The fix is in Core, not in React's renderer. See [Issue #82](https://github.com/navidrezadoost/Smilodon/issues/82) and the [Core rendering guide](../core/README.md#active-state-on-custom-option-roots).
 
-### Acknowledged pagination on React rerenders — Issue #85 (unreleased)
+### Acknowledged data synchronization on React rerenders — Issue #107
 
-The reported local fix for [Issue #85](https://github.com/navidrezadoost/Smilodon/issues/85) is qualified **but not yet pushed, merged, or published**. In acknowledged loading, React's `items` prop can supply the initial page while Core accepts cumulative pages using `completeDataRequest()`. Equivalent or newly allocated `config`, `multiSelectDisplay`, and `disabledOptionBehavior` objects must not force Core to revert its accepted cumulative snapshot to the initial `items`.
+In acknowledged loading, Core owns the cumulative accepted result pages, while React owns the source records and configuration passed by the application. React `1.12.1` compares incoming source/configuration values with the last values it successfully synchronized. Equivalent newly allocated arrays and plain configuration objects do not reset accepted pages during an incidental rerender; changed item fields, grouping, and an explicit empty source still synchronize.
 
-The pending fix moves `items`/`groupedItems` synchronization into one identity-guarded effect, independent of presentation configuration, and applies uncontrolled `defaultValue` after item registration. New `items` or `groupedItems` identities still represent deliberate updates; `setItems()` alone is not an acknowledged coordinator reset. Keep input references stable where the input is unchanged, complete requests with their exact request IDs and generations, and consult the final release notes before expecting this fix in published packages.
+Controlled selection remains synchronized separately. Core's acknowledged request protocol and imperative `setItems()` behavior are unchanged. Functions and non-plain metadata values compare by identity; keep them stable when they have not changed. Consumers should replace records immutably when changing their contents. See [Issue #107](https://github.com/navidrezadoost/Smilodon/issues/107), the [implementation and qualification record](../../docs/architecture/REACT-DATA-SYNC-OWNERSHIP-107.md), and the [React 1.12.1 release record](../../docs/releases/REACT-1.12.1-RELEASE.md).
 
 ## Styling
 

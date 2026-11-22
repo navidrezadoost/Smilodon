@@ -17,14 +17,30 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+No unreleased package changes are currently listed.
+
+## [1.18.0] - 2026-11-21
+
+Core patch release for the custom-arrow hover correction. `@smilodon/core@1.18.0` is published to npm. Core `1.17.0` remains the release containing Issue #100's horizontal latest-chip scrolling.
+
 ### Fixed
 
-- **Custom-arrow hover background ([#104](https://github.com/navidrezadoost/Smilodon/issues/104)):** Custom slotted arrows now honor the existing `--select-arrow-hover-bg` token on hover, falling back to transparency when unset. Default-arrow hover behavior is unchanged. Unreleased; planned for Core 1.18.0.
-- **React acknowledged-data synchronization ([#107](https://github.com/navidrezadoost/Smilodon/issues/107)):** The adapter now separates source data, configuration, and controlled selection synchronization. Equivalent fresh item arrays and configuration objects no longer replace Core-accepted pages; actual item and grouping changes, including an explicit empty array, still synchronize. This is unreleased React work and does not change Core's acknowledged request or imperative `setItems()` semantics.
+- **Custom-arrow hover background ([#104](https://github.com/navidrezadoost/Smilodon/issues/104)):** Custom slotted arrows honor `--select-arrow-hover-bg` on hover and fall back to transparency when unset. Slot-state detection ignores fallback SVG content when custom arrow content is removed, restoring built-in arrow styling.
 
-### Pending
+## [1.12.1] - 2026-11-22
 
-- The historical React #85 candidate was not integrated; the broader no-memoization data-ownership correction is tracked in #107 and remains unreleased.
+React patch release containing the adapter synchronization correction from Issue #107. This version retains the existing Core peer range (`^1.13.0`) and works with the already published Core `1.18.0`.
+
+### Fixed
+
+- **React acknowledged-data synchronization ([#107](https://github.com/navidrezadoost/Smilodon/issues/107)):** Equivalent fresh item arrays and configuration objects no longer replace Core-accepted acknowledged pages during incidental rerenders. Actual flat/grouped source changes, including an explicit empty array, still synchronize. Controlled value synchronization remains separate, and Core request or imperative `setItems()` semantics are unchanged.
+
+### Included Core fixes
+
+- **Horizontal chip auto-scroll ([#100](https://github.com/navidrezadoost/Smilodon/issues/100))** is already available in `@smilodon/core@1.17.0` through `multiSelectDisplay.scrollToLatestChip`.
+- **Custom-arrow hover background ([#104](https://github.com/navidrezadoost/Smilodon/issues/104))** is already available in `@smilodon/core@1.18.0`; custom slotted arrows honor `--select-arrow-hover-bg` and fall back to transparency when unset.
+
+This React patch release does not republish the Core packages. Core `1.17.0` and `1.18.0` remain unchanged.
 
 ## [1.17.0] - 2026-11-21
 

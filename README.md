@@ -17,9 +17,11 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Published package status (2026-11-21):** Core `1.17.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0` are available from npm. Svelte `2.1.0` supports Svelte 5 only; it does not restore Svelte 3/4 compatibility. React Native Android and iOS runtime qualification is incomplete and outside this web release scope.
+**Published package status (2026-11-22):** Core `1.18.0`, React `1.12.0`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0` are available from npm. React `1.12.1` is the release candidate for Issue #107. Svelte `2.1.0` supports Svelte 5 only; it does not restore Svelte 3/4 compatibility. React Native Android and iOS runtime qualification is incomplete and outside this web release scope.
 
-**Latest web release:** the #90, #92, #93, #96, #97, and #100 changes are included in those versions. See the [web release record](docs/releases/WEB-1.17.0-RELEASE.md) and [registry verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json) for checksums and tested scope. The separately developed React #85 fix is not merged and is not included.
+**Recent fixes:** Issue #100's horizontal chip auto-scroll is in Core `1.17.0`; Issue #104's custom-arrow hover token correction is in Core `1.18.0`; Issue #107's React data-synchronization correction is prepared for React `1.12.1`. The #107 fix preserves Core's cumulative acknowledged pages across equivalent fresh React props while still synchronizing real data changes. See the [React release record](docs/releases/REACT-1.12.1-RELEASE.md), [Core guide](packages/core/README.md#custom-arrow-slot), and [React guide](packages/react/README.md#acknowledged-data-synchronization-on-react-rerenders--issue-107).
+
+**Latest web release:** the #90, #92, #93, #96, #97, and #100 changes are included in the [1.17.0 web release record](docs/releases/WEB-1.17.0-RELEASE.md) and [registry verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json). Core `1.18.0` separately contains Issue #104. React Native Android/iOS qualification remains incomplete.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
@@ -842,9 +844,11 @@ export default {
 
 - **Active class reconciliation (#82, Core):** When using `classMap.active` and custom-rendered option roots, previously active options no longer retain the legacy `active` class or stale custom mappings. See [Core guide](packages/core/README.md#active-state-on-custom-option-roots).
 - **Dropdown exit animation (Core 1.12.0):** Configure entry and exit independently with `--select-dropdown-animation` and `--select-dropdown-exit-animation`; the exit is noninteractive and does not delay close events or ARIA. See [Core guide](packages/core/README.md#dropdown-enter-and-exit-animations-core-1120) and [engineering notes](docs/architecture/DROPDOWN-EXIT-ANIMATION.md).
-- **Acknowledged items on configuration rerenders (#85, React pending):** A separate React correction is locally qualified but not merged or published. Until its release, avoid treating it as part of the available React package. See [React guidance](packages/react/README.md#acknowledged-pagination-on-react-rerenders--issue-85-unreleased).
+- **Horizontal chip auto-scroll (#100, Core 1.17.0):** Opt in with `multiSelectDisplay.scrollToLatestChip` in horizontal multi-select mode. See [Core multi-select display modes](packages/core/README.md#multi-select-display-modes).
+- **Custom-arrow hover token (#104, Core 1.18.0):** Custom slotted arrows honor `--select-arrow-hover-bg`; transparency remains the fallback. See the [Core custom arrow guide](packages/core/README.md#custom-arrow-slot).
+- **React acknowledged-data synchronization (#107, React 1.12.1 candidate):** Equivalent fresh data/config objects no longer reset Core-accepted pages. See the [React guide](packages/react/README.md#acknowledged-data-synchronization-on-react-rerenders--issue-107) and [release record](docs/releases/REACT-1.12.1-RELEASE.md).
 
-**Publication:** Core `1.12.0` was published to npm on 2026-11-19. Its registry integrity matches the locally packed artifact; see the [release checklist](docs/releases/CORE-1.12.0-RELEASE.md). Chrome 156 scenarios passed; pinned Chromium 147 remains unverified.
+**Publication records:** See [Core 1.12.0](docs/releases/CORE-1.12.0-RELEASE.md), [web 1.17.0](docs/releases/WEB-1.17.0-RELEASE.md), and the [React 1.12.1 release record](docs/releases/REACT-1.12.1-RELEASE.md) for package integrity and qualification details. React Native is excluded from these web package releases.
 
 ## Styling and customization
 
