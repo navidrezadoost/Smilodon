@@ -327,6 +327,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _lifecycleTimers = new Set<number>();
   private _lifecycleRafs = new Set<number>();
   private _keyboardActiveChangeGeneration = 0;
+  /** Invalidates selected-option positioning scheduled by an earlier opening. */
+  private _openSelectedScrollGeneration = 0;
+  private _openSelectedScrollCleanup: (() => void) | null = null;
   private _tracking: TrackingSnapshot = { events: [], styles: [], limitations: [] };
   private _suppressBlurClose = false;
   private _renderCycleId = 0;
@@ -563,6 +566,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   disconnectedCallback(): void {
+    this._cancelOpenSelectedScroll();
     this._cancelLatestChipScroll();
     this._cancelBusyPresentation();
     if (this._dataRequestCoordinator) {
@@ -3940,27 +3944,14 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._config.callbacks.onOpen?.();
     this._announce('Options expanded');
 
-    // Scroll to selected if configured
-    if (this._config.scrollToSelected.enabled) {
-      const keyboardActiveChangeGeneration = this._keyboardActiveChangeGeneration;
-      const canRestoreOpenSelection = () => this._state.isOpen
-        && this._keyboardActiveChangeGeneration === keyboardActiveChangeGeneration;
-
-      // Use requestAnimationFrame for better timing after render
-      this._requestLifecycleFrame(() => {
-        if (!canRestoreOpenSelection()) return;
-        // Double RAF to ensure layout is complete
-        this._requestLifecycleFrame(() => {
-          if (!canRestoreOpenSelection()) return;
-          this._scrollToSelected();
-        });
-      });
-    }
+    this._scheduleOpenSelectedScroll();
   }
 
   private _handleClose(reason: CloseReason = 'programmatic'): void {
     const effects = this._engine.dispatch({ type: 'CLOSE_REQUEST', reason });
     if (!effects.some((effect) => effect.type === 'POPUP_CLOSED')) return;
+
+    this._cancelOpenSelectedScroll();
 
     this.removeAttribute('data-open');
     this._restoreLiftedAncestors();
@@ -3973,6 +3964,174 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._emit('close', {});
     this._config.callbacks.onClose?.();
     this._announce('Options collapsed');
+  }
+
+  /**
+   * Defer the one automatic selected-option positioning operation until the
+   * dropdown's own entrance geometry has settled. Logical active/ARIA state
+   * remains synchronous in _setInitialActiveOption().
+   */
+  private _scheduleOpenSelectedScroll(): void {
+    this._cancelOpenSelectedScroll();
+    if (!this._config.scrollToSelected.enabled) return;
+
+    const generation = this._openSelectedScrollGeneration;
+    const keyboardGeneration = this._keyboardActiveChangeGeneration;
+    const initialScrollTop = this._optionsContainer.scrollTop;
+    const animations: Animation[] = [];
+    const frameIds = new Set<number>();
+    let timerId: number | null = null;
+    let completed = false;
+
+    const isCurrent = () => generation === this._openSelectedScrollGeneration
+      && this._state.isOpen
+      && this.isConnected
+      && this._config.scrollToSelected.enabled
+      && keyboardGeneration === this._keyboardActiveChangeGeneration;
+
+    const removeListeners = () => {
+      this._optionsContainer.removeEventListener('wheel', cancelForUserInput);
+      this._optionsContainer.removeEventListener('touchstart', cancelForUserInput);
+      this._optionsContainer.removeEventListener('pointerdown', cancelForUserInput);
+      this._optionsContainer.removeEventListener('scroll', cancelForUserScroll);
+      for (const animation of animations) {
+        animation.removeEventListener('finish', onAnimationStateChange);
+        animation.removeEventListener('cancel', onAnimationStateChange);
+      }
+    };
+
+    const cleanup = () => {
+      removeListeners();
+      for (const id of frameIds) cancelAnimationFrame(id);
+      frameIds.clear();
+      if (timerId !== null) {
+        clearTimeout(timerId);
+        this._lifecycleTimers.delete(timerId);
+        timerId = null;
+      }
+      if (this._openSelectedScrollCleanup === cleanup) {
+        this._openSelectedScrollCleanup = null;
+      }
+    };
+
+    const cancelForUserInput = () => this._cancelOpenSelectedScroll();
+    const cancelForUserScroll = () => {
+      if (Math.abs(this._optionsContainer.scrollTop - initialScrollTop) > 1) {
+        this._cancelOpenSelectedScroll();
+      }
+    };
+
+    const finish = () => {
+      if (completed) return;
+      completed = true;
+      cleanup();
+      if (!isCurrent()) return;
+      const frameId = requestAnimationFrame(() => {
+        frameIds.delete(frameId);
+        cleanup();
+        if (!isCurrent()) return;
+        this._scrollToSelected({ onlyIfNeeded: true, setActive: false });
+      });
+      frameIds.add(frameId);
+      this._openSelectedScrollCleanup = cleanup;
+    };
+
+    const onAnimationStateChange = () => {
+      if (animations.every((animation) =>
+        animation.playState === 'finished' || animation.playState === 'idle'
+      )) finish();
+    };
+
+    const begin = () => {
+      if (!isCurrent()) {
+        cleanup();
+        return;
+      }
+
+      const getAnimations = this._dropdown.getAnimations;
+      if (typeof getAnimations === 'function') {
+        for (const animation of getAnimations.call(this._dropdown)) {
+          const timing = animation.effect?.getComputedTiming();
+          if (!timing || timing.iterations === Infinity || animation.playState === 'finished'
+            || animation.playState === 'idle') continue;
+          animations.push(animation);
+        }
+      }
+
+      if (animations.length === 0) {
+        if (typeof getAnimations !== 'function') {
+          const fallbackWait = this._getDropdownEntranceFallbackDurationMs();
+          if (fallbackWait > 0) {
+            timerId = window.setTimeout(finish, fallbackWait + 34);
+            this._lifecycleTimers.add(timerId);
+            return;
+          }
+        }
+        finish();
+        return;
+      }
+
+      for (const animation of animations) {
+        animation.addEventListener('finish', onAnimationStateChange);
+        animation.addEventListener('cancel', onAnimationStateChange);
+      }
+
+      const remainingMs = Math.max(...animations.map((animation) => {
+        const timing = animation.effect?.getComputedTiming();
+        const endTime = Number(timing?.endTime);
+        const currentTime = Number(animation.currentTime ?? 0);
+        return Number.isFinite(endTime) ? Math.max(0, endTime - currentTime) : 0;
+      }));
+      const boundedWait = Math.min(10_000, remainingMs + 50);
+      timerId = window.setTimeout(finish, boundedWait);
+      this._lifecycleTimers.add(timerId);
+    };
+
+    this._optionsContainer.addEventListener('wheel', cancelForUserInput, { passive: true });
+    this._optionsContainer.addEventListener('touchstart', cancelForUserInput, { passive: true });
+    this._optionsContainer.addEventListener('pointerdown', cancelForUserInput, { passive: true });
+    this._optionsContainer.addEventListener('scroll', cancelForUserScroll, { passive: true });
+    this._openSelectedScrollCleanup = cleanup;
+
+    const frameId = requestAnimationFrame(() => {
+      frameIds.delete(frameId);
+      begin();
+    });
+    frameIds.add(frameId);
+  }
+
+  private _cancelOpenSelectedScroll(): void {
+    this._openSelectedScrollGeneration += 1;
+    this._openSelectedScrollCleanup?.();
+    this._openSelectedScrollCleanup = null;
+  }
+
+  /** Used only when Element.getAnimations() is unavailable. */
+  private _getDropdownEntranceFallbackDurationMs(): number {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 0;
+    const style = getComputedStyle(this._dropdown);
+    const parseTime = (value: string): number => {
+      const trimmed = value.trim();
+      const parsed = Number.parseFloat(trimmed);
+      if (!Number.isFinite(parsed)) return 0;
+      return trimmed.endsWith('ms') ? parsed : trimmed.endsWith('s') ? parsed * 1000 : 0;
+    };
+    const animationDurations = style.animationDuration.split(',');
+    const animationDelays = style.animationDelay.split(',');
+    const animationIterations = style.animationIterationCount.split(',');
+    const maxAnimation = Math.max(0, ...animationDurations.map((duration, index) => {
+      const count = Number.parseFloat(animationIterations[index % animationIterations.length] ?? '1');
+      if (!Number.isFinite(count)) return 0;
+      return parseTime(duration)
+        * Math.max(0, count)
+        + parseTime(animationDelays[index % animationDelays.length] ?? '0s');
+    }));
+    const transitionDurations = style.transitionDuration.split(',');
+    const transitionDelays = style.transitionDelay.split(',');
+    const maxTransition = Math.max(0, ...transitionDurations.map((duration, index) =>
+      parseTime(duration) + parseTime(transitionDelays[index % transitionDelays.length] ?? '0s')
+    ));
+    return Math.min(10_000, Math.max(maxAnimation, maxTransition));
   }
 
   /** Stop an outstanding exit before reopening, disconnecting or starting another one. */
@@ -4482,7 +4641,11 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     return true;
   }
 
-  private _setActive(index: number, reason: ActiveReason = 'keyboard'): void {
+  private _setActive(
+    index: number,
+    reason: ActiveReason = 'keyboard',
+    options: { scroll?: boolean } = {},
+  ): void {
     this._ensureRegistryCurrent();
     const record = this._getRecordByIndex(index);
     let option = this._getOptionElementByIndex(index);
@@ -4494,7 +4657,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       return;
     }
 
-    if (reason === 'keyboard') this._keyboardActiveChangeGeneration += 1;
+    if (reason === 'keyboard') {
+      this._keyboardActiveChangeGeneration += 1;
+      this._cancelOpenSelectedScroll();
+    }
 
     const previousIndex = this._state.activeIndex;
     this._dispatchActiveKey(record.key, reason, 'set active');
@@ -4522,8 +4688,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         this._syncCustomOptionActiveClasses(option, true);
       }
       
-      if (typeof option.scrollIntoView === 'function') {
-        // Don't scroll wildly when just opening with pre-selections
+      if (options.scroll !== false && typeof option.scrollIntoView === 'function') {
         option.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
       
@@ -4666,7 +4831,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       return;
     }
     const target = selected.find((index) => selectableIndices.includes(index)) ?? selectableIndices[0];
-    this._setActive(target, 'open');
+    // Set logical active state and ARIA immediately. The open-time coordinator
+    // owns any physical positioning after the dropdown's entrance settles.
+    this._setActive(target, 'open', { scroll: false });
   }
 
   private _announce(message: string): void {
@@ -5023,7 +5190,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }, 150);
   }
 
-  private _scrollToSelected(): void {
+  private _scrollToSelected(options: { onlyIfNeeded?: boolean; setActive?: boolean } = {}): void {
     if (this._state.selectedIndices.size === 0) return;
     
     const target = this._config.scrollToSelected.multiSelectTarget;
@@ -5034,9 +5201,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     let targetIndex: number;
     
     if (this._config.selection.mode === 'multi' && indices.length > 1) {
-      // Calculate which selected item is closest to the center of the viewport
-      const dropdownRect = this._dropdown.getBoundingClientRect();
-      const viewportCenter = this._dropdown.scrollTop + (dropdownRect.height / 2);
+      // Choose a selected option near the actual scrolling viewport center.
+      const viewportRect = this._optionsContainer.getBoundingClientRect();
+      const viewportCenter = viewportRect.top + (this._optionsContainer.clientHeight / 2);
       
       // Find the selected item closest to viewport center
       let closestIndex = indices[0];
@@ -5046,8 +5213,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   const option = this._getOptionElementByIndex(index);
         
         if (option) {
-          const optionTop = option.offsetTop;
-          const distance = Math.abs(optionTop - viewportCenter);
+          const optionRect = option.getBoundingClientRect();
+          const optionCenter = optionRect.top + (optionRect.height / 2);
+          const distance = Math.abs(optionCenter - viewportCenter);
           
           if (distance < closestDistance) {
             closestDistance = distance;
@@ -5073,16 +5241,55 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }
     
     if (option) {
-      // Use smooth scrolling with center alignment for better UX
-      if (typeof option.scrollIntoView === 'function') {
-        option.scrollIntoView({
-          block: this._config.scrollToSelected.block || 'center',
-          behavior: 'smooth',
-        });
+      this._scrollOptionWithinOptionsContainer(
+        option,
+        this._config.scrollToSelected.block || 'center',
+        this._config.scrollToSelected.behavior || 'smooth',
+        options.onlyIfNeeded === true,
+      );
+
+      if (options.setActive !== false) {
+        // Active/ARIA synchronization must not start a second physical scroll.
+        this._setActive(targetIndex, 'programmatic', { scroll: false });
       }
-      
-      // Also set it as active for keyboard navigation
-      this._setActive(targetIndex, 'programmatic');
+    }
+  }
+
+  private _scrollOptionWithinOptionsContainer(
+    option: HTMLElement,
+    block: ScrollLogicalPosition,
+    behavior: ScrollBehavior,
+    onlyIfNeeded: boolean,
+  ): void {
+    const scroller = this._optionsContainer;
+    const scrollerRect = scroller.getBoundingClientRect();
+    const viewportTop = scrollerRect.top + scroller.clientTop;
+    const viewportBottom = viewportTop + scroller.clientHeight;
+    const optionRect = option.getBoundingClientRect();
+
+    if (onlyIfNeeded && optionRect.top >= viewportTop && optionRect.bottom <= viewportBottom) return;
+    if (scroller.clientHeight <= 0 || optionRect.height <= 0) return;
+
+    let targetScrollTop = scroller.scrollTop;
+    if (block === 'start') {
+      targetScrollTop += optionRect.top - viewportTop;
+    } else if (block === 'center') {
+      targetScrollTop += (optionRect.top + optionRect.bottom - viewportTop - viewportBottom) / 2;
+    } else if (block === 'end') {
+      targetScrollTop += optionRect.bottom - viewportBottom;
+    } else if (optionRect.top < viewportTop) {
+      targetScrollTop += optionRect.top - viewportTop;
+    } else if (optionRect.bottom > viewportBottom) {
+      targetScrollTop += optionRect.bottom - viewportBottom;
+    } else {
+      return;
+    }
+
+    if (Math.abs(targetScrollTop - scroller.scrollTop) < 1) return;
+    if (typeof scroller.scrollTo === 'function') {
+      scroller.scrollTo({ top: targetScrollTop, behavior });
+    } else {
+      scroller.scrollTop = targetScrollTop;
     }
   }
 

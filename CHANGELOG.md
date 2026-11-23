@@ -17,7 +17,9 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-No unreleased changes are currently listed.
+### Fixed
+
+- **Selected-option scrolling during dropdown entrance ([#116](https://github.com/navidrezadoost/Smilodon/issues/116)):** Core keeps active and ARIA state immediate, then performs at most one visibility-gated scroll in the options viewport after the dropdown's finite entrance animation settles. Keyboard and direct user scroll input cancel stale restoration. The configured scroll behavior and alignment are honored.
 
 ## [1.19.0] - 2026-11-22
 

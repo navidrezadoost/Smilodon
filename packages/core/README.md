@@ -681,6 +681,8 @@ The component implements keyboard interaction paths including:
 
 When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.
 
+When `scrollToSelected.enabled` is on, active and ARIA state are updated immediately on open. Core waits for the dropdown's finite entrance animation to settle before positioning a selected option, and leaves the options viewport unchanged when that option is already fully visible. Only the internal options scroller is moved; keyboard navigation and user scrolling cancel a pending open-time restoration. The existing `scrollToSelected.behavior` and `block` settings control the resulting movement. See the [Issue #116 implementation record](../../docs/architecture/ISSUE-116-DROPDOWN-OPEN-SCROLL.md).
+
 **Multi-Select Range Selection:**
 - `Shift + ↑/↓` - Range selection
 - `Ctrl/Cmd + Click` - Toggle individual items  
