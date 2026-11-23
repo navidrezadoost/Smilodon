@@ -4,6 +4,7 @@ Release date: 2026-11-23
 Status: **Qualified local release candidate; publication pending**
 Source branch: `feat/selected-options-projection`
 Base candidate: `b1dc563c1e405239634a1354c1f211fb984610d6`
+Versioned source commit: `85811fcdafb4b72bdf1fb73e498168b3719f40d3`
 
 ## Features
 
