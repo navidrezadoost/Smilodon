@@ -64,7 +64,7 @@ import type {
   RendererHelpers,
   DiagnosticEventDetail,
   LimitationPolicyMap,
-  GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -121,7 +121,7 @@ export interface SelectProps {
   /** Core style configuration for internal parts */
   styles?: StyleConfig;
   /** Full core config passthrough for advanced runtime features */
-  config?: Partial<GlobalSelectConfig>;
+  config?: SelectInstanceConfig;
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
   /** Behavior overrides for visually disabled options */
@@ -528,13 +528,12 @@ const updateConfig = () => {
         showSelectedIndicator: props.showSelectedIndicator,
       },
       multiSelectDisplay: props.multiSelectDisplay,
+      ...(props.scrollToSelected !== undefined ? {
+        scrollToSelected: { enabled: true, ...props.scrollToSelected },
+      } : {}),
       infiniteScroll: {
         enabled: props.infiniteScroll,
         pageSize: props.pageSize,
-      },
-      scrollToSelected: {
-        enabled: true,
-        ...(props.scrollToSelected ?? {}),
       },
       styles: props.styles,
       expandable: {
@@ -571,6 +570,9 @@ const updateConfig = () => {
 watch(
   [
     () => props.searchable,
+    () => props.selectionConfig,
+    () => props.multiSelectDisplay,
+    () => props.scrollToSelected,
     () => props.placeholder,
     () => props.disabled,
     () => props.multiple,
@@ -598,6 +600,12 @@ watch(
     () => props.autoMitigateRuntimeModeSwitch,
   ],
   updateConfig
+);
+
+watch(
+  () => [props.selectionConfig, props.multiSelectDisplay, props.scrollToSelected, props.config],
+  updateConfig,
+  { deep: true }
 );
 
 // Event handlers
@@ -795,7 +803,7 @@ defineExpose({
     (selectRef.value as any)?.clearSearch?.();
   },
   /** Apply partial core config at runtime */
-  updateConfig: (config: Partial<GlobalSelectConfig>) => {
+  updateConfig: (config: SelectInstanceConfig) => {
     (selectRef.value as any)?.updateConfig?.(config);
   },
   /** Set error state */

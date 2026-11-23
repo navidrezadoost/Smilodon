@@ -20,6 +20,7 @@ function setScrollerGeometry(select: EnhancedSelect) {
   const scroller = select.shadowRoot!.querySelector<HTMLElement>('.options-container')!;
   Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 100 });
   Object.defineProperty(scroller, 'clientTop', { configurable: true, value: 0 });
+  Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 400 });
   scroller.scrollTop = 20;
   vi.spyOn(scroller, 'getBoundingClientRect').mockReturnValue({
     x: 0, y: 0, top: 0, right: 100, bottom: 100, left: 0, width: 100, height: 100,

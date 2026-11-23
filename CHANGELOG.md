@@ -17,9 +17,24 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-23
+
+Web release: Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. React Native is excluded because Android/iOS runtime qualification is incomplete.
+
+### Added
+
+- **Selected-first option presentation:** Core adds `selectedOptions.placement: 'selected-first'` with stable within-group promotion. Source item order, group order, selection values, and source indices remain unchanged. React, Vue, Solid, Svelte, and Vanilla expose the shared configuration.
+- **Selected-option open positioning:** `scrollToSelected` supports `preserve`, `reveal`, and `align` policies, with configurable target, behavior, and block alignment. The opening snapshot coordinates with finite dropdown entrance animations, avoids unnecessary scrolling, and cancels stale work on user navigation or lifecycle changes.
+
 ### Fixed
 
-- **Selected-option scrolling during dropdown entrance ([#116](https://github.com/navidrezadoost/Smilodon/issues/116)):** Core keeps active and ARIA state immediate, then performs at most one visibility-gated scroll in the options viewport after the dropdown's finite entrance animation settles. Keyboard and direct user scroll input cancel stale restoration. The configured scroll behavior and alignment are honored.
+- **Dropdown entrance and selected-option scroll coordination ([#116](https://github.com/navidrezadoost/Smilodon/issues/116)):** Active and ARIA state remain immediate while physical movement waits for finite entrance animation completion and uses only the options viewport.
+
+### Qualification scope
+
+- Web workspace builds, unit/data-loading/contracts, packed consumer types, and browser tests are recorded in [the 1.20.0 release record](docs/releases/WEB-1.20.0-RELEASE.md).
+- Chrome 156 and pinned Firefox 148 passed the selected-options browser suite. Pinned Chromium 147 and WebKit remain unavailable in the recorded environment.
+- React Native is not part of this release; no Android or iOS runtime result is claimed.
 
 ## [1.19.0] - 2026-11-22
 

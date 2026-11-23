@@ -84,6 +84,7 @@ export type {
   DataLoadingStateSnapshot,
   DataProjectionEventDetail,
   SelectInstanceConfig,
+  SelectedOptionsConfig,
   EmptyStateContext,
   EmptyStateReason,
   EmptyStateChangeDetail,

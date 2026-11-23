@@ -59,7 +59,7 @@ try {
   await writeFile(path.join(consumerDirectory, 'package.json'), `${JSON.stringify(fixturePackage, null, 2)}\n`);
   await writeFile(path.join(consumerDirectory, 'consumer.tsx'), `import React, { createRef } from 'react';
 import { Select, type SelectHandle, type SelectItem, type SelectProps, type SelectValue } from '@smilodon/react-native';
-import type { GlobalSelectConfig, SelectionConfig, MultiSelectDisplayConfig, ScrollToSelectedConfig, StyleConfig } from '@smilodon/core/native-types';
+import type { GlobalSelectConfig, SelectConfigUpdate, SelectedOptionsConfig, SelectionConfig, MultiSelectDisplayConfig, ScrollToSelectedConfig, StyleConfig } from '@smilodon/core/native-types';
 import { View } from 'react-native';
 
 type IsAny<T> = 0 extends (1 & T) ? true : false;
@@ -79,6 +79,11 @@ const config: Partial<GlobalSelectConfig> = {
   } satisfies ScrollToSelectedConfig,
   styles: { container: { color: 'red' } } satisfies StyleConfig,
 };
+const selectedOptions: SelectedOptionsConfig = { placement: 'selected-first', groupedPlacement: 'within-group' };
+const partialConfig: SelectConfigUpdate = {
+  selectedOptions: { placement: selectedOptions.placement },
+  scrollToSelected: { onOpen: 'align' },
+};
 const scrollBehaviors: NonNullable<ScrollToSelectedConfig['behavior']>[] = ['auto', 'instant', 'smooth'];
 const scrollBlocks: NonNullable<ScrollToSelectedConfig['block']>[] = ['start', 'center', 'end', 'nearest'];
 const props: SelectProps = {
@@ -94,12 +99,14 @@ const props: SelectProps = {
 };
 
 export const NativeConsumer = () => <View><Select {...props} ref={ref} /></View>;
+const partialProps: SelectProps = { items, value: 'one', config: partialConfig };
 
 // @ts-expect-error searchable must remain boolean.
 const invalidProps: SelectProps = { searchable: 'yes' };
 // @ts-expect-error scroll behavior must retain its finite public values without DOM types.
 const invalidScroll: ScrollToSelectedConfig = { enabled: true, multiSelectTarget: 'first', behavior: 'later' };
 void invalidProps;
+void partialProps;
 void invalidScroll;
 void scrollBehaviors;
 void scrollBlocks;

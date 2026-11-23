@@ -1267,8 +1267,10 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     },
     direction,
     multiSelectDisplay,
+    ...(scrollToSelected !== undefined ? {
+      scrollToSelected: { enabled: true, ...scrollToSelected },
+    } : {}),
     infiniteScroll: { enabled: infiniteScroll, pageSize },
-    scrollToSelected: { enabled: true, ...scrollToSelected },
     creatable,
     styles: stylesConfig,
     clearControl: {

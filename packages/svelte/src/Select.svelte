@@ -46,7 +46,7 @@
     EmptyStateContext,
     EmptyStateChangeDetail,
     LimitationPolicyMap,
-    GlobalSelectConfig,
+    SelectInstanceConfig,
     SelectionConfig,
     MultiSelectDisplayConfig,
     ScrollToSelectedConfig,
@@ -73,7 +73,7 @@
   export let multiSelectDisplay: Partial<MultiSelectDisplayConfig> | undefined = undefined;
   export let scrollToSelected: Partial<ScrollToSelectedConfig> | undefined = undefined;
   export let styles: StyleConfig | undefined = undefined;
-  export let config: Partial<GlobalSelectConfig> | undefined = undefined;
+  export let config: SelectInstanceConfig | undefined = undefined;
   export let removeButtonIcon: string | undefined = undefined;
   export let disabledOptionBehavior: { selectable?: boolean; hoverable?: boolean; focusable?: boolean } | undefined = undefined;
   export let showSelectedIndicator: boolean = true;
@@ -231,8 +231,71 @@
     };
   }
 
-  function updateConfig() {
+  function updateConfig(inputs = {
+    searchable,
+    placeholder,
+    disabled,
+    direction,
+    placement,
+    selectionConfig,
+    multiple,
+    maxSelections,
+    removeButtonIcon,
+    disabledOptionBehavior,
+    showSelectedIndicator,
+    multiSelectDisplay,
+    scrollToSelected,
+    infiniteScroll,
+    pageSize,
+    styles,
+    clearable,
+    clearSelectionOnClear,
+    clearSearchOnClear,
+    clearAriaLabel,
+    clearIcon,
+    trackingEnabled,
+    trackEvents,
+    trackStyling,
+    trackLimitations,
+    emitDiagnostics,
+    trackingMaxEntries,
+    limitationPolicies,
+    autoMitigateRuntimeModeSwitch,
+    config,
+  }) {
     if (!selectRef) return;
+    const {
+      searchable,
+      placeholder,
+      disabled,
+      direction,
+      placement,
+      selectionConfig,
+      multiple,
+      maxSelections,
+      removeButtonIcon,
+      disabledOptionBehavior,
+      showSelectedIndicator,
+      multiSelectDisplay,
+      scrollToSelected,
+      infiniteScroll,
+      pageSize,
+      styles,
+      clearable,
+      clearSelectionOnClear,
+      clearSearchOnClear,
+      clearAriaLabel,
+      clearIcon,
+      trackingEnabled,
+      trackEvents,
+      trackStyling,
+      trackLimitations,
+      emitDiagnostics,
+      trackingMaxEntries,
+      limitationPolicies,
+      autoMitigateRuntimeModeSwitch,
+      config,
+    } = inputs;
     (selectRef as any).updateConfig?.({
       searchable,
       placeholder,
@@ -250,13 +313,12 @@
         showSelectedIndicator,
       },
       multiSelectDisplay,
+      ...(scrollToSelected !== undefined ? {
+        scrollToSelected: { enabled: true, ...scrollToSelected },
+      } : {}),
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize,
-      },
-      scrollToSelected: {
-        enabled: true,
-        ...scrollToSelected,
       },
       styles,
       clearControl: {
@@ -400,7 +462,38 @@
   }
 
   $: if (nativeListenersReady && selectRef) {
-    updateConfig();
+    updateConfig({
+      searchable,
+      placeholder,
+      disabled,
+      direction,
+      placement,
+      selectionConfig,
+      multiple,
+      maxSelections,
+      removeButtonIcon,
+      disabledOptionBehavior,
+      showSelectedIndicator,
+      multiSelectDisplay,
+      scrollToSelected,
+      infiniteScroll,
+      pageSize,
+      styles,
+      clearable,
+      clearSelectionOnClear,
+      clearSearchOnClear,
+      clearAriaLabel,
+      clearIcon,
+      trackingEnabled,
+      trackEvents,
+      trackStyling,
+      trackLimitations,
+      emitDiagnostics,
+      trackingMaxEntries,
+      limitationPolicies,
+      autoMitigateRuntimeModeSwitch,
+      config,
+    });
   }
 
   // Public methods
@@ -444,7 +537,7 @@
     (selectRef as any)?.clearSearch?.();
   }
 
-  export function updateCoreConfig(nextConfig: Partial<GlobalSelectConfig>) {
+  export function updateCoreConfig(nextConfig: SelectInstanceConfig) {
     (selectRef as any)?.updateConfig?.(nextConfig);
   }
 

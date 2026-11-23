@@ -4,6 +4,8 @@ Select component for Svelte applications. The shared core has scoped automated P
 
 **Supported peer:** Svelte 5.x. Svelte 3 and 4 are not supported by this package artifact. The published peer range is limited to the major version validated by the packed-consumer check; see [ADR 179](../../docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md).
 
+> **Svelte 2.2.0 / Core 1.20.0:** Adds selected-first option ordering and configurable selected-option positioning when the dropdown opens. This release supports Svelte 5 only. See [selected-option configuration](#selected-option-order-and-open-positioning) and the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not establish exhaustive Svelte integration parity, minimum-browser-version support, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## Acknowledged data-loading adapter status
@@ -187,6 +189,10 @@ The Svelte adapter exposes the same runtime controls as the shared core:
 ## Core config parity and global defaults
 
 The Svelte adapter now accepts the same advanced runtime configuration model as the shared core.
+
+Use `config={{ selectedOptions: { placement: 'selected-first' } }}` to promote selected items while keeping each open dropdown's order stable; the updated policy applies on the next opening. `selectedOptions` and `scrollToSelected` accept partial nested config updates. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for reactive-update behavior and qualification limits.
+
+These options are available in `@smilodon/svelte@2.2.0` with Core `1.20.0`. Svelte 5 remains the only supported Svelte major for this artifact. See the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
 
 ### Convenience props
 

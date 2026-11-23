@@ -6,8 +6,14 @@
  * Redesigned with formal elegance, refined microinteractions, and polished UX
  */
 
-import type { CallbackConfig, GlobalSelectConfig } from '../config/global-config.js';
+import type {
+  CallbackConfig,
+  GlobalSelectConfig,
+  ScrollToSelectedConfig,
+  SelectedOptionsConfig,
+} from '../config/global-config.js';
 import { selectConfig } from '../config/global-config.js';
+import { validateScrollToSelectedConfig, validateSelectedOptionsConfig } from '../config/public-config.js';
 import { validateDataLoadingConfig } from '../data-loading/public-config.js';
 import type {
   DataLoadingConfigErrorDetail,
@@ -47,7 +53,16 @@ import { SelectEngineBridge } from '../platform/web/select-engine-bridge.js';
 import { DefaultSelectEffectRunner } from '../platform/web/select-effect-runner.js';
 import { SelectOption } from './select-option.js';
 import { arrayIncludesValue } from '../utils/value-equality.js';
+import {
+  createVisualNavigationModel,
+  resolveVisualBoundary,
+  resolveVisualMovement,
+  resolveVisualRange,
+  type VisualNavigationModel,
+} from '../utils/visual-navigation.js';
 import { Virtualizer, type VirtualizerScrollResult } from '../utils/virtualizer.js';
+import { projectSelectedOptionGroups, projectSelectedOptionKeys } from '../utils/selected-options-projection.js';
+import { resolveSelectedTargetKey } from '../utils/selected-target-resolver.js';
 import {
   DataRequestCoordinator,
   type DataCoordinatorAction,
@@ -91,10 +106,27 @@ interface LegacySelectedEntry {
 
 interface EnhancedSelectRenderPlan {
   mode: 'legacy-full' | 'virtual-window';
+  /** Source indices in displayed order; values remain source identities. */
   filteredIndices: number[];
+  /** Stable keys in the order presented to rendering and virtualization. */
   filteredKeys: SelectKey[];
   intendedRenderKeys: SelectKey[];
+  /** Position in filteredKeys, independent from the registry source index. */
+  displayIndexByKey: ReadonlyMap<SelectKey, number>;
+  /** Original registry index for each stable key. */
+  sourceIndexByKey: ReadonlyMap<SelectKey, number>;
+  /** @deprecated Internal compatibility alias for displayIndexByKey. */
   filteredIndexByKey: ReadonlyMap<SelectKey, number>;
+  /** Group headers stay structural; each entry carries its own ordered option keys. */
+  groupedPresentation: Array<{ group: GroupedItem; groupIndex: number; orderedKeys: readonly SelectKey[] }>;
+}
+
+interface OptionsViewportAnchor {
+  key: SelectKey | null;
+  /** Option top relative to the options viewport's top edge. */
+  offset: number;
+  scrollTop: number;
+  order: readonly SelectKey[];
 }
 
 interface AcknowledgedProjectionDiagnostic {
@@ -237,8 +269,27 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     filteredIndices: [],
     filteredKeys: [],
     intendedRenderKeys: [],
+    displayIndexByKey: new Map(),
+    sourceIndexByKey: new Map(),
     filteredIndexByKey: new Map(),
+    groupedPresentation: [],
   };
+  // Presentation policy and membership are snapshotted when the dropdown opens
+  // so selection/config updates cannot reorder an active list.
+  private _selectedOptionsSelectionAtOpen: ReadonlySet<SelectKey> | null = null;
+  private _selectedOptionsConfigAtOpen: SelectedOptionsConfig = {
+    placement: 'original',
+    groupedPlacement: 'within-group',
+  };
+  private _scrollToSelectedConfigAtOpen: ScrollToSelectedConfig = {
+    enabled: true,
+    multiSelectTarget: 'first',
+    onOpen: 'reveal',
+    behavior: 'smooth',
+    block: 'nearest',
+  };
+  private _closedOptionsViewportAnchor: OptionsViewportAnchor | null = null;
+  private _openOptionsViewportAnchor: OptionsViewportAnchor | null = null;
   private _emptyStateContext: EmptyStateContext | null = null;
   // Null keeps the public/default renderer on its legacy full path. This
   // private state is only used by guarded virtualization integration.
@@ -304,7 +355,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _clearControlIcon?: HTMLElement;
   private _pendingFirstRenderMark = false;
   private _pendingSearchRenderMark = false;
-  private _rangeAnchorIndex: number | null = null;
+  private _rangeAnchorKey: SelectKey | null = null;
   /** Chip identity is tracked independently of dropdown option positions. */
   private _lastRenderedChipKeys: Set<SelectKey> | null = null;
   private _latestChipScrollGeneration = 0;
@@ -1238,12 +1289,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       duplicateKeyPolicy: this._getDuplicateKeyPolicy(),
     });
     const activeKey = this._engine.state.activeKey;
-    const anchorKey = this._rangeAnchorIndex === null ? undefined : this._itemRegistry.indexToKey.get(this._rangeAnchorIndex);
+    const anchorKey = this._rangeAnchorKey;
     this._itemRegistry = registry;
     this._state.loadedItems = items;
     this._registryItemsRef = items;
     const disabledKeys = this._getBlockedDisabledKeys();
-    this._rangeAnchorIndex = anchorKey === undefined ? null : registry.keyToIndex.get(anchorKey) ?? null;
+    this._rangeAnchorKey = anchorKey !== null && registry.keyToRecord.has(anchorKey) ? anchorKey : null;
     this._engine.dispatch({
       type: 'ITEMS_REGISTERED',
       keys: registry.records.map((record) => record.key),
@@ -3930,6 +3981,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._dropdown.removeAttribute('inert');
     this._dropdown.removeAttribute('aria-hidden');
     this._markOpenStart();
+    this._scrollToSelectedConfigAtOpen = { ...this._config.scrollToSelected };
+    this._openOptionsViewportAnchor = this._scrollToSelectedConfigAtOpen.onOpen === 'preserve'
+      ? (this._closedOptionsViewportAnchor ?? this._captureOptionsViewportAnchor())
+      : null;
+    this._closedOptionsViewportAnchor = null;
+    this._selectedOptionsConfigAtOpen = { ...this._config.selectedOptions };
+    this._selectedOptionsSelectionAtOpen = this._config.selectedOptions.placement === 'selected-first'
+      ? new Set(this._engine.state.selectedKeys)
+      : null;
     this.setAttribute('data-open', 'true');
     this._liftStackingAncestors();
     this._dropdown.style.display = 'block';
@@ -3948,10 +4008,14 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _handleClose(reason: CloseReason = 'programmatic'): void {
+    if (this._state.isOpen) {
+      this._closedOptionsViewportAnchor = this._captureOptionsViewportAnchor();
+    }
     const effects = this._engine.dispatch({ type: 'CLOSE_REQUEST', reason });
     if (!effects.some((effect) => effect.type === 'POPUP_CLOSED')) return;
 
     this._cancelOpenSelectedScroll();
+    this._selectedOptionsSelectionAtOpen = null;
 
     this.removeAttribute('data-open');
     this._restoreLiftedAncestors();
@@ -3973,7 +4037,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
    */
   private _scheduleOpenSelectedScroll(): void {
     this._cancelOpenSelectedScroll();
-    if (!this._config.scrollToSelected.enabled) return;
+    const openingConfig = this._scrollToSelectedConfigAtOpen;
+    if (!openingConfig.enabled) return;
 
     const generation = this._openSelectedScrollGeneration;
     const keyboardGeneration = this._keyboardActiveChangeGeneration;
@@ -4030,7 +4095,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         frameIds.delete(frameId);
         cleanup();
         if (!isCurrent()) return;
-        this._scrollToSelected({ onlyIfNeeded: true, setActive: false });
+        if (openingConfig.onOpen === 'preserve') {
+          this._restorePreservedOptionsViewport();
+        } else {
+          this._scrollToSelected({
+            onlyIfNeeded: openingConfig.onOpen === 'reveal',
+            setActive: false,
+            config: openingConfig,
+          });
+        }
       });
       frameIds.add(frameId);
       this._openSelectedScrollCleanup = cleanup;
@@ -4049,7 +4122,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
 
       const getAnimations = this._dropdown.getAnimations;
-      if (typeof getAnimations === 'function') {
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      if (!reducedMotion && typeof getAnimations === 'function') {
         for (const animation of getAnimations.call(this._dropdown)) {
           const timing = animation.effect?.getComputedTiming();
           if (!timing || timing.iterations === Infinity || animation.playState === 'finished'
@@ -4059,7 +4133,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       }
 
       if (animations.length === 0) {
-        if (typeof getAnimations !== 'function') {
+        if (!reducedMotion && typeof getAnimations !== 'function') {
           const fallbackWait = this._getDropdownEntranceFallbackDurationMs();
           if (fallbackWait > 0) {
             timerId = window.setTimeout(finish, fallbackWait + 34);
@@ -4104,6 +4178,93 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._openSelectedScrollGeneration += 1;
     this._openSelectedScrollCleanup?.();
     this._openSelectedScrollCleanup = null;
+  }
+
+  private _captureOptionsViewportAnchor(): OptionsViewportAnchor {
+    const scroller = this._optionsContainer;
+    const scrollTop = scroller.scrollTop;
+    const order = this._renderPlan.filteredKeys.slice();
+    const viewportTop = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const viewportBottom = viewportTop + scroller.clientHeight;
+    const visible = Array.from(scroller.querySelectorAll<HTMLElement>('[data-sm-selectable], [data-selectable]'))
+      .map((option) => ({ option, rect: option.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.height > 0 && rect.bottom > viewportTop && rect.top < viewportBottom)
+      .sort((left, right) => left.rect.top - right.rect.top)[0];
+
+    if (visible) {
+      const sourceIndex = Number(visible.option.getAttribute('data-sm-index') ?? visible.option.getAttribute('data-index'));
+      const key = Number.isInteger(sourceIndex) ? this._itemRegistry.indexToKey.get(sourceIndex) ?? null : null;
+      if (key !== null) {
+        return { key, offset: visible.rect.top - viewportTop, scrollTop, order };
+      }
+    }
+
+    if (this._guardedVirtualizer && order.length > 0
+      && typeof this._guardedVirtualizer.computeWindow === 'function') {
+      const viewportHeight = this._resolveGuardedViewportHeight();
+      const index = this._guardedVirtualizer.computeWindow(scrollTop, viewportHeight).startIndex;
+      const key = order[index] ?? null;
+      if (key !== null) {
+        return {
+          key,
+          offset: this._guardedVirtualizer.cumulativeOffset(index) - scrollTop,
+          scrollTop,
+          order,
+        };
+      }
+    }
+
+    return { key: null, offset: 0, scrollTop, order };
+  }
+
+  /** Restore the previous visible option only when this opening changed order. */
+  private _restorePreservedOptionsViewport(): void {
+    const anchor = this._openOptionsViewportAnchor;
+    this._openOptionsViewportAnchor = null;
+    if (!anchor) return;
+
+    const nextOrder = this._renderPlan.filteredKeys;
+    const nextPositionByKey = new Map(nextOrder.map((key, index) => [key, index]));
+    const orderChanged = anchor.order.some((key, oldIndex) => {
+      const nextIndex = nextPositionByKey.get(key);
+      return nextIndex !== undefined && nextIndex !== oldIndex;
+    });
+    if (!orderChanged) return;
+
+    const scroller = this._optionsContainer;
+    const viewportHeight = this._resolveGuardedViewportHeight() || scroller.clientHeight;
+    let targetScrollTop: number | null = null;
+    if (anchor.key !== null) {
+      const displayIndex = this._renderPlan.displayIndexByKey.get(anchor.key);
+      if (displayIndex !== undefined) {
+        const sourceIndex = this._renderPlan.sourceIndexByKey.get(anchor.key);
+        const option = sourceIndex === undefined ? null : this._getOptionElementByIndex(sourceIndex);
+        const viewportTop = scroller.getBoundingClientRect().top + scroller.clientTop;
+        const optionTop = option?.getBoundingClientRect().top;
+        if (option && option.getBoundingClientRect().height > 0 && Number.isFinite(optionTop)) {
+          targetScrollTop = scroller.scrollTop + optionTop! - viewportTop - anchor.offset;
+        } else if (this._guardedVirtualizer) {
+          targetScrollTop = this._guardedVirtualizer.cumulativeOffset(displayIndex) - anchor.offset;
+        }
+      }
+    }
+
+    if (targetScrollTop === null) targetScrollTop = anchor.scrollTop;
+    let maxScrollTop = Number.POSITIVE_INFINITY;
+    if (this._guardedVirtualizer) {
+      maxScrollTop = Math.max(0,
+        this._guardedVirtualizer.cumulativeOffset(nextOrder.length) - viewportHeight);
+    } else if (scroller.scrollHeight > 0 && scroller.clientHeight > 0) {
+      maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    }
+    targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+    if (Math.abs(targetScrollTop - scroller.scrollTop) < 1) return;
+
+    // The coordinator owns this single restoration write. The virtualizer may
+    // update its mounted window in response, but it must not issue a second
+    // physical positioning correction for this transaction.
+    this._guardedVirtualScrollTop = targetScrollTop;
+    scroller.scrollTop = targetScrollTop;
   }
 
   /** Used only when Element.getAnimations() is unavailable. */
@@ -4508,24 +4669,34 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       case 'Home':
         e.preventDefault();
         if (this._state.isOpen) {
+          if (this._usesSelectedFirstVisualOrder()) {
+            this._moveToVisualBoundary('first', { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey });
+            break;
+          }
           const selectableIndices = this._getSelectableOptionIndices();
           const firstIndex = selectableIndices[0];
           if (firstIndex === undefined) break;
           this._setActive(firstIndex);
           if (this._config.selection.mode === 'multi' && e.shiftKey) {
-            this._selectRange(this._rangeAnchorIndex ?? firstIndex, firstIndex, { clear: !(e.ctrlKey || e.metaKey) });
+            const targetKey = this._itemRegistry.indexToKey.get(firstIndex);
+            if (targetKey !== undefined) this._selectKeyboardRange(this._rangeAnchorKey ?? targetKey, targetKey, { clear: !(e.ctrlKey || e.metaKey) });
           }
         }
         break;
       case 'End':
         e.preventDefault();
         if (this._state.isOpen) {
+          if (this._usesSelectedFirstVisualOrder()) {
+            this._moveToVisualBoundary('last', { shiftKey: e.shiftKey, toggleKey: e.ctrlKey || e.metaKey });
+            break;
+          }
           const selectableIndices = this._getSelectableOptionIndices();
           const lastIndex = selectableIndices[selectableIndices.length - 1];
           if (lastIndex === undefined) break;
           this._setActive(lastIndex);
           if (this._config.selection.mode === 'multi' && e.shiftKey) {
-            this._selectRange(this._rangeAnchorIndex ?? lastIndex, lastIndex, { clear: !(e.ctrlKey || e.metaKey) });
+            const targetKey = this._itemRegistry.indexToKey.get(lastIndex);
+            if (targetKey !== undefined) this._selectKeyboardRange(this._rangeAnchorKey ?? targetKey, targetKey, { clear: !(e.ctrlKey || e.metaKey) });
           }
         }
         break;
@@ -4580,6 +4751,24 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _moveActive(delta: number, opts?: { shiftKey?: boolean; toggleKey?: boolean }): void {
+    if (this._usesSelectedFirstVisualOrder()) {
+      const model = this._getVisualNavigationModel();
+      if (model.selectableKeys.length === 0) return;
+      const activeKey = this._engine.state.activeKey;
+      const currentPosition = activeKey === null ? undefined : model.selectablePositionByKey.get(activeKey);
+      // Load-more is only requested after movement reaches the actual visual end.
+      if (delta === 1 && currentPosition === model.selectableKeys.length - 1 && this._requestKeyboardLoadMore()) return;
+      const nextKey = resolveVisualMovement(model, activeKey, delta);
+      if (nextKey === null) return;
+      this._setActiveForVisualKey(nextKey);
+      if (this._config.selection.mode === 'multi' && opts?.shiftKey) {
+        const anchorKey = this._rangeAnchorKey ?? activeKey ?? nextKey;
+        this._rangeAnchorKey = anchorKey;
+        this._selectKeyboardRange(anchorKey, nextKey, { clear: !opts.toggleKey });
+      }
+      return;
+    }
+
     const selectableIndices = this._getSelectableOptionIndices();
     if (selectableIndices.length === 0) return;
 
@@ -4604,13 +4793,100 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._setActive(next);
 
     if (this._config.selection.mode === 'multi' && opts?.shiftKey) {
-      const anchor = this._rangeAnchorIndex ?? currentIndex;
-      const anchorIndex = anchor >= 0 ? anchor : next;
-      if (this._rangeAnchorIndex === null) {
-        this._rangeAnchorIndex = anchorIndex;
-      }
-      this._selectRange(anchorIndex, next, { clear: !opts?.toggleKey });
+      const nextKey = this._itemRegistry.indexToKey.get(next);
+      if (nextKey === undefined) return;
+      const anchorKey = this._rangeAnchorKey ?? (currentIndex >= 0 ? this._itemRegistry.indexToKey.get(currentIndex) : undefined) ?? nextKey;
+      this._rangeAnchorKey = anchorKey;
+      this._selectKeyboardRange(anchorKey, nextKey, { clear: !opts?.toggleKey });
     }
+  }
+
+  private _usesSelectedFirstVisualOrder(): boolean {
+    return this._selectedOptionsConfigAtOpen.placement === 'selected-first';
+  }
+
+  private _getVisualNavigationModel(): VisualNavigationModel<SelectKey> {
+    this._ensureRegistryCurrent();
+    return createVisualNavigationModel(this._renderPlan.filteredKeys, (key) => {
+      const record = this._itemRegistry.keyToRecord.get(key);
+      if (!record || record.disabled) return false;
+      const option = this._getOptionElementByIndex(record.index);
+      return option?.getAttribute('aria-disabled') !== 'true';
+    });
+  }
+
+  private _setActiveForVisualKey(
+    key: SelectKey,
+    reason: ActiveReason = 'keyboard',
+    options: { scroll?: boolean } = {},
+  ): void {
+    const sourceIndex = this._renderPlan.sourceIndexByKey.get(key)
+      ?? this._itemRegistry.keyToIndex.get(key);
+    if (sourceIndex === undefined) return;
+    this._setActive(sourceIndex, reason, options);
+  }
+
+  private _moveToVisualBoundary(
+    boundary: 'first' | 'last',
+    opts?: { shiftKey?: boolean; toggleKey?: boolean },
+  ): void {
+    const model = this._getVisualNavigationModel();
+    const targetKey = resolveVisualBoundary(model, boundary);
+    if (targetKey === null) return;
+    const currentKey = this._engine.state.activeKey;
+    this._setActiveForVisualKey(targetKey);
+    if (this._config.selection.mode === 'multi' && opts?.shiftKey) {
+      const anchorKey = this._rangeAnchorKey ?? currentKey ?? targetKey;
+      this._rangeAnchorKey = anchorKey;
+      this._selectKeyboardRange(anchorKey, targetKey, { clear: !opts.toggleKey });
+    }
+  }
+
+  private _selectKeyboardRange(
+    anchorKey: SelectKey,
+    targetKey: SelectKey,
+    opts?: { clear?: boolean; reason?: SelectionReason },
+  ): void {
+    if (this._usesSelectedFirstVisualOrder()) {
+      const model = this._getVisualNavigationModel();
+      const resolvedAnchor = model.selectablePositionByKey.has(anchorKey) ? anchorKey : targetKey;
+      this._rangeAnchorKey = resolvedAnchor;
+      this._selectVisualRange(resolvedAnchor, targetKey, opts);
+      return;
+    }
+    const start = this._itemRegistry.keyToIndex.get(anchorKey);
+    const end = this._itemRegistry.keyToIndex.get(targetKey);
+    if (start !== undefined && end !== undefined) this._selectRange(start, end, opts);
+  }
+
+  private _selectVisualRange(
+    anchorKey: SelectKey,
+    targetKey: SelectKey,
+    opts?: { clear?: boolean; reason?: SelectionReason },
+  ): void {
+    if (this._config.selection.mode !== 'multi') return;
+    this._ensureRegistryCurrent();
+    const model = this._getVisualNavigationModel();
+    const rangeKeys = resolveVisualRange(model, anchorKey, targetKey);
+    if (rangeKeys.length === 0) return;
+    const selectedEntries = this._getSelectedEntries();
+    const entries = opts?.clear
+      ? selectedEntries.filter((entry) => !this._itemRegistry.keyToRecord.has(entry.key))
+      : selectedEntries;
+    for (const key of rangeKeys) {
+      const record = this._itemRegistry.keyToRecord.get(key);
+      if (!record || this._isOptionSelectionBlocked(record.item)) continue;
+      entries.push(record);
+    }
+    this._requestSelectionReplacement(entries, opts?.reason ?? 'keyboard', 'select visual range');
+    this._renderOptions();
+    this._updateInputDisplay();
+    const target = this._itemRegistry.keyToRecord.get(targetKey);
+    const selectDetail = target ? this._getSelectEventDetail(target) : null;
+    if (selectDetail) this._emit('select', selectDetail);
+    this._emitChange();
+    this._announce(`${this._state.selectedIndices.size} items selected`);
+    if (selectDetail) this._config.callbacks.onSelect?.(selectDetail);
   }
 
   /** Return true only when boundary navigation is held for an in-flight/new page. */
@@ -4657,7 +4933,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       return;
     }
 
-    if (reason === 'keyboard') {
+    if (reason === 'keyboard' || reason === 'search') {
       this._keyboardActiveChangeGeneration += 1;
       this._cancelOpenSelectedScroll();
     }
@@ -4752,8 +5028,22 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._typeBuffer = '';
     }, 500);
     
-    // Find first matching option
+    // Type-ahead uses the displayed candidate order when a presentation projection is active.
     const getValue = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
+    if (this._usesSelectedFirstVisualOrder()) {
+      const model = this._getVisualNavigationModel();
+      const matchKey = model.selectableKeys.find((key) => {
+        const record = this._itemRegistry.keyToRecord.get(key);
+        return record !== undefined && getValue(record.item).toLowerCase().startsWith(this._typeBuffer);
+      });
+      if (matchKey !== undefined) {
+        const sourceIndex = this._renderPlan.sourceIndexByKey.get(matchKey)
+          ?? this._itemRegistry.keyToIndex.get(matchKey);
+        if (sourceIndex !== undefined) this._setActive(sourceIndex, 'search');
+      }
+      return;
+    }
+
     const matchIndex = this._state.loadedItems.findIndex((item) =>
       getValue(item).toLowerCase().startsWith(this._typeBuffer)
     );
@@ -4822,6 +5112,18 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _setInitialActiveOption(): void {
+    if (this._usesSelectedFirstVisualOrder()) {
+      const model = this._getVisualNavigationModel();
+      const selectedKey = model.selectableKeys.find((key) => this._engine.state.selectedKeys.has(key));
+      if (selectedKey === undefined) {
+        this._dispatchActiveKey(null, 'open', 'initial active option');
+        return;
+      }
+      // Resolve via stable identity so the open-time projection remains authoritative.
+      this._setActiveForVisualKey(selectedKey, 'open', { scroll: false });
+      return;
+    }
+
     const selectableIndices = this._getSelectableOptionIndices();
     const selected = Array.from(this._state.selectedIndices).sort((a, b) => a - b);
     // Opening an empty select must not implicitly assign an active descendant.
@@ -4893,9 +5195,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       const shiftKey = Boolean(opts?.shiftKey);
 
       if (shiftKey) {
-        const anchor = this._rangeAnchorIndex ?? index;
-        this._selectRange(anchor, index, { clear: !toggleKey, reason });
-        this._rangeAnchorIndex = anchor;
+        const targetKey = record.key;
+        const anchorKey = this._rangeAnchorKey ?? targetKey;
+        this._selectKeyboardRange(anchorKey, targetKey, { clear: !toggleKey, reason });
+        this._rangeAnchorKey = anchorKey;
         return;
       }
 
@@ -4913,7 +5216,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._renderOptions();
     }
 
-    this._rangeAnchorIndex = index;
+    this._rangeAnchorKey = record.key;
     
     this._updateInputDisplay();
     const selectDetail = this._getSelectEventDetail(record);
@@ -5190,61 +5493,38 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }, 150);
   }
 
-  private _scrollToSelected(options: { onlyIfNeeded?: boolean; setActive?: boolean } = {}): void {
-    if (this._state.selectedIndices.size === 0) return;
-    
-    const target = this._config.scrollToSelected.multiSelectTarget;
-    const indices = Array.from(this._state.selectedIndices).filter((index) => index >= 0).sort((a, b) => a - b);
-    if (indices.length === 0) return;
-    
-    // For multi-select, find the closest selected item to the current scroll position
-    let targetIndex: number;
-    
-    if (this._config.selection.mode === 'multi' && indices.length > 1) {
-      // Choose a selected option near the actual scrolling viewport center.
-      const viewportRect = this._optionsContainer.getBoundingClientRect();
-      const viewportCenter = viewportRect.top + (this._optionsContainer.clientHeight / 2);
-      
-      // Find the selected item closest to viewport center
-      let closestIndex = indices[0];
-      let closestDistance = Infinity;
-      
-      for (const index of indices) {
-  const option = this._getOptionElementByIndex(index);
-        
-        if (option) {
-          const optionRect = option.getBoundingClientRect();
-          const optionCenter = optionRect.top + (optionRect.height / 2);
-          const distance = Math.abs(optionCenter - viewportCenter);
-          
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = index;
-          }
-        }
-      }
-      
-      targetIndex = closestIndex;
-    } else {
-      // For single select or only one selected item, use the configured target
-      targetIndex = target === 'first' ? indices[0] : indices[indices.length - 1];
-    }
-    
-    // Find and scroll to the target option
+  private _scrollToSelected(options: {
+    onlyIfNeeded?: boolean;
+    setActive?: boolean;
+    config?: ScrollToSelectedConfig;
+  } = {}): void {
+    const config = options.config ?? this._config.scrollToSelected;
+    if (!config.enabled) return;
+    const targetKey = resolveSelectedTargetKey(
+      this._renderPlan.filteredKeys,
+      this._engine.state.selectedKeys,
+      config.multiSelectTarget,
+    );
+    if (targetKey === null) return;
+
+    const targetIndex = this._renderPlan.sourceIndexByKey.get(targetKey)
+      ?? this._itemRegistry.keyToIndex.get(targetKey);
+    if (targetIndex === undefined) return;
+
+    // Resolve against the current eligible render plan first. A selected key
+    // outside the filtered projection must never trigger materialization.
     let option = this._getOptionElementByIndex(targetIndex);
     if (!option && this._guardedVirtualizer) {
-      const targetKey = this._itemRegistry.indexToKey.get(targetIndex);
-      if (targetKey !== undefined) {
-        this._materializeGuardedVirtualKey(targetKey);
-        option = this._getOptionElementByIndex(targetIndex);
-      }
+      this._materializeGuardedVirtualKey(targetKey);
+      option = this._getOptionElementByIndex(targetIndex);
     }
     
     if (option) {
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
       this._scrollOptionWithinOptionsContainer(
         option,
-        this._config.scrollToSelected.block || 'center',
-        this._config.scrollToSelected.behavior || 'smooth',
+        config.block || 'nearest',
+        reducedMotion && config.behavior === 'smooth' ? 'auto' : (config.behavior || 'smooth'),
         options.onlyIfNeeded === true,
       );
 
@@ -5285,6 +5565,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       return;
     }
 
+    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
     if (Math.abs(targetScrollTop - scroller.scrollTop) < 1) return;
     if (typeof scroller.scrollTo === 'function') {
       scroller.scrollTo({ top: targetScrollTop, behavior });
@@ -5832,11 +6114,20 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._invalidateGuardedMeasurements();
     const previousMode = this._config.selection.mode;
     const previousEnabled = this._config.enabled;
+    const previousOpenScrollEnabled = this._config.scrollToSelected.enabled;
     const previousDataLoadingConfig = this._dataLoadingConfig;
     let searchEligibilityBecameInactive = false;
 
-    const { dataLoading, callbacks, ...legacyConfig } = config;
+    const { dataLoading, callbacks, selectedOptions, scrollToSelected, ...legacyConfig } = config;
     const legacyUpdate = { ...legacyConfig } as Partial<GlobalSelectConfig>;
+    if (selectedOptions !== undefined) {
+      const validation = validateSelectedOptionsConfig(selectedOptions);
+      if (validation.valid) legacyUpdate.selectedOptions = validation.value as SelectedOptionsConfig;
+    }
+    if (scrollToSelected !== undefined) {
+      const validation = validateScrollToSelectedConfig(scrollToSelected);
+      if (validation.valid) legacyUpdate.scrollToSelected = validation.value as NonNullable<typeof legacyUpdate.scrollToSelected>;
+    }
     let configErrorDetail: DataLoadingConfigErrorDetail | undefined;
 
     if (callbacks !== undefined && callbacks !== null) {
@@ -5860,6 +6151,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }
 
     this._config = this._mergeConfig(this._config, legacyUpdate);
+    if (previousOpenScrollEnabled && !this._config.scrollToSelected.enabled) {
+      this._openOptionsViewportAnchor = null;
+      this._cancelOpenSelectedScroll();
+    }
 
     if (dataLoading !== undefined) {
       const dataLoadingPrototype = dataLoading !== null && typeof dataLoading === 'object'
@@ -6446,20 +6741,42 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     };
   }
 
-  private _createLegacyRenderPlan(filteredIndices: readonly number[]): EnhancedSelectRenderPlan {
-    const indices = [...filteredIndices];
-    const filteredKeys = indices
-      .map((index) => this._itemRegistry.indexToKey.get(index))
-      .filter((key): key is SelectKey => key !== undefined);
-    const filteredIndexByKey = new Map<SelectKey, number>();
-    filteredKeys.forEach((key, filteredIndex) => filteredIndexByKey.set(key, filteredIndex));
+  private _createLegacyRenderPlan(
+    filteredIndices: readonly number[],
+    groupedPresentation: EnhancedSelectRenderPlan['groupedPresentation'] = [],
+  ): EnhancedSelectRenderPlan {
+    const sourceIndices = [...filteredIndices];
+    const sourceOrderedKeys = groupedPresentation.length > 0
+      ? groupedPresentation.flatMap((group) => group.orderedKeys)
+      : sourceIndices
+        .map((index) => this._itemRegistry.indexToKey.get(index))
+        .filter((key): key is SelectKey => key !== undefined);
+    const shouldProjectSelectedFirst = this._usesSelectedFirstVisualOrder()
+      && groupedPresentation.length === 0;
+    const selectedKeys = this._selectedOptionsSelectionAtOpen ?? this._engine.state.selectedKeys;
+    const filteredKeys = shouldProjectSelectedFirst
+      ? projectSelectedOptionKeys(sourceOrderedKeys, selectedKeys, 'selected-first')
+      : sourceOrderedKeys;
+    const indices = filteredKeys
+      .map((key) => this._itemRegistry.keyToIndex.get(key))
+      .filter((index): index is number => index !== undefined);
+    const displayIndexByKey = new Map<SelectKey, number>();
+    const sourceIndexByKey = new Map<SelectKey, number>();
+    filteredKeys.forEach((key, displayIndex) => {
+      displayIndexByKey.set(key, displayIndex);
+      const sourceIndex = this._itemRegistry.keyToIndex.get(key);
+      if (sourceIndex !== undefined) sourceIndexByKey.set(key, sourceIndex);
+    });
 
     return {
       mode: 'legacy-full',
       filteredIndices: indices,
       filteredKeys,
       intendedRenderKeys: filteredKeys.slice(),
-      filteredIndexByKey,
+      displayIndexByKey,
+      sourceIndexByKey,
+      filteredIndexByKey: displayIndexByKey,
+      groupedPresentation,
     };
   }
 
@@ -6469,13 +6786,17 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     const filteredIndices = intendedRenderKeys
       .map((key) => this._itemRegistry.keyToIndex.get(key))
       .filter((index): index is number => index !== undefined);
+    const displayIndexByKey = new Map(this._renderPlan.displayIndexByKey);
 
     return {
       mode: 'virtual-window',
       filteredIndices,
       filteredKeys,
       intendedRenderKeys,
-      filteredIndexByKey: new Map(this._renderPlan.filteredIndexByKey),
+      displayIndexByKey,
+      sourceIndexByKey: new Map(this._renderPlan.sourceIndexByKey),
+      filteredIndexByKey: displayIndexByKey,
+      groupedPresentation: this._renderPlan.groupedPresentation,
     };
   }
 
@@ -7532,11 +7853,34 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     // Handle Grouped Items Rendering (when no search query)
     if (this._state.groupedItems.length > 0 && !query) {
       this._destroyGuardedVirtualizer();
-      this._renderPlan = this._createLegacyRenderPlan(this._itemRegistry.records.map((record) => record.index));
+      const groupedSource = this._state.groupedItems.map((group, groupIndex) => ({
+        group,
+        groupIndex,
+        orderedKeys: group.options
+          .map((item) => this._state.loadedItems.indexOf(item))
+          .filter((index) => index >= 0)
+          .map((index) => this._itemRegistry.indexToKey.get(index))
+          .filter((key): key is SelectKey => key !== undefined),
+      }));
+      const groupedOrder = this._usesSelectedFirstVisualOrder()
+        ? projectSelectedOptionGroups(
+          groupedSource.map(({ groupIndex, orderedKeys }) => ({ groupIdentity: groupIndex, orderedKeys })),
+          this._selectedOptionsSelectionAtOpen ?? this._engine.state.selectedKeys,
+        )
+        : groupedSource.map(({ groupIndex, orderedKeys }) => ({ groupIdentity: groupIndex, orderedKeys }));
+      const groupedPresentation = groupedOrder.map(({ groupIdentity, orderedKeys }) => ({
+        group: this._state.groupedItems[groupIdentity],
+        groupIndex: groupIdentity,
+        orderedKeys,
+      }));
+      const groupedIndices = groupedPresentation.flatMap(({ orderedKeys }) => orderedKeys
+        .map((key) => this._itemRegistry.keyToIndex.get(key))
+        .filter((index): index is number => index !== undefined));
+      this._renderPlan = this._createLegacyRenderPlan(groupedIndices, groupedPresentation);
       filteredIndicesForScope = this._renderPlan.filteredIndices;
       this._registerShadowItems(filteredIndicesForScope);
       this._refreshVirtualizationScope(filteredIndicesForScope);
-      this._state.groupedItems.forEach((group, groupIndex) => {
+      this._renderPlan.groupedPresentation.forEach(({ group, groupIndex, orderedKeys }) => {
         let header: HTMLElement;
         if (this.groupHeaderRenderer) {
           header = this.groupHeaderRenderer(group, groupIndex);
@@ -7563,10 +7907,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         header.setAttribute('part', 'group-header');
         this._optionsContainer.appendChild(header);
 
-        group.options.forEach(item => {
-          // Find original index for correct ID generation and selection
-          const index = this._state.loadedItems.indexOf(item);
-          if (index !== -1) {
+        orderedKeys.forEach((key) => {
+          const index = this._itemRegistry.keyToIndex.get(key);
+          if (index !== undefined) {
+            const item = this._state.loadedItems[index];
             this._renderSingleOption(item, index, getValue, getLabel);
           }
         });
@@ -7644,13 +7988,21 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
           let cursor = 0;
           let maxRenderTarget = 0;
 
-          if (this._state.selectedIndices.size > 0 && this._config.scrollToSelected.enabled) {
-            const indices = Array.from(this._state.selectedIndices).filter((index) => index >= 0).sort((a, b) => a - b);
-            const targetIndex = this._config.scrollToSelected.multiSelectTarget === 'first' ? indices[0] : indices[indices.length - 1];
-            const filteredPos = filteredIndices.indexOf(targetIndex);
-            if (filteredPos !== -1) {
-              maxRenderTarget = filteredPos + 20; // Ensure we render up to the selection
-            }
+          if (
+            this._state.isOpen
+            && this._config.scrollToSelected.enabled
+            && this._scrollToSelectedConfigAtOpen.enabled
+            && this._scrollToSelectedConfigAtOpen.onOpen !== 'preserve'
+          ) {
+            const targetKey = resolveSelectedTargetKey(
+              this._renderPlan.filteredKeys,
+              this._engine.state.selectedKeys,
+              this._scrollToSelectedConfigAtOpen.multiSelectTarget,
+            );
+            const targetPosition = targetKey === null
+              ? undefined
+              : this._renderPlan.displayIndexByKey.get(targetKey);
+            if (targetPosition !== undefined) maxRenderTarget = targetPosition + 20;
           }
 
           const renderChunk = () => {

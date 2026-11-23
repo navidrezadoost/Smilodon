@@ -17,9 +17,9 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Published package status (2026-11-22):** Core `1.19.0` and React `1.12.2` are available from npm; Vue/Solid/Vanilla `1.11.0` and Svelte `2.1.0` remain unchanged. Svelte `2.1.0` supports Svelte 5 only; it does not restore Svelte 3/4 compatibility. React Native Android and iOS runtime qualification is incomplete and outside this web release scope.
+**Published package status (2026-11-23):** Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0` contain selected-option presentation and positioning. Svelte supports Svelte 5 only. React Native remains at `1.10.0` and is excluded because Android/iOS runtime qualification is incomplete.
 
-**Latest web release:** Core `1.19.0` includes the Issue #109 search threshold, #114 arrow-container position token, and #115 RTL group-header alignment. React `1.12.2` preserves custom renderer roots during acknowledged pagination (#112). Combined local browser qualification used Chrome 133; pinned Chromium 147, Firefox, and WebKit remain unverified. See the [release record and registry evidence](docs/releases/WEB-1.19.0-RELEASE.md) and [local integration record](docs/architecture/LOCAL-INTEGRATION-112-114-115.md).
+**Latest web release:** Core `1.20.0` adds selected-first ordering and `scrollToSelected` open policies; React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0` expose the configuration. Chrome 156 and pinned Firefox 148 passed the selected-options browser suite. Pinned Chromium 147 and WebKit remain unverified; React Native is excluded. See the [1.20.0 release record](docs/releases/WEB-1.20.0-RELEASE.md) and [selected-options qualification](docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
 
 **Recent fixes:** Issue #100's horizontal chip auto-scroll is in Core `1.17.0`; Issue #104's custom-arrow hover token correction is in Core `1.18.0`; Issue #107's React data-synchronization correction is in React `1.12.1`. The #107 fix preserves Core's cumulative acknowledged pages across equivalent fresh React props while still synchronizing real data changes. See the [React release record](docs/releases/REACT-1.12.1-RELEASE.md), [Core guide](packages/core/README.md#custom-arrow-slot), and [React guide](packages/react/README.md#acknowledged-data-synchronization-on-react-rerenders--issue-107).
 
@@ -242,7 +242,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 | `@smilodon/vanilla`      | Helper utilities for direct DOM setup           | Vanilla JS / TS                                | Maintained      |
 | `@smilodon/react-native` | Native WebView bridge; separate React Native Web DOM path | React Native (WebView), React Native Web (browser custom element) | Maintained |
 
-This inventory reflects configured workspace packages and declared integration targets. The packed Solid package passes a Vite/Bundler consumer check, but strict NodeNext declaration checking currently fails with two TS2834 diagnostics; a separate fix is pending. Workspace inclusion does not certify all consumer modes. React Native's native WebView integration and React Native Web's browser DOM integration are separate platform paths.
+This inventory reflects configured workspace packages and declared integration targets. In the selected-options candidate's packed consumer fixture, Solid passed strict NodeNext and Bundler declaration checks; the previously reported NodeNext diagnostics did not reproduce in that tested graph. This does not certify every downstream Solid/toolchain combination. Workspace inclusion does not certify all consumer modes. React Native's native WebView integration and React Native Web's browser DOM integration are separate platform paths.
 
 ### Support summary by platform
 

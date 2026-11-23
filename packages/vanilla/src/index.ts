@@ -7,6 +7,7 @@
 
 import type {
   GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -58,7 +59,7 @@ function applyConfig(select: any, options: {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
   scrollToSelected?: Partial<ScrollToSelectedConfig>;
   styles?: StyleConfig;
-  config?: Partial<GlobalSelectConfig>;
+  config?: SelectInstanceConfig;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -99,13 +100,12 @@ function applyConfig(select: any, options: {
       showSelectedIndicator: options.showSelectedIndicator,
     },
     multiSelectDisplay: options.multiSelectDisplay,
+    ...(options.scrollToSelected !== undefined ? {
+      scrollToSelected: { enabled: true, ...options.scrollToSelected },
+    } : {}),
     infiniteScroll: {
       enabled: options.infiniteScroll ?? false,
       pageSize: options.pageSize,
-    },
-    scrollToSelected: {
-      enabled: true,
-      ...(options.scrollToSelected ?? {}),
     },
     styles: options.styles,
     clearControl: {
@@ -155,7 +155,7 @@ export function createSelect(options: {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
   scrollToSelected?: Partial<ScrollToSelectedConfig>;
   styles?: StyleConfig;
-  config?: Partial<GlobalSelectConfig>;
+  config?: SelectInstanceConfig;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -319,7 +319,7 @@ export function initSelect(
     multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
     scrollToSelected?: Partial<ScrollToSelectedConfig>;
     styles?: StyleConfig;
-    config?: Partial<GlobalSelectConfig>;
+    config?: SelectInstanceConfig;
     clearable?: boolean;
     clearSelectionOnClear?: boolean;
     clearSearchOnClear?: boolean;
@@ -426,7 +426,7 @@ export function getSelectedItems(element: HTMLElement): any[] {
   return select.getSelectedItems?.() || [];
 }
 
-export function updateConfig(element: HTMLElement, config: Partial<GlobalSelectConfig>): void {
+export function updateConfig(element: HTMLElement, config: SelectInstanceConfig): void {
   const select = element as any;
   select.updateConfig?.(config);
 }
@@ -492,6 +492,9 @@ export type {
   SelectCapabilitiesReport,
   LimitationState,
   GlobalSelectConfig,
+  SelectInstanceConfig,
+  SelectedOptionsConfig,
+  SelectConfigUpdate,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,

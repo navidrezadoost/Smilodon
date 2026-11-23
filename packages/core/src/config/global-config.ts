@@ -4,6 +4,18 @@
  */
 
 import type { KnownLimitationId, LimitationPolicy } from '../types/limitation.js';
+import { validateSelectedOptionsConfigUpdate } from './public-config.js';
+
+export type SelectedOptionsPlacement = 'original' | 'selected-first';
+export type SelectedOptionsGroupedPlacement = 'within-group';
+export type ScrollToSelectedOnOpen = 'preserve' | 'reveal' | 'align';
+
+export interface SelectedOptionsConfig {
+  /** Presentation order; does not mutate the caller's source collection. */
+  placement: SelectedOptionsPlacement;
+  /** Selected-item presentation policy when source options are grouped. */
+  groupedPlacement: SelectedOptionsGroupedPlacement;
+}
 
 type ScrollToSelectedBehavior = 'auto' | 'instant' | 'smooth';
 type ScrollToSelectedBlock = 'start' | 'center' | 'end' | 'nearest';
@@ -13,6 +25,8 @@ export interface ScrollToSelectedConfig {
   enabled: boolean;
   /** Which selected item to scroll to in multi-select mode: 'first' | 'last' */
   multiSelectTarget: 'first' | 'last';
+  /** Positioning policy when the dropdown opens. */
+  onOpen: ScrollToSelectedOnOpen;
   /** Scroll behavior */
   behavior?: ScrollToSelectedBehavior;
   /** Scroll block alignment */
@@ -275,6 +289,8 @@ export interface GlobalSelectConfig {
   multiSelectDisplay: MultiSelectDisplayConfig;
   /** Scroll to selected configuration */
   scrollToSelected: ScrollToSelectedConfig;
+  /** Selected-option presentation policy */
+  selectedOptions: SelectedOptionsConfig;
   /** Load more configuration */
   loadMore: LoadMoreConfig;
   /** Busy bucket configuration */
@@ -306,6 +322,12 @@ export interface GlobalSelectConfig {
   /** Estimated row height used by the guarded EnhancedSelect viewport-windowing test path. */
   estimatedItemHeight?: number;
 }
+
+/** Partial global/per-instance update shape for nested selected-option settings. */
+export type SelectConfigUpdate = Omit<Partial<GlobalSelectConfig>, 'selectedOptions' | 'scrollToSelected'> & {
+  selectedOptions?: Partial<SelectedOptionsConfig>;
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
+};
 
 /**
  * Default global configuration
@@ -342,8 +364,13 @@ const defaultConfig: GlobalSelectConfig = {
   scrollToSelected: {
     enabled: true,
     multiSelectTarget: 'first',
+    onOpen: 'reveal',
     behavior: 'smooth',
     block: 'nearest',
+  },
+  selectedOptions: {
+    placement: 'original',
+    groupedPlacement: 'within-group',
   },
   loadMore: {
     enabled: false,
@@ -431,8 +458,9 @@ class SelectConfigManager {
   /**
    * Update global configuration (deep merge)
    */
-  updateConfig(updates: Partial<GlobalSelectConfig>): void {
-    this.config = this.deepMerge(this.config, updates);
+  updateConfig(updates: SelectConfigUpdate): void {
+    const acceptedUpdates = validateSelectedOptionsConfigUpdate(updates);
+    this.config = this.deepMerge(this.config, acceptedUpdates as Partial<GlobalSelectConfig>);
   }
 
   /**
@@ -446,8 +474,8 @@ class SelectConfigManager {
    * Merge component-level config with global config
    * Component-level config takes precedence
    */
-  mergeWithComponentConfig(componentConfig: Partial<GlobalSelectConfig>): GlobalSelectConfig {
-    return this.deepMerge(this.deepClone(this.config), componentConfig);
+  mergeWithComponentConfig(componentConfig: SelectConfigUpdate): GlobalSelectConfig {
+    return this.deepMerge(this.deepClone(this.config), componentConfig as Partial<GlobalSelectConfig>);
   }
 
   private deepClone<T>(obj: T): T {
@@ -488,7 +516,7 @@ export const selectConfig = new SelectConfigManager();
 /**
  * Helper function to configure select globally
  */
-export function configureSelect(config: Partial<GlobalSelectConfig>): void {
+export function configureSelect(config: SelectConfigUpdate): void {
   selectConfig.updateConfig(config);
 }
 

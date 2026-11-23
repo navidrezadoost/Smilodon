@@ -2,6 +2,8 @@
 
 SolidJS adapter for Smilodon's core custom-element select engine.
 
+> **Solid 1.12.0 / Core 1.20.0:** Includes selected-first option ordering and configurable selected-option positioning when the dropdown opens. See [selected-option configuration](#selected-option-order-and-open-positioning) and the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
 This package gives Solid applications a wrapper around the shared `enhanced-select` runtime. Its public `virtualized` option enables legacy chunked rendering for large flat lists, not viewport-windowed rendering; true viewport virtualization remains guarded and is not a supported production mode.
 
 Packed-consumer qualification is mode-specific: the package builds and passes a Vite/Bundler consumer check, while strict TypeScript NodeNext checking with `skipLibCheck: false` currently fails with two TS2834 diagnostics for extensionless relative imports in the emitted declarations. A separate Solid NodeNext remediation is under review; this note does not claim general consumer compatibility.
@@ -195,6 +197,10 @@ import { Select } from '@smilodon/solid'
 ## Core config parity and global defaults
 
 The Solid adapter accepts the shared core configuration model through convenience props and a full `config` prop. These declarations establish supported inputs, not exhaustive behavioral parity: adapter contract and browser coverage remain incomplete. See the [feature-contract audit](../../docs/architecture/PHASE-4-FEATURE-CONTRACT-AUDIT.md) for current verification boundaries.
+
+`config.selectedOptions` and `config.scrollToSelected` support partial nested updates and remain reactive. A placement change made while the dropdown is open applies to the next opening. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for scenario coverage and remaining browser/runtime limits.
+
+These options are available in `@smilodon/solid@1.12.0` with Core `1.20.0`. See the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md) for tested consumer modes and browser limitations.
 
 ### Convenience props
 

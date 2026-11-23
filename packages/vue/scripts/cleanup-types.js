@@ -61,7 +61,7 @@ export interface SelectExposed {
   getSelectedItems: () => SelectItem[];
   getSelectedValues: () => Array<string | number>;
   clearSearch: () => void;
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
+  updateConfig: (config: SelectInstanceConfig) => void;
   setError: (message: string) => void;
   clearError: () => void;
   setRequired: (required: boolean) => void;

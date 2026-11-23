@@ -14,7 +14,20 @@
 
 > **Issue #100:** `multiSelectDisplay.scrollToLatestChip` is available in `@smilodon/core@1.17.0`. See [Multi-Select Display Modes](#multi-select-display-modes) and the [release verification](../../docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
-> **Core 1.19.0:** Published to npm with `--select-arrow-container-position` (default `absolute`) and direction-aware group-header `start` alignment. The release also includes Issue #109's acknowledged remote-search threshold. See [arrow container positioning](#custom-arrow-slot), the [styling-token reference](../../docs/STYLING-TOKENS.md), and the [release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
+> **Core 1.20.0:** Adds selected-first option presentation and selected-option open positioning through `selectedOptions` and `scrollToSelected`. It also includes Core 1.19.0's styling fixes and search threshold. See [selected-option configuration](#selected-option-presentation-and-opening-scroll), [arrow container positioning](#custom-arrow-slot), and the [release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
+## Selected-option presentation and opening scroll
+
+The opt-in `selectedOptions.placement: 'selected-first'` setting stably promotes selected options for each dropdown opening. Grouped options remain within their original groups. `scrollToSelected` controls whether the selected target is preserved, revealed, or aligned when opening; the defaults remain original option order and the existing reveal behavior. Both settings are available through `updateConfig()` and accept partial nested updates that preserve sibling values. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for lifecycle, keyboard, virtualization, and qualification boundaries.
+
+This configuration is available in `@smilodon/core@1.20.0`. The release browser and native-platform limits are recorded in the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
+```ts
+select.updateConfig({
+  selectedOptions: { placement: 'selected-first' },
+  scrollToSelected: { onOpen: 'align', block: 'center' },
+})
+```
 
 ## Custom busy bucket (Core 1.13.0)
 
@@ -681,7 +694,38 @@ The component implements keyboard interaction paths including:
 
 When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.
 
-When `scrollToSelected.enabled` is on, active and ARIA state are updated immediately on open. Core waits for the dropdown's finite entrance animation to settle before positioning a selected option, and leaves the options viewport unchanged when that option is already fully visible. Only the internal options scroller is moved; keyboard navigation and user scrolling cancel a pending open-time restoration. The existing `scrollToSelected.behavior` and `block` settings control the resulting movement. See the [Issue #116 implementation record](../../docs/architecture/ISSUE-116-DROPDOWN-OPEN-SCROLL.md).
+When `scrollToSelected.enabled` is on, active and ARIA state are updated immediately on open. Core waits for the dropdown's finite entrance animation to settle before applying the opening policy. The default `onOpen: 'reveal'` moves the internal options scroller only when the selected target is not fully visible. Use `onOpen: 'align'` to apply `block: 'start' | 'center' | 'end' | 'nearest'` even when the target is visible, subject to scroll bounds. Use `onOpen: 'preserve'` to retain the viewport; when selected-first ordering changes between openings, Core anchors the first visible option by stable key and restores its viewport offset. If the anchor disappears, the previous scroll position is clamped to the new bounds. Disabling the setting or keyboard and deliberate pointer/scroll input cancel pending automatic movement.
+
+```ts
+select.updateConfig({
+  scrollToSelected: {
+    enabled: true,
+    onOpen: 'align', // 'preserve' | 'reveal' | 'align'; default: 'reveal'
+    multiSelectTarget: 'first',
+    behavior: 'smooth', // 'auto' | 'instant' | 'smooth'
+    block: 'center', // 'start' | 'center' | 'end' | 'nearest'
+  },
+})
+```
+
+The policy is snapshotted for each opening; changing it while the entrance operation is pending does not start a competing transaction. Only the internal options scroller is moved. See the [Issue #116 implementation record](../../docs/architecture/ISSUE-116-DROPDOWN-OPEN-SCROLL.md) and [selected-options projection record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
+
+### Selected option presentation order
+
+Core can optionally present selected options before unselected options while preserving each partition's original order. The default is `original`, so existing consumers keep source order. For grouped options, `selected-first` promotes selected options only within their current groups; group order and identity do not change.
+
+```ts
+import { configureSelect } from '@smilodon/core';
+
+configureSelect({
+  selectedOptions: {
+    placement: 'selected-first', // 'original' | 'selected-first'
+    groupedPlacement: 'within-group',
+  },
+});
+```
+
+The same partial setting can be applied to an instance with `select.updateConfig({ selectedOptions: { placement: 'selected-first' } })`. Core snapshots the policy and selected membership when the dropdown opens. Changing the setting or selection while the list is open does not reshuffle that opening; close and reopen to apply the current values. Selection styling and events still reflect current selection immediately. Web adapter forwarding is included in the `1.20.0` release; React Native runtime behavior is not qualified. See the [selected-options projection record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
 
 **Multi-Select Range Selection:**
 - `Shift + ↑/↓` - Range selection

@@ -2,7 +2,7 @@
 
 Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
-> **Published package versions:** React `1.12.2` and Core `1.19.0` are available from npm. React `1.12.2` includes Issue #112 renderer-root preservation; Core `1.19.0` includes Issues #109, #114, and #115. See the [Core and React 1.19.0 release record](../../docs/releases/WEB-1.19.0-RELEASE.md). Earlier release details are in the [React 1.12.1 record](../../docs/releases/REACT-1.12.1-RELEASE.md) and [web 1.17.0 record](../../docs/releases/WEB-1.17.0-RELEASE.md).
+> **Published package versions:** React `1.13.0` and Core `1.20.0` expose selected-option ordering and open positioning. React `1.12.2`'s renderer-root fix and Core `1.19.0`'s styling/search fixes are included. See the [1.20.0 release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
 
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
@@ -267,6 +267,23 @@ In horizontal multi-select mode, `multiSelectDisplay.scrollToLatestChip` reveals
     overflowX: 'auto',
     scrollToLatestChip: true,
     scrollToLatestChipBehavior: 'smooth',
+  }}
+/>
+```
+
+### Selected-option order and open positioning
+
+React accepts Core's `selectedOptions` and `scrollToSelected` settings in the `config` prop. Nested partial updates are supported; for example, updating only `selectedOptions.placement` preserves the other Core settings. The open dropdown keeps its current ordering snapshot until it closes and opens again. See the [projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for browser coverage and limitations.
+
+These options are available in `@smilodon/react@1.13.0` with Core `1.20.0`. React Native is excluded from this release; its native runtime is not qualified.
+
+```tsx
+<Select
+  items={items}
+  value={value}
+  config={{
+    selectedOptions: { placement: 'selected-first' },
+    scrollToSelected: { onOpen: 'align', block: 'center' },
   }}
 />
 ```
