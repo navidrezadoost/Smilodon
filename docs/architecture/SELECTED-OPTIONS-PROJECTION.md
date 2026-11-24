@@ -6,9 +6,9 @@ Worktree: `/tmp/smilodon-selected-projection`
 
 Base candidate: `b1dc563c1e405239634a1354c1f211fb984610d6`
 
-Disposition: **`E3.4.2_WEB_RELEASE_CANDIDATE_QUALIFIED — CHROME156_AND_FIREFOX148_PASS — CHROMIUM_147_AND_WEBKIT_UNVERIFIED — REACT_NATIVE_FEATURE_EXCLUDED`**
+Disposition: **`E3.4.2_WEB_RELEASE_PUBLISHED — CHROME156_AND_FIREFOX148_PASS — CHROMIUM_147_AND_WEBKIT_UNVERIFIED — REACT_NATIVE_FEATURE_EXCLUDED`**
 
-This is the implementation and qualification record. The web release version mapping, package provenance, and registry results are recorded in [WEB-1.20.0-RELEASE.md](../releases/WEB-1.20.0-RELEASE.md). No native runtime qualification is represented here.
+This is the implementation and qualification record. The web release version mapping, package provenance, and registry results are recorded in [WEB-1.20.0-RELEASE.md](../releases/WEB-1.20.0-RELEASE.md). No native runtime qualification is represented here. The source commit remains local and has not been merged to GitHub `main`.
 
 ## Contract and boundaries
 

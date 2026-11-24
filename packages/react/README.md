@@ -49,7 +49,7 @@ In focused JSX examples, `items`, `groups`, `bigItems`, and similar values are c
 
 ## Acknowledged data loading (Phase 2F-D development candidate)
 
-The current local Phase 2F-D candidate integrates the core acknowledged-loading facade with the React adapter. It is not part of the published `1.10.0` package, and Firefox/WebKit certification, independent review, and remaining contract coverage are pending. Treat the following as implementation guidance for this candidate, not a release-readiness or cross-browser compatibility claim.
+The Core and React acknowledged-loading APIs are published in Core `1.19.0` and React `1.12.2` and later. This documents the released Core/React contract; it does not claim equivalent Vue, Svelte, Solid, Vanilla, or React Native adapter APIs, or full browser/accessibility qualification. See the [Core and React release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
 
 Acknowledged loading is opt-in through per-instance `config.dataLoading`; there is no global acknowledged-loading default. If the config is omitted, the adapter keeps the legacy protocol and existing callback behavior. The host owns fetch, cancellation, and retry policy; the core owns request identity, stale-completion rejection, canonical acceptance, and subsequent DOM projection.
 

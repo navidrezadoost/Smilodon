@@ -1,6 +1,6 @@
 # Issue #116 — Dropdown entrance and selected-option scrolling
 
-Status: **Included in the locally versioned web release candidate `1.20.0`; native runtime excluded**
+Status: **Published in Core `1.20.0`; native runtime excluded**
 
 Issue: [#116](https://github.com/navidrezadoost/Smilodon/issues/116)
 

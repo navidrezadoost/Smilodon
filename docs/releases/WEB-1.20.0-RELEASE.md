@@ -1,10 +1,10 @@
 # Web release — Core 1.20.0 and adapter updates
 
 Release date: 2026-11-23
-Status: **Qualified local release candidate; publication pending**
+Status: **Published to npm; registry metadata and clean consumer verified**
 Source branch: `feat/selected-options-projection`
 Base candidate: `b1dc563c1e405239634a1354c1f211fb984610d6`
-Versioned source commit: `85811fcdafb4b72bdf1fb73e498168b3719f40d3`
+Versioned source commit: `85811fcdafb4b72bdf1fb73e498168b3719f40d3` (package artifacts built from this tree)
 
 ## Features
 
@@ -36,12 +36,15 @@ Adapter peer ranges already accept Core `1.20.0`; no peer-range change is requir
 - Strict packed consumer checks for Core, React, Vue, Svelte, Solid, and Vanilla passed in NodeNext and Bundler modes with `skipLibCheck: false`.
 - Selected-options browser matrix: Chrome for Testing `156.0.8078.4` 14/14; pinned Playwright Firefox `148.0.2` 14/14. Pinned Chromium `147.0.7727.15` was unavailable because the Playwright CDN returned HTTP 403. WebKit `26.4` could not launch because this Manjaro host lacks `libicu74`, `libxml2`, and `libflite1`. No results are claimed for those engines.
 - Android/iOS runtime was not tested. The selected-options feature is excluded from the React Native runtime claim.
+- All six npm publishes completed. Registry version, shasum, and SRI matched the six local tarballs exactly. The published tarball SHA-256 and npm metadata are listed below.
+- A clean temporary consumer installed all six exact versions from npm. Strict TypeScript checks passed in NodeNext and Bundler modes with `skipLibCheck: false`; ESM imports passed for all six packages with a DOM environment and the browser export condition. This import smoke is not a substitute for a real-browser integration run.
+- Repository root and React README data-loading status text was corrected after publication because it still described the earlier Phase 2F-D candidate as unreleased. The package README snapshots in the already-published tarballs cannot be replaced; no extra React patch release was created solely for this documentation correction.
 
 ## Package contents and provenance
 
 The workspace `files` allowlists limit each tarball to its `dist` directory, package README, and (for adapters) `COMPLETE-GUIDE.md`. Source tests, playground files, workflows, and architecture records are not included. Source maps under `dist` are retained, consistent with the current package build output.
 
-Exact tarball SHA-256, npm shasum, and registry SRI are recorded below after verification. The source commit is local and has not been pushed or merged to GitHub `main`; no hosted Actions run or GitHub source merge is implied by this local npm release. React Native is not part of the publication set.
+Exact tarball SHA-256, npm shasum, and registry SRI are recorded below. The source commit is local and has not been pushed or merged to GitHub `main`; no hosted Actions run or GitHub source merge is implied by this npm release. React Native is not part of the publication set.
 
 | Package | Version | Tarball SHA-256 | npm shasum | Registry SRI |
 | --- | ---: | --- | --- | --- |

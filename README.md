@@ -289,15 +289,15 @@ Representative use cases:
 - mobile management tooling via React Native
 - design systems that want one runtime across multiple frameworks
 
-## Acknowledged data loading (Phase 2F-D development candidate)
+## Acknowledged data loading
 
-The current isolated development candidate adds an opt-in, identity-based data-loading protocol to the core runtime and React adapter. This is not part of the published `1.10.0` packages. React documentation below describes the candidate API; equivalent Vue, Svelte, Solid, Vanilla, and React Native adapter APIs have not been implemented or certified in this workstream.
+The opt-in, identity-based data-loading protocol is published in Core `1.19.0` and the React adapter `1.12.2` and later. This section documents the Core and React scope only; it does not claim equivalent acknowledged-loading APIs for Vue, Svelte, Solid, Vanilla, or React Native. See the [Core and React release record](docs/releases/WEB-1.19.0-RELEASE.md) for package and consumer evidence.
 
 The protocol is opt-in per instance. Omitting `config.dataLoading` preserves the legacy protocol and its existing callback behavior. The host application owns the network request and supplies its result through `completeDataRequest`; Smilodon does not provide a transport client or automatic retry policy.
 
 The following is a configuration fragment, not a complete component; the full React request/completion example is in the [React guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
-Issue #109 adds the opt-in `dataLoading.minSearchCharacters` setting for acknowledged remote/hybrid search. Core suppresses requests and search-owned busy state until the trimmed query reaches the configured Unicode code-point length, while preserving unfiltered items and their `loadMore` continuation. The default `0` keeps existing behavior. This change is in development and is not available in a published package; see the [Core guide](./packages/core/README.md#minimum-length-for-acknowledged-remote-search--issue-109) for semantics and the [qualification record](./docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md) for evidence.
+Issue #109's opt-in `dataLoading.minSearchCharacters` setting is published in Core `1.19.0` and `1.20.0`. Core suppresses requests and search-owned busy state until the trimmed query reaches the configured Unicode code-point length, while preserving unfiltered items and their `loadMore` continuation. The default `0` keeps existing behavior. See the [Core guide](./packages/core/README.md#minimum-length-for-acknowledged-remote-search--issue-109) and the [1.19.0 release record](./docs/releases/WEB-1.19.0-RELEASE.md).
 
 ```tsx
 <Select
@@ -320,7 +320,7 @@ Issue #109 adds the opt-in `dataLoading.minSearchCharacters` setting for acknowl
 
 The request includes a request ID, query generation, query text, fetch limit, and page or cursor position. The host must echo the request ID and generation in its completion. Stale or unknown completions are rejected; an accepted response is projected separately, with projection outcome reported through `dataProjection`. Empty searches remain explicit requests, and a failed request does not trigger an automatic retry.
 
-Phase 2F-D is provisionally accepted as development-complete, excluding outstanding test certification. Firefox and WebKit verification, independent review, skipped-contract classification, and full C1–C8 acceptance remain incomplete. Do not treat this section as release approval or as a claim of full cross-browser compatibility. See [the React adapter guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate) and [the core API guide](./packages/core/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
+The released data-loading behavior remains scoped to the Core and React APIs described above. This does not certify equivalent adapter behavior, native runtime behavior, manual accessibility conformance, or every browser/toolchain combination. See the [React adapter guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate) and [Core API guide](./packages/core/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
 ---
 
@@ -409,7 +409,7 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 
 ### Busy-bucket custom content (Issue #90)
 
-Issue #90 introduces Core's `loading-icon` and `loading-content` slots in `@smilodon/core@1.13.0`. Framework integrations add React `1.12.0` props, Vue `1.11.0` named slots, Svelte 5 `2.1.0` snippets, and Solid `1.11.0` JSX props; Vanilla `1.11.0` uses the native light-DOM slots. The release source is merged, but npm publication of these six versions must be verified separately. React Native's WebView/native API does not expose these slots, and no React Native parity is claimed.
+Issue #90 adds Core's `loading-icon` and `loading-content` slots in `@smilodon/core@1.13.0`. Framework integrations add React `1.12.0` props, Vue `1.11.0` named slots, Svelte 5 `2.1.0` snippets, and Solid `1.11.0` JSX props; Vanilla `1.11.0` uses the native light-DOM slots. These package versions are published; registry verification is recorded in the [1.17.0 release record](docs/releases/WEB-1.17.0-RELEASE.md). React Native's WebView/native API does not expose these slots, and no React Native parity is claimed.
 
 | Adapter | API | Version introducing Issue #90 |
 | --- | --- | --- |
