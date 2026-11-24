@@ -17,9 +17,45 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-23
+
+Web release: Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. React Native is excluded because Android/iOS runtime qualification is incomplete.
+
 ### Added
 
-- **Acknowledged remote-search minimum length ([#109](https://github.com/navidrezadoost/Smilodon/issues/109)):** Core adds the per-instance `dataLoading.minSearchCharacters` option for remote and hybrid search. Below-threshold text creates no search request or search busy state; unfiltered items and pagination are retained and restored when a qualifying query is cleared, shortened, or made ineligible by a runtime threshold update, with the accepted snapshot projected into the visible options. Cold-start page browsing with no initial items starts at `initialPage`; preloaded initial items continue at `initialPage + 1`. Default `0` preserves prior search behavior. This is unreleased and not yet available from npm.
+- **Selected-first option presentation:** Core adds `selectedOptions.placement: 'selected-first'` with stable within-group promotion. Source item order, group order, selection values, and source indices remain unchanged. React, Vue, Solid, Svelte, and Vanilla expose the shared configuration.
+- **Selected-option open positioning:** `scrollToSelected` supports `preserve`, `reveal`, and `align` policies, with configurable target, behavior, and block alignment. The opening snapshot coordinates with finite dropdown entrance animations, avoids unnecessary scrolling, and cancels stale work on user navigation or lifecycle changes.
+
+### Fixed
+
+- **Dropdown entrance and selected-option scroll coordination ([#116](https://github.com/navidrezadoost/Smilodon/issues/116)):** Active and ARIA state remain immediate while physical movement waits for finite entrance animation completion and uses only the options viewport.
+
+### Qualification scope
+
+- Web workspace builds, unit/data-loading/contracts, packed consumer types, and browser tests are recorded in [the 1.20.0 release record](docs/releases/WEB-1.20.0-RELEASE.md).
+- Chrome 156 and pinned Firefox 148 passed the selected-options browser suite. Pinned Chromium 147 and WebKit remain unavailable in the recorded environment.
+- React Native is not part of this release; no Android or iOS runtime result is claimed.
+
+## [1.19.0] - 2026-11-22
+
+Core `1.19.0` was published to npm on 2026-11-22. Its archive integrity and consumer checks are recorded in the [Core and React 1.19.0 web release record](docs/releases/WEB-1.19.0-RELEASE.md). This release also carries the acknowledged remote-search minimum-length feature from Issue #109.
+
+### Added
+
+- **Acknowledged remote-search minimum length ([#109](https://github.com/navidrezadoost/Smilodon/issues/109)):** Core adds the per-instance `dataLoading.minSearchCharacters` option for remote and hybrid search. Below-threshold text creates no search request or search busy state; browse items and pagination are kept separate from search results, restored when needed, and projected after threshold changes. Cold-start browsing begins at `initialPage` when there are no initial items and continues at `initialPage + 1` when items were preloaded. The default `0` preserves prior search behavior.
+- **Arrow container positioning ([#114](https://github.com/navidrezadoost/Smilodon/issues/114)):** Core exposes `--select-arrow-container-position` to customize the dropdown arrow container's CSS positioning. It defaults to `absolute`; existing RTL and multi-select placement rules are retained.
+
+### Fixed
+
+- **RTL group-header alignment ([#115](https://github.com/navidrezadoost/Smilodon/issues/115)):** Group headers use logical `start` alignment by default, follow Core's effective direction, and preserve explicit `left`, `right`, or `center` token values.
+
+## [1.12.2] - 2026-11-22
+
+React `1.12.2` was published to npm on 2026-11-22. Registry integrity and clean consumer qualification are in the [Core and React 1.19.0 web release record](docs/releases/WEB-1.19.0-RELEASE.md).
+
+### Fixed
+
+- **React acknowledged-pagination renderer lifecycle ([#112](https://github.com/navidrezadoost/Smilodon/issues/112)):** React preserves custom option and group-header renderer roots while Core retains cumulative accepted pages across acknowledged requests and equivalent controlled rerenders. See the [React renderer lifecycle guide](docs/architecture/ISSUE-112-REACT-RENDERER-CACHE-LIFECYCLE.md).
 
 ## [1.18.0] - 2026-11-21
 

@@ -179,6 +179,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-separator-position-with-clear` | `calc(var(--select-arrow-right-with-clear) + var(--select-arrow-width))` | spacing | Separator offset when clear control is visible. |
 | `--select-arrow-width` | `42px` | size | Arrow hit area width. |
 | `--select-arrow-height` | `auto` | layout | Arrow container height. |
+| `--select-arrow-container-position` | `absolute` | layout | CSS `position` for the dropdown arrow container. `static` and `relative` change its participation in the input shell's flex layout. |
 | `--select-arrow-border-radius` | `0 var(--select-radius-md) var(--select-radius-md) 0` | radius | Arrow-side corner radius. |
 | `--select-arrow-border-radius-rtl` | `var(--select-radius-md) 0 0 var(--select-radius-md)` | radius | Arrow-side corner radius in RTL layout. |
 | `--select-arrow-size` | `18px` | size | Arrow icon size. |
@@ -242,7 +243,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-group-header-weight` | `600` | typography | Group header weight. |
 | `--select-group-header-color` | `var(--select-text-muted)` | color | Group header text color. |
 | `--select-group-header-bg` | `transparent` | color | Group header background. |
-| `--select-group-header-text-align` | `left` | layout | Group header alignment. |
+| `--select-group-header-text-align` | `start` | layout | Group header alignment follows the effective text direction (left in LTR, right in RTL); explicit `left`, `right`, and `center` values are supported. |
 | `--select-group-header-font-size` | `11px` | typography | Group header size. |
 | `--select-group-header-text-transform` | `uppercase` | transform | Group header text casing. |
 | `--select-group-header-letter-spacing` | `0.08em` | typography | Group header tracking. |

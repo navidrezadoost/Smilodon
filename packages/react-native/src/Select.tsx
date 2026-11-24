@@ -16,12 +16,12 @@ import {
 import { WebView, type WebViewMessageEvent } from 'react-native-webview'
 import coreBundle from './generated/coreBundle.js'
 import type {
-  GlobalSelectConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
   StyleConfig,
 } from '@smilodon/core/native-types'
+import type { SelectConfigUpdate } from '@smilodon/core/native-types'
 
 export interface SelectItem {
   value: string | number
@@ -70,7 +70,7 @@ export interface SelectHandle {
   setItems: (items: SelectItem[]) => void
   setGroupedItems: (groups: GroupedItem[]) => void
   setValue: (value: SelectValue | undefined) => void
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void
+  updateConfig: (config: SelectConfigUpdate) => void
 }
 
 export interface SelectProps {
@@ -90,7 +90,7 @@ export interface SelectProps {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
   scrollToSelected?: Partial<ScrollToSelectedConfig>
   styles?: StyleConfig
-  config?: Partial<GlobalSelectConfig>
+  config?: SelectConfigUpdate
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -373,13 +373,12 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
         showSelectedIndicator,
       },
       multiSelectDisplay,
+      ...(scrollToSelected !== undefined ? {
+        scrollToSelected: { enabled: true, ...scrollToSelected },
+      } : {}),
       infiniteScroll: {
         enabled: infiniteScroll,
         pageSize,
-      },
-      scrollToSelected: {
-        enabled: true,
-        ...(scrollToSelected ?? {}),
       },
       styles: stylesConfig,
       expandable: {

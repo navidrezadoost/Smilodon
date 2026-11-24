@@ -2,6 +2,8 @@
 
 Vanilla JavaScript/TypeScript helpers for Smilodon Select. Part of the [Smilodon](https://github.com/navidrezadoost/smilodon) UI toolkit.
 
+> **Vanilla 1.12.0 / Core 1.20.0:** Includes selected-first option ordering and configurable selected-option positioning when the dropdown opens. See [selected-option configuration](#selected-option-order-and-open-positioning) and the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
 > Large-list status: the helper's public `virtualized` option maps to legacy chunked rendering for large flat lists; it does not window rows to the viewport. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 > Current API: use the [API reference](../../docs/API-REFERENCE.md) and the package's exported TypeScript declarations. The long-form guide below contains legacy `NativeSelect` examples and is not a current API inventory.
@@ -91,6 +93,10 @@ const select = createSelect({
 ### Core config parity and global defaults
 
 The Vanilla helpers now expose both adapter-style convenience options and the full shared core config shape.
+
+Pass `selectedOptions` and `scrollToSelected` through `config` to control selected-first presentation and open-time positioning. Both nested sections accept partial updates through `updateConfig()`; the currently open list keeps its snapshot until the next opening. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for implementation and verification details.
+
+These options are available in `@smilodon/vanilla@1.12.0` with Core `1.20.0`. See the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md) for implementation and browser limits.
 
 #### Convenience options on `createSelect()` / `initSelect()`
 

@@ -32,6 +32,18 @@ describe('EnhancedSelect Styling Contract', () => {
         el.remove();
     });
 
+    it('exposes arrow-container positioning with the absolute default', () => {
+        const styles = Array.from(el.shadowRoot!.querySelectorAll('style'))
+            .map((style) => style.textContent ?? '')
+            .join('\n');
+        const arrowRule = Array.from(styles.matchAll(/\.dropdown-arrow-container\s*\{([^}]*)\}/g))
+            .map((match) => match[1])
+            .find((rule) => rule.includes('--select-arrow-container-position'));
+
+        expect(arrowRule).toBeDefined();
+        expect(arrowRule).toContain('position: var(--select-arrow-container-position, absolute);');
+    });
+
     it('applies correct parts to shadow DOM elements', async () => {
         // Trigger render
         (el as any)._config.searchable = true;
@@ -163,6 +175,11 @@ describe('EnhancedSelect Styling Contract', () => {
         const header = el.shadowRoot!.querySelector('[part="group-header"]') as HTMLElement;
         expect(header).toBeTruthy();
         expect(header.textContent).toBe('grp:Group1');
+    });
+
+    it('uses logical start as the default group header alignment', async () => {
+        const cssText = el.shadowRoot!.querySelector('style')?.textContent || '';
+        expect(cssText).toContain('text-align: var(--select-group-header-text-align, start)');
     });
 
     it('auto-renders group headers for flat items with group properties', async () => {
@@ -459,7 +476,7 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(cssText).toContain('var(--select-option-selected-active-bg, var(--select-option-selected-bg, #e0e7ff))');
         expect(cssText).toContain('var(--select-seperator-width, 1px)');
         expect(cssText).toContain('var(--select-seperator-height, 60%)');
-        expect(cssText).toContain('var(--select-group-header-text-align, left)');
+        expect(cssText).toContain('var(--select-group-header-text-align, start)');
         expect(cssText).toContain(':host([darkmode])');
         expect(cssText).toContain(':host([dark-mode])');
         expect(cssText).toContain(':host-context([theme="dark"])');

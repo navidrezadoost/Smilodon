@@ -14,6 +14,21 @@
 
 > **Issue #100:** `multiSelectDisplay.scrollToLatestChip` is available in `@smilodon/core@1.17.0`. See [Multi-Select Display Modes](#multi-select-display-modes) and the [release verification](../../docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
+> **Core 1.20.0:** Adds selected-first option presentation and selected-option open positioning through `selectedOptions` and `scrollToSelected`. It also includes Core 1.19.0's styling fixes and search threshold. See [selected-option configuration](#selected-option-presentation-and-opening-scroll), [arrow container positioning](#custom-arrow-slot), and the [release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
+## Selected-option presentation and opening scroll
+
+The opt-in `selectedOptions.placement: 'selected-first'` setting stably promotes selected options for each dropdown opening. Grouped options remain within their original groups. `scrollToSelected` controls whether the selected target is preserved, revealed, or aligned when opening; the defaults remain original option order and the existing reveal behavior. Both settings are available through `updateConfig()` and accept partial nested updates that preserve sibling values. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for lifecycle, keyboard, virtualization, and qualification boundaries.
+
+This configuration is available in `@smilodon/core@1.20.0`. The release browser and native-platform limits are recorded in the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
+```ts
+select.updateConfig({
+  selectedOptions: { placement: 'selected-first' },
+  scrollToSelected: { onOpen: 'align', block: 'center' },
+})
+```
+
 ## Custom busy bucket (Core 1.13.0)
 
 Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:
@@ -45,9 +60,9 @@ select.updateConfig({
 
 The bucket exposes `::part(loading)`, `::part(loading-icon)`, `::part(loading-spinner)`, `::part(loading-message)`, and `::part(loading-content)`. Layout can be adjusted with `--select-busy-gap`, `--select-busy-padding`, `--select-busy-color`, `--select-busy-bg`, and the existing `--select-spinner-size` token. `minDisplayTime` is a visual minimum after request completion; it does not delay acceptance, pagination, or `aria-busy` updates.
 
-## Acknowledged data loading (Phase 2F-D development candidate)
+## Acknowledged data loading
 
-The local Phase 2F-D candidate adds a public, per-instance data-loading configuration and completion surface to `EnhancedSelect`. This API is not included in the published `1.10.0` package. The legacy protocol remains the default; remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. Cross-browser certification and independent review remain pending, so these examples are illustrative and have not been certified for release.
+The acknowledged protocol provides per-instance data-loading configuration and request completion on `EnhancedSelect`. It is included in the published Core package; the legacy protocol remains the default. Remote and hybrid search or cursor pagination require explicit acknowledged-protocol opt-in. There is no global acknowledged-loading default. See the [Core 1.19.0 release record](../../docs/releases/WEB-1.19.0-RELEASE.md) for the tested scope and browser limitations.
 
 The host owns transport, cancellation, and retry decisions. `completeDataRequest()` accepts a response only when its request identity and query generation are current. A return value of `accepted` means the canonical response was accepted; DOM projection completes separately and is reported by `dataProjection`.
 
@@ -70,7 +85,7 @@ The default is `0`, which preserves existing behavior. The threshold applies to 
 
 Below the threshold, the current text remains visible while Core displays the unfiltered browsing dataset. Search requests are suppressed, but explicit unfiltered pagination still uses `loadMore`. When input crosses into eligible search, Core starts at the configured first page and retains the independent browse items and continuation. Returning below threshold or calling `clearSearch()` cancels an active qualifying search and restores that browse state; completions from the canceled query are stale. An accepted runtime threshold update also projects a changed restored snapshot into the visible options, including when the update is deferred until an in-progress result projection settles. Page-mode browsing treats nonempty initial items as the configured `initialPage` and continues at the next page; with no initial items, the first unfiltered request starts at `initialPage`. The host must complete load-more requests with `hasMore: true` or `status: 'exhausted'`/`hasMore: false` to advance or end browsing; Core does not infer server exhaustion from the item count.
 
-This is an opt-in Core candidate until the Issue #109 qualification and release are complete. See [the Issue #109 qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md).
+This opt-in behavior is available in `@smilodon/core@1.19.0`. See [the Issue #109 qualification record](../../docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md) and [release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
 
 ```ts
 import { EnhancedSelect } from '@smilodon/core'
@@ -237,6 +252,16 @@ The default chevron remains in place unless a light-DOM child is assigned to the
 ```
 
 The custom node is decorative and Core keeps ownership of the arrow click behavior. The built-in arrow rotates with the popup; a custom node does not rotate unless the consumer styles it using the host's `data-open="true"` state. Core does not impose its arrow color or transform on assigned custom content. A custom arrow container honors `--select-arrow-hover-bg` on hover; if the token is unset, its background remains transparent. This behavior is available in `@smilodon/core@1.18.0` and fixes [Issue #104](https://github.com/navidrezadoost/Smilodon/issues/104).
+
+The arrow container uses absolute positioning by default. Set `--select-arrow-container-position` to change its CSS `position` without reaching into the component's Shadow DOM:
+
+```css
+enhanced-select {
+  --select-arrow-container-position: static;
+}
+```
+
+The default value is `absolute`, preserving the existing layout. Values such as `static` or `relative` make the arrow participate in the input shell's flex layout, so adjust other spacing tokens if needed. The CSS fallback applies when the token is unset; an invalid value is not normalized to `absolute`.
 
 ```css
 enhanced-select {
@@ -603,6 +628,7 @@ enhanced-select.dark-mode {
 --select-arrow-hover-color     /* Icon color when hovered (#667eea) */
 --select-arrow-hover-bg        /* Background when hover (rgba(102,126,234,0.08)) */
 --select-arrow-width           /* Container width (40px) */
+--select-arrow-container-position /* Arrow container position (absolute) */
 --select-arrow-border-radius   /* Container border radius */
 
 /* Group headers (when using groupedItems or flat items with `group` property) */
@@ -613,7 +639,7 @@ enhanced-select.dark-mode {
 --select-group-header-color    /* Text color (#6b7280) */
 --select-group-header-bg       /* Background (#f3f4f6) */
 --select-group-header-font-size
---select-group-header-text-align /* Header text alignment (left default) */
+--select-group-header-text-align /* Header text alignment (logical start by default) */
 --select-group-header-text-transform
 --select-group-header-letter-spacing
 --select-group-header-border-bottom
@@ -667,6 +693,39 @@ The component implements keyboard interaction paths including:
 | Type characters | Type-ahead search |
 
 When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.
+
+When `scrollToSelected.enabled` is on, active and ARIA state are updated immediately on open. Core waits for the dropdown's finite entrance animation to settle before applying the opening policy. The default `onOpen: 'reveal'` moves the internal options scroller only when the selected target is not fully visible. Use `onOpen: 'align'` to apply `block: 'start' | 'center' | 'end' | 'nearest'` even when the target is visible, subject to scroll bounds. Use `onOpen: 'preserve'` to retain the viewport; when selected-first ordering changes between openings, Core anchors the first visible option by stable key and restores its viewport offset. If the anchor disappears, the previous scroll position is clamped to the new bounds. Disabling the setting or keyboard and deliberate pointer/scroll input cancel pending automatic movement.
+
+```ts
+select.updateConfig({
+  scrollToSelected: {
+    enabled: true,
+    onOpen: 'align', // 'preserve' | 'reveal' | 'align'; default: 'reveal'
+    multiSelectTarget: 'first',
+    behavior: 'smooth', // 'auto' | 'instant' | 'smooth'
+    block: 'center', // 'start' | 'center' | 'end' | 'nearest'
+  },
+})
+```
+
+The policy is snapshotted for each opening; changing it while the entrance operation is pending does not start a competing transaction. Only the internal options scroller is moved. See the [Issue #116 implementation record](../../docs/architecture/ISSUE-116-DROPDOWN-OPEN-SCROLL.md) and [selected-options projection record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
+
+### Selected option presentation order
+
+Core can optionally present selected options before unselected options while preserving each partition's original order. The default is `original`, so existing consumers keep source order. For grouped options, `selected-first` promotes selected options only within their current groups; group order and identity do not change.
+
+```ts
+import { configureSelect } from '@smilodon/core';
+
+configureSelect({
+  selectedOptions: {
+    placement: 'selected-first', // 'original' | 'selected-first'
+    groupedPlacement: 'within-group',
+  },
+});
+```
+
+The same partial setting can be applied to an instance with `select.updateConfig({ selectedOptions: { placement: 'selected-first' } })`. Core snapshots the policy and selected membership when the dropdown opens. Changing the setting or selection while the list is open does not reshuffle that opening; close and reopen to apply the current values. Selection styling and events still reflect current selection immediately. Web adapter forwarding is included in the `1.20.0` release; React Native runtime behavior is not qualified. See the [selected-options projection record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
 
 **Multi-Select Range Selection:**
 - `Shift + ↑/↓` - Range selection
@@ -986,11 +1045,15 @@ select.updateConfig({
 
 RTL support mirrors the shell and dropdown layout, including arrow placement, clear control placement, separator side, selected indicator side, and chip remove spacing. The host `dir` attribute is kept in sync automatically.
 
+Set direction through `configureSelect({ direction })` or `select.updateConfig({ direction })`. The host `dir` attribute reflects the configured direction; a `dir` value supplied before connection can be replaced by the configured default, and a later configuration update can replace a directly assigned attribute. Use the configuration API when setting direction so it remains consistent across updates.
+
 **Badge Remove/Delete Button (Multi-Select)**
 The × button that removes selected items in multi-select mode is fully customizable:
 
 **Group Header & No‑Results Parts**
 Both the group header and the no-results message are exposed as shadow parts (`group-header` and `no-results`) so you can target them with `::part()` selectors or CSS variables. This makes it straightforward to match the look of your host framework or UI kit.
+
+Group headers default to logical `start` alignment, so they appear left-aligned in LTR and right-aligned in RTL. Override the default when needed, for example `--select-group-header-text-align: left`; `right` and `center` are also supported. The default follows direction changes dynamically.
 
 
 ```css

@@ -55,6 +55,8 @@ export type {
   SelectCapabilitiesReport,
   LimitationState,
   GlobalSelectConfig,
+  SelectInstanceConfig,
+  SelectedOptionsConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,

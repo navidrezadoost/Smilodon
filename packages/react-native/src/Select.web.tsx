@@ -9,7 +9,7 @@ import React, {
 } from 'react'
 import coreBundle from './generated/coreBundle.js'
 import type {
-  GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -65,7 +65,7 @@ export interface SelectHandle {
   setItems: (items: SelectItem[]) => void
   setGroupedItems: (groups: GroupedItem[]) => void
   setValue: (value: SelectValue | undefined) => void
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void
+  updateConfig: (config: SelectInstanceConfig) => void
   setError: (message: string) => void
   clearError: () => void
   setRequired: (required: boolean) => void
@@ -89,7 +89,7 @@ export interface SelectProps {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
   scrollToSelected?: Partial<ScrollToSelectedConfig>
   styles?: StyleConfig
-  config?: Partial<GlobalSelectConfig>
+  config?: SelectInstanceConfig
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -247,13 +247,12 @@ const Select = forwardRef<SelectHandle, SelectProps>(function Select(
       showSelectedIndicator,
     },
     multiSelectDisplay,
+    ...(scrollToSelected !== undefined ? {
+      scrollToSelected: { enabled: true, ...scrollToSelected },
+    } : {}),
     infiniteScroll: {
       enabled: infiniteScroll,
       pageSize,
-    },
-    scrollToSelected: {
-      enabled: true,
-      ...(scrollToSelected ?? {}),
     },
     styles: stylesConfig,
     expandable: {

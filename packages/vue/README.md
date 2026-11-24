@@ -2,6 +2,8 @@
 
 Select component for Vue 3 applications. Its underlying shared core has scoped automated Phase 4 browser coverage; complete Vue/Nuxt integration parity and manual assistive-technology certification remain unverified.
 
+> **Vue 1.12.0 / Core 1.20.0:** Includes selected-first option ordering and configurable selected-option positioning when the dropdown opens. See [selected-option configuration](#selected-option-order-and-open-positioning) and the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md).
+
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core's scoped Phase 4 automated browser matrix passed in Chromium, Firefox, and WebKit; this does not certify every Vue/Nuxt integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
 ## Acknowledged data-loading adapter status
@@ -258,6 +260,10 @@ The Vue adapter now exposes the same option-surface controls as the React adapte
 ## Core config parity and global defaults
 
 The Vue adapter now accepts the shared core config model directly, so Vue consumers can use either adapter-friendly props or the complete `GlobalSelectConfig` shape.
+
+`config.selectedOptions` and `config.scrollToSelected` support partial nested updates. These policies are snapshotted when the dropdown opens, so a changed placement applies on its next opening. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for reactivity behavior and qualification limits.
+
+These options are available in `@smilodon/vue@1.12.0` with Core `1.20.0`. See the [release qualification](../../docs/releases/WEB-1.20.0-RELEASE.md) for browser coverage and limitations.
 
 ### Convenience props
 

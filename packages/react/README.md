@@ -2,7 +2,7 @@
 
 Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
-> **Published package versions:** React `1.12.1` and Core `1.18.0` are available from npm. React `1.12.1` includes Issue #107 data-synchronization behavior; Core `1.17.0` includes Issue #100 chip auto-scroll, and Core `1.18.0` includes Issue #104 custom-arrow hover styling. See the [React 1.12.1 release record](../../docs/releases/REACT-1.12.1-RELEASE.md) and [web 1.17.0 release record](../../docs/releases/WEB-1.17.0-RELEASE.md).
+> **Published package versions:** React `1.13.0` and Core `1.20.0` expose selected-option ordering and open positioning. React `1.12.2`'s renderer-root fix and Core `1.19.0`'s styling/search fixes are included. See the [1.20.0 release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
 
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
@@ -49,7 +49,7 @@ In focused JSX examples, `items`, `groups`, `bigItems`, and similar values are c
 
 ## Acknowledged data loading (Phase 2F-D development candidate)
 
-The current local Phase 2F-D candidate integrates the core acknowledged-loading facade with the React adapter. It is not part of the published `1.10.0` package, and Firefox/WebKit certification, independent review, and remaining contract coverage are pending. Treat the following as implementation guidance for this candidate, not a release-readiness or cross-browser compatibility claim.
+The Core and React acknowledged-loading APIs are published in Core `1.19.0` and React `1.12.2` and later. This documents the released Core/React contract; it does not claim equivalent Vue, Svelte, Solid, Vanilla, or React Native adapter APIs, or full browser/accessibility qualification. See the [Core and React release record](../../docs/releases/WEB-1.19.0-RELEASE.md).
 
 Acknowledged loading is opt-in through per-instance `config.dataLoading`; there is no global acknowledged-loading default. If the config is omitted, the adapter keeps the legacy protocol and existing callback behavior. The host owns fetch, cancellation, and retry policy; the core owns request identity, stale-completion rejection, canonical acceptance, and subsequent DOM projection.
 
@@ -203,6 +203,8 @@ The coordinator rejects stale responses by request ID and query generation; the 
 
 ### React item synchronization and acknowledged pagination
 
+React `1.12.2` also preserves custom option and group-header renderer roots when Core retains cumulative accepted pages across acknowledged requests and equivalent controlled rerenders. This avoids dropping custom React content when new pages or controlled selection changes update the adapter. See the [renderer lifecycle design record](../../docs/architecture/ISSUE-112-REACT-RENDERER-CACHE-LIFECYCLE.md) and [release qualification](../../docs/releases/WEB-1.19.0-RELEASE.md).
+
 The adapter treats React props as the source snapshot and the Core data coordinator as the owner of accepted acknowledged responses. Rerendering with a newly allocated array of equivalent plain-object records does not call `setItems()` and cannot reset pages accepted by Core. Meaningful changes to an item's enumerable fields, nested plain-object metadata, array metadata, or group structure synchronize as source updates; an empty array is also an intentional update.
 
 Use immutable plain-object item records. Functions and non-plain metadata values such as `Date`, `Map`, and class instances compare by identity, so memoize them if they are part of item metadata. Enumerable symbol keys and accessor identity are included in comparison. When data is semantically unchanged, React cannot infer that the application intends to restart pagination; initiate a new acknowledged search/generation for that intent instead of relying on a render or a fresh array.
@@ -265,6 +267,23 @@ In horizontal multi-select mode, `multiSelectDisplay.scrollToLatestChip` reveals
     overflowX: 'auto',
     scrollToLatestChip: true,
     scrollToLatestChipBehavior: 'smooth',
+  }}
+/>
+```
+
+### Selected-option order and open positioning
+
+React accepts Core's `selectedOptions` and `scrollToSelected` settings in the `config` prop. Nested partial updates are supported; for example, updating only `selectedOptions.placement` preserves the other Core settings. The open dropdown keeps its current ordering snapshot until it closes and opens again. See the [projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md) for browser coverage and limitations.
+
+These options are available in `@smilodon/react@1.13.0` with Core `1.20.0`. React Native is excluded from this release; its native runtime is not qualified.
+
+```tsx
+<Select
+  items={items}
+  value={value}
+  config={{
+    selectedOptions: { placement: 'selected-first' },
+    scrollToSelected: { onOpen: 'align', block: 'center' },
   }}
 />
 ```

@@ -2,7 +2,7 @@ import {
   GroupedItem,
   ClassMap,
   RendererHelpers,
-  GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -55,7 +55,7 @@ export interface SelectProps {
   /** Core style configuration for internal parts */
   styles?: StyleConfig;
   /** Full core config passthrough for advanced runtime features */
-  config?: Partial<GlobalSelectConfig>;
+  config?: SelectInstanceConfig;
   /** Custom icon/markup for selected chip remove buttons */
   removeButtonIcon?: string;
   /** Behavior overrides for visually disabled options */
@@ -123,7 +123,7 @@ export interface SelectExposed {
   /** Clear current search query */
   clearSearch: () => void;
   /** Apply partial core config at runtime */
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void;
+  updateConfig: (config: SelectInstanceConfig) => void;
   /** Set error state */
   setError: (message: string) => void;
   /** Clear error state */

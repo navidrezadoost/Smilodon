@@ -17,11 +17,13 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Published package status (2026-11-22):** Core `1.18.0`, React `1.12.1`, Vue/Solid/Vanilla `1.11.0`, and Svelte `2.1.0` are available from npm. Svelte `2.1.0` supports Svelte 5 only; it does not restore Svelte 3/4 compatibility. React Native Android and iOS runtime qualification is incomplete and outside this web release scope.
+**Published package status (2026-11-23):** Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0` contain selected-option presentation and positioning. Svelte supports Svelte 5 only. React Native remains at `1.10.0` and is excluded because Android/iOS runtime qualification is incomplete.
+
+**Latest web release:** Core `1.20.0` adds selected-first ordering and `scrollToSelected` open policies; React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0` expose the configuration. Chrome 156 and pinned Firefox 148 passed the selected-options browser suite. Pinned Chromium 147 and WebKit remain unverified; React Native is excluded. See the [1.20.0 release record](docs/releases/WEB-1.20.0-RELEASE.md) and [selected-options qualification](docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
 
 **Recent fixes:** Issue #100's horizontal chip auto-scroll is in Core `1.17.0`; Issue #104's custom-arrow hover token correction is in Core `1.18.0`; Issue #107's React data-synchronization correction is in React `1.12.1`. The #107 fix preserves Core's cumulative acknowledged pages across equivalent fresh React props while still synchronizing real data changes. See the [React release record](docs/releases/REACT-1.12.1-RELEASE.md), [Core guide](packages/core/README.md#custom-arrow-slot), and [React guide](packages/react/README.md#acknowledged-data-synchronization-on-react-rerenders--issue-107).
 
-**Latest web release:** the #90, #92, #93, #96, #97, and #100 changes are included in the [1.17.0 web release record](docs/releases/WEB-1.17.0-RELEASE.md) and [registry verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json). Core `1.18.0` separately contains Issue #104. React Native Android/iOS qualification remains incomplete.
+Earlier web packages and their scope remain documented in the [1.17.0 web release record](docs/releases/WEB-1.17.0-RELEASE.md) and [registry verification](docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json). Core `1.18.0` contains Issue #104. React Native Android/iOS qualification remains incomplete.
 
 **Documentation:** [Live docs & examples](https://navidrezadoost.github.io/Smilodon/) · [Framework integration guide](docs/FRAMEWORK-INTEGRATION.md) (Vue/Nuxt 4, React, SSR)
 
@@ -240,7 +242,7 @@ Smilodon is not a single framework package. It is a system made of one runtime p
 | `@smilodon/vanilla`      | Helper utilities for direct DOM setup           | Vanilla JS / TS                                | Maintained      |
 | `@smilodon/react-native` | Native WebView bridge; separate React Native Web DOM path | React Native (WebView), React Native Web (browser custom element) | Maintained |
 
-This inventory reflects configured workspace packages and declared integration targets. The packed Solid package passes a Vite/Bundler consumer check, but strict NodeNext declaration checking currently fails with two TS2834 diagnostics; a separate fix is pending. Workspace inclusion does not certify all consumer modes. React Native's native WebView integration and React Native Web's browser DOM integration are separate platform paths.
+This inventory reflects configured workspace packages and declared integration targets. In the selected-options candidate's packed consumer fixture, Solid passed strict NodeNext and Bundler declaration checks; the previously reported NodeNext diagnostics did not reproduce in that tested graph. This does not certify every downstream Solid/toolchain combination. Workspace inclusion does not certify all consumer modes. React Native's native WebView integration and React Native Web's browser DOM integration are separate platform paths.
 
 ### Support summary by platform
 
@@ -287,15 +289,15 @@ Representative use cases:
 - mobile management tooling via React Native
 - design systems that want one runtime across multiple frameworks
 
-## Acknowledged data loading (Phase 2F-D development candidate)
+## Acknowledged data loading
 
-The current isolated development candidate adds an opt-in, identity-based data-loading protocol to the core runtime and React adapter. This is not part of the published `1.10.0` packages. React documentation below describes the candidate API; equivalent Vue, Svelte, Solid, Vanilla, and React Native adapter APIs have not been implemented or certified in this workstream.
+The opt-in, identity-based data-loading protocol is published in Core `1.19.0` and the React adapter `1.12.2` and later. This section documents the Core and React scope only; it does not claim equivalent acknowledged-loading APIs for Vue, Svelte, Solid, Vanilla, or React Native. See the [Core and React release record](docs/releases/WEB-1.19.0-RELEASE.md) for package and consumer evidence.
 
 The protocol is opt-in per instance. Omitting `config.dataLoading` preserves the legacy protocol and its existing callback behavior. The host application owns the network request and supplies its result through `completeDataRequest`; Smilodon does not provide a transport client or automatic retry policy.
 
 The following is a configuration fragment, not a complete component; the full React request/completion example is in the [React guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
-Issue #109 adds the opt-in `dataLoading.minSearchCharacters` setting for acknowledged remote/hybrid search. Core suppresses requests and search-owned busy state until the trimmed query reaches the configured Unicode code-point length, while preserving unfiltered items and their `loadMore` continuation. The default `0` keeps existing behavior. This change is in development and is not available in a published package; see the [Core guide](./packages/core/README.md#minimum-length-for-acknowledged-remote-search--issue-109) for semantics and the [qualification record](./docs/architecture/ISSUE-109-MIN-SEARCH-CHARACTERS.md) for evidence.
+Issue #109's opt-in `dataLoading.minSearchCharacters` setting is published in Core `1.19.0` and `1.20.0`. Core suppresses requests and search-owned busy state until the trimmed query reaches the configured Unicode code-point length, while preserving unfiltered items and their `loadMore` continuation. The default `0` keeps existing behavior. See the [Core guide](./packages/core/README.md#minimum-length-for-acknowledged-remote-search--issue-109) and the [1.19.0 release record](./docs/releases/WEB-1.19.0-RELEASE.md).
 
 ```tsx
 <Select
@@ -318,7 +320,7 @@ Issue #109 adds the opt-in `dataLoading.minSearchCharacters` setting for acknowl
 
 The request includes a request ID, query generation, query text, fetch limit, and page or cursor position. The host must echo the request ID and generation in its completion. Stale or unknown completions are rejected; an accepted response is projected separately, with projection outcome reported through `dataProjection`. Empty searches remain explicit requests, and a failed request does not trigger an automatic retry.
 
-Phase 2F-D is provisionally accepted as development-complete, excluding outstanding test certification. Firefox and WebKit verification, independent review, skipped-contract classification, and full C1–C8 acceptance remain incomplete. Do not treat this section as release approval or as a claim of full cross-browser compatibility. See [the React adapter guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate) and [the core API guide](./packages/core/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
+The released data-loading behavior remains scoped to the Core and React APIs described above. This does not certify equivalent adapter behavior, native runtime behavior, manual accessibility conformance, or every browser/toolchain combination. See the [React adapter guide](./packages/react/README.md#acknowledged-data-loading-phase-2f-d-development-candidate) and [Core API guide](./packages/core/README.md#acknowledged-data-loading-phase-2f-d-development-candidate).
 
 ---
 
@@ -407,7 +409,7 @@ See [docs/compliance/BROWSER-SUPPORT.md](./docs/compliance/BROWSER-SUPPORT.md) f
 
 ### Busy-bucket custom content (Issue #90)
 
-Issue #90 introduces Core's `loading-icon` and `loading-content` slots in `@smilodon/core@1.13.0`. Framework integrations add React `1.12.0` props, Vue `1.11.0` named slots, Svelte 5 `2.1.0` snippets, and Solid `1.11.0` JSX props; Vanilla `1.11.0` uses the native light-DOM slots. The release source is merged, but npm publication of these six versions must be verified separately. React Native's WebView/native API does not expose these slots, and no React Native parity is claimed.
+Issue #90 adds Core's `loading-icon` and `loading-content` slots in `@smilodon/core@1.13.0`. Framework integrations add React `1.12.0` props, Vue `1.11.0` named slots, Svelte 5 `2.1.0` snippets, and Solid `1.11.0` JSX props; Vanilla `1.11.0` uses the native light-DOM slots. These package versions are published; registry verification is recorded in the [1.17.0 release record](docs/releases/WEB-1.17.0-RELEASE.md). React Native's WebView/native API does not expose these slots, and no React Native parity is claimed.
 
 | Adapter | API | Version introducing Issue #90 |
 | --- | --- | --- |

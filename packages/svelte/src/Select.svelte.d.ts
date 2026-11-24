@@ -14,7 +14,7 @@ import type {
   LimitationState,
   TrackingSnapshot,
   SelectCapabilitiesReport,
-  GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -49,7 +49,7 @@ export interface SelectProps {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>;
   scrollToSelected?: Partial<ScrollToSelectedConfig>;
   styles?: StyleConfig;
-  config?: Partial<GlobalSelectConfig>;
+  config?: SelectInstanceConfig;
   removeButtonIcon?: string;
   disabledOptionBehavior?: {
     selectable?: boolean;
@@ -99,7 +99,7 @@ export default class Select extends SvelteComponentTyped<SelectProps, SelectEven
   setGroupedItems(groups: GroupedItem[]): void;
   clear(): void;
   clearSearch(): void;
-  updateCoreConfig(config: Partial<GlobalSelectConfig>): void;
+  updateCoreConfig(config: SelectInstanceConfig): void;
   setError(message: string): void;
   clearError(): void;
   setRequiredState(required: boolean): void;

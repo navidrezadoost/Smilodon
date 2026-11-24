@@ -4,6 +4,8 @@
  */
 export type {
   GlobalSelectConfig,
+  SelectedOptionsConfig,
+  SelectConfigUpdate,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,

@@ -54,6 +54,7 @@ const items: SelectItem[] = [
 const query = new URLSearchParams(window.location.search);
 const issue82ActiveClassScenario = query.get('scenario') === 'issue-82-active-class';
 const issue107Scenario = query.get('scenario') === 'issue-107';
+const issue112Scenario = query.get('scenario') === 'issue-112';
 const busyBucketScenario = query.get('scenario') === 'busy-bucket';
 const busyBucketWithoutIcon = busyBucketScenario && query.get('busy-icon') === 'none';
 const issue82Items: SelectItem[] = [
@@ -71,6 +72,10 @@ const issue107InitialItems: SelectItem[] = Array.from({ length: 6 }, (_, index) 
   value: `issue107-${index + 1}`,
   label: `Issue 107 option ${index + 1}`,
   metadata: { ordinal: index + 1 },
+}));
+const issue112InitialItems: SelectItem[] = Array.from({ length: 6 }, (_, index) => ({
+  value: `issue112-${index + 1}`,
+  label: `Issue 112 option ${index + 1}`,
 }));
 const initialProtocol = query.get('protocol') === 'legacy' ? 'legacy' : 'acknowledged';
 const initialSearchMode = query.get('mode') === 'hybrid' ? 'hybrid' : 'remote';
@@ -223,13 +228,63 @@ function Issue107CertificationApp() {
   );
 }
 
+function Issue112CertificationApp() {
+  const [selected, setSelected] = useState<string[]>(['issue112-1']);
+  const [presentationRevision, setPresentationRevision] = useState(0);
+  const handleRef = useRef<SelectHandle>(null);
+  const freshEquivalentItems = issue112InitialItems.map((item) => ({ ...item }));
+
+  useEffect(() => {
+    selectHandle = handleRef.current;
+    return () => { selectHandle = null; };
+  }, []);
+
+  return (
+    <section aria-label="React acknowledged renderer cache fixture">
+      <button id="issue112-rerender" onClick={() => setPresentationRevision((revision) => revision + 1)}>
+        Rerender source props {presentationRevision}
+      </button>
+      <output id="issue112-selected">{selected.join(',')}</output>
+      <Select
+        ref={handleRef}
+        items={freshEquivalentItems}
+        multiple
+        value={selected}
+        infiniteScroll
+        pageSize={6}
+        customRenderer={(item) => (
+          <span data-testid={`issue112-custom-${item.value}`}>Custom {item.label}</span>
+        )}
+        config={{
+          dataLoading: {
+            protocol: 'acknowledged',
+            searchMode: 'remote',
+            paginationMode: 'page',
+            fetchLimit: 6,
+          },
+        }}
+        onSearch={(searchQuery, results, count, request) =>
+          record('search', { searchQuery, results, count, request: request ?? null })
+        }
+        onLoadMore={(page, request) => record('loadMore', { page, request: request ?? null })}
+        onChange={(value) => setSelected(Array.isArray(value) ? value.map(String) : [String(value)])}
+        onDataProjection={(detail) => record('projection', { detail })}
+      />
+    </section>
+  );
+}
+
 function renderFixture() {
   const container = document.getElementById('react-cert-root');
   if (!container) throw new Error('React certification root is missing');
   root = createRoot(container);
   root.render(
     <StrictMode>
-      {issue107Scenario ? <Issue107CertificationApp /> : <CertificationApp />}
+      {issue112Scenario
+        ? <Issue112CertificationApp />
+        : issue107Scenario
+          ? <Issue107CertificationApp />
+          : <CertificationApp />}
     </StrictMode>,
   );
 }

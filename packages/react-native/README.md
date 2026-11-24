@@ -178,6 +178,10 @@ The React Native adapter accepts the same major runtime behavior groups as the s
 
 These configuration groups are sent in the native bridge payload and forwarded through `updateConfig()` on React Native Web. Their presence in both type paths is not proof that all advanced behaviors are equivalent across platforms.
 
+The shared type now includes partial `selectedOptions` and `scrollToSelected` updates. The native adapter forwards its config through the WebView bridge to embedded Core; this code path has not been qualified on an Android device or iOS runtime. See the [selected-options projection and adapter qualification record](../../docs/architecture/SELECTED-OPTIONS-PROJECTION.md). Do not treat this type/bridge inspection as native runtime certification.
+
+This describes the current source worktree and is not a published-package or native-runtime support guarantee.
+
 ### Example: multi-select chip layout and icon styling
 
 ```tsx

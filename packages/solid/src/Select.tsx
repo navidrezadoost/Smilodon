@@ -14,7 +14,7 @@ import type {
   TrackingSnapshot,
   SelectCapabilitiesReport,
   LimitationState,
-  GlobalSelectConfig,
+  SelectInstanceConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,
@@ -68,7 +68,7 @@ export interface SelectHandle {
   setGroupedItems: (groups: GroupedItem[]) => void
   clear: () => void
   clearSearch: () => void
-  updateConfig: (config: Partial<GlobalSelectConfig>) => void
+  updateConfig: (config: SelectInstanceConfig) => void
   setError: (message: string) => void
   clearError: () => void
   setRequired: (required: boolean) => void
@@ -102,7 +102,7 @@ export interface SelectProps {
   multiSelectDisplay?: Partial<MultiSelectDisplayConfig>
   scrollToSelected?: Partial<ScrollToSelectedConfig>
   styles?: StyleConfig
-  config?: Partial<GlobalSelectConfig>
+  config?: SelectInstanceConfig
   removeButtonIcon?: string
   disabledOptionBehavior?: {
     selectable?: boolean
@@ -417,13 +417,12 @@ export default function Select(rawProps: SelectProps) {
             showSelectedIndicator: rawProps.showSelectedIndicator ?? props.showSelectedIndicator,
         },
         multiSelectDisplay: rawProps.multiSelectDisplay,
+        ...(rawProps.scrollToSelected !== undefined ? {
+          scrollToSelected: { enabled: true, ...rawProps.scrollToSelected },
+        } : {}),
         infiniteScroll: {
           enabled: rawProps.infiniteScroll ?? props.infiniteScroll,
           pageSize: rawProps.pageSize ?? props.pageSize,
-        },
-        scrollToSelected: {
-          enabled: true,
-          ...(rawProps.scrollToSelected ?? {}),
         },
         styles: rawProps.styles,
         expandable: {

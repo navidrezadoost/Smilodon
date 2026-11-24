@@ -15,6 +15,8 @@ export type {
 
 export type {
   GlobalSelectConfig,
+  SelectInstanceConfig,
+  SelectedOptionsConfig,
   SelectionConfig,
   MultiSelectDisplayConfig,
   ScrollToSelectedConfig,

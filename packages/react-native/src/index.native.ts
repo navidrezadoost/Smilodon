@@ -13,5 +13,12 @@ export type {
   TrackingSnapshot,
 } from './Select.js'
 
+export type {
+  GlobalSelectConfig,
+  SelectedOptionsConfig,
+  ScrollToSelectedConfig,
+  SelectConfigUpdate,
+} from '@smilodon/core/native-types'
+
 export { Select }
 export default Select

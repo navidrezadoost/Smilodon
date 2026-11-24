@@ -1,4 +1,9 @@
-import type { CallbackConfig, GlobalSelectConfig } from '../config/global-config.js';
+import type {
+  CallbackConfig,
+  GlobalSelectConfig,
+  ScrollToSelectedConfig,
+  SelectedOptionsConfig,
+} from '../config/global-config.js';
 
 export type DataRequestId = string;
 export type QueryGeneration = number;
@@ -29,9 +34,11 @@ export type AcknowledgedCoreCallbacks =
     onLoadMore?: (page: number, request?: LoadMoreDataRequest) => void;
   } & AcknowledgedCallbackAdditions;
 
-export type SelectInstanceConfig = Omit<Partial<GlobalSelectConfig>, 'callbacks'> & {
+export type SelectInstanceConfig = Omit<Partial<GlobalSelectConfig>, 'callbacks' | 'selectedOptions' | 'scrollToSelected'> & {
   callbacks?: AcknowledgedCoreCallbacks;
   dataLoading?: Partial<DataLoadingConfig>;
+  selectedOptions?: Partial<SelectedOptionsConfig>;
+  scrollToSelected?: Partial<ScrollToSelectedConfig>;
 };
 
 export type DataLoadingConfigIssueCode =

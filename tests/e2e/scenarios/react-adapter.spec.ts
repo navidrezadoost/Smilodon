@@ -577,3 +577,76 @@ test('keeps acknowledged pages and latest-chip scroll through fresh equivalent R
   expect(await page.evaluate(() => window.__smilodonReactCertification?.state()?.nextEligiblePosition))
     .toEqual({ mode: 'page', page: 4 });
 });
+
+test('keeps later-page custom React content through controlled selection and equivalent source rerenders @react-adapter', async ({ page }) => {
+  await page.goto(`${fixtureUrl}?scenario=issue-112`);
+  await waitForReactReady(page);
+  const host = page.locator('enhanced-select');
+  const events = async () => readEvents(page);
+  const requestFrom = async (type: string, occurrence: number) => {
+    const event = (await events()).filter((entry) => entry.type === type)[occurrence];
+    return event?.request as { requestId: string; queryGeneration: number };
+  };
+  const cumulative = Array.from({ length: 6 }, (_, index) => ({
+    value: `issue112-${index + 1}`,
+    label: `Issue 112 option ${index + 1}`,
+  }));
+  const completePage = async (
+    request: { requestId: string; queryGeneration: number },
+    items: Array<{ value: string; label: string }>,
+    finalPage: boolean,
+  ) => page.evaluate(({ request, items, finalPage }) => window.__smilodonReactCertification?.complete({
+    requestId: request.requestId,
+    queryGeneration: request.queryGeneration,
+    status: finalPage ? 'exhausted' : 'succeeded',
+    items,
+    hasMore: !finalPage,
+  }), { request, items, finalPage });
+  const waitForRenderedItems = async (count: number) => {
+    await expect(host.locator('[role="option"]')).toHaveCount(count);
+    for (let index = 1; index <= count; index += 1) {
+      await expect(host.locator(`[data-testid="issue112-custom-issue112-${index}"]`))
+        .toHaveText(`Custom Issue 112 option ${index}`);
+    }
+  };
+
+  const firstRequest = await requestFrom('search', 0);
+  expect(await completePage(firstRequest, cumulative, false)).toBe('accepted');
+  await expect.poll(async () => (await events()).filter((event) => event.type === 'projection').length)
+    .toBe(1);
+  await page.evaluate(() => window.__smilodonReactCertification?.open());
+  await waitForRenderedItems(6);
+
+  for (let pageNumber = 2; pageNumber <= 3; pageNumber += 1) {
+    const loadMore = host.locator('.load-more-button');
+    await loadMore.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await events()).filter((event) => event.type === 'loadMore').length)
+      .toBe(pageNumber - 1);
+    const request = await requestFrom('loadMore', pageNumber - 2);
+    const nextPage = Array.from({ length: 6 }, (_, index) => {
+      const ordinal = (pageNumber - 1) * 6 + index + 1;
+      return {
+        value: `issue112-${ordinal}`,
+        label: `Issue 112 option ${ordinal}`,
+      };
+    });
+    cumulative.push(...nextPage);
+    expect(await completePage(request, cumulative, pageNumber === 3)).toBe('accepted');
+    await expect.poll(async () => (await events()).filter((event) => event.type === 'projection').length)
+      .toBe(pageNumber);
+    await page.evaluate(() => window.__smilodonReactCertification?.open());
+    await waitForRenderedItems(pageNumber * 6);
+  }
+
+  await page.evaluate(() => window.__smilodonReactCertification?.open());
+  await host.locator('[data-value="issue112-8"]').click();
+  await expect(page.locator('#issue112-selected')).toHaveText('issue112-1,issue112-8');
+  await expect(host.locator('[data-value="issue112-1"][aria-selected="true"]')).toBeAttached();
+  await expect(host.locator('[data-value="issue112-8"][aria-selected="true"]')).toBeAttached();
+  await waitForRenderedItems(18);
+
+  await page.locator('#issue112-rerender').click();
+  await expect(page.locator('#issue112-selected')).toHaveText('issue112-1,issue112-8');
+  await waitForRenderedItems(18);
+});

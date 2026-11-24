@@ -1,6 +1,6 @@
 {
   "name": "@smilodon/svelte",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Svelte select adapter for @smilodon/core",
   "type": "module",
   "svelte": "./dist/index.mjs",
