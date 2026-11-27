@@ -2,6 +2,7 @@
 
 **Baseline of record:** `7e3adf77545f8e1b2b4f85949684d7d91b84456b`
 **Branch:** `codex/w1-p1-characterization-7e3adf7`
+**Reconciled under:** W1-P1.1-R (documentation only; all six deviations preserved unchanged)
 
 W1-P1 is a characterization phase. **Discovering a defect or quirk is not permission to repair production code.** Each item below records evidence and a disposition. Reproducers and any ADR candidates are produced in the target increment; none authorize a production change during W1-P1.
 
@@ -14,6 +15,7 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 - **Class:** Internal (process).
 - **Disposition.** This W1-P1 ledger is self-contained and supersedes the prior artifact. The P1.6 provenance ledger records that the accepted baseline did not contain a committed component contract ledger.
 - **No production impact.**
+- **Archival status (W1-P1.1-R).** The historical W1-P0 contract ledger, baseline inventory, and ownership maps are now available as **archival reference material** and are crosswalked in the contract ledger, section 12 (Package Boundary and Historical Crosswalk). They remain **absent from the committed canonical W1-P1 baseline** and are not a dependency of any W1-P1 increment. Their W1-P0 line numbers and ownership classifications must not be applied directly to the current 9,109-line source.
 
 ---
 
