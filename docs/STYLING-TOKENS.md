@@ -122,6 +122,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-input-gap` | `6px` | spacing | Gap between inline content in the shell. |
 | `--select-input-padding` | `10px 52px 10px 14px` | spacing | Standard input shell padding. |
 | `--select-input-padding-with-clear` | `10px 84px 10px 14px` | spacing | Shell padding when the clear control is shown. |
+| `--select-input-content-padding` | `0` (single-select); mode-specific in multi-select | spacing | Padding on the inner content wrapper that contains the selected label, chips, and search input. In wrap/vertical multi-select, the unset value preserves the 12px inline-end action gap; in horizontal mode it preserves zero padding. An explicit value replaces the complete mode fallback. This does not style the outer input shell. |
 | `--select-input-height` | `auto` | layout | Shell height. |
 | `--select-input-min-height` | `48px` | size | Minimum shell height. |
 | `--select-input-max-height` | `160px` | size | Maximum shell height before internal scroll. |
@@ -179,6 +180,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-separator-position-with-clear` | `calc(var(--select-arrow-right-with-clear) + var(--select-arrow-width))` | spacing | Separator offset when clear control is visible. |
 | `--select-arrow-width` | `42px` | size | Arrow hit area width. |
 | `--select-arrow-height` | `auto` | layout | Arrow container height. |
+| `--select-dropdown-arrow-container-padding` | `0` | spacing | Padding inside the dropdown arrow container; accepts CSS one-to-four-value `padding` shorthand. |
 | `--select-arrow-container-position` | `absolute` | layout | CSS `position` for the dropdown arrow container. `static` and `relative` change its participation in the input shell's flex layout. |
 | `--select-arrow-border-radius` | `0 var(--select-radius-md) var(--select-radius-md) 0` | radius | Arrow-side corner radius. |
 | `--select-arrow-border-radius-rtl` | `var(--select-radius-md) 0 0 var(--select-radius-md)` | radius | Arrow-side corner radius in RTL layout. |

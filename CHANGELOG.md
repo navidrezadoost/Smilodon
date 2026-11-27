@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Added
+
+- **Independent input and arrow padding tokens ([#120](https://github.com/navidrezadoost/Smilodon/issues/120)):** Core exposes `--select-input-content-padding` for the selected-value/chip/search wrapper and `--select-dropdown-arrow-container-padding` for the arrow container. Unset values preserve existing single-select, multi-select mode, direction, and horizontal scroll-spacing defaults; explicit values accept the normal CSS padding shorthand and update without remounting.
+
 ### Fixed
 
 - **Custom slotted arrow double toggle ([#119](https://github.com/navidrezadoost/Smilodon/issues/119)):** Pointer events from slotted arrow content are now excluded from the input-container trigger using the composed event path, leaving arrow and clear-control activation with their own handlers.

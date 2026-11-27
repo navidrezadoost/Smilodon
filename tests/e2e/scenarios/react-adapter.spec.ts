@@ -93,6 +93,27 @@ test.describe('React adapter browser certification @react-adapter', () => {
       .toEqual(['banana']);
   });
 
+  test('Issue #120: forwards independent content and arrow padding tokens through the React host @react-adapter', async ({ page }) => {
+    const host = page.locator('enhanced-select.react-certification-select');
+    await host.evaluate((element) => {
+      element.style.setProperty('--select-input-content-padding', '3px 7px');
+      element.style.setProperty('--select-dropdown-arrow-container-padding', '2px 5px');
+    });
+    const result = await host.evaluate((element) => {
+      const root = element.shadowRoot!;
+      const content = getComputedStyle(root.querySelector('.input-content')!);
+      const arrow = getComputedStyle(root.querySelector('.dropdown-arrow-container')!);
+      return {
+        content: [content.paddingTop, content.paddingRight, content.paddingBottom, content.paddingLeft],
+        arrow: [arrow.paddingTop, arrow.paddingRight, arrow.paddingBottom, arrow.paddingLeft],
+      };
+    });
+    expect(result).toEqual({
+      content: ['3px', '7px', '3px', '7px'],
+      arrow: ['2px', '5px', '2px', '5px'],
+    });
+  });
+
   test('clears stale custom active classes after selecting Tehran Darou and reopening', async ({ page }) => {
     await page.goto(`${fixtureUrl}?scenario=issue-82-active-class`);
     await waitForReactReady(page);

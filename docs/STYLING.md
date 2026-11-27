@@ -178,6 +178,17 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
 
   `wrap` grows naturally without an internal chip scrollbar. `vertical` keeps wrapping but constrains the chip area to `maxHeight` and scrolls vertically. `horizontal` keeps chips on one row and scrolls sideways.
 
+  The inner content wrapper and the arrow click-area container can be padded independently with CSS custom properties. The input token affects selected labels, chips, and the search input; it does not change the outer shell padding. If unset, wrap and vertical multi-select retain their 12px logical inline-end gap, while horizontal mode retains zero content padding and its separate scroll-padding for the arrow/clear action area. Setting the token replaces that complete mode fallback.
+
+  ```css
+  enhanced-select {
+    --select-input-content-padding: 4px;
+    --select-dropdown-arrow-container-padding: 8px 4px;
+  }
+  ```
+
+  Both tokens accept the standard one-to-four-value CSS `padding` shorthand and update dynamically without remounting. The arrow-container token targets the container, not only the icon. See [the full token reference](./STYLING-TOKENS.md) for defaults and related shell/field tokens.
+
   For true horizontal chip scrolling, configure `multiSelectDisplay.mode = 'horizontal'`. That mode does more than flip overflow values: it keeps chips on one row, preserves drag-scroll behavior, and reserves space for the arrow / clear controls.
 
   When an option is both selected and active, customize the combined surface with:

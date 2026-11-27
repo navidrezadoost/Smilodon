@@ -630,6 +630,7 @@ enhanced-select.dark-mode {
 --select-arrow-width           /* Container width (40px) */
 --select-arrow-container-position /* Arrow container position (absolute) */
 --select-arrow-border-radius   /* Container border radius */
+--select-dropdown-arrow-container-padding /* Padding inside the arrow container (0) */
 
 /* Group headers (when using groupedItems or flat items with `group` property) */
 --select-group-header-padding  /* Padding inside header (8px 12px) */
@@ -651,6 +652,17 @@ enhanced-select.dark-mode {
 --select-checkmark-margin-left
 --select-checkmark-color
 ```
+
+The inner selected-value/chip/search wrapper and the arrow container have independent padding tokens:
+
+```css
+enhanced-select {
+  --select-input-content-padding: 4px;
+  --select-dropdown-arrow-container-padding: 8px 4px;
+}
+```
+
+Both accept the standard CSS `padding` shorthand and update live. The input-content token does not affect the outer `--select-input-padding` shell. When unset, wrap/vertical multi-select keeps its 12px logical inline-end gap; horizontal multi-select keeps zero content padding and its separate arrow/clear scroll-padding. Explicit input-content padding replaces the complete mode-specific fallback.
 
 **Dark Mode (Opt-in)**
 ```css

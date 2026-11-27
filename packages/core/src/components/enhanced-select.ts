@@ -2072,6 +2072,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
          ELEGANT SELECT COMPONENT — Refined Design System
          Formal aesthetics with sophisticated microinteractions
        ═══════════════════════════════════════════════════════════════════════════ */
+
+      @layer smilodon-input-content-fallback {
+        .input-container.input-container--multi:not([data-multi-scroll-mode="horizontal"]) .input-content {
+          padding-inline-end: var(--select-multi-input-end-gap, 12px);
+        }
+      }
       
       :host {
         --select-primary: #1a1a2e;
@@ -2470,6 +2476,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         overflow-y: var(--select-input-overflow-y, hidden);
         scrollbar-width: thin;
         box-sizing: border-box;
+        padding: var(--select-input-content-padding, revert-layer);
       }
       
       .input-container:hover {
@@ -2495,7 +2502,6 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         align-content: var(--select-multi-input-align-content, var(--select-multi-input-align-content-config, flex-start));
         overflow-x: var(--select-multi-input-overflow-x, var(--select-multi-input-overflow-x-config, hidden));
         overflow-y: var(--select-multi-input-overflow-y, var(--select-multi-input-overflow-y-config, auto));
-        padding-inline-end: var(--select-multi-input-end-gap, 12px);
       }
 
       .input-container.input-container--multi .input-content .selection-badge {
@@ -2533,7 +2539,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         overflow-y: hidden;
         overscroll-behavior-x: contain;
         overscroll-behavior-y: none;
-        padding-inline-end: 0;
+        padding: var(--select-input-content-padding, 0);
         scroll-padding-inline-end: var(--select-multi-action-area-width, var(--select-arrow-width, 42px));
       }
 
@@ -2636,6 +2642,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         bottom: 0;
         width: var(--select-arrow-width, var(--select-arrow-size, 42px));
         height: var(--select-arrow-height, var(--select-arrow-size, auto));
+        padding: var(--select-dropdown-arrow-container-padding, 0);
         display: flex;
         align-items: center;
         justify-content: center;

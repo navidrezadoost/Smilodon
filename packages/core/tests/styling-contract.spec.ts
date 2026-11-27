@@ -44,6 +44,24 @@ describe('EnhancedSelect Styling Contract', () => {
         expect(arrowRule).toContain('position: var(--select-arrow-container-position, absolute);');
     });
 
+    it('exposes independent input-content and arrow-container padding tokens with mode fallbacks', () => {
+        const cssText = el.shadowRoot!.querySelector('style')?.textContent || '';
+        const contentRule = Array.from(cssText.matchAll(/\.input-content\s*\{([^}]*)\}/g))
+            .map((match) => match[1]);
+        const arrowRule = Array.from(cssText.matchAll(/\.dropdown-arrow-container\s*\{([^}]*)\}/g))
+            .map((match) => match[1])
+            .find((rule) => rule.includes('--select-dropdown-arrow-container-padding'));
+
+        expect(cssText).toContain('@layer smilodon-input-content-fallback');
+        expect(cssText).toContain('padding-inline-end: var(--select-multi-input-end-gap, 12px);');
+        expect(contentRule.some((rule) => rule.includes('padding: var(--select-input-content-padding, revert-layer);'))).toBe(true);
+        expect(contentRule.some((rule) => rule.includes('padding: var(--select-input-content-padding, 0);') && rule.includes('scroll-padding-inline-end'))).toBe(true);
+        expect(cssText).not.toContain('0 var(--select-multi-input-end-gap, 12px) 0 0');
+        expect(cssText).not.toContain('0 0 0 var(--select-multi-input-end-gap, 12px)');
+        expect(arrowRule).toContain('padding: var(--select-dropdown-arrow-container-padding, 0);');
+        expect(arrowRule).not.toContain('--select-input-content-padding');
+    });
+
     it('applies correct parts to shadow DOM elements', async () => {
         // Trigger render
         (el as any)._config.searchable = true;
