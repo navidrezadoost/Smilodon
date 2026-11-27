@@ -17,6 +17,29 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-27
+
+Published Core-only release. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete. Registry integrity, tarball provenance, and qualification are recorded in [the Core 1.21.0 release record](docs/releases/CORE-1.21.0-RELEASE.md).
+
+### Added
+
+- **Configurable multi-select chip motion ([#125](https://github.com/navidrezadoost/Smilodon/issues/125)):** Core now exposes independent chip enter/exit animation tokens and retains removed chip presentation nodes only while an enabled exit animation completes. Selection state and events update immediately; exiting chips are inert and hidden from assistive technology. Keyed reconciliation prevents unchanged chips from replaying entry motion.
+- **Selected-label tooltip ([#121](https://github.com/navidrezadoost/Smilodon/issues/121)):** Core shows the full selected display label on hover or keyboard focus only when a single-select value or multi-select chip is actually truncated. It uses the current configured label resolver and keeps search text, chip removal, and selection behavior separate.
+- **Independent input and arrow padding tokens ([#120](https://github.com/navidrezadoost/Smilodon/issues/120)):** Core exposes `--select-input-content-padding` for the selected-value/chip/search wrapper and `--select-dropdown-arrow-container-padding` for the arrow container. Unset values preserve existing single-select, multi-select mode, direction, and horizontal scroll-spacing defaults; explicit values accept the normal CSS padding shorthand and update without remounting.
+
+### Fixed
+
+- **Space-key editing in searchable selects ([#123](https://github.com/navidrezadoost/Smilodon/issues/123)):** Space now inserts native text into searchable inputs and filters through the normal input event, while Enter and non-searchable Space retain option activation.
+- **Search input select-all and cleared-query recovery ([#122](https://github.com/navidrezadoost/Smilodon/issues/122)):** Ctrl+A/Cmd+A in a searchable input now keeps native text-selection behavior and does not mutate multi-select values. Deleting the selected query continues through the ordinary input/search pipeline so matching options and the empty state update immediately. Non-searchable multi-select retains its select-all shortcut.
+- **Custom slotted arrow double toggle ([#119](https://github.com/navidrezadoost/Smilodon/issues/119)):** Pointer events from slotted arrow content are now excluded from the input-container trigger using the composed event path, leaving arrow and clear-control activation with their own handlers.
+
+### Release qualification
+
+- Workspace builds passed; unit tests passed 761/762, data-loading passed 48/48, and contracts passed 72/78. Seven tests remain skipped as documented.
+- Chrome for Testing 156 passed 44/44 local browser checks. Firefox, pinned Chromium, and WebKit remain unverified for this change set.
+- Core `1.21.0` was packed as a 56-file package; strict packed consumer checks passed in NodeNext and Bundler modes. A clean registry-installed consumer verified package metadata and the `EnhancedSelect` import.
+- React Native is excluded; Android/iOS runtime qualification remains incomplete.
+
 ## [1.20.0] - 2026-11-23
 
 Web release: Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. React Native is excluded because Android/iOS runtime qualification is incomplete.

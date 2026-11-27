@@ -69,4 +69,70 @@ describe('EnhancedSelect custom arrow slot', () => {
 
     expect((select as any)._state.isOpen).toBe(true);
   });
+
+  it('toggles once when a pointer interaction starts in nested slotted SVG content (#119)', () => {
+    const icon = document.createElement('span');
+    icon.slot = 'arrow';
+    icon.innerHTML = '<svg><path d="M0 0L8 8" /></svg>';
+    select.appendChild(icon);
+
+    const target = icon.querySelector('path')!;
+    const transitions: string[] = [];
+    select.addEventListener('open', () => transitions.push('open'));
+    select.addEventListener('close', () => transitions.push('close'));
+
+    const activate = () => {
+      target.dispatchEvent(new MouseEvent('pointerdown', {
+        bubbles: true,
+        composed: true,
+        button: 0,
+      }));
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    };
+
+    activate();
+    expect(transitions).toEqual(['open']);
+    expect(select.hasAttribute('data-open')).toBe(true);
+
+    activate();
+    expect(select.hasAttribute('data-open')).toBe(false);
+    expect(transitions).toEqual(['open', 'close']);
+  });
+
+  it('preserves horizontal multi-select arrow ownership and trigger-toggle configuration (#119)', () => {
+    select.updateConfig({
+      selection: { mode: 'multi', closeOnSelect: false },
+      multiSelectDisplay: { mode: 'horizontal', overflowX: 'auto', dragScroll: true },
+    });
+    const icon = document.createElement('span');
+    icon.slot = 'arrow';
+    icon.innerHTML = '<svg><path d="M0 0L8 8" /></svg>';
+    select.appendChild(icon);
+    const target = icon.querySelector('path')!;
+    const activate = () => {
+      target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 0 }));
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    };
+
+    activate();
+    expect(select.hasAttribute('data-open')).toBe(true);
+    expect((select as any)._multiScrollDrag.active).toBe(false);
+    select.updateConfig({ selection: { mode: 'multi', toggleOnTriggerClick: false } });
+    activate();
+    expect(select.hasAttribute('data-open')).toBe(true);
+  });
+
+  it('does not open a disabled select through its custom arrow (#119)', () => {
+    select.updateConfig({ enabled: false });
+    const icon = document.createElement('span');
+    icon.slot = 'arrow';
+    icon.innerHTML = '<svg><path d="M0 0L8 8" /></svg>';
+    select.appendChild(icon);
+    const target = icon.querySelector('path')!;
+    target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 0 }));
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    expect(select.hasAttribute('data-open')).toBe(false);
+  });
+
 });

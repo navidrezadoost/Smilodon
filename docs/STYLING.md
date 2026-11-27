@@ -178,6 +178,19 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
 
   `wrap` grows naturally without an internal chip scrollbar. `vertical` keeps wrapping but constrains the chip area to `maxHeight` and scrolls vertically. `horizontal` keeps chips on one row and scrolls sideways.
 
+  The inner content wrapper and the arrow click-area container can be padded independently with CSS custom properties. The input token affects selected labels, chips, and the search input; it does not change the outer shell padding. If unset, wrap and vertical multi-select retain their 12px logical inline-end gap, while horizontal mode retains zero content padding and its separate scroll-padding for the arrow/clear action area. Setting the token replaces that complete mode fallback.
+
+  ```css
+  enhanced-select {
+    --select-input-content-padding: 4px;
+    --select-dropdown-arrow-container-padding: 8px 4px;
+  }
+  ```
+
+  Both tokens accept the standard one-to-four-value CSS `padding` shorthand and update dynamically without remounting. The arrow-container token targets the container, not only the icon. See [the full token reference](./STYLING-TOKENS.md) for defaults and related shell/field tokens.
+
+  **Selected-label tooltip:** Core reveals the full display label on hover or keyboard focus only when a selected single value or multi-select chip is actually truncated. It follows the configured item-label resolver, suppresses the selected-value tooltip while the input contains a search query, and adds a temporary `aria-describedby` reference without replacing existing descriptions. Fully visible labels do not create a tooltip. The tooltip is not applied to arbitrary option-renderer content in the dropdown.
+
   For true horizontal chip scrolling, configure `multiSelectDisplay.mode = 'horizontal'`. That mode does more than flip overflow values: it keeps chips on one row, preserves drag-scroll behavior, and reserves space for the arrow / clear controls.
 
   When an option is both selected and active, customize the combined surface with:
@@ -482,10 +495,43 @@ Useful variables:
 Motion-related chip hooks are also available:
 
 - `--select-badge-animation`
+- `--select-badge-enter-animation` (falls back to the legacy entry token)
+- `--select-badge-exit-animation` (defaults to `none`)
+- `--select-badge-exit-from-opacity` / `--select-badge-exit-to-opacity`
+- `--select-badge-exit-from-transform` / `--select-badge-exit-to-transform`
 - `--select-badge-hover-transform`
 - `--select-badge-active-transform`
 - `--select-badge-remove-hover-transform`
 - `--select-badge-remove-active-transform`
+
+Selection updates are immediate even when a chip exit is enabled. Core temporarily
+retains only the visual chip node; it is inert, hidden from assistive technology,
+and removed when all exit animations complete. `badgeEnter` and `badgeExit` are
+built-in keyframes. Custom keyframe names declared in the application document do
+not resolve inside the component's Shadow DOM when passed through an internal CSS
+variable. Use the exposed parts for those keyframes:
+
+```css
+@keyframes app-chip-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes app-chip-exit {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+enhanced-select::part(chip) {
+  animation: app-chip-enter 180ms ease-out both;
+}
+enhanced-select::part(chip-exiting) {
+  animation: app-chip-exit 140ms ease-in both;
+}
+```
+
+The entry animation applies only when Core creates a new selected chip. Existing
+keyed chips keep their DOM nodes and do not replay entry motion on unrelated
+updates. Exit defaults to immediate removal and also becomes immediate under a
+reduced-motion preference.
 
 You can also replace the default chip remove mark with custom markup:
 

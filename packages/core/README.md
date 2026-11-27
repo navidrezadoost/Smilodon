@@ -29,6 +29,10 @@ select.updateConfig({
 })
 ```
 
+## Selected-label tooltip
+
+Core displays the full selected display label in a shared tooltip when the closed single-select value or a multi-select chip is visually truncated. The tooltip appears on pointer hover or keyboard focus; a label that fits does not open one. It uses the same configured item-label resolver as the visible selection, so custom `serverSide.getLabelFromItem` labels are reflected. Search queries are not treated as selected values. Multi-select chip labels become tab stops only while truncated, and Escape dismisses the tooltip without moving focus. This behavior covers selected values and chips, not custom option content in the dropdown.
+
 ## Custom busy bucket (Core 1.13.0)
 
 Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:
@@ -630,6 +634,7 @@ enhanced-select.dark-mode {
 --select-arrow-width           /* Container width (40px) */
 --select-arrow-container-position /* Arrow container position (absolute) */
 --select-arrow-border-radius   /* Container border radius */
+--select-dropdown-arrow-container-padding /* Padding inside the arrow container (0) */
 
 /* Group headers (when using groupedItems or flat items with `group` property) */
 --select-group-header-padding  /* Padding inside header (8px 12px) */
@@ -651,6 +656,17 @@ enhanced-select.dark-mode {
 --select-checkmark-margin-left
 --select-checkmark-color
 ```
+
+The inner selected-value/chip/search wrapper and the arrow container have independent padding tokens:
+
+```css
+enhanced-select {
+  --select-input-content-padding: 4px;
+  --select-dropdown-arrow-container-padding: 8px 4px;
+}
+```
+
+Both accept the standard CSS `padding` shorthand and update live. The input-content token does not affect the outer `--select-input-padding` shell. When unset, wrap/vertical multi-select keeps its 12px logical inline-end gap; horizontal multi-select keeps zero content padding and its separate arrow/clear scroll-padding. Explicit input-content padding replaces the complete mode-specific fallback.
 
 **Dark Mode (Opt-in)**
 ```css
@@ -689,7 +705,11 @@ The component implements keyboard interaction paths including:
 | `PageUp` / `PageDown` | Jump 10 options up/down |
 | `Escape` | Close dropdown |
 | `Tab` | Close dropdown and move focus |
-| `Ctrl+A` (multi-select) | Select all options |
+| `Space` in a searchable input | Insert a space at the caret and update search through the native input event |
+| `Space` in a non-searchable select | Activate the active option |
+| `Enter` | Activate the active option |
+| `Ctrl+A` / `Cmd+A` in a searchable input | Use the browser's native select-all-text behavior; selected options are unchanged |
+| `Ctrl+A` / `Cmd+A` (non-searchable multi-select) | Select all options |
 | Type characters | Type-ahead search |
 
 When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.
@@ -918,6 +938,39 @@ enhanced-select {
   --select-badge-line-height: 1.2;
 }
 ```
+
+#### Multi-select chip animations
+
+Core exposes separate entry and opt-in exit animation tokens. The legacy
+`--select-badge-animation` continues to control entry when
+`--select-badge-enter-animation` is unset. Exit defaults to `none`, so the
+selected value is removed immediately unless an exit animation is configured.
+
+```css
+enhanced-select {
+  --select-badge-enter-animation: badgeEnter 180ms ease-out both;
+  --select-badge-exit-animation: badgeExit 140ms ease-in both;
+}
+```
+
+`badgeEnter` and `badgeExit` are built-in keyframes. Arbitrary keyframe names
+declared in the consuming document cannot be resolved from inside the
+component's Shadow DOM through a custom property. Use the exposed parts for
+consumer-defined keyframes:
+
+```css
+@keyframes app-chip-exit {
+  to { opacity: 0; transform: translateY(-6px) scale(0.96); }
+}
+
+enhanced-select::part(chip-exiting) {
+  animation: app-chip-exit 140ms ease-in both;
+}
+```
+
+Selection state and events update immediately. The exiting chip remains only
+for its visual animation and is inert, hidden from assistive technology, and
+removed on animation completion (or immediately for reduced motion).
 
 **Complete CSS Variables Reference**
 

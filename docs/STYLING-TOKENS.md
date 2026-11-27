@@ -67,10 +67,16 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-badge-letter-spacing` | `0.01em` | typography | Badge text tracking. |
 | `--select-badge-max-width` | `100%` | size | Maximum badge width before truncation. |
 | `--select-badge-animation` | `badgeEnter 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards` | animation | Badge entry motion. |
+| `--select-badge-enter-animation` | Falls back to `--select-badge-animation` | animation | Independent chip entry animation shorthand; built-in `badgeEnter` is available inside Core's Shadow DOM. |
+| `--select-badge-exit-animation` | `none` | animation | Opt-in chip exit animation shorthand; use built-in `badgeExit` or the documented `::part(chip-exiting)` path for consumer keyframes. |
 | `--select-badge-enter-from-opacity` | `0` | opacity | Badge entry start opacity. |
 | `--select-badge-enter-from-transform` | `scale(0.8) translateY(-4px)` | transform | Badge entry start transform. |
 | `--select-badge-enter-to-opacity` | `1` | opacity | Badge entry end opacity. |
 | `--select-badge-enter-to-transform` | `scale(1) translateY(0)` | transform | Badge entry end transform. |
+| `--select-badge-exit-from-opacity` | `1` | opacity | Built-in exit start opacity. |
+| `--select-badge-exit-from-transform` | `scale(1) translateY(0)` | transform | Built-in exit start transform. |
+| `--select-badge-exit-to-opacity` | `0` | opacity | Built-in exit end opacity. |
+| `--select-badge-exit-to-transform` | `scale(0.8) translateY(-4px)` | transform | Built-in exit end transform. |
 | `--select-badge-hover-transform` | `scale(1.02)` | transform | Badge hover transform. |
 | `--select-badge-hover-bg` | `var(--select-badge-bg)` | color | Badge hover background. |
 | `--select-badge-hover-color` | `var(--select-badge-color)` | color | Badge hover text color. |
@@ -122,6 +128,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-input-gap` | `6px` | spacing | Gap between inline content in the shell. |
 | `--select-input-padding` | `10px 52px 10px 14px` | spacing | Standard input shell padding. |
 | `--select-input-padding-with-clear` | `10px 84px 10px 14px` | spacing | Shell padding when the clear control is shown. |
+| `--select-input-content-padding` | `0` (single-select); mode-specific in multi-select | spacing | Padding on the inner content wrapper that contains the selected label, chips, and search input. In wrap/vertical multi-select, the unset value preserves the 12px inline-end action gap; in horizontal mode it preserves zero padding. An explicit value replaces the complete mode fallback. This does not style the outer input shell. |
 | `--select-input-height` | `auto` | layout | Shell height. |
 | `--select-input-min-height` | `48px` | size | Minimum shell height. |
 | `--select-input-max-height` | `160px` | size | Maximum shell height before internal scroll. |
@@ -179,6 +186,7 @@ This reference documents the current `enhanced-select` styling surface exposed b
 | `--select-separator-position-with-clear` | `calc(var(--select-arrow-right-with-clear) + var(--select-arrow-width))` | spacing | Separator offset when clear control is visible. |
 | `--select-arrow-width` | `42px` | size | Arrow hit area width. |
 | `--select-arrow-height` | `auto` | layout | Arrow container height. |
+| `--select-dropdown-arrow-container-padding` | `0` | spacing | Padding inside the dropdown arrow container; accepts CSS one-to-four-value `padding` shorthand. |
 | `--select-arrow-container-position` | `absolute` | layout | CSS `position` for the dropdown arrow container. `static` and `relative` change its participation in the input shell's flex layout. |
 | `--select-arrow-border-radius` | `0 var(--select-radius-md) var(--select-radius-md) 0` | radius | Arrow-side corner radius. |
 | `--select-arrow-border-radius-rtl` | `var(--select-radius-md) 0 0 var(--select-radius-md)` | radius | Arrow-side corner radius in RTL layout. |
@@ -398,7 +406,8 @@ enhanced-select.brand-theme {
 enhanced-select.motion-light {
   --select-transition-fast: 120ms ease;
   --select-transition-bounce: 160ms ease;
-  --select-badge-animation: none;
+  --select-badge-enter-animation: none;
+  --select-badge-exit-animation: none;
   --select-dropdown-animation: none;
   --select-option-hover-transform: none;
 }
@@ -410,3 +419,48 @@ enhanced-select.comfortable {
   --select-touch-target-min-height: 48px;
 }
 ```
+
+#### Multi-select chip motion
+
+Chip entry and exit can be configured independently. The existing
+`--select-badge-animation` remains the fallback for entry, and exit defaults to
+`none` so removal stays immediate unless an exit is enabled.
+
+```css
+enhanced-select {
+  --select-badge-enter-animation: badgeEnter 180ms ease-out both;
+  --select-badge-exit-animation: badgeExit 140ms ease-in both;
+}
+```
+
+The built-in `badgeEnter` and `badgeExit` keyframes are defined inside Core's
+Shadow DOM. Document-defined keyframe names do not resolve when passed through
+these internal animation tokens. For consumer-defined keyframes, use the
+exposed parts instead:
+
+```css
+@keyframes app-chip-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes app-chip-exit {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-6px) scale(0.96); }
+}
+
+enhanced-select::part(chip) {
+  animation: app-chip-enter 180ms ease-out both;
+}
+
+enhanced-select::part(chip-exiting) {
+  animation: app-chip-exit 140ms ease-in both;
+}
+```
+
+Exit animation affects presentation only: selected values and `change` events
+update immediately. The temporary exiting part is `aria-hidden`, inert, and has
+its remove control disabled. It is removed when all finite CSS animations
+finish, with a bounded fallback; `animation: none` and reduced-motion
+preferences remove it immediately. Entry animations run only for newly created
+chips, and keyed chips retain DOM identity through unrelated updates.

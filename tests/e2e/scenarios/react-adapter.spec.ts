@@ -3,11 +3,19 @@ import { expect, test } from '@playwright/test';
 const fixtureUrl = 'http://localhost:5173/react-certification.html';
 
 async function waitForReactReady(page: import('@playwright/test').Page) {
+  const params = new URL(page.url()).searchParams;
+  if (params.get('scenario') === 'issue-121-tooltip') {
+    await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.host()?.isConnected ?? false))
+      .toBe(true);
+    return;
+  }
   await expect.poll(() => page.evaluate(() => {
     return window.__smilodonReactCertification?.state()?.connected ?? false;
   })).toBe(true);
-  const params = new URL(page.url()).searchParams;
-  if (params.get('scenario') !== 'issue-82-active-class' && params.get('protocol') !== 'legacy') {
+  if (params.get('scenario') !== 'issue-82-active-class'
+    && params.get('scenario') !== 'issue-119-custom-arrow'
+    && params.get('scenario') !== 'issue-121-tooltip'
+    && params.get('protocol') !== 'legacy') {
     await expect.poll(async () => (await readEvents(page)).some((event) => event.type === 'search'))
       .toBe(true);
   }
@@ -21,6 +29,64 @@ test.describe('React adapter browser certification @react-adapter', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(fixtureUrl);
     await waitForReactReady(page);
+  });
+
+  test('Issue #121: controlled selected-label tooltip survives unrelated React rerenders @react-adapter', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=issue-121-tooltip`);
+    await waitForReactReady(page);
+    const host = page.locator('enhanced-select.react-certification-select');
+    const input = host.locator('[part="input"]');
+    const popup = host.locator('[role="tooltip"]');
+    await expect(page.locator('#controlled-value')).toHaveText('issue121-long');
+    await input.hover();
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText('International Pharmaceutical Distribution Company — Central Branch');
+
+    await page.evaluate(() => window.__smilodonReactCertification?.update({ placeholder: 'Updated by React' }));
+
+    await expect(page.locator('#controlled-value')).toHaveText('issue121-long');
+    await expect(input).toHaveValue('International Pharmaceutical Distribution Company — Central Branch');
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText('International Pharmaceutical Distribution Company — Central Branch');
+    expect(await page.evaluate(() => window.__smilodonReactCertification?.selectedValues())).toEqual(['issue121-long']);
+  });
+
+  test('Issue #119: nested custom arrow clicks toggle once and report one callback per transition', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=issue-119-custom-arrow`);
+    await waitForReactReady(page);
+    await page.evaluate(() => window.__smilodonReactCertification?.clearEvents());
+
+    const host = page.locator('enhanced-select');
+    const icon = host.locator('[slot="arrow"] [data-testid="issue119-custom-chevron"]');
+    const path = icon.locator('path');
+    await expect(icon).toBeAttached();
+    await expect(host).toHaveAttribute('data-custom-arrow', 'true');
+    await expect(host).not.toHaveAttribute('data-open');
+
+    await path.click();
+    await expect(host).toHaveAttribute('data-open', 'true');
+    await expect.poll(async () => (await readEvents(page)).filter((event) => event.type === 'open').length)
+      .toBe(1);
+    expect((await readEvents(page)).filter((event) => event.type === 'close')).toHaveLength(0);
+
+    await path.click();
+    await expect(host).not.toHaveAttribute('data-open');
+    await expect.poll(async () => (await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close']);
+    await page.waitForTimeout(200);
+    await expect(host).not.toHaveAttribute('data-open');
+    expect((await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close']);
+
+    await path.click();
+    await expect(host).toHaveAttribute('data-open', 'true');
+    await expect.poll(async () => (await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close', 'open']);
+    expect((await readEvents(page)).filter((event) => event.type === 'change')).toHaveLength(0);
+    await expect(page.locator('#controlled-value')).toHaveText('apple');
   });
 
   test('renders through the React package with controlled value, callback mapping, and className', async ({ page }) => {
@@ -51,6 +117,27 @@ test.describe('React adapter browser certification @react-adapter', () => {
     await expect(page.locator('#controlled-value')).toHaveText('banana');
     await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.selectedValues()))
       .toEqual(['banana']);
+  });
+
+  test('Issue #120: forwards independent content and arrow padding tokens through the React host @react-adapter', async ({ page }) => {
+    const host = page.locator('enhanced-select.react-certification-select');
+    await host.evaluate((element) => {
+      element.style.setProperty('--select-input-content-padding', '3px 7px');
+      element.style.setProperty('--select-dropdown-arrow-container-padding', '2px 5px');
+    });
+    const result = await host.evaluate((element) => {
+      const root = element.shadowRoot!;
+      const content = getComputedStyle(root.querySelector('.input-content')!);
+      const arrow = getComputedStyle(root.querySelector('.dropdown-arrow-container')!);
+      return {
+        content: [content.paddingTop, content.paddingRight, content.paddingBottom, content.paddingLeft],
+        arrow: [arrow.paddingTop, arrow.paddingRight, arrow.paddingBottom, arrow.paddingLeft],
+      };
+    });
+    expect(result).toEqual({
+      content: ['3px', '7px', '3px', '7px'],
+      arrow: ['2px', '5px', '2px', '5px'],
+    });
   });
 
   test('clears stale custom active classes after selecting Tehran Darou and reopening', async ({ page }) => {

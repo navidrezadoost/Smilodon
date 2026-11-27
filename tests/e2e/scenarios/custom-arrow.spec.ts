@@ -1,6 +1,48 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Custom arrow slot @all', () => {
+  test('nested slotted SVG pointer clicks produce exactly one open/close transition (#119)', async ({ page }) => {
+    await page.goto('http://localhost:5173/vanilla-demo.html');
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(async () => {
+      await customElements.whenDefined('enhanced-select');
+      const select = document.createElement('enhanced-select');
+      select.id = 'issue-119-custom-arrow';
+      const icon = document.createElement('span');
+      icon.slot = 'arrow';
+      icon.innerHTML = '<svg data-testid="issue119-icon" viewBox="0 0 16 16" width="24" height="24"><path d="M4 6L8 10L12 6" /></svg>';
+      select.append(icon);
+      (select as any).setItems([{ value: 'alpha', label: 'Alpha' }]);
+      const transitions: string[] = [];
+      select.addEventListener('open', () => transitions.push('open'));
+      select.addEventListener('close', () => transitions.push('close'));
+      (window as any).__issue119Transitions = transitions;
+      document.body.append(select);
+    });
+
+    const select = page.locator('#issue-119-custom-arrow');
+    const nestedPath = select.locator('[slot="arrow"] svg path');
+    await expect(select).toHaveAttribute('data-custom-arrow', 'true');
+
+    await nestedPath.click();
+    await expect(select).toHaveAttribute('data-open', 'true');
+    await expect.poll(() => page.evaluate(() => (window as any).__issue119Transitions)).toEqual(['open']);
+
+    await nestedPath.click();
+    await expect(select).not.toHaveAttribute('data-open');
+    await expect.poll(() => page.evaluate(() => (window as any).__issue119Transitions))
+      .toEqual(['open', 'close']);
+    await page.waitForTimeout(200);
+    await expect(select).not.toHaveAttribute('data-open');
+    await expect.poll(() => page.evaluate(() => (window as any).__issue119Transitions))
+      .toEqual(['open', 'close']);
+
+    await nestedPath.click();
+    await expect(select).toHaveAttribute('data-open', 'true');
+    await expect.poll(() => page.evaluate(() => (window as any).__issue119Transitions))
+      .toEqual(['open', 'close', 'open']);
+  });
+
   test('keeps the fallback default and leaves custom rotation and appearance to the consumer', async ({ page }) => {
     await page.goto('http://localhost:5173/vanilla-demo.html');
     await page.waitForLoadState('networkidle');
