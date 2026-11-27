@@ -581,11 +581,14 @@ test.describe('React adapter browser certification @react-adapter', () => {
 
 test('keeps acknowledged pages and latest-chip scroll through fresh equivalent React props @react-adapter', async ({ page }) => {
   await page.addInitScript(() => {
-    window.IntersectionObserver = class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-      takeRecords() { return []; }
+    window.IntersectionObserver = class implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = '0px';
+      readonly thresholds: readonly number[] = [];
+      observe(_target: Element): void {}
+      unobserve(_target: Element): void {}
+      disconnect(): void {}
+      takeRecords(): IntersectionObserverEntry[] { return []; }
     };
   });
   await page.goto(`${fixtureUrl}?scenario=issue-107`);
@@ -682,13 +685,17 @@ test('keeps later-page custom React content through controlled selection and equ
     request: { requestId: string; queryGeneration: number },
     items: Array<{ value: string; label: string }>,
     finalPage: boolean,
-  ) => page.evaluate(({ request, items, finalPage }) => window.__smilodonReactCertification?.complete({
-    requestId: request.requestId,
-    queryGeneration: request.queryGeneration,
-    status: finalPage ? 'exhausted' : 'succeeded',
-    items,
-    hasMore: !finalPage,
-  }), { request, items, finalPage });
+  ) => page.evaluate(({ request, items, finalPage }) => {
+    const completion = finalPage
+      ? { status: 'exhausted' as const, hasMore: false as const }
+      : { status: 'succeeded' as const, hasMore: true as const };
+    return window.__smilodonReactCertification?.complete({
+      requestId: request.requestId,
+      queryGeneration: request.queryGeneration,
+      ...completion,
+      items,
+    });
+  }, { request, items, finalPage });
   const waitForRenderedItems = async (count: number) => {
     await expect(host.locator('[role="option"]')).toHaveCount(count);
     for (let index = 1; index <= count; index += 1) {

@@ -46,7 +46,8 @@ describe('selected-option scroll target resolution', () => {
     const selectedBefore = [...((select as any)._engine.state.selectedKeys as Set<string>)];
     const positions: number[] = [];
     vi.spyOn(select as any, '_scrollOptionWithinOptionsContainer')
-      .mockImplementation((option: HTMLElement) => {
+      .mockImplementation((option: unknown) => {
+        if (!(option instanceof HTMLElement)) throw new Error('Expected an HTMLElement scroll target');
         positions.push(Number(option.getAttribute('data-sm-index') ?? option.getAttribute('data-index')));
       });
 
@@ -124,7 +125,10 @@ describe('selected-option scroll target resolution', () => {
     (select as any)._scrollToSelected({ setActive: false });
 
     expect(scroll).toHaveBeenCalledTimes(1);
-    expect(scroll.mock.calls[0][0].getAttribute('data-index')).toBe('3');
+    const scrollTarget = scroll.mock.calls[0]?.[0];
+    expect(scrollTarget).toBeInstanceOf(HTMLElement);
+    if (!(scrollTarget instanceof HTMLElement)) throw new Error('Expected an HTMLElement scroll target');
+    expect(scrollTarget.getAttribute('data-index')).toBe('3');
     expect((select as any)._engine.state.selectedKeys).toEqual(new Set(['d']));
   });
 });

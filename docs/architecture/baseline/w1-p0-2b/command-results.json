@@ -1,0 +1,38 @@
+{
+  "runtime": "Node v20.20.2 / npm 10.8.2",
+  "sourceCommit": "3a2d94511e905f1dfe6feda245308df0cbd1d650",
+  "commands": [
+    { "command": "npm ci --ignore-scripts", "status": "passed", "note": "742 packages installed; package-lock unchanged" },
+    { "command": "npm run build", "status": "passed", "note": "All workspaces built; existing bundler warnings only" },
+    { "command": "npx tsc --noEmit -p tsconfig.json", "status": "passed" },
+    { "command": "npm run lint", "status": "passed", "note": "0 errors; 6 warnings in unrelated existing files" },
+    { "command": "npm run test:unit", "status": "passed", "passed": 809, "skipped": 1 },
+    { "command": "npm run test:contracts", "status": "passed", "passed": 72, "skipped": 6 },
+    { "command": "npm run test:stress", "status": "passed", "passed": 15 },
+    { "command": "npm run test:types:react-solid", "status": "passed" },
+    { "command": "npm run test:types:react-native", "status": "passed" },
+    { "command": "npm run test:benchmark:phase4 && npm run test:benchmark:phase4:replication", "status": "passed", "passed": 26 },
+    { "command": "npm run benchmark:phase4:summary", "status": "passed", "validationIssues": 0, "note": "Re-summarized accepted P0.2A benchmark evidence; one 100k legacy-full attempt is censored" },
+    { "command": "phase-4-lifecycle-owner-attribution.spec.ts", "status": "passed", "browser": "Chrome 133.0.6943.126 (diagnostic only)" },
+    { "command": "phase-4-lifecycle-stress.spec.ts", "status": "passed", "browser": "Chrome 133.0.6943.126 (diagnostic only)", "workloads": [{ "options": 1000, "cycles": 100, "resourcesClean": true }, { "options": 10000, "cycles": 100, "resourcesClean": true }, { "options": 100000, "cycles": 10, "resourcesClean": true }] },
+    { "command": "npx playwright install chromium", "status": "blocked", "note": "Playwright CDN returned HTTP 403 AccessDenied" },
+    { "command": "GitHub Actions run 45999255815", "status": "queued without jobs", "headCommit": "3a2d94511e905f1dfe6feda245308df0cbd1d650", "pinnedLifecycleResult": "certified locally with matching official container", "note": "Repository Actions are disabled; did not change repository-level execution settings" },
+    { "command": "git diff --check", "status": "passed" },
+    {
+      "command": "npm run test:phase4:lifecycle (official Playwright 1.59.1-noble container)",
+      "status": "passed",
+      "passed": 3,
+      "skipped": 0,
+      "flaky": 0,
+      "browser": "Chromium 147.0.7727.15 (revision 1217)",
+      "workloads": [
+        { "options": 1000, "cycles": 100, "resourcesClean": true },
+        { "options": 10000, "cycles": 100, "resourcesClean": true },
+        { "options": 100000, "cycles": 10, "resourcesClean": true }
+      ],
+      "evidence": "browser-evidence/pinned-playwright-results.json"
+    }
+  ],
+  "generatedReactNativeBundleSha256": "e221dc43cdf8c5529a76c479ce855af2eb3c608cd6c04fe96f99fdab4dfb3fc1",
+  "packageLockSha256": "5be703e3ae683e83bc7167ca08ea7339961824a33213ac3495a1011356331d2c"
+}

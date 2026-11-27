@@ -1,0 +1,1845 @@
+{
+  "$schema": "w1-p1-traceability/v2",
+  "increment": "W1-P1.1-R",
+  "correction": "Inventory and traceability reconciliation (documentation only; no production changes)",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-characterization-7e3adf7",
+  "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
+  "countingConvention": "One record per contract ID. A contract ID is the ledger/matrix granularity unit; grouped surfaces (getter/setter pairs, multi-token data-* attributes, multi-token ::part groups) are single records whose tokens are enumerated in behavior.",
+  "coverageLegend": {
+    "Existing": "adequate black-box coverage across the contract's characterized paths",
+    "Diagnostic": "private/perf-level only; a black-box test is still needed",
+    "Missing": "no coverage",
+    "Partial": "externally observable test covers some contract paths; remaining paths still outstanding (not a full contract certification)"
+  },
+  "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
+  "reconciliation": {
+    "totalRecords": 100,
+    "byFamily": {
+      "API": 27,
+      "EVENT": 15,
+      "ATTR": 11,
+      "PART": 11,
+      "SLOT": 4,
+      "LIFECYCLE": 6,
+      "CONFIG": 26
+    },
+    "byCoverage": {
+      "Existing": 38,
+      "Partial": 17,
+      "Diagnostic": 41,
+      "Missing": 4
+    },
+    "byTargetIncrement": {
+      "P1.1": 4,
+      "P1.2": 14,
+      "P1.3": 13,
+      "P1.4": 56,
+      "P1.5": 13
+    },
+    "apiIds": 27,
+    "apiMethodAccessorSignatures": 30,
+    "attributeIds": 11,
+    "attributeIdsHostRelated": 7,
+    "attributeIdsShadowDataGroups": 4,
+    "partGroupIds": 11,
+    "distinctPartTokens": 19,
+    "slots": 4,
+    "lifecycle": 6,
+    "events": 15,
+    "configIds": 26,
+    "priorReportedMatrixEntries": 74,
+    "priorMarkdownIds": 95,
+    "explanation": "74 -> 95+5: the original JSON omitted the CONFIG-001..021 block (21 records). This correction adds those 21 plus 5 new granular CONFIG IDs (CONFIG-022..026) for configuration completeness. See 11.6 of the ledger.",
+    "coverageClasses": [
+      "Existing",
+      "Partial",
+      "Diagnostic",
+      "Missing"
+    ],
+    "deviationsReferenced": [
+      "DEVIATION-07",
+      "DEVIATION-08",
+      "DEVIATION-09",
+      "DEVIATION-10"
+    ]
+  },
+  "duplicateIds": 0,
+  "missingIds": 0,
+  "orphanedJsonIds": 0,
+  "contracts": [
+    {
+      "id": "API-001",
+      "behavior": "classMap get/set re-render",
+      "targetIncrement": "P1.2",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "custom-active-class-map; styling-contract",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "473-491"
+        }
+      ]
+    },
+    {
+      "id": "API-002",
+      "behavior": "groupHeaderRenderer get/set",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "styling-contract",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "497-508"
+        }
+      ]
+    },
+    {
+      "id": "API-003",
+      "behavior": "optionRenderer get/set",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "enhanced-option-renderer",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6500-6513"
+        }
+      ]
+    },
+    {
+      "id": "API-004",
+      "behavior": "loadedItems getter",
+      "targetIncrement": "P1.2",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "widely used",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6628-6630"
+        }
+      ]
+    },
+    {
+      "id": "API-010",
+      "behavior": "getSelectedItems",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedItems identity (single/multi/reorder/detached)",
+      "status": "Observed",
+      "evidence": "select-selection; selected-options-*",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6620-6623"
+        }
+      ],
+      "coverageNote": "Selected-items identity characterized (single/multi/dup-value/reattachment); full state API in Task 3.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F01 duplicate-value identity; F03 reattachment returns new instance"
+      ]
+    },
+    {
+      "id": "API-011",
+      "behavior": "getSelectedValues",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedValues identity matrix",
+      "status": "Observed",
+      "evidence": "select-selection",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6635-6637"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1271-1273"
+        }
+      ],
+      "coverageNote": "Value projection characterized incl. duplicates; Task 3 covers state API.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F01 multi value dup==['dup','dup']"
+      ]
+    },
+    {
+      "id": "API-012",
+      "behavior": "setSelectedValues async ordering",
+      "targetIncrement": "P1.2",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#deterministic chronology local/server success/failure + supersession + disconnection",
+      "status": "Observed",
+      "evidence": "select-selection; phase-1-search-pagination-characterization (DEVIATION-04)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6642-6663"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6668-6695"
+        }
+      ],
+      "coverageNote": "Primary: deterministic ordering spec (Task 1). Identity spec corroborates single/multi path coverage.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#single/multi/limits path coverage",
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#identity corroboration"
+      ]
+    },
+    {
+      "id": "API-013",
+      "behavior": "clear emitted-event set",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#T4-06+T4-09 clear-control activation event set and programmatic clear() change-only",
+      "status": "Observed",
+      "evidence": "select-selection",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6697-6706"
+        }
+      ],
+      "coverageNote": "Programmatic clear() (change-only) and clear-control activation (change->clear, incl. DEVIATION-10 preservation case) characterized. Remaining: clear() during active search / acknowledged data-loading paths."
+    },
+    {
+      "id": "API-014",
+      "behavior": "clearSearch local/acknowledged",
+      "targetIncrement": "P1.2",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "search-ctrl-a; search-space-input",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6709-6728"
+        }
+      ]
+    },
+    {
+      "id": "API-020",
+      "behavior": "setItems",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/detached/duplicate-key(dev)",
+      "status": "Observed",
+      "evidence": "smoke",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6517-6549"
+        }
+      ],
+      "coverageNote": "Replacement/reorder/grouped/detached characterized; production duplicate policy documented only.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F02 setGroupedItems grouped replacement; detached retention"
+      ]
+    },
+    {
+      "id": "API-021",
+      "behavior": "setGroupedItems",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "grouping tests",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6609-6618"
+        }
+      ]
+    },
+    {
+      "id": "API-030",
+      "behavior": "open idempotency + emit",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "interaction; dropdown-open-scroll",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6733-6735"
+        }
+      ]
+    },
+    {
+      "id": "API-031",
+      "behavior": "close",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "interaction",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6740-6742"
+        }
+      ]
+    },
+    {
+      "id": "API-032",
+      "behavior": "updateConfig invalid emission",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "public-config-integration; phase-2e-*",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6747-6950"
+        }
+      ]
+    },
+    {
+      "id": "API-040",
+      "behavior": "setError",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#setError() sets aria-invalid/aria-describedby + error text",
+      "status": "Observed",
+      "evidence": "partial",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7281-7290"
+        }
+      ],
+      "coverageNote": "Directly asserted observable error state via shadowRoot (aria-invalid, aria-describedby, error element text). Error cause/payload detail remains P1.5.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate(required+empty) triggers error presentation"
+      ]
+    },
+    {
+      "id": "API-041",
+      "behavior": "clearError",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#clearError() removes aria-invalid/describedby + empties text; idempotent",
+      "status": "Observed",
+      "evidence": "partial",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7292-7300"
+        }
+      ],
+      "coverageNote": "Directly asserted cleared error state via shadowRoot. Full error API surface remains P1.5.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#validate() success after setError() clears previous error"
+      ]
+    },
+    {
+      "id": "API-042",
+      "behavior": "setRequired",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#setRequired before/after selection; preservation",
+      "status": "Observed",
+      "evidence": "select-selection",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7302-7313"
+        }
+      ],
+      "coverageNote": "setRequired enable/disable + preservation characterized; interaction effects in Task 4."
+    },
+    {
+      "id": "API-043",
+      "behavior": "validate",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate() matrix: empty/valid/required-empty/detached/disabled",
+      "status": "Observed",
+      "evidence": "select-selection",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7315-7325"
+        }
+      ],
+      "coverageNote": "validate() matrix characterized incl DEVIATION-09 inconsistency; full validation contract deferred."
+    },
+    {
+      "id": "API-050",
+      "behavior": "getKnownLimitations",
+      "targetIncrement": "P1.1",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "capabilities-tracking",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6373-6382"
+        }
+      ]
+    },
+    {
+      "id": "API-051",
+      "behavior": "setLimitationPolicies",
+      "targetIncrement": "P1.1",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "capabilities-tracking",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6384-6398"
+        }
+      ]
+    },
+    {
+      "id": "API-052",
+      "behavior": "getTrackingSnapshot",
+      "targetIncrement": "P1.1",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "capabilities-tracking",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6400-6406"
+        }
+      ]
+    },
+    {
+      "id": "API-053",
+      "behavior": "clearTracking",
+      "targetIncrement": "P1.1",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "capabilities-tracking",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6408-6419"
+        }
+      ]
+    },
+    {
+      "id": "API-054",
+      "behavior": "getCapabilities emitted truthfulness",
+      "targetIncrement": "P1.2",
+      "coverage": "Missing",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "capabilities-tracking (DEVIATION-02)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6421-6448"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6433"
+        }
+      ]
+    },
+    {
+      "id": "API-055",
+      "behavior": "getEmptyStateContext",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "empty-state-slot",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6451-6454"
+        }
+      ]
+    },
+    {
+      "id": "API-060",
+      "behavior": "startDataLoading deferred",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "phase-2e-acknowledged-data-loading",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6960-6991"
+        }
+      ]
+    },
+    {
+      "id": "API-061",
+      "behavior": "getDataLoadingState",
+      "targetIncrement": "P1.5",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "phase-2e-*; phase-2f-*",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6993-7042"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "161"
+        }
+      ]
+    },
+    {
+      "id": "API-062",
+      "behavior": "completeDataRequest matrix",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "phase-2e-acknowledged-data-loading",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7044-7120"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "97"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "134"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-001",
+      "behavior": "select payload + order",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#T4-01..T4-05 exact select payload + select->change->onChange->onSelect order (pointer & keyboard select/deselect)",
+      "status": "Observed",
+      "evidence": "DEVIATION-04",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5296"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5504"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5633"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "40"
+        }
+      ],
+      "coverageNote": "Interaction pointer+keyboard select/deselect payload+order now characterized (exact select.detail {item,index,value,label,selected,multi}; change before onSelect). Remaining: select emitted from _selectAll (Ctrl+A) and keyboard range (Shift+arrow) paths remain uncharacterized."
+    },
+    {
+      "id": "EVENT-002",
+      "behavior": "open triggers + detail",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4399"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "49"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-003",
+      "behavior": "close reasons + detail",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4424"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "50"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-004",
+      "behavior": "search local + acknowledged",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "DEVIATION-03",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5043"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7715"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "51"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-005",
+      "behavior": "pageLoaded declared-only",
+      "targetIncrement": "P1.5",
+      "coverage": "Missing",
+      "testId": "unassigned",
+      "status": "Unknown",
+      "evidence": "DEVIATION-02",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "144"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "56"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6433"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-006",
+      "behavior": "error async shape",
+      "targetIncrement": "P1.5",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure: error before onError; error.detail.cause; onError-throw rejects",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6274"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "57"
+        }
+      ],
+      "coverageNote": "Single server-fetch failure path only; broader error contract owned by P1.5."
+    },
+    {
+      "id": "EVENT-007",
+      "behavior": "change across emit paths",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#change payload+order on interaction select/deselect, chip/option removal, clear-control and programmatic paths",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6494"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6487-6495"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "58"
+        }
+      ],
+      "coverageNote": "Interaction paths (select/deselect/removal/clear-control) + programmatic local replace/clear now characterized; change.detail = {selectedItems, selectedValues, selectedIndices}, values in selection-insertion order. Remaining: acknowledged/server change path."
+    },
+    {
+      "id": "EVENT-008",
+      "behavior": "loadMore legacy + acknowledged",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6251"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "63"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-009",
+      "behavior": "remove identity + follow-on",
+      "targetIncrement": "P1.4",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#remove identity+follow-on: chip-remove and SelectOption option-remove (change->onChange->remove, no select)",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5704"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "64"
+        }
+      ],
+      "coverageNote": "Both user removal surfaces characterized black-box: order change->onChange->remove (no select/onSelect); remove.detail={item,index} with index = source registry index. Remaining: post-removal focus restore/animation follow-on (P1.4 chip-renderer)."
+    },
+    {
+      "id": "EVENT-010",
+      "behavior": "clear payload + follow-on",
+      "targetIncrement": "P1.2",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#clear payload+follow-on: clear-control change->onChange->clear->onClear; empty-disabled; required-preservation",
+      "status": "Observed",
+      "evidence": "DEVIATION-10",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7244"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "65"
+        }
+      ],
+      "coverageNote": "Clear-control activation characterized: change->onChange->clear->onClear; empty activation is disabled/no-event; required PRESERVES selection yet reports clearedSelection=true (DEVIATION-10). Remaining: combined clearSelection+clearSearch with an active search query; post-clear focus follow-on."
+    },
+    {
+      "id": "EVENT-011",
+      "behavior": "emptyStateChange",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6468"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "77"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-012",
+      "behavior": "diagnostic boundedness",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7092"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7960"
+        },
+        {
+          "file": "packages/core/src/types.ts",
+          "lines": "132"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-020",
+      "behavior": "dataProjection",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7978"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "175"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-021",
+      "behavior": "dataRequestCancel",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7679"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "91"
+        }
+      ]
+    },
+    {
+      "id": "EVENT-022",
+      "behavior": "dataLoadingConfigError",
+      "targetIncrement": "P1.5",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6950"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7130"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "190"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-001",
+      "behavior": "aria-label resync",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "219-221"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "637-646"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-002",
+      "behavior": "aria-description resync",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "219-221"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "637-646"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-003",
+      "behavior": "aria-busy resync",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "219-221"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "637-646"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4405"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-010",
+      "behavior": "dir reflection",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1733"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1730-1735"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-011",
+      "behavior": "data-open reflection",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4389"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4416"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-012",
+      "behavior": "data-custom-arrow",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "custom-arrow-slot",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2046"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2048"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2041-2049"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-013",
+      "behavior": "style.display forced",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "DEVIATION-05",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "598"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-020",
+      "behavior": "data-placement",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1728"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4418"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-021",
+      "behavior": "data-motion closing",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4719"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5802"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-022",
+      "behavior": "data-multi-scroll-mode/data-drag-scroll",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1807-1808"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1776-1777"
+        }
+      ]
+    },
+    {
+      "id": "ATTR-023",
+      "behavior": "data-virtual-spacer",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7505"
+        }
+      ]
+    },
+    {
+      "id": "PART-001",
+      "behavior": "part button (token: button)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1185"
+        }
+      ]
+    },
+    {
+      "id": "PART-002",
+      "behavior": "part input (token: input)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1908"
+        }
+      ]
+    },
+    {
+      "id": "PART-003",
+      "behavior": "part listbox (token: listbox)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1995"
+        }
+      ]
+    },
+    {
+      "id": "PART-004",
+      "behavior": "part arrow (token: arrow)",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "custom-arrow-slot",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2036"
+        }
+      ]
+    },
+    {
+      "id": "PART-005",
+      "behavior": "part clear-button (token: clear-button)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2058"
+        }
+      ]
+    },
+    {
+      "id": "PART-006",
+      "behavior": "part clear-icon (token: clear-icon)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2062"
+        }
+      ]
+    },
+    {
+      "id": "PART-007",
+      "behavior": "part option (token: option)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8829"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8898"
+        },
+        {
+          "file": "packages/core/src/components/select-option.ts",
+          "lines": "336"
+        }
+      ]
+    },
+    {
+      "id": "PART-008",
+      "behavior": "part group-header (token: group-header)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8541"
+        }
+      ]
+    },
+    {
+      "id": "PART-009",
+      "behavior": "chip parts (tokens: chip, chip-label, chip-remove, chip-remove-icon, chip-exiting)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5752"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5834"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5851"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5837"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5894"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5883"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5802"
+        }
+      ]
+    },
+    {
+      "id": "PART-010",
+      "behavior": "part no-results (token: no-results)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6473"
+        }
+      ]
+    },
+    {
+      "id": "PART-011",
+      "behavior": "loading parts (tokens: loading, loading-content, loading-icon, loading-message, loading-spinner)",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8363"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8467"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8369"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8376"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8385"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8392"
+        }
+      ]
+    },
+    {
+      "id": "SLOT-001",
+      "behavior": "slot arrow",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "custom-arrow-slot",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2035"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2036-2038"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2041-2049"
+        }
+      ]
+    },
+    {
+      "id": "SLOT-002",
+      "behavior": "slot empty-state",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "empty-state-slot",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6474-6479"
+        }
+      ]
+    },
+    {
+      "id": "SLOT-003",
+      "behavior": "slot loading-content",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "busy-bucket-customization",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8393-8395"
+        }
+      ]
+    },
+    {
+      "id": "SLOT-004",
+      "behavior": "slot loading-icon",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Observed",
+      "evidence": "busy-bucket-customization",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8371-8379"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-001",
+      "behavior": "constructor no host attrs",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "shadow-dom; lifecycle",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "414-470"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-002",
+      "behavior": "connected resource attach",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "lifecycle; memory-lifecycle",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "572-635"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-003",
+      "behavior": "disconnected resource release",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "memory-lifecycle; phase-4 lifecycle",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "648-768"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-004",
+      "behavior": "reconnect invariant",
+      "targetIncrement": "P1.4",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "phase-4 lifecycle (W1-P0.2B invariant)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "572-635"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "648-768"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-005",
+      "behavior": "stale async guard",
+      "targetIncrement": "P1.5",
+      "coverage": "Missing",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6668-6695"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7078-7120"
+        }
+      ]
+    },
+    {
+      "id": "LIFECYCLE-006",
+      "behavior": "attr early-return",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "637-646"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-001",
+      "behavior": "selection.mode",
+      "targetIncrement": "P1.4",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "337"
+        }
+      ],
+      "coverageNote": "single/multi behavior characterized via setSelectedValues; values via Task 2 spec."
+    },
+    {
+      "id": "CONFIG-002",
+      "behavior": "selection.allowDeselect",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "338"
+        }
+      ],
+      "coverageNote": "Default false documented; Task 3 exercised allowDeselect:true only under NON-required programmatic replace-empty. Behavior under required/allowDeselect combinations is NOT established here.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#allowDeselect:true non-required replace-empty"
+      ]
+    },
+    {
+      "id": "CONFIG-003",
+      "behavior": "selection.disabledOptionBehavior",
+      "targetIncrement": "P1.4",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "339-343"
+        }
+      ],
+      "coverageNote": "disabledOptionBehavior.selectable default=false characterized; true path characterized."
+    },
+    {
+      "id": "CONFIG-004",
+      "behavior": "selection.maxSelections",
+      "targetIncrement": "P1.4",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "344"
+        }
+      ],
+      "coverageNote": "maxSelections 0/1/2 characterized in multi mode."
+    },
+    {
+      "id": "CONFIG-005",
+      "behavior": "selection.showRemoveButton",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "345"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-006",
+      "behavior": "selection.showSelectedIndicator",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "346"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-007",
+      "behavior": "selection.closeOnSelect",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "348"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-008",
+      "behavior": "selection.toggleOnTriggerClick",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "349"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-009",
+      "behavior": "direction",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "351"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-010",
+      "behavior": "dropdownPlacement.mode",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "352-354"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-011",
+      "behavior": "multiSelectDisplay",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "355-363"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-012",
+      "behavior": "scrollToSelected",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "364-370"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-013",
+      "behavior": "selectedOptions",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "371-374"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-014",
+      "behavior": "loadMore",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "375-380"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-015",
+      "behavior": "busyBucket",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "381-388"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-016",
+      "behavior": "serverSide",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "392-396"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-017",
+      "behavior": "infiniteScroll",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "397-405"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-018",
+      "behavior": "clearControl",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "413-420"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-019",
+      "behavior": "tracking",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "422-429"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-020",
+      "behavior": "limitations",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "430-433"
+        }
+      ],
+      "coverageNote": "autoMitigateRuntimeModeSwitch=true clears on multi->single (-> []); false yields exact engine-normalized survivor (-> ['a']). Both asserted exactly (Task 3 + T3-R).",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#exact mode-switch selection state, mitigation enabled vs disabled"
+      ]
+    },
+    {
+      "id": "CONFIG-021",
+      "behavior": "top-level scalars",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "434-438"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-022",
+      "behavior": "selection.removeButtonIcon",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "consumed near enhanced-select:4658; select-option.ts:435",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "347"
+        },
+        {
+          "file": "packages/core/src/components/select-option.ts",
+          "lines": "435"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-023",
+      "behavior": "expandable",
+      "targetIncrement": "P1.4",
+      "coverage": "Missing",
+      "testId": "unassigned",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "406-412"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-024",
+      "behavior": "styles",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "389-391"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-025",
+      "behavior": "styles.classNames",
+      "targetIncrement": "P1.4",
+      "coverage": "Existing",
+      "testId": "verify",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "390"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-026",
+      "behavior": "callbacks",
+      "targetIncrement": "P1.4",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#onSelect/onChange/onClear argument shape + ordering across interaction and programmatic paths",
+      "status": "Documented",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/config/global-config.ts",
+          "lines": "421"
+        }
+      ],
+      "coverageNote": "onSelect (receives select.detail incl. multi), onChange (items, values) and onClear (clearedSelection/clearedSearch) characterized for interaction + programmatic paths. Remaining callbacks: onOpen, onClose, onSearch, onLoadMore, onError."
+    }
+  ]
+}

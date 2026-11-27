@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 import { createEffect, createMemo, createSignal, onCleanup, onMount, on, type JSX } from 'solid-js'
 import { render } from 'solid-js/web'
 import type {

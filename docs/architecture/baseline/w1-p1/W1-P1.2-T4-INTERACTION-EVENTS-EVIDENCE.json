@@ -1,0 +1,93 @@
+{
+  "increment": "W1-P1.2 Task 4",
+  "title": "User Interaction vs. Programmatic Event Ordering",
+  "startingCommit": "001d9d3661e3ab373cc6c0dac854526ee81de94d",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "testFile": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts",
+  "publicInterfaceOnly": true,
+  "drivingSurface": {
+    "pointer": "MouseEvent('click', {bubbles, composed}) dispatched on rendered [part=\"option\"] elements of the open listbox",
+    "keyboard": "KeyboardEvent('keydown') dispatched on [part=\"input\"] (Enter/ArrowDown only; interaction-triggered select events, not full APG navigation)",
+    "clearControl": ".click() on rendered [part=\"clear-button\"]",
+    "chipRemove": ".click() on rendered [part=\"chip-remove\"] (input-content chip)",
+    "optionRemove": ".click() on a SelectOption's shadow-root [part=\"chip-remove\"] remove button",
+    "programmatic": "public setSelectedValues() / clear()"
+  },
+  "observationSurface": {
+    "events": "CustomEvent.detail for select / change / clear / remove",
+    "callbacks": "onSelect / onChange / onClear registered via updateConfig({callbacks})",
+    "state": "getSelectedValues() / getSelectedItems() and rendered attributes"
+  },
+  "forbidden": [
+    "_selectOption",
+    "_handleOptionRemove",
+    "_handleClearControlClick",
+    "engine dispatch",
+    "private _state/_engine access",
+    "arbitrary sleeps",
+    "CSS-animation completion dependence"
+  ],
+  "testRun": {
+    "config": "packages/core/vitest.config.ts",
+    "t4": "34 passed"
+  },
+  "verifiedSequences": {
+    "option_activation": "select -> change -> onChange -> onSelect (change emitted BEFORE onSelect; single primary path)",
+    "select_absent_on_programmatic": "setSelectedValues() emits change -> onChange only (no select/onSelect)",
+    "programmatic_clear": "clear() emits change -> onChange only (no clear/onClear)",
+    "chip_or_option_removal": "change -> onChange -> remove (no select, onSelect not invoked)",
+    "clear_control_with_selection": "change -> onChange -> clear -> onClear",
+    "clear_control_empty": "button disabled; click is a no-op; NO event/callback"
+  },
+  "payloads": {
+    "select": "{ item, index, value, label, selected, multi } (exact key set asserted; index = source registry index; selected reflects post-dispatch engine state; multi = mode==='multi')",
+    "change": "{ selectedItems, selectedValues, selectedIndices } (agrees with public getters; multi values in selection-insertion order, e.g. selecting c then a => ['c','a'], indices [2,0])",
+    "remove": "{ item, index } (index = source registry index; verified 0 and 2)",
+    "clear": "{ clearedSelection, clearedSearch }",
+    "onSelect": "same object as select.detail (includes multi)",
+    "onChange": "(selectedItems, selectedValues)",
+    "onClear": "({ clearedSelection, clearedSearch })"
+  },
+  "characterizedAreas": {
+    "T4-01_pointer": "single select/replace, multi accumulation; select->change->onChange->onSelect per activation",
+    "T4-02_keyboard": "Enter opens then Enter selects active option (ArrowDown establishes active); keyboard deselect via reopen+Enter with allowDeselect; payload shape identical to pointer",
+    "T4-03_flags": "single selected=true on select, selected=false on allowDeselect toggle; multi selected toggles true/false/true; multi flag true in multi mode, false in single",
+    "T4-04_payloads": "exact select key set {item,index,value,label,selected,multi}; change agrees with getters; multi insertion order; onSelect gets select.detail; onChange gets (items,values); change follows each select incl. deselect empty",
+    "T4-05_ordering": "select->change->onChange->onSelect is stable; events bubble (composed) to light-DOM ancestor",
+    "T4-06_clear": "clear-control change->onChange->clear->onClear and empties (non-required); empty activation disabled/no-event; selection-only (clearSearch=false); required preserves selection yet clearedSelection=true (DEVIATION-10)",
+    "T4-07_remove": "chip removal and option-level removal both change->onChange->remove, no select; remove.detail index = source registry index; change reflects post-removal selection",
+    "T4-08_rejected_noop": "disabled(blocked) = no event no state; disabled(selectable) = full select sequence; maxSelections reject = no event no state; single re-select allowDeselect=false = NO state change BUT events fire; allowDeselect=true = deselect with events",
+    "T4-09_prog_vs_interaction": "programmatic setSelectedValues/clear = change->onChange only; interaction adds select/remove/clear layers as above"
+  },
+  "newDeviations": [
+    "DEVIATION-10"
+  ],
+  "deviationsUpdated": [],
+  "traceabilityUpdates": {
+    "EVENT-001": "Partial retained; interaction pointer/keyboard select/deselect payload+order now characterized; select-all/range paths outstanding",
+    "EVENT-007": "Partial retained; interaction+programmatic-local+removal+clear-control characterized; acknowledged/server path outstanding",
+    "EVENT-009": "Diagnostic -> Partial (both removal surfaces characterized; follow-on focus/animation -> P1.4)",
+    "EVENT-010": "Diagnostic -> Partial (clear-control activation incl. DEVIATION-10; active-search/focus follow-on outstanding)",
+    "API-013": "Partial retained; note updated to reference Task 4 clear-control coverage",
+    "CONFIG-026": "Missing -> Partial (onSelect/onChange/onClear characterized; onOpen/onClose/onSearch/onLoadMore/onError outstanding)"
+  },
+  "coverageDistribution": {
+    "before": { "Existing": 38, "Partial": 14, "Diagnostic": 43, "Missing": 5 },
+    "after": { "Existing": 38, "Partial": 17, "Diagnostic": 41, "Missing": 4 },
+    "total": 100,
+    "explanation": "EVENT-009 and EVENT-010 move Diagnostic->Partial; CONFIG-026 moves Missing->Partial. Net: Partial +3, Diagnostic -2, Missing -1."
+  },
+  "boundaries": {
+    "notCovered": "full APG keyboard/navigation + cross-browser accessibility (P1.3); animation internals and chip-renderer resource ownership (P1.4); acknowledged/server change path (P1.5); clear() during an active search query"
+  },
+  "productionChanges": "none",
+  "regression": {
+    "coreFullSuite": "876 passed + 1 skipped (61 files); +34 tests / +1 file vs Task 3 (843+1 / 60 files); no regression"
+  },
+  "typecheck": {
+    "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
+    "result": "exit 0"
+  },
+  "validator": "PASS (100 IDs reconcile)",
+  "precedingCommit": "001d9d3"
+}

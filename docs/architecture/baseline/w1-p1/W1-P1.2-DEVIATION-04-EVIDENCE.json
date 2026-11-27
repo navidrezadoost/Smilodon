@@ -1,0 +1,114 @@
+{
+  "increment": "W1-P1.2-T1-R",
+  "title": "DEVIATION-04 chronology + coverage-registry correction (T1-R)",
+  "startingCommit": "4b02cd10a9aad4406e656bd0357457c91f19ed1b",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "authorizedScope": "DEVIATION-04 (setSelectedValues ordering) among P1.2 items; task 1 of 5 executed in this commit.",
+  "environment": {
+    "node": "26.10.0",
+    "caveat": "Pinned Node 20 not available in this worktree; certification must be re-run under Node 20 at the P1.6 gate."
+  },
+  "testFile": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts",
+  "testRun": {
+    "config": "packages/core/vitest.config.ts",
+    "tests": "19 passed",
+    "files": "1 passed"
+  },
+  "regression": {
+    "coreFullSuite": "780 passed + 1 skipped (56 files); +6 vs 774+1 (T1), +19 vs 761+1 (P1.1); no regression"
+  },
+  "typecheck": {
+    "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
+    "result": "exit 0"
+  },
+  "characterizedBehavior": [
+    {
+      "path": "local",
+      "events": [
+        "change"
+      ],
+      "selectEmitted": false,
+      "order": [
+        "change event",
+        "onChange callback"
+      ],
+      "promise": "resolves after synchronous emission",
+      "payload": "{selectedItems,selectedValues,selectedIndices}"
+    },
+    {
+      "path": "server-success",
+      "events": [
+        "change"
+      ],
+      "selectEmitted": false,
+      "order": [
+        "await fetch",
+        "change event",
+        "onChange"
+      ],
+      "promise": "resolves after projection",
+      "notes": "stale-generation and isConnected guards early-return without emitting"
+    },
+    {
+      "path": "server-failure",
+      "events": [
+        "error"
+      ],
+      "changeEmitted": false,
+      "order": [
+        "await fetch (throws)",
+        "error event",
+        "onError"
+      ],
+      "promise": "resolves (error swallowed, not rejected)"
+    },
+    {
+      "path": "superseded",
+      "events": [
+        "change (latest generation only)"
+      ],
+      "notes": "stale generation early-returns; no change for stale call"
+    },
+    {
+      "path": "disconnected",
+      "events": [],
+      "notes": "disconnect before fetch resolves => no change/error; Promise resolves"
+    }
+  ],
+  "newDeviations": [
+    "DEVIATION-07"
+  ],
+  "traceabilityUpdates": {
+    "API-012": "testId set; coverage Diagnostic->Existing",
+    "EVENT-001": "testId set; select ABSENCE asserted on programmatic path",
+    "EVENT-006": "testId set; failure emits error not change",
+    "EVENT-007": "testId set; change payload/order characterized"
+  },
+  "notYetCovered": [
+    "P1.2 tasks 2-5 (identity matrix, public state/validation, user-vs-programmatic interaction, remaining traceability) deferred to subsequent P1.2 commits"
+  ],
+  "productionChanges": "none",
+  "precedingCommit": "832431c",
+  "deterministicTimelineAdded": true,
+  "timelineAssertions": {
+    "local": "change -> onChange -> promise-resolved (select/onSelect absent)",
+    "server-success": "fetch-resolved -> change -> onChange -> promise-resolved (select/onSelect absent)",
+    "server-failure": "error -> onError -> promise-resolved; error.detail.cause === thrown Error; no change/select/onChange/onSelect",
+    "onError-throw": "rejects Promise (documented boundary)",
+    "supersession": "each Promise settles once independently; only latest generation changes; stale invokes no selection/error callbacks",
+    "disconnection": "Promise settles; no change/error; callbacks not invoked"
+  },
+  "coverageCorrection": {
+    "classes": [
+      "Existing",
+      "Partial",
+      "Diagnostic",
+      "Missing"
+    ],
+    "API-012": "Existing (full timeline)",
+    "EVENT-001": "Partial (programmatic absence only)",
+    "EVENT-006": "Partial (one server-failure path)",
+    "EVENT-007": "Partial (programmatic paths only)"
+  },
+  "validator": "accepts Partial; concrete testId spec references must resolve to an existing file"
+}

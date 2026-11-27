@@ -1,0 +1,16 @@
+b4aaca34e576bc5c8a1328758f6cd0bc3f7c960aab9316b0bfb884d7131e5a45  docs/architecture/baseline/w1-p0-2b/W1-P0.2B-REPORT.md
+c81fa4e1f45105fb20faa3181ca688f512a253b7a4cd7e371a1b1a1d44ea7cf7  docs/architecture/baseline/w1-p0-2b/browser-evidence/baseline-attribution-observation.json
+49b28695764e2d2e5b8e8f1d5637c0e057de9049fb9ac969c36d264ae30b7dd3  docs/architecture/baseline/w1-p0-2b/browser-evidence/lifecycle-stress-diagnostic.json
+9d183f7fac3c4e961a7c50fa340e8694623511c5237316a5dfae8cf6d8f1ea7c  docs/architecture/baseline/w1-p0-2b/browser-evidence/listener-ownership-diagnostic.json
+c63f0ce4bb4f472ffc08dd662dc07c61f474386c71c6058ab8c6635caff6acb8  docs/architecture/baseline/w1-p0-2b/browser-evidence/phase-4.6.2a-p0.2a.json
+f0fbde6c5be9f894dc16f4d44fc7fbf500d3f249a2f27aa6d54c63688feba1b4  docs/architecture/baseline/w1-p0-2b/browser-evidence/phase-4.6.2a-summary-p0.2a.json
+78792f24718a6f91048f66ac58fe29edf72b9d457039c2bebc64b582dcd3430f  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-heap-attribution.json
+33ea650a808f4c57fdeb173f559ad1b82df36f7d07433b94a18a8d7e9fbab6c9  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-heap-snapshots.zip
+3558130db2fa8d6535a0864fdc9ba840b5350bcd703ffee0029c68cf4d3fdd9c  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-lifecycle-stress.json
+07a49205804d5e42264e1fa5a3d2c6c2339cb157794337bf7722cf3fcac4a929  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-listener-ownership.json
+16a4fc72a12a4450ea48d0e97b5744964681ca0523807e1a002780a9c9b659e2  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-playwright-results.json
+4b23c6cd44d205984714f2093e0d41df71f6a40224ced5d08c82bfc9e31cfd03  docs/architecture/baseline/w1-p0-2b/browser-evidence/pinned-suite-run.txt
+92670406ee35c60131a8d4a50e01d34acd394472f302b5a0db0b2a2493cca588  docs/architecture/baseline/w1-p0-2b/command-results.json
+2b6a5dc4ed450b49c754de9f81fb38d41140226b26026d0bfe699363b80a3800  docs/architecture/baseline/w1-p0-2b/environment.json
+9745251ffd0e94780e3d976c84504e733ff0fabad2d1468ef3c963b92fabe710  docs/architecture/baseline/w1-p0-2b/source.diff
+30c53d8f8d65e415ce0ba589a7eac64c426f93eaefd10fbba1cf489ae39bd2ce  docs/architecture/baseline/w1-p0-2b/starting-state.json

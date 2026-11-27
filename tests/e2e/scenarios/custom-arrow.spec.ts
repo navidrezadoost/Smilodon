@@ -65,7 +65,9 @@ test.describe('Custom arrow slot @all', () => {
     });
     await page.evaluate(async () => {
       await customElements.whenDefined('enhanced-select');
-      const custom = document.createElement('enhanced-select');
+      const custom = document.createElement('enhanced-select') as HTMLElement & {
+        setItems(items: Array<{ value: string; label: string }>): void;
+      };
       custom.id = 'issue-76-custom';
       const icon = document.createElement('span');
       icon.slot = 'arrow';
@@ -75,12 +77,16 @@ test.describe('Custom arrow slot @all', () => {
       document.body.append(custom);
       custom.setItems([{ value: 'a', label: 'Alpha' }]);
 
-      const fallback = document.createElement('enhanced-select');
+      const fallback = document.createElement('enhanced-select') as HTMLElement & {
+        setItems(items: Array<{ value: string; label: string }>): void;
+      };
       fallback.id = 'issue-76-default';
       document.body.append(fallback);
       fallback.setItems([{ value: 'a', label: 'Alpha' }]);
 
-      const staticCustom = document.createElement('enhanced-select');
+      const staticCustom = document.createElement('enhanced-select') as HTMLElement & {
+        setItems(items: Array<{ value: string; label: string }>): void;
+      };
       staticCustom.id = 'issue-76-static';
       const staticIcon = document.createElement('span');
       staticIcon.slot = 'arrow';

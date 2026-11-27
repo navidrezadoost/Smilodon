@@ -9,12 +9,13 @@ import { Select as ReactSelect } from '@smilodon/react';
 import { Select as ReactNativeWebSelect } from '@smilodon/react-native';
 import { Select as VueSelect } from '@smilodon/vue';
 import { Select as SolidSelect } from '@smilodon/solid';
-import { createSelect, updateConfig as updateVanillaConfig } from '@smilodon/vanilla';
+import { createSelect, setValue as setVanillaValue, updateConfig as updateVanillaConfig } from '@smilodon/vanilla';
 import { EnhancedSelect } from '@smilodon/core';
 import SelectedOptionsSvelteHarness from '../SelectedOptionsSvelteHarness.svelte';
 import { fixtureItems, initialConfig, partialConfig } from '../selected-options-fixture-data';
 
 const fixtures = document.querySelector<HTMLElement>('#fixtures')!;
+type DemoSelectValue = string | number | Array<string | number>;
 const adapterUpdates = new Map<string, (nextConfig: any) => void>();
 const adapterSelectionUpdates = new Map<string, (nextValue: string) => void>();
 const adapterDisposers = new Map<string, () => void>();
@@ -27,22 +28,25 @@ function makeSection(id: string, framework: string): HTMLElement {
   return section;
 }
 
-function ReactHarness({ Component, framework }: { Component: typeof ReactSelect; framework: string }) {
+function ReactHarness({ framework, native = false }: { framework: string; native?: boolean }) {
   const [config, setConfig] = useState(initialConfig);
-  const [value, setValue] = useState('3');
+  const [value, setValue] = useState<DemoSelectValue>('3');
   adapterUpdates.set(framework, (nextConfig) => { flushSync(() => setConfig(nextConfig)); });
   adapterSelectionUpdates.set(framework, (nextValue) => { flushSync(() => setValue(nextValue)); });
+  const select = native
+    ? React.createElement(ReactNativeWebSelect, { items: fixtureItems, value, onChange: setValue, config })
+    : React.createElement(ReactSelect, { items: fixtureItems, value, onChange: setValue, config });
   return React.createElement('section', { 'data-framework': framework },
     React.createElement('button', { id: `update-${framework}`, onClick: () => setConfig(partialConfig) }, `Update ${framework} config`),
     React.createElement('button', { id: `unmount-${framework}` }, `Unmount ${framework}`),
-    React.createElement(Component, { items: fixtureItems, value, onChange: setValue, config }),
+    select,
   );
 }
 
-for (const [framework, Component] of [['react', ReactSelect], ['react-native-web', ReactNativeWebSelect]] as const) {
+for (const [framework, native] of [['react', false], ['react-native-web', true]] as const) {
   const root = document.createElement('div');
   const reactRoot = createRoot(root);
-  reactRoot.render(React.createElement(ReactHarness, { Component, framework }));
+  reactRoot.render(React.createElement(ReactHarness, { framework, native }));
   adapterMounts.set(framework, () => fixtures.append(root));
   adapterDisposers.set(framework, () => reactRoot.unmount());
 }
@@ -75,15 +79,15 @@ adapterDisposers.set('svelte', () => { void unmountSvelte(svelteInstance); });
 const solidSection = makeSection('solid', 'solid');
 const solidMount = solidSection.querySelector<HTMLElement>('#mount-solid')!;
 const [solidConfig, setSolidConfig] = createSignal(initialConfig);
-const [solidValue, setSolidValue] = createSignal('3');
+const [solidValue, setSolidValue] = createSignal<DemoSelectValue>('3');
 const disposeSolid = renderSolid(() => createComponent(SolidSelect, {
   items: fixtureItems,
   get value() { return solidValue(); },
-  onChange: (nextValue: string) => setSolidValue(nextValue),
+  onChange: (nextValue: DemoSelectValue) => { setSolidValue(nextValue); },
   get config() { return solidConfig(); },
 }), solidMount);
 adapterUpdates.set('solid', setSolidConfig);
-adapterSelectionUpdates.set('solid', setSolidValue);
+adapterSelectionUpdates.set('solid', (nextValue) => { setSolidValue(nextValue); });
 adapterDisposers.set('solid', disposeSolid);
 adapterMounts.set('solid', () => fixtures.append(solidSection));
 solidSection.querySelector('#update-solid')!.addEventListener('click', () => setSolidConfig(partialConfig));
@@ -94,7 +98,7 @@ const vanilla = createSelect({ items: fixtureItems, value: '3', config: initialC
   close(): void;
 };
 adapterUpdates.set('vanilla', (nextConfig) => updateVanillaConfig(vanilla, nextConfig));
-adapterSelectionUpdates.set('vanilla', (nextValue) => vanilla.setSelectedValues([nextValue]));
+adapterSelectionUpdates.set('vanilla', (nextValue) => setVanillaValue(vanilla, nextValue));
 adapterDisposers.set('vanilla', () => vanilla.remove());
 vanilla.id = 'vanilla-select';
 vanillaSection.querySelector('#mount-vanilla')!.append(vanilla);

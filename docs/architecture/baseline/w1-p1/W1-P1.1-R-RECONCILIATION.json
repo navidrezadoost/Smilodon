@@ -1,0 +1,43 @@
+{
+  "increment": "W1-P1.1-R",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "precedingCommit": "c8f0db6",
+  "note": "Documentation-only reconciliation. No production source, types, config, or test files changed.",
+  "checks": [
+    {
+      "criterion": "R-01 Markdown/JSON ID sets match",
+      "result": "PASS",
+      "detail": "markdown=100 json=100 missing=[] orphaned=[]"
+    },
+    {
+      "criterion": "R-02 every contract has a unique ID",
+      "result": "PASS",
+      "detail": "unique=100 duplicates=0"
+    },
+    {
+      "criterion": "R-03 configuration defaults complete",
+      "result": "PASS",
+      "detail": "CONFIG IDs=26 (001..026); defaultConfig leaves covered incl removeButtonIcon/styles/classNames/expandable/callbacks"
+    },
+    {
+      "criterion": "R-04 inventory counts internally consistent",
+      "result": "PASS",
+      "detail": "API=27 EVENT=15 ATTR=11 PART=11 SLOT=4 LIFECYCLE=6 CONFIG=26 total=100; API signatures=30; distinct part tokens=19; host-related attrs=7; shadow data-attr groups=4"
+    },
+    {
+      "criterion": "R-05 every contract has a precise source locator",
+      "result": "PASS",
+      "detail": "100/100 records carry >=1 {file,lines} locator; all files exist; all ranges within bounds"
+    },
+    {
+      "criterion": "R-06 coverage and target increment explicit",
+      "result": "PASS",
+      "detail": "all records have coverage + targetIncrement + explicit testId (verify|unassigned)"
+    },
+    {
+      "criterion": "R-07 six deviations preserved",
+      "result": "PASS",
+      "detail": "deviations=DEVIATION-01,DEVIATION-02,DEVIATION-03,DEVIATION-04,DEVIATION-05,DEVIATION-06; DEVIATION-01 extended with archival note only"
+    }
+  ]
+}

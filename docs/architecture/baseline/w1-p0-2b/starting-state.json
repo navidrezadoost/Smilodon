@@ -1,0 +1,8 @@
+{
+  "phase": "W1-P0.2B",
+  "approvedRepairBaseline": "895f0384744e7ec9d5afeb32fed7b08a4aed961f",
+  "canonicalBaseline": "fb34a2390abc060a1f3d78bc2eadbb895b8dd5b1",
+  "implementationCommit": "3a2d94511e905f1dfe6feda245308df0cbd1d650",
+  "branch": "codex/w1-p0-2b-lifecycle-895f038",
+  "scope": "tooltip scroll listener connection lifecycle and lifecycle ownership certification"
+}

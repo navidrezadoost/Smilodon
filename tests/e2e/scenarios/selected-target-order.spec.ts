@@ -37,8 +37,9 @@ test('first and last selected targets use render order after dropdown entrance @
       })));
       await select.setSelectedValues(['target-30', 'target-10']);
 
-      const dropdown = select.shadowRoot!.querySelector<HTMLElement>('.select-dropdown')!;
-      const scroller = select.shadowRoot!.querySelector<HTMLElement>('.options-container')!;
+      const shadowRoot = select.shadowRoot as ShadowRoot;
+      const dropdown = shadowRoot.querySelector<HTMLElement>('.select-dropdown')!;
+      const scroller = shadowRoot.querySelector<HTMLElement>('.options-container')!;
       const nativeScrollTo = scroller.scrollTo.bind(scroller);
       const commands: Array<{ top: number; time: number }> = [];
       const targetRequests: string[] = [];

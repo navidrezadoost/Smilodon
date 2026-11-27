@@ -1,0 +1,75 @@
+{
+  "increment": "W1-P1.2 Task 3",
+  "title": "Public Selection State, Validation, and Clear API matrix",
+  "startingCommit": "b394b907017135cca2a9343eb21d9555b5aaa891",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "testFile": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts",
+  "publicInterfaceOnly": true,
+  "testRun": {
+    "config": "packages/core/vitest.config.ts",
+    "t3": "26 passed",
+    "t3r": "8 passed"
+  },
+  "characterizedAreas": {
+    "clear_vs_replace_empty": {
+      "events": "clear() and setSelectedValues([]) each emit exactly one change (no clear/select)",
+      "nonRequired": "both empty the selection",
+      "required": "both PRESERVE prior selection in the tested configuration (equivalent for tested selection-state and event outcomes; NOT asserted universally identical across all configs/paths)",
+      "multi_duplicate": "clear() empties duplicate-value multi selection",
+      "scoping": "Results describe the tested programmatic paths and configurations only; not a universal equivalence claim."
+    },
+    "validate_matrix": {
+      "nonRequired": "always true",
+      "requiredEmpty": "false",
+      "requiredSelection": "true",
+      "requiredPreservedAfterClear": "true",
+      "requiredDisabledSelected": "true (selectable:true)",
+      "requiredDetachedSelected": "FALSE while getters report the value -> DEVIATION-09"
+    },
+    "deviation08_variants": {
+      "baseline": "detached retained in getters, not rendered",
+      "clear": "prunes detached selection",
+      "replace_empty": "prunes detached selection",
+      "required_then_clear": "does NOT clear detached",
+      "required_then_replace_empty": "preserves detached",
+      "readd_after_clear": "no resurrection",
+      "readd_without_clear": "auto-reattach; SAME key -> new instance; DIFFERENT key -> old key stays cached"
+    },
+    "configTransitions": {
+      "multi_to_single_autoMitigate_true": "clears selection",
+      "multi_to_single_autoMitigate_false": "not auto-cleared",
+      "maxSelections_decrease": "trims on next replace",
+      "allowDeselect": "no effect on programmatic replace-empty when non-required"
+    }
+  },
+  "newDeviations": [
+    "DEVIATION-09"
+  ],
+  "deviationsUpdated": [
+    "DEVIATION-08 (key-based reattachment)"
+  ],
+  "traceabilityUpdates": {
+    "API-013/040/041/042/043": "Diagnostic->Partial",
+    "CONFIG-002/020": "notes + supplementary test"
+  },
+  "boundaries": {
+    "notCovered": "interaction-driven select/change/clear ordering (Task 4); full error API (P1.5)"
+  },
+  "productionChanges": "none",
+  "regression": {
+    "coreFullSuite": "843 passed + 1 skipped (60 files); +8 vs 835+1 (Task 3); no regression"
+  },
+  "typecheck": {
+    "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
+    "result": "exit 0"
+  },
+  "validator": "PASS (100 IDs reconcile)",
+  "correction": "W1-P1.2-T3-R",
+  "precedingCommit": "e261369",
+  "t3rTestFile": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts",
+  "t3rFindings": {
+    "T3-F01": "setError()/clearError() asserted via shadowRoot: aria-invalid flip, aria-describedby wiring, error element text; validate() failure->success clears prior error presentation.",
+    "T3-F02": "multi->single with autoMitigate=false yields EXACT ['a'] (vs [] when enabled), asserted equal to the pre-switch first eligible survivor; enabled vs disabled compared from same initial selection.",
+    "T3-F03": "CONFIG-002 coverage note corrected; allowDeselect only exercised non-required. Prior evidence retained."
+  }
+}

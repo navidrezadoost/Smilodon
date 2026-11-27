@@ -197,7 +197,9 @@ function Issue107CertificationApp() {
   const handleRef = useRef<SelectHandle>(null);
   const freshEquivalentItems = issue107InitialItems.map((item) => ({
     ...item,
-    metadata: { ...item.metadata },
+    metadata: item.metadata && typeof item.metadata === 'object'
+      ? { ...item.metadata }
+      : item.metadata,
   }));
 
   useEffect(() => {

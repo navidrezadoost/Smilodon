@@ -1,0 +1,741 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T12:32:17.730Z",
+  "source": "test-results/performance/phase-4.6.2a.json",
+  "commit": "fb34a2390abc060a1f3d78bc2eadbb895b8dd5b1",
+  "completionStatus": "complete-with-censored-or-skipped-cases",
+  "failure": null,
+  "browser": {
+    "engine": "chromium",
+    "version": "156.0.8078.4",
+    "expectedRevision": "1217",
+    "expectedVersion": "147.0.7727.15",
+    "executablePath": "chrome",
+    "resolvedExecutablePath": null,
+    "actualBrowserCacheRevision": "1248",
+    "explicitExecutableOverride": "/home/navidrezadoost/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36"
+  },
+  "runner": {
+    "platform": "linux",
+    "release": "6.12.112-1-MANJARO",
+    "architecture": "x64",
+    "cpuCount": 24,
+    "cpuModel": "AMD Ryzen 9 7845HX with Radeon Graphics",
+    "totalMemoryBytes": 33250746368,
+    "freeMemoryAtStartBytes": 13252448256,
+    "githubActions": false,
+    "githubRunnerName": null,
+    "githubImageOS": null,
+    "githubImageVersion": null
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "deviceScaleFactor": 1
+  },
+  "protocol": {
+    "schemaVersion": 2,
+    "warmupsPerModeAndSize": 0,
+    "measuredRepetitionsPerModeAndSize": 1,
+    "browserSetupTimeoutMs": 120000,
+    "trialTimeoutMs": 180000,
+    "legacy100kFeasibilityProbeTimeoutMs": 15000,
+    "legacy100kPolicy": "Run one bounded feasibility probe after the 1k/10k workload matrix and before 100k virtual trials; if censored, skip its remaining warmups/repetitions. If feasible, apply the same timeout bound to each legacy warmup/repetition and skip the remainder after any censor.",
+    "scrolling": "Deterministic seeded random-access seeks; target indexes are identical between render modes for each size and repetition.",
+    "gc": "Chromium CDP Runtime.getHeapUsage snapshots around each trial; HeapProfiler.collectGarbage before baseline and after removing the select and dropping benchmark data references.",
+    "percentileInterpretation": "Event-level pooled scroll percentiles and the distribution of per-trial p95 values are reported separately. A per-trial p95 is not a cross-repetition percentile.",
+    "measurementType": "Exploratory unless at least one warm-up and five measured repetitions are present for a feasible workload; no performance budget is enforced by this harness."
+  },
+  "skippedWorkloads": [
+    {
+      "datasetSize": 100000,
+      "mode": "legacy-full",
+      "skippedWarmups": 0,
+      "skippedRepetitions": 1,
+      "reason": "separately bounded legacy scalability probe was censored before full render settled"
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "issueCount": 0,
+    "issues": []
+  },
+  "censoredCaseCount": 1,
+  "cases": [
+    {
+      "datasetSize": 1000,
+      "mode": "legacy-full",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "validRepetitions": 1,
+      "skippedRepetitions": 0,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [],
+      "incompleteOrFailed": [],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 399.21000000089407,
+        "p95": 399.21000000089407,
+        "p99": 399.21000000089407
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 791.109999999404,
+        "p95": 791.109999999404,
+        "p99": 791.109999999404
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 242.48000000044703,
+        "p95": 242.48000000044703,
+        "p99": 242.48000000044703
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 436.48499999940395,
+        "p95": 436.48499999940395,
+        "p99": 436.48499999940395
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 1476.480000000447,
+        "p95": 1476.480000000447,
+        "p99": 1476.480000000447
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 20,
+        "p50": 0.005000002682209015,
+        "p95": 0.019999999552965164,
+        "p99": 0.04999999701976776
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 0.019999999552965164,
+        "p95": 0.019999999552965164,
+        "p99": 0.019999999552965164
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 16.661000000000058,
+        "p95": 16.661000000000058,
+        "p99": 16.661000000000058
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "randomScrollFrameIntervalsOver33ms": 0,
+      "randomScrollFrameIntervalsOver50ms": 0,
+      "sustainedScrollFrameIntervalsOver33ms": 0,
+      "sustainedScrollFrameIntervalsOver50ms": 0,
+      "maxMountedOptions": 1000,
+      "maxObservedDeepDocumentNodes": 14048,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 1,
+        "p50": 5287568,
+        "p95": 5287568,
+        "p99": 5287568
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    },
+    {
+      "datasetSize": 1000,
+      "mode": "virtual-window",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "validRepetitions": 1,
+      "skippedRepetitions": 0,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [],
+      "incompleteOrFailed": [],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 44.08000000193715,
+        "p95": 44.08000000193715,
+        "p99": 44.08000000193715
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 65.31000000238419,
+        "p95": 65.31000000238419,
+        "p99": 65.31000000238419
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 15.230000000447035,
+        "p95": 15.230000000447035,
+        "p99": 15.230000000447035
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 45.30000000074506,
+        "p95": 45.30000000074506,
+        "p99": 45.30000000074506
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 8.57999999821186,
+        "p95": 8.57999999821186,
+        "p99": 8.57999999821186
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 20,
+        "p50": 16.62999999895692,
+        "p95": 16.804999999701977,
+        "p99": 16.83999999985099
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 16.804999999701977,
+        "p95": 16.804999999701977,
+        "p99": 16.804999999701977
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "randomScrollFrameIntervalsOver33ms": 0,
+      "randomScrollFrameIntervalsOver50ms": 0,
+      "sustainedScrollFrameIntervalsOver33ms": 0,
+      "sustainedScrollFrameIntervalsOver50ms": 0,
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 218,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 1,
+        "p50": 1642080,
+        "p95": 1642080,
+        "p99": 1642080
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    },
+    {
+      "datasetSize": 10000,
+      "mode": "legacy-full",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "validRepetitions": 1,
+      "skippedRepetitions": 0,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [],
+      "incompleteOrFailed": [],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 4069.644999999553,
+        "p95": 4069.644999999553,
+        "p99": 4069.644999999553
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 5675.879999998957,
+        "p95": 5675.879999998957,
+        "p99": 5675.879999998957
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 685.035000000149,
+        "p95": 685.035000000149,
+        "p99": 685.035000000149
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 4611.935000002384,
+        "p95": 4611.935000002384,
+        "p99": 4611.935000002384
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 1898.4750000014901,
+        "p95": 1898.4750000014901,
+        "p99": 1898.4750000014901
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 54.33999999985099,
+        "p95": 54.33999999985099,
+        "p99": 54.33999999985099
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 50,
+        "p50": 0.04999999701976776,
+        "p95": 0.10500000044703484,
+        "p99": 0.2750000022351742
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 0.10500000044703484,
+        "p95": 0.10500000044703484,
+        "p99": 0.10500000044703484
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 100,
+        "p50": 0.05000000074505806,
+        "p95": 0.07000000029802322,
+        "p99": 0.07000000029802322
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 0.07000000029802322,
+        "p95": 0.07000000029802322,
+        "p99": 0.07000000029802322
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 183.3249999999989,
+        "p95": 183.3249999999989,
+        "p99": 183.3249999999989
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 16.67000000000189,
+        "p95": 16.67000000000189,
+        "p99": 16.67000000000189
+      },
+      "randomScrollFrameIntervalsOver33ms": 2,
+      "randomScrollFrameIntervalsOver50ms": 2,
+      "sustainedScrollFrameIntervalsOver33ms": 2,
+      "sustainedScrollFrameIntervalsOver50ms": 2,
+      "maxMountedOptions": 10000,
+      "maxObservedDeepDocumentNodes": 140047,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 1,
+        "p50": 3465200,
+        "p95": 3465200,
+        "p99": 3465200
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    },
+    {
+      "datasetSize": 10000,
+      "mode": "virtual-window",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "validRepetitions": 1,
+      "skippedRepetitions": 0,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [],
+      "incompleteOrFailed": [],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 47.17999999970198,
+        "p95": 47.17999999970198,
+        "p99": 47.17999999970198
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 73.43999999761581,
+        "p95": 73.43999999761581,
+        "p99": 73.43999999761581
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 19.515000000596046,
+        "p95": 19.515000000596046,
+        "p99": 19.515000000596046
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 46.149999998509884,
+        "p95": 46.149999998509884,
+        "p99": 46.149999998509884
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 25.050000000745058,
+        "p95": 25.050000000745058,
+        "p99": 25.050000000745058
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 11.675000000745058,
+        "p95": 11.675000000745058,
+        "p99": 11.675000000745058
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 50,
+        "p50": 16.655000001192093,
+        "p95": 16.719999998807907,
+        "p99": 16.765000000596046
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 16.719999998807907,
+        "p95": 16.719999998807907,
+        "p99": 16.719999998807907
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 100,
+        "p50": 0.030000001192092896,
+        "p95": 0.044999998062849045,
+        "p99": 0.05000000074505806
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 0.044999998062849045,
+        "p95": 0.044999998062849045,
+        "p99": 0.044999998062849045
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 16.670000000000073,
+        "p95": 16.670000000000073,
+        "p99": 16.670000000000073
+      },
+      "randomScrollFrameIntervalsOver33ms": 0,
+      "randomScrollFrameIntervalsOver50ms": 0,
+      "sustainedScrollFrameIntervalsOver33ms": 0,
+      "sustainedScrollFrameIntervalsOver50ms": 0,
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 218,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 1,
+        "p50": 3666736,
+        "p95": 3666736,
+        "p99": 3666736
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    },
+    {
+      "datasetSize": 100000,
+      "mode": "legacy-full",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 0,
+      "completedRepetitions": 0,
+      "validRepetitions": 0,
+      "skippedRepetitions": 1,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [
+        {
+          "status": "incomplete",
+          "classification": "legacy-scalability-censored",
+          "elapsedMs": 15640,
+          "failureStage": "initial render settle",
+          "artifacts": {
+            "screenshot": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.png",
+            "trace": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.zip",
+            "errorContext": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.error-context.json"
+          }
+        }
+      ],
+      "incompleteOrFailed": [
+        {
+          "kind": "feasibility-probe",
+          "repetition": null,
+          "status": "incomplete",
+          "classification": "legacy-scalability-censored",
+          "failureStage": "initial render settle",
+          "elapsedMs": 15640,
+          "timeoutMs": 15000,
+          "error": "BenchmarkStageTimeout: Benchmark stage \"initial render settle\" did not finish within 15000 ms.",
+          "validationIssues": [],
+          "artifacts": {
+            "screenshot": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.png",
+            "trace": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.zip",
+            "errorContext": "test-results/performance/diagnostics/phase4-100000-legacy-full-feasibility-probe.error-context.json"
+          },
+          "diagnostics": {
+            "pageConsoleWarningOrErrorCount": 0,
+            "pageErrorCount": 0,
+            "resizeObserverWarnings": {
+              "pageConsole": 0,
+              "cdpLog": 0
+            },
+            "samples": []
+          }
+        }
+      ],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "randomScrollFrameIntervalsOver33ms": 0,
+      "randomScrollFrameIntervalsOver50ms": 0,
+      "sustainedScrollFrameIntervalsOver33ms": 0,
+      "sustainedScrollFrameIntervalsOver50ms": 0,
+      "maxMountedOptions": null,
+      "maxObservedDeepDocumentNodes": null,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    },
+    {
+      "datasetSize": 100000,
+      "mode": "virtual-window",
+      "plannedRepetitions": 1,
+      "attemptedRepetitions": 1,
+      "completedRepetitions": 1,
+      "validRepetitions": 1,
+      "skippedRepetitions": 0,
+      "warmups": {
+        "planned": 0,
+        "attempted": 0,
+        "completed": 0,
+        "incompleteOrFailed": 0
+      },
+      "feasibilityProbes": [],
+      "incompleteOrFailed": [],
+      "registrationToHiddenRenderSettleAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 169.44500000029802,
+        "p95": 169.44500000029802,
+        "p99": 169.44500000029802
+      },
+      "registrationToInteractiveAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 286.4699999988079,
+        "p95": 286.4699999988079,
+        "p99": 286.4699999988079
+      },
+      "firstVisibleAfterOpenAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 111.91999999806285,
+        "p95": 111.91999999806285,
+        "p99": 111.91999999806285
+      },
+      "openToRenderSettledAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 146.2199999988079,
+        "p95": 146.2199999988079,
+        "p99": 146.2199999988079
+      },
+      "keyboardEndToVisibleTargetAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 171.23500000312924,
+        "p95": 171.23500000312924,
+        "p99": 171.23500000312924
+      },
+      "filterToRenderedResultsAcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 29.03500000014901,
+        "p95": 29.03500000014901,
+        "p99": 29.03500000014901
+      },
+      "scrollSeekLatencyPooledEventsMs": {
+        "sampleCount": 100,
+        "p50": 41.58000000193715,
+        "p95": 57.894999999552965,
+        "p99": 59.69999999925494
+      },
+      "scrollSeekPerTrialP95Ms": {
+        "sampleCount": 1,
+        "p50": 57.894999999552965,
+        "p95": 57.894999999552965,
+        "p99": 57.894999999552965
+      },
+      "sustainedScrollPooledEventsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "sustainedScrollPerTrialP95Ms": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "frameP95AcrossTrialsMs": {
+        "sampleCount": 1,
+        "p50": 66.66399999999999,
+        "p95": 66.66399999999999,
+        "p99": 66.66399999999999
+      },
+      "sustainedFrameP95AcrossTrialsMs": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "randomScrollFrameIntervalsOver33ms": 99,
+      "randomScrollFrameIntervalsOver50ms": 9,
+      "sustainedScrollFrameIntervalsOver33ms": 0,
+      "sustainedScrollFrameIntervalsOver50ms": 0,
+      "maxMountedOptions": 12,
+      "maxObservedDeepDocumentNodes": 217,
+      "retainedHeapDeltaBytesAcrossTrials": {
+        "sampleCount": 1,
+        "p50": 22402116,
+        "p95": 22402116,
+        "p99": 22402116
+      },
+      "resizeObserverWarnings": {
+        "pageConsole": 0,
+        "cdpLog": 0
+      },
+      "validationIssueCount": 0
+    }
+  ]
+}
