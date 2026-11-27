@@ -1,7 +1,7 @@
 {
   "$schema": "w1-p1-traceability/v2",
-  "increment": "W1-P1.1-R",
-  "correction": "Inventory and traceability reconciliation (documentation only; no production changes)",
+  "increment": "W1-P1.2-R",
+  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes).",
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "branch": "codex/w1-p1-characterization-7e3adf7",
   "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
@@ -58,11 +58,22 @@
       "Missing"
     ],
     "deviationsReferenced": [
+      "DEVIATION-04",
+      "DEVIATION-06",
       "DEVIATION-07",
       "DEVIATION-08",
       "DEVIATION-09",
       "DEVIATION-10"
-    ]
+    ],
+    "p12SpecInventory": {
+      "w1-p1-2-set-selected-values-ordering.spec.ts": 19,
+      "w1-p1-2-identity-policy-matrix.spec.ts": 21,
+      "w1-p1-2-t2r-identity-evidence.spec.ts": 8,
+      "w1-p1-2-t3-state-validation-clear.spec.ts": 26,
+      "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
+      "w1-p1-2-t4-interaction-events.spec.ts": 34,
+      "total": 116
+    }
   },
   "duplicateIds": 0,
   "missingIds": 0,
@@ -232,7 +243,7 @@
       "coverage": "Partial",
       "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/detached/duplicate-key(dev)",
       "status": "Observed",
-      "evidence": "smoke",
+      "evidence": "smoke (dev-only projection asserts: DEVIATION-06)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",

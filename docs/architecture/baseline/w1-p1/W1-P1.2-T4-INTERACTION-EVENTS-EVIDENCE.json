@@ -72,8 +72,18 @@
     "CONFIG-026": "Missing -> Partial (onSelect/onChange/onClear characterized; onOpen/onClose/onSearch/onLoadMore/onError outstanding)"
   },
   "coverageDistribution": {
-    "before": { "Existing": 38, "Partial": 14, "Diagnostic": 43, "Missing": 5 },
-    "after": { "Existing": 38, "Partial": 17, "Diagnostic": 41, "Missing": 4 },
+    "before": {
+      "Existing": 38,
+      "Partial": 14,
+      "Diagnostic": 43,
+      "Missing": 5
+    },
+    "after": {
+      "Existing": 38,
+      "Partial": 17,
+      "Diagnostic": 41,
+      "Missing": 4
+    },
     "total": 100,
     "explanation": "EVENT-009 and EVENT-010 move Diagnostic->Partial; CONFIG-026 moves Missing->Partial. Net: Partial +3, Diagnostic -2, Missing -1."
   },
@@ -82,12 +92,16 @@
   },
   "productionChanges": "none",
   "regression": {
-    "coreFullSuite": "876 passed + 1 skipped (61 files); +34 tests / +1 file vs Task 3 (843+1 / 60 files); no regression"
+    "coreFullSuite": "877 passed + 1 skipped (61 files); +34 tests / +1 file vs Task 3 (843+1 / 60 files); no regression. [T4-F01 ERRATA: an earlier draft of this evidence recorded 876; re-execution confirms 877 = 843 + 34. Corrected under W1-P1.2 Task 5.]"
   },
   "typecheck": {
     "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
     "result": "exit 0"
   },
   "validator": "PASS (100 IDs reconcile)",
-  "precedingCommit": "001d9d3"
+  "precedingCommit": "001d9d3",
+  "errata": {
+    "T4-F01": "Full-suite count corrected 876 -> 877 (re-ran full core suite at Task 5; 877 = Task 3 843 + 34 new T4 tests).",
+    "T4-F02": "T4-04 test title corrected from 'onSelect callback receives the select detail (without `multi`)' to '... (including `multi`)'. Description-only; the assertion (onSelect.args[0] equals select.detail, which includes multi) was already correct and is unchanged."
+  }
 }

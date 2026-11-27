@@ -9,6 +9,8 @@
 
 > **W1-P1.1-R note.** This revision reconciles the inventory counts to a single counting convention, completes the configuration-default inventory, and gives **every** contract ID a precise source locator. The machine-readable matrix `W1-P1-TRACEABILITY.json` now carries **one record per ledger ID (100 records)**. See section 11 for the reconciliation counts. No production source was modified.
 
+> **W1-P1.2-R note (Task 5 closure).** Sections 3-9 carry the accumulated W1-P1.2 coverage annotations. Section 8 now summarizes **all ten** deviations with owner + status; sections 13-14 consolidate the accepted Task 1-4 selection characterization into a single reviewable contract and record the W1-P1.2 closure summary (including the T4-F01/T4-F02 errata corrections). The coverage distribution is unchanged at Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**; no `Partial` was upgraded without full path coverage, and no production source was modified.
+
 ## 0. Purpose and reading rules
 
 This ledger is a source-grounded inventory of every externally observable contract of the `EnhancedSelect` custom element and the public surfaces that surround it. It lets W1-P1.2-P1.6 write black-box characterization tests against a known list instead of re-discovering the surface each time.
@@ -287,16 +289,20 @@ Source: `defaultConfig` - `packages/core/src/config/global-config.ts:335-439`. D
 
 ## 8. Known deviations
 
-Full detail in `W1-P1-DEVIATIONS.md`. Summary (all six preserved by W1-P1.1-R; DEVIATION-01 extended with the archival note - R-07):
+Full detail in `W1-P1-DEVIATIONS.md`. Summary (**all ten** — 01-10 — reconciled at W1-P1.2 Task 5; DEVIATION-01 extended with the archival note - R-07). **Status** is the disposition state at P1.2 closure; **Owner** is the increment that must eventually resolve it.
 
-| ID | Finding (short) | Class | Target | Disposition |
+| ID | Finding (short) | Class | Owner | Status at P1.2 closure |
 | --- | --- | --- | --- | --- |
-| DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.1 | Superseded; archival note in provenance (section 1, 12). |
-| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Characterize; ADR candidate. |
-| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Pin both payloads. |
-| DEVIATION-04 | `setSelectedValues` async ordering not asserted by current tests. | Unknown | P1.2 | Lock via black-box test. |
-| DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | Characterize; ADR if blocking. |
-| DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | Drive via public API only. |
+| DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.6 | Closed-for-P1.1; archival note in provenance (section 1, 12). |
+| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Open — characterize; ADR candidate. (matrix `EVENT-005`/`API-054` = Missing.) |
+| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Open — pin both payloads. (matrix `EVENT-004` = Diagnostic.) |
+| DEVIATION-04 | `setSelectedValues` async ordering not asserted by prior tests. | Unknown | P1.2 | **Characterized** — local + server-fetch success/failure/superseded/disconnected ordering locked by black-box tests (`w1-p1-2-set-selected-values-ordering`, T1-R chronology). Not a defect. |
+| DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | Open — characterize; ADR if blocking. (matrix `ATTR-013` = Diagnostic.) |
+| DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | **Guidance-only, honored** — all P1.2 tests drive public API only; no legacy projection is manipulated. Not a behavioral finding to repair. |
+| DEVIATION-07 | `setSelectedValues` in single mode collapses to first registry-eligible value. | Unknown (mode-dependent) | P1.2 | **Characterized** — registry-order governs (not request order); recorded, not classified a defect; design disposition open. |
+| DEVIATION-08 | Detached selected items are retained after removal from loaded data; reattach is key-based. | Observed | P1.2 | **Characterized** — pruning (clear/`setSelectedValues([])`) and key-based reattachment confirmed; design disposition open. |
+| DEVIATION-09 | Detached selection visible to getters but not to `validate()`. | Observed | P1.6 / forms | **Characterized; ADR candidate** — getter/validator inconsistency; validation design decision deferred past W1-P1. |
+| DEVIATION-10 | Clear-control reports `clearedSelection: true` while `required` preserves the selection. | Observed | W1-P1.2 Task 4 / forms | **Characterized; ADR candidate** — clear-control reporting design decision deferred past W1-P1. |
 
 ---
 
@@ -311,6 +317,21 @@ The machine-readable matrix is `W1-P1-TRACEABILITY.json`. Coverage classes: `Exi
 | P1.3 | API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006 |
 | P1.4 | API-002, 003, 021, 055; EVENT-009, 011; ATTR-012, 013, 021, 022, 023; PART-001..011; SLOT-001..004; LIFECYCLE-001..004; CONFIG-001..026 |
 | P1.5 | API-032, 060, 061, 062; EVENT-004, 005, 006, 008, 012, 020, 021, 022; LIFECYCLE-005 |
+
+**P1.2 closure view (W1-P1.2 Task 5).** The 14 P1.2-owned contracts and their coverage class at closure. `Partial` is retained where interaction/state paths are characterized but other contract paths remain outstanding — **no `Partial` is upgraded to `Existing`** without full path coverage.
+
+| ID | Coverage | Characterized by |
+| --- | --- | --- |
+| API-001, API-004 | Existing | (pre-existing round-trip; `verify`) |
+| API-010, API-011 | Partial | identity matrix (single/multi/reorder/detached; grouping left to P1.4) |
+| API-012 | Existing | `setSelectedValues` local + server-fetch ordering (DEVIATION-04) |
+| API-013 | Partial | `clear()` change-only; acknowledged path → P1.5 |
+| API-014 | Diagnostic | `clearSearch` local via `search-ctrl-a`; acknowledged → P1.5 |
+| API-020 | Partial | `setItems` replace/reorder/detached/duplicate-key; grouping → P1.4 |
+| API-042, API-043 | Partial | `setRequired` + `validate()` matrix; detached-selection edge (DEVIATION-09) |
+| API-054 | Missing | capabilities truthfulness (`pageLoaded`; DEVIATION-02) → P1.5 |
+| EVENT-001, EVENT-007 | Partial | payload + order (pointer/keyboard/remove/clear/programmatic); full APG nav → P1.3 |
+| EVENT-010 | Partial | clear-control active-selection paths; active-search clear semantics outstanding |
 
 ---
 
@@ -448,3 +469,70 @@ The historical `W1-P0-CONTRACT-LEDGER.md` (baseline `c49d5add`, 7,284-line compo
 ---
 
 _End of ledger. Reconciled under W1-P1.1-R; one record per ID in `W1-P1-TRACEABILITY.json`._
+
+---
+
+## 13. W1-P1.2 consolidated selection contract (Task 5 closure)
+
+This section consolidates the accepted Task 1-4 characterization into a single reviewable statement of the **public selection contract** as observed at baseline `7e3adf7`. It is a consolidation, **not** an approval of normative behavior: quirks and inconsistencies remain recorded as deviations. All statements are evidenced through public surface only (public methods, rendered shadow DOM, emitted `CustomEvent.detail`, registered callbacks, and public getters `getSelectedValues()`/`getSelectedItems()`/`validate()`).
+
+### 13.1 Event and callback chronology (interaction vs. programmatic)
+
+All events are `CustomEvent(name, { detail, bubbles: true, composed: true })`. Callbacks are registered via `updateConfig({ callbacks })`. The consolidated chronology per operation:
+
+| Operation | Emitted events (order) | Callbacks (order) | Full sequence | Detail notes |
+| --- | --- | --- | --- | --- |
+| Pointer/Enter select (single or multi) | `select` → `change` | `onChange` → `onSelect` | `select → change → onChange → onSelect` | `select.detail = { item, index, value, label, selected, multi }` (post-dispatch state); `change.detail = { selectedItems, selectedValues, selectedIndices }` |
+| Multi toggle off | `select` → `change` | `onChange` → `onSelect` | same | `select.detail.selected = false`, `multi = true` |
+| Single deselect (allowDeselect) | `select` → `change` | `onChange` → `onSelect` | same | `select.detail.selected = false`; `change.detail` reports emptied selection |
+| Chip / option-level remove | `change` → `remove` | `onChange` (no `onSelect`) | `change → onChange → remove` | `remove.detail = { item, index }`, `index` = **source registry index**; **no `select`** |
+| Clear-control activation (selection present) | `change` → `clear` | `onChange` → `onClear` | `change → onChange → clear → onClear` | `clear.detail = { clearedSelection, clearedSearch }`; **DEVIATION-10** under `required` |
+| Programmatic `setSelectedValues()` | `change` | `onChange` | `change → onChange` | **no `select`**, no `onSelect`; local and server-fetch paths; Promise settles after `change` |
+| Programmatic `clear()` | `change` | `onChange` | `change → onChange` | **no `clear`**, no `onClear` |
+| Rejected (disabled-blocked / `maxSelections`) | none | none | — | no state change; no event/callback |
+| Single re-select, `allowDeselect:false` | `select` → `change` | `onChange` → `onSelect` | same | **no state change but events STILL fire** (compatibility finding) |
+
+**Consolidated rules.**
+
+- `change` always fires with exactly three keys and preserves **selection insertion order** (not registry order) in `selectedValues`/`selectedItems`/`selectedIndices` — verified: selecting `c` then `a` yields `['c','a']` / indices `[2,0]`.
+- `select` fires only on user-driven activation, never on programmatic `setSelectedValues()`/`clear()`/removal.
+- `onSelect` receives the **same detail object** as the `select` event, **including `multi`** (T4-F02 errata: earlier title mis-worded this as "without `multi`"; assertion and behavior were always correct).
+- Interaction sequences bubble and are `composed` (observable on a light-DOM ancestor).
+- `select`/`change`/`clear`/`remove` payload shapes are exactly as tabled; exact-key assertions live in `w1-p1-2-t4-interaction-events.spec.ts` (T4-04).
+
+### 13.2 Selection identity, required, and validation contract
+
+| Aspect | Observed contract | Evidence |
+| --- | --- | --- |
+| Identity unit | Registry **key** (default `= id`), not value equality. Two records with the same value but distinct keys are two identities. | identity matrix; T2-R F01 |
+| Single-mode replace | `setSelectedValues([v1,v2,…])` keeps the **first eligible value in registry order** (not request order). | identity matrix (DEVIATION-07) |
+| Multi-mode replace | Keeps all eligible values (capped by `maxSelections`); order = selection insertion order. | ordering spec; T4-04 |
+| Detached retention | Removing a selected item from `setItems()` retains the selection (getters still report it). | identity matrix; DEVIATION-08 |
+| Key-based reattachment | Re-adding an item with the same **key** (new instance) re-attaches (getters return the new instance); same **value** under a different key does **not** migrate. | T2-R F03; DEVIATION-08 |
+| Pruning path | `clear()` / `setSelectedValues([])` prunes detached selections. | T3 spec; DEVIATION-08 |
+| `required` + `clear()` | `clear()` **preserves** the selection when `required`; `setSelectedValues([])` also preserves. | T3 spec |
+| `validate()` | Returns false for empty-required and for a **detached** selection (getters report it but `validate()` rejects it). | T3 spec; DEVIATION-09 |
+| Disabled-option policy | `selectable:false` blocks selection (no event); `selectable:true` allows full selection sequence. | identity matrix; T4-08 |
+| `maxSelections` | Additional selection beyond the cap is rejected with no state/event. | T4-08 |
+
+### 13.3 Error and validation surface (characterized, not repaired)
+
+`setError(message)` sets error state reflected to `aria-invalid`/`aria-describedby` and error text; `clearError()` removes them and is idempotent. Mode-switch selection state is deterministic. These are `Partial` (P1.3 owns full a11y/error coverage). See `w1-p1-2-t3r-error-state-evidence.spec.ts`.
+
+### 13.4 Programmatic vs interaction — authoritative distinction
+
+The single most important P1.2 boundary: **programmatic mutation never emits `select`/`remove`/`clear`; it emits only `change` (+`onChange`).** Interaction adds the driving event (`select`, `remove`, `clear`) and its dedicated callback. This is what later extraction (engine/adapter) must preserve.
+
+## 14. W1-P1.2 closure summary (Task 5)
+
+| Item | Statement |
+| --- | --- |
+| Increments reconciled | Task 1 (DEVIATION-04 ordering) · Task 2 + T2-R (identity) · Task 3 + T3-R (state/validation/error) · Task 4 (interaction events) — all accepted, all re-verified consistent. |
+| P1.2 test inventory | 6 specs, **116** interaction/characterization tests (19+21+8+26+8+34). |
+| Coverage distribution | Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**. Unchanged in count by reconciliation; class assignments audited, `Partial` retained where paths remain outstanding. |
+| Deviations | DEVIATION-04, 07, 08, 10 characterized in P1.2; 06 guidance honored; 09 ADR candidate; 01/02/03/05 owned by later increments. |
+| Outstanding (P1.3-P1.5) | Full select-all/range paths, acknowledged/server events, active-search clear-control semantics, post-removal animation/focus ownership, comprehensive keyboard/APG navigation — **not** silently upgraded. |
+| Production source | **Byte-identical** to baseline `7e3adf7` (verified `git diff 7e3adf7 -- packages/core/src packages/core/engine packages/core/adapters` = empty). |
+| Errata | T4-F01 (full-suite count 876→**877**) and T4-F02 (`onSelect` title now "including `multi`") corrected; no accepted assertions changed. |
+
+_End of W1-P1.2. Next: P1.2 final closure review._

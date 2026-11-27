@@ -1,0 +1,115 @@
+{
+  "increment": "W1-P1.2 Task 5",
+  "title": "Selection Characterization Closure and Evidence Reconciliation",
+  "startingCommit": "8b1131750f281cf853095a9e9e4620bc785a7bed",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-characterization-7e3adf7",
+  "nature": "reconciliation + certification-readiness; documentation-only; no production behavior changed",
+  "reconciledIncrements": [
+    { "increment": "Task 1", "focus": "setSelectedValues async ordering (DEVIATION-04)", "status": "Accepted" },
+    { "increment": "Task 1-R", "focus": "deterministic chronology; supersession/disconnection settlement", "status": "Accepted" },
+    { "increment": "Task 2", "focus": "selection identity/limits (DEVIATION-07)", "status": "Accepted" },
+    { "increment": "Task 2-R", "focus": "identity/grouping/reattachment (T2-R F01/F02/F03)", "status": "Accepted" },
+    { "increment": "Task 3", "focus": "state/validation/clear matrix (DEVIATION-08/09)", "status": "Accepted" },
+    { "increment": "Task 3-R", "focus": "error-state and mode-switch (T3-R F01/F02)", "status": "Accepted" },
+    { "increment": "Task 4", "focus": "interaction-driven event ordering (DEVIATION-10)", "status": "Accepted" }
+  ],
+  "testInventory": {
+    "w1-p1-2-set-selected-values-ordering.spec.ts": 19,
+    "w1-p1-2-identity-policy-matrix.spec.ts": 21,
+    "w1-p1-2-t2r-identity-evidence.spec.ts": 8,
+    "w1-p1-2-t3-state-validation-clear.spec.ts": 26,
+    "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
+    "w1-p1-2-t4-interaction-events.spec.ts": 34,
+    "total": 116
+  },
+  "coverageDistribution": {
+    "Existing": 38,
+    "Partial": 17,
+    "Diagnostic": 41,
+    "Missing": 4,
+    "total": 100,
+    "note": "Unchanged in count by reconciliation; no Partial upgraded to Existing."
+  },
+  "traceabilityIntegrity": {
+    "records": 100,
+    "unique": 100,
+    "ledgerMatrixReconcile": true,
+    "allConcreteTestIdsResolve": true,
+    "deviationsReferenced": ["DEVIATION-04", "DEVIATION-06", "DEVIATION-07", "DEVIATION-08", "DEVIATION-09", "DEVIATION-10"],
+    "p12SpecInventorySum": 116
+  },
+  "consolidatedContracts": {
+    "eventChronology": {
+      "interaction_select": "select -> change -> onChange -> onSelect",
+      "multi_toggle_off": "select -> change -> onChange -> onSelect (selected=false, multi=true)",
+      "single_deselect": "select -> change -> onChange -> onSelect (selected=false)",
+      "remove": "change -> onChange -> remove (no select; index=source registry index)",
+      "clear_control": "change -> onChange -> clear -> onClear (DEVIATION-10 under required)",
+      "programmatic_setSelectedValues": "change -> onChange (no select)",
+      "programmatic_clear": "change -> onChange (no clear)",
+      "rejected_noop": "none",
+      "reselect_allowDeselect_false": "select -> change -> onChange -> onSelect, NO state change"
+    },
+    "identityRequiredValidation": {
+      "identityUnit": "registry key (default = id), not value equality",
+      "singleModeReplace": "first eligible value in registry order (not request order)",
+      "multiModeReplace": "all eligible values, capped by maxSelections; insertion order",
+      "detachedRetention": "retained after setItems removal; getters still report",
+      "reattachment": "by key only; same value under different key does not migrate",
+      "pruning": "clear() / setSelectedValues([])",
+      "requiredClear": "clear() preserves selection when required",
+      "validateDetached": "returns false for detached selection (DEVIATION-09)",
+      "disabledPolicy": "selectable:false blocks (no event); selectable:true allows full sequence"
+    },
+    "programmaticVsInteraction": "programmatic mutation emits only change (+onChange); interaction adds the driving event and callback"
+  },
+  "deviationDispositions": {
+    "DEVIATION-04": { "status": "Resolved-for-P1.2", "owner": "P1.2 (closed)", "evidence": "w1-p1-2-set-selected-values-ordering.spec.ts" },
+    "DEVIATION-06": { "status": "Honored", "owner": "P1.2 (closed)", "evidence": "all P1.2 specs (public-API-only)" },
+    "DEVIATION-07": { "status": "Characterized; design disposition open", "owner": "P1.2 recorded / P1.4+", "evidence": "w1-p1-2-identity-policy-matrix.spec.ts" },
+    "DEVIATION-08": { "status": "Characterized; design disposition open", "owner": "P1.2 recorded / forms", "evidence": "identity matrix + T2-R F03 + t3 state/validation/clear" },
+    "DEVIATION-09": { "status": "Characterized; ADR candidate", "owner": "P1.6 / forms", "evidence": "w1-p1-2-t3-state-validation-clear.spec.ts" },
+    "DEVIATION-10": { "status": "Characterized; ADR candidate", "owner": "Task 4 / forms", "evidence": "w1-p1-2-t4-interaction-events.spec.ts (T4-06)" }
+  },
+  "closedByThisReconciliation": ["DEVIATION-04", "DEVIATION-06"],
+  "errata": {
+    "T4-F01": "Full-suite count corrected 876 -> 877 in W1-P1.2-T4-INTERACTION-EVENTS-EVIDENCE.json (877 = Task 3 843 + 34 new T4 tests); re-executed full core suite confirms 877 passed + 1 skipped (61 files).",
+    "T4-F02": "T4-04 test title corrected from '... (without `multi`)' to '... (including `multi`)'. Description-only; assertion unchanged."
+  },
+  "gates": {
+    "focusedP12": "116 passed (6 specs)",
+    "coreFullSuite": "877 passed + 1 skipped (61 files)",
+    "typecheck": "tsc --noEmit -p packages/core/tsconfig.build.json -> exit 0",
+    "validator": "PASS (100 IDs reconcile)",
+    "productionIsolation": "git diff 7e3adf7 -- packages/core/src packages/core/engine packages/core/adapters = empty (byte-identical)"
+  },
+  "provenance": {
+    "nodeVersion": "v24.13.1",
+    "vitestVersion": "4.1.12",
+    "platform": "linux-x64",
+    "testEnvironment": "jsdom (no real-browser run in P1.2)"
+  },
+  "remainingCertificationGaps": [
+    "full select-all/range paths (P1.3+)",
+    "acknowledged/server-side event behavior incl. search/dataProjection/dataRequestCancel and acknowledged change (P1.5)",
+    "active-search clear-control semantics; search-only and combined selection+search clearing (EVENT-010 Partial outstanding)",
+    "post-removal animation/focus ownership (P1.4)",
+    "comprehensive keyboard/WAI-ARIA APG navigation and real-browser accessibility (P1.3)",
+    "pageLoaded truthfulness (DEVIATION-02; API-054/EVENT-005 Missing) (P1.5)"
+  ],
+  "t5GateTrace": {
+    "T5-01": "reconciledIncrements",
+    "T5-02": "traceabilityIntegrity.allConcreteTestIdsResolve + p12SpecInventorySum=116",
+    "T5-03": "coverageDistribution (no Partial->Existing)",
+    "T5-04": "deviationDispositions",
+    "T5-05": "consolidatedContracts.eventChronology",
+    "T5-06": "consolidatedContracts.identityRequiredValidation",
+    "T5-07": "errata",
+    "T5-08": "gates",
+    "T5-09": "gates.productionIsolation",
+    "T5-10": "this evidence + W1-P1.2-CLOSURE-REPORT.md; single commit"
+  },
+  "productionChanges": "none",
+  "precedingCommit": "8b11317"
+}

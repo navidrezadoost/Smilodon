@@ -144,3 +144,20 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 | DEVIATION-08 | Observed (detached retention) | Recorded; pruning path confirmed in P1.2 Task 3 | P1.2 |
 | DEVIATION-09 | Observed (getter/validator inconsistency) | ADR candidate; validation design decision deferred past W1-P1 | P1.6 / forms |
 | DEVIATION-10 | Observed (clear-control payload/state inconsistency) | ADR candidate; clear-control reporting design decision deferred past W1-P1 | W1-P1.2 Task 4 recorded / forms |
+
+---
+
+## W1-P1.2 Task 5 — deviation disposition reconciliation
+
+Reconciliation of DEVIATION-04 and 06–10 at P1.2 closure (the specific items the Technical Lead assigned to Task 5). **No disposition here repairs production code**; it records, per deviation, what evidence exists, whether it is resolved for P1.2, and who owns the eventual decision.
+
+| ID | Evidence (spec) | Status at P1.2 closure | Owner of the eventual decision |
+| --- | --- | --- | --- |
+| DEVIATION-04 | `w1-p1-2-set-selected-values-ordering.spec.ts` (local + server-fetch success/failure/superseded/disconnected; T1-R chronology) | **Resolved-for-P1.2** — ordering fully characterized; not a defect. | P1.2 (closed) — extraction may proceed. |
+| DEVIATION-06 | All P1.2 specs (public-API-only drivers) | **Honored** — no test manipulates legacy projections; guidance upheld. | P1.2 (closed) — no behavioral finding. |
+| DEVIATION-07 | `w1-p1-2-identity-policy-matrix.spec.ts` (registry vs request order; 4 cases) | **Characterized** — registry order governs single mode. Design disposition (intended vs defect) still **open**. | P1.2 recorded / P1.4+ owner for any semantics change. |
+| DEVIATION-08 | `w1-p1-2-identity-policy-matrix.spec.ts`, `w1-p1-2-t2r-identity-evidence.spec.ts` (F03), `w1-p1-2-t3-state-validation-clear.spec.ts` | **Characterized** — retention, key-based reattachment, and pruning (clear/`setSelectedValues([])`) confirmed. Design disposition **open**. | P1.2 recorded / forms integration. |
+| DEVIATION-09 | `w1-p1-2-t3-state-validation-clear.spec.ts` (required + detached → `validate()` false) | **Characterized; ADR candidate** — getter/validator inconsistency recorded. | P1.6 / forms (validation design). |
+| DEVIATION-10 | `w1-p1-2-t4-interaction-events.spec.ts` (T4-06 required-preservation case) | **Characterized; ADR candidate** — clear-control payload/state inconsistency recorded. | W1-P1.2 Task 4 recorded / forms (clear-control reporting design). |
+
+**No deviation is closed by this reconciliation except DEVIATION-04 and DEVIATION-06, which are P1.2-owned and fully resolved/honored.** DEVIATION-07/08 remain characterized with open *design* dispositions; DEVIATION-09/10 are ADR candidates deferred past W1-P1. None authorizes a production change during W1-P1.
