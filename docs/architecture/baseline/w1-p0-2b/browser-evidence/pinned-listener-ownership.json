@@ -1,0 +1,325 @@
+{
+  "capturedAt": "2026-11-27T12:57:24.604Z",
+  "metadata": {
+    "commit": "ade1d3f7f2db5132bb79a9e9857ead315eadfda5",
+    "branch": "codex/w1-p0-2b-lifecycle-895f038",
+    "workingTreeDirty": true,
+    "node": "v20.20.2",
+    "playwright": "1.59.1",
+    "browser": "147.0.7727.15"
+  },
+  "scenario": {
+    "selectedScrollPolicy": "disabled; temporary open-selected-scroll callback is excluded from this ownership comparison",
+    "listenerCategories": [
+      "input-content tooltip",
+      "options-container guarded virtualizer",
+      "window tooltip with connection AbortSignal"
+    ]
+  },
+  "ownerId": 2,
+  "constructed": [],
+  "connected": [
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:16:19)",
+        "    at UtilityScript.evaluate (<anonymous>:304:16)",
+        "    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+      ],
+      "key": "enhanced-select#2 div.input-content|2|false"
+    }
+  ],
+  "connectedWithVirtualizer": [
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:16:19)",
+        "    at UtilityScript.evaluate (<anonymous>:304:16)",
+        "    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+      ],
+      "key": "enhanced-select#2 div.input-content|2|false"
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect._ensureGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10130:30)",
+        "    at EnhancedSelect._updateGuardedVirtualWindow (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10631:30)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:19:10)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false"
+    }
+  ],
+  "disconnected": [],
+  "reconnected": [
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:23:19)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.input-content|2|false"
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect._ensureGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10130:30)",
+        "    at EnhancedSelect._renderOptions (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:11075:14)",
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4227:12)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:23:19)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false"
+    }
+  ],
+  "reconnectedCleanup": [],
+  "registrations": [
+    {
+      "phase": "add",
+      "owner": 1,
+      "target": "enhanced-select#1 div.input-content",
+      "callbackId": 1,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:11484:18"
+      ],
+      "key": "enhanced-select#1 div.input-content|1|false"
+    },
+    {
+      "phase": "add",
+      "owner": null,
+      "target": "window",
+      "callbackId": 1,
+      "capture": true,
+      "passive": true,
+      "hasSignal": true,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4209:12)",
+        "    at http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:11484:18"
+      ],
+      "key": "window|1|true"
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:16:19)",
+        "    at UtilityScript.evaluate (<anonymous>:304:16)",
+        "    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+      ],
+      "key": "enhanced-select#2 div.input-content|2|false"
+    },
+    {
+      "phase": "add",
+      "owner": null,
+      "target": "window",
+      "callbackId": 2,
+      "capture": true,
+      "passive": true,
+      "hasSignal": true,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4209:12)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:16:19)",
+        "    at UtilityScript.evaluate (<anonymous>:304:16)",
+        "    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+      ],
+      "key": "window|2|true"
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect._ensureGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10130:30)",
+        "    at EnhancedSelect._updateGuardedVirtualWindow (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10631:30)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:19:10)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false"
+    },
+    {
+      "phase": "remove",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "key": "enhanced-select#2 div.input-content|2|false",
+      "stack": [
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4273:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:21:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "phase": "signal-abort",
+      "owner": null,
+      "target": "window",
+      "callbackId": 2,
+      "key": "window|2|true",
+      "stack": [
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4274:33)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:21:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "phase": "remove",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false",
+      "stack": [
+        "    at EnhancedSelect._destroyGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10646:30)",
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4286:10)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:21:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4201:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:23:19)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.input-content|2|false"
+    },
+    {
+      "phase": "add",
+      "owner": null,
+      "target": "window",
+      "callbackId": 2,
+      "capture": true,
+      "passive": true,
+      "hasSignal": true,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4209:12)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:23:19)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "window|2|true"
+    },
+    {
+      "phase": "add",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "capture": false,
+      "passive": true,
+      "hasSignal": false,
+      "signalAborted": false,
+      "stack": [
+        "    at EnhancedSelect._ensureGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10130:30)",
+        "    at EnhancedSelect._renderOptions (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:11075:14)",
+        "    at EnhancedSelect.connectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4227:12)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:23:19)",
+        "    at async <anonymous>:328:30"
+      ],
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false"
+    },
+    {
+      "phase": "remove",
+      "owner": 2,
+      "target": "enhanced-select#2 div.input-content",
+      "callbackId": 2,
+      "key": "enhanced-select#2 div.input-content|2|false",
+      "stack": [
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4273:24)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:26:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "phase": "signal-abort",
+      "owner": null,
+      "target": "window",
+      "callbackId": 2,
+      "key": "window|2|true",
+      "stack": [
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4274:33)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:26:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "phase": "remove",
+      "owner": 2,
+      "target": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope",
+      "callbackId": 3,
+      "key": "enhanced-select#2 div.options-container.smilodon-mirrored-styles-scope|3|false",
+      "stack": [
+        "    at EnhancedSelect._destroyGuardedVirtualizer (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:10646:30)",
+        "    at EnhancedSelect.disconnectedCallback (http://localhost:5173/@fs/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/packages/core/dist/index.js:4286:10)",
+        "    at eval (eval at evaluate (:302:30), <anonymous>:26:10)",
+        "    at async <anonymous>:328:30"
+      ]
+    }
+  ],
+  "internals": {
+    "controllerAbortedAfterDisconnect": true
+  },
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36"
+}

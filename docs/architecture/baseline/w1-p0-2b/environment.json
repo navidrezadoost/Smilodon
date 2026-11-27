@@ -11,8 +11,19 @@
     "certification": false
   },
   "pinnedBrowserInstall": {
-    "status": "failed",
+    "status": "CDN download failed; certification passed using official matching Playwright container",
     "reason": "Playwright CDN returned HTTP 403 AccessDenied",
-    "fallback": "GitHub Actions workflow dispatch at implementation commit"
+    "containerImage": "mcr.microsoft.com/playwright@sha256:b0ab6f3cb99aa7803adbc14d9027ec1785fc6e433b97e134e0f8fe61683b6b53",
+    "chromiumRevision": "1217",
+    "chromiumVersion": "147.0.7727.15",
+    "suite": "npm run test:phase4:lifecycle",
+    "suiteResult": "3 passed, 0 skipped, 0 flaky",
+    "evidence": "browser-evidence/pinned-suite-run.txt"
+  },
+  "githubActionsFallback": {
+    "workflowRun": "45999255815",
+    "status": "queued without jobs",
+    "repositoryActionsEnabled": false,
+    "repositorySettingChanged": false
   }
 }

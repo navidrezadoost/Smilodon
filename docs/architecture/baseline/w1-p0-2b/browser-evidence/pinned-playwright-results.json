@@ -1,0 +1,262 @@
+{
+  "config": {
+    "configFile": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/tests/performance/lifecycle.playwright.config.ts",
+    "rootDir": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/tests/performance",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/test-results/performance/lifecycle/playwright-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/tests/performance",
+        "testIgnore": [],
+        "testMatch": [
+          "phase-4-lifecycle-*.spec.ts"
+        ],
+        "timeout": 1800000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../../test-results/performance/lifecycle/playwright-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev:vanilla -w @smilodon/playground",
+      "url": "http://localhost:5173/vanilla-demo.html",
+      "reuseExistingServer": false,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "phase-4-lifecycle-attribution.spec.ts",
+      "file": "phase-4-lifecycle-attribution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Phase 4.6.2B.2: isolate warm-up, instrumentation, and retained references",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 5400000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 119489,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[phase-4.6.2b2] allocation-control 1000 repeat 1: {\"warmupBytes\":125128,\"measuredWindows\":[-21324,232,22788,3924],\"measuredBytes\":3856,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-no-probe 1000 repeat 1: {\"warmupBytes\":691152,\"measuredWindows\":[34348,73480,39352,5196],\"measuredBytes\":152376,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":25,\"connected\":24,\"disconnected\":24}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-instrumented 1000 repeat 1: {\"warmupBytes\":708604,\"measuredWindows\":[39004,79136,35700,5796],\"measuredBytes\":159636,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":111,\"activeProbeResourcesAtCleanup\":{\"scrollListeners\":0,\"resizeObservers\":0,\"resizeTargets\":0},\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":25,\"connected\":24,\"disconnected\":24}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] allocation-control 1000 repeat 2: {\"warmupBytes\":125128,\"measuredWindows\":[-21324,232,22788,3924],\"measuredBytes\":3856,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-no-probe 1000 repeat 2: {\"warmupBytes\":690456,\"measuredWindows\":[33564,73528,39460,5124],\"measuredBytes\":151676,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":25,\"connected\":24,\"disconnected\":24}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-instrumented 1000 repeat 2: {\"warmupBytes\":708836,\"measuredWindows\":[37356,79100,35748,5796],\"measuredBytes\":158000,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":111,\"activeProbeResourcesAtCleanup\":{\"scrollListeners\":0,\"resizeObservers\":0,\"resizeTargets\":0},\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":25,\"connected\":24,\"disconnected\":24}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] allocation-control 10000 repeat 1: {\"warmupBytes\":125240,\"measuredWindows\":[-21508,-104836,27140,1764],\"measuredBytes\":-99132,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-no-probe 10000 repeat 1: {\"warmupBytes\":676088,\"measuredWindows\":[108100,29996,19316,4312],\"measuredBytes\":161724,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-instrumented 10000 repeat 1: {\"warmupBytes\":697292,\"measuredWindows\":[108488,35680,17864,5800],\"measuredBytes\":168016,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":111,\"activeProbeResourcesAtCleanup\":{\"scrollListeners\":0,\"resizeObservers\":0,\"resizeTargets\":0},\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] allocation-control 10000 repeat 2: {\"warmupBytes\":125240,\"measuredWindows\":[-21508,-104836,27140,1764],\"measuredBytes\":-99132,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-no-probe 10000 repeat 2: {\"warmupBytes\":688976,\"measuredWindows\":[95584,30176,19280,4528],\"measuredBytes\":149568,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":0,\"activeProbeResourcesAtCleanup\":null,\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b2] component-instrumented 10000 repeat 2: {\"warmupBytes\":697184,\"measuredWindows\":[104160,40732,17080,6668],\"measuredBytes\":168824,\"dom\":{\"domReturnedToPreWarmupBaseline\":true,\"activeInstanceCountAtCleanup\":0,\"connectedHostCountAtCleanup\":0,\"customElementRegistryEntryPresent\":true,\"probeRecordsAtCleanup\":111,\"activeProbeResourcesAtCleanup\":{\"scrollListeners\":0,\"resizeObservers\":0,\"resizeTargets\":0},\"mirroredStylesheetCache\":{\"entries\":0,\"limit\":32},\"rendererCounts\":{\"created\":0,\"connected\":0,\"disconnected\":0}}}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-27T12:55:24.819Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "phase-4.6.2b2-attribution.json",
+                      "contentType": "application/json",
+                      "path": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/test-results/performance/lifecycle/playwright-artifacts/phase-4-lifecycle-attribut-41831-ion-and-retained-references-chromium/attachments/phase-4-6-2b2-attribution-json-b8ae1cd8db0ae03a94672670da78ea3ea5dec51b.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d994d2965336f89af6e5-bf53cd7d97728f752d83",
+          "file": "phase-4-lifecycle-attribution.spec.ts",
+          "line": 700,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "phase-4-lifecycle-owner-attribution.spec.ts",
+      "file": "phase-4-lifecycle-owner-attribution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "attribute component scroll listeners across construction and connection lifecycle",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 1800000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 221,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "OWNER_ATTRIBUTION {\"output\":\"/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/test-results/performance/lifecycle/listener-ownership-attribution.json\",\"ownerId\":2,\"constructed\":0,\"connected\":1,\"guarded\":2,\"disconnected\":0,\"reconnected\":2,\"reconnectedCleanup\":0,\"browser\":\"147.0.7727.15\"}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-27T12:57:24.423Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4309dedde02859ffc64d-9198b96d79a9b6912c9a",
+          "file": "phase-4-lifecycle-owner-attribution.spec.ts",
+          "line": 12,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "phase-4-lifecycle-stress.spec.ts",
+      "file": "phase-4-lifecycle-stress.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Phase 4.6.2B: repeated guarded lifecycle cleanup and memory sampling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 1800000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 20318,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[phase-4.6.2b-lifecycle] report: /home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/test-results/performance/lifecycle/phase-4.6.2b-lifecycle.json\n"
+                    },
+                    {
+                      "text": "[phase-4.6.2b-lifecycle] summary: [{\"itemCount\":1000,\"cycles\":100,\"heapDeltaBytes\":1017100,\"reconnectedCycles\":5,\"resourcesClean\":true},{\"itemCount\":10000,\"cycles\":100,\"heapDeltaBytes\":31216,\"reconnectedCycles\":5,\"resourcesClean\":true},{\"itemCount\":100000,\"cycles\":10,\"heapDeltaBytes\":6992,\"reconnectedCycles\":0,\"resourcesClean\":true}]\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-27T12:57:24.660Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "phase-4.6.2b-lifecycle-report.json",
+                      "contentType": "application/json",
+                      "path": "/home/navidrezadoost/Documents/Github/Smilodon-W1P0-lifecycle/test-results/performance/lifecycle/playwright-artifacts/phase-4-lifecycle-stress-P-9f91a-cleanup-and-memory-sampling-chromium/attachments/phase-4-6-2b-lifecycle-report-json-118932a89bc4155e201949ebd7a3f9d925b92ba1.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f5ae39d5f87a22147b2b-43286615a35f4323b4df",
+          "file": "phase-4-lifecycle-stress.spec.ts",
+          "line": 536,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-27T12:55:22.963Z",
+    "duration": 142108.86899999998,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
