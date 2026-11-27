@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-27 (release candidate; not yet published)
+
+Core-only release candidate. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete.
+
 ### Added
 
 - **Configurable multi-select chip motion ([#125](https://github.com/navidrezadoost/Smilodon/issues/125)):** Core now exposes independent chip enter/exit animation tokens and retains removed chip presentation nodes only while an enabled exit animation completes. Selection state and events update immediately; exiting chips are inert and hidden from assistive technology. Keyed reconciliation prevents unchanged chips from replaying entry motion.
