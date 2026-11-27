@@ -1,3 +1,5 @@
+import type { SelectConfigUpdate } from '@smilodon/core';
+
 export const fixtureItems = [
   { value: '1', label: 'Apple' },
   { value: '2', label: 'Banana' },
@@ -6,7 +8,7 @@ export const fixtureItems = [
   { value: '5', label: 'Elderberry' },
 ];
 
-export const initialConfig = {
+export const initialConfig: SelectConfigUpdate = {
   selectedOptions: { placement: 'selected-first' as const },
   scrollToSelected: {
     enabled: false,
@@ -17,7 +19,7 @@ export const initialConfig = {
   },
 };
 
-export const partialConfig = {
+export const partialConfig: SelectConfigUpdate = {
   selectedOptions: { placement: 'original' as const },
   scrollToSelected: { onOpen: 'align' as const },
 };

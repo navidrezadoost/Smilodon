@@ -50,7 +50,7 @@ test('adapter partial updates preserve open snapshots and scroll siblings', asyn
     await expect(select).toHaveCount(1);
     await expect.poll(() => select.evaluate((element: any) => element.getSelectedValues())).toEqual(['3']);
     await select.evaluate((element: any) => element.open());
-    await expect.poll(() => select.evaluate((element: any) => [...element.shadowRoot
+    await expect.poll(() => select.evaluate((element: any) => [...(element.shadowRoot as ShadowRoot)
       .querySelectorAll<HTMLElement>('[part="option"][data-value]')]
       .map((option) => option.dataset.value)))
       .toEqual(['3', '1', '2', '4', '5']);
@@ -64,13 +64,13 @@ test('adapter partial updates preserve open snapshots and scroll siblings', asyn
       .toBe('original');
     await expect.poll(() => select.evaluate((element: any) => element._config.scrollToSelected))
       .toMatchObject({ enabled: false, multiSelectTarget: 'last', onOpen: 'preserve', behavior: 'auto', block: 'center' });
-    await expect.poll(() => select.evaluate((element: any) => [...element.shadowRoot
+    await expect.poll(() => select.evaluate((element: any) => [...(element.shadowRoot as ShadowRoot)
       .querySelectorAll<HTMLElement>('[part="option"][data-value]')]
       .map((option) => option.dataset.value)))
       .toEqual(['3', '1', '2', '4', '5']);
 
     await select.evaluate((element: any) => { element.close(); element.open(); });
-    await expect.poll(() => select.evaluate((element: any) => [...element.shadowRoot
+    await expect.poll(() => select.evaluate((element: any) => [...(element.shadowRoot as ShadowRoot)
       .querySelectorAll<HTMLElement>('[part="option"][data-value]')]
       .map((option) => option.dataset.value)))
       .toEqual(['1', '2', '3', '4', '5']);
@@ -107,7 +107,7 @@ test('latest partial config and selection supplied before connection win on firs
     await expect.poll(() => select.evaluate((element: any) => element._config.scrollToSelected))
       .toMatchObject({ enabled: false, multiSelectTarget: 'last', onOpen: 'preserve', behavior: 'auto', block: 'center' });
     await select.evaluate((element: any) => element.open());
-    await expect.poll(() => select.evaluate((element: any) => [...element.shadowRoot
+    await expect.poll(() => select.evaluate((element: any) => [...(element.shadowRoot as ShadowRoot)
       .querySelectorAll<HTMLElement>('[part="option"][data-value]')]
       .map((option) => option.dataset.value)))
       .toEqual(['1', '2', '3', '4', '5']);

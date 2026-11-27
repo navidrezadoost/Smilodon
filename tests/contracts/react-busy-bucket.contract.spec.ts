@@ -1,5 +1,6 @@
 import React from 'react';
 import { act, render, waitFor } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import '@smilodon/core';
 import { Select } from '@smilodon/react';
 
@@ -32,8 +33,8 @@ describe('React busy bucket slots', () => {
       .toBe('Loading another page');
     expect(bucket.classList.contains('busy-bucket--replace')).toBe(true);
     expect(bucket.querySelector('[part="loading-message"]')?.textContent).toBe('Loading...');
-    expect(bucket.querySelector('slot[name="loading-icon"]')?.assignedNodes()).toContain(icon);
-    expect(bucket.querySelector('slot[name="loading-content"]')?.assignedNodes()).toContain(content);
+    expect(bucket.querySelector<HTMLSlotElement>('slot[name="loading-icon"]')?.assignedNodes()).toContain(icon);
+    expect(bucket.querySelector<HTMLSlotElement>('slot[name="loading-content"]')?.assignedNodes()).toContain(content);
     expect(host!.contains(icon)).toBe(true);
     expect(host!.contains(content)).toBe(true);
 

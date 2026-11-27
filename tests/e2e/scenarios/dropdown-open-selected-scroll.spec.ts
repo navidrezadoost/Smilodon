@@ -35,8 +35,9 @@ test('selected option scroll waits for dropdown entrance geometry and runs once 
     })));
     await select.setSelectedValues(['item-24']);
 
-    const dropdown = select.shadowRoot!.querySelector<HTMLElement>('.select-dropdown')!;
-    const scroller = select.shadowRoot!.querySelector<HTMLElement>('.options-container')!;
+    const shadowRoot = select.shadowRoot as ShadowRoot;
+    const dropdown = shadowRoot.querySelector<HTMLElement>('.select-dropdown')!;
+    const scroller = shadowRoot.querySelector<HTMLElement>('.options-container')!;
     const commands: Array<{ type: string; time: number }> = [];
     const nativeScrollTo = scroller.scrollTo.bind(scroller);
     scroller.scrollTo = ((...args: Parameters<typeof scroller.scrollTo>) => {

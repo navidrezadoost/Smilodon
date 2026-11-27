@@ -139,7 +139,10 @@ describe('selected-first virtualization and data-loading qualification (E3.2)', 
     (select as any)._scrollToSelected({ setActive: false });
 
     expect(scroll).toHaveBeenCalledOnce();
-    expect(scroll.mock.calls[0][0].getAttribute('data-value')).toBe('item-6');
+    const scrollTarget = scroll.mock.calls[0]?.[0];
+    expect(scrollTarget).toBeInstanceOf(HTMLElement);
+    if (!(scrollTarget instanceof HTMLElement)) throw new Error('Expected an HTMLElement scroll target');
+    expect(scrollTarget.getAttribute('data-value')).toBe('item-6');
     expect((select as any)._engine.state.activeKey).toBe(activeBefore);
     expect(activeBefore).toBe('item-1');
   });

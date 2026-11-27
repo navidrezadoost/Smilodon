@@ -50,28 +50,52 @@ describe('selected-option open scroll policies (E3.3)', () => {
   ] as const)('align with block=%s even when the target is visible', (block, expectedTop) => {
     const option = select.shadowRoot!.querySelector<HTMLElement>('[data-value="b"]')!;
     option.getBoundingClientRect = () => rect(110, 130);
-    const scrollTo = vi.fn(({ top }: ScrollToOptions) => { scroller.scrollTop = Number(top); });
+    const scrollToCalls: ScrollToOptions[] = [];
+    const scrollTo: {
+      (options?: ScrollToOptions): void;
+      (x: number, y: number): void;
+    } = (optionsOrX?: ScrollToOptions | number, y?: number): void => {
+      if (typeof optionsOrX === 'object') {
+        const options = optionsOrX ?? {};
+        scrollToCalls.push(options);
+        scroller.scrollTop = Number(options.top ?? scroller.scrollTop);
+      } else if (typeof optionsOrX === 'number') {
+        scrollToCalls.push({ left: optionsOrX, top: y });
+      }
+    };
     scroller.scrollTo = scrollTo;
 
     (select as any)._scrollOptionWithinOptionsContainer(option, block, 'instant', false);
 
-    expect(scrollTo).toHaveBeenCalledOnce();
-    expect(scrollTo.mock.calls[0][0]).toMatchObject({ top: expectedTop, behavior: 'instant' });
+    expect(scrollToCalls).toHaveLength(1);
+    expect(scrollToCalls[0]).toMatchObject({ top: expectedTop, behavior: 'instant' });
   });
 
   it('reveal does not move a fully visible target and reveals an offscreen target only as needed', () => {
     const option = select.shadowRoot!.querySelector<HTMLElement>('[data-value="b"]')!;
-    const scrollTo = vi.fn(({ top }: ScrollToOptions) => { scroller.scrollTop = Number(top); });
+    const scrollToCalls: ScrollToOptions[] = [];
+    const scrollTo: {
+      (options?: ScrollToOptions): void;
+      (x: number, y: number): void;
+    } = (optionsOrX?: ScrollToOptions | number, y?: number): void => {
+      if (typeof optionsOrX === 'object') {
+        const options = optionsOrX ?? {};
+        scrollToCalls.push(options);
+        scroller.scrollTop = Number(options.top ?? scroller.scrollTop);
+      } else if (typeof optionsOrX === 'number') {
+        scrollToCalls.push({ left: optionsOrX, top: y });
+      }
+    };
     scroller.scrollTo = scrollTo;
 
     option.getBoundingClientRect = () => rect(110, 130);
     (select as any)._scrollOptionWithinOptionsContainer(option, 'nearest', 'instant', true);
-    expect(scrollTo).not.toHaveBeenCalled();
+    expect(scrollToCalls).toHaveLength(0);
 
     option.getBoundingClientRect = () => rect(250, 270);
     (select as any)._scrollOptionWithinOptionsContainer(option, 'nearest', 'instant', true);
-    expect(scrollTo).toHaveBeenCalledOnce();
-    expect(scrollTo.mock.calls[0][0]).toMatchObject({ top: 120, behavior: 'instant' });
+    expect(scrollToCalls).toHaveLength(1);
+    expect(scrollToCalls[0]).toMatchObject({ top: 120, behavior: 'instant' });
   });
 
   it('preserve keeps the same-order viewport and restores a stable option after selected-first reorders it', async () => {

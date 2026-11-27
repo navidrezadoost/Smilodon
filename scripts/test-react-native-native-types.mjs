@@ -74,6 +74,7 @@ const config: Partial<GlobalSelectConfig> = {
   scrollToSelected: {
     enabled: true,
     multiSelectTarget: 'first',
+    onOpen: 'align',
     behavior: 'instant',
     block: 'center',
   } satisfies ScrollToSelectedConfig,

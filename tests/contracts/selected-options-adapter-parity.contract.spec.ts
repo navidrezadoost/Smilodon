@@ -14,6 +14,7 @@ import { Select as SolidSelect } from '@smilodon/solid';
 import { basicItems } from './fixtures/test-data';
 
 const stableItems = Object.freeze(basicItems.map((item) => Object.freeze({ ...item })));
+const reactItems = [...stableItems];
 const initialConfig = {
   selectedOptions: { placement: 'selected-first' as const },
   scrollToSelected: {
@@ -67,7 +68,7 @@ async function verifyOpeningSnapshot(element: any, update: () => void | Promise<
 describe('selected-options adapter configuration parity', () => {
   it('forwards and reactively updates partial config through React without resetting the open snapshot', async () => {
     const onChange = vi.fn();
-    const props = { items: stableItems, value: '3', config: initialConfig, onChange };
+    const props = { items: reactItems, value: '3', config: initialConfig, onChange };
     const view = renderReactComponent(createElement(StrictMode, null, createElement(ReactSelect, props)));
     const element = view.container.querySelector('enhanced-select') as any;
     await verifyOpeningSnapshot(element, async () => {
@@ -80,7 +81,7 @@ describe('selected-options adapter configuration parity', () => {
   });
 
   it('preserves an uncontrolled React selection across a config update and reopen', async () => {
-    const props = { items: stableItems, defaultValue: '3', config: initialConfig };
+    const props = { items: reactItems, defaultValue: '3', config: initialConfig };
     const view = renderReactComponent(createElement(ReactSelect, props));
     const element = view.container.querySelector('enhanced-select') as any;
     await verifyOpeningSnapshot(element, async () => {
@@ -114,7 +115,7 @@ describe('selected-options adapter configuration parity', () => {
   it('forwards and reactively updates partial config through Solid', async () => {
     const host = document.createElement('div');
     document.body.append(host);
-    const [config, setConfig] = createSignal(initialConfig);
+    const [config, setConfig] = createSignal<typeof initialConfig | typeof partialUpdate>(initialConfig);
     const ComponentUnderTest = SolidSelect as unknown as Component<Record<string, unknown>>;
     const dispose = renderSolid(() => createComponent(ComponentUnderTest, {
       items: stableItems,

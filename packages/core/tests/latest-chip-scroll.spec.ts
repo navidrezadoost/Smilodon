@@ -40,8 +40,15 @@ describe('horizontal multi-select latest-chip scroll (#100)', () => {
     Object.defineProperty(viewport, 'clientWidth', { configurable: true, value: 120 });
     Object.defineProperty(viewport, 'clientLeft', { configurable: true, value: 0 });
     viewport.getBoundingClientRect = () => ({ left: 0, right: 120, width: 120 } as DOMRect);
-    scrollBy = vi.fn();
-    viewport.scrollBy = scrollBy;
+    const scrollBySpy = vi.fn();
+    const scrollByMock: {
+      (options?: ScrollToOptions): void;
+      (x: number, y: number): void;
+    } = (...args: [ScrollToOptions?] | [number, number]): void => {
+      scrollBySpy(...args);
+    };
+    scrollBy = scrollBySpy;
+    viewport.scrollBy = scrollByMock;
   });
 
   afterEach(() => {
@@ -85,7 +92,7 @@ describe('horizontal multi-select latest-chip scroll (#100)', () => {
   });
 
   it('remains opt-in and does nothing in wrap mode', async () => {
-    select.updateConfig({ multiSelectDisplay: { scrollToLatestChip: false } });
+    select.updateConfig({ multiSelectDisplay: { mode: 'horizontal', scrollToLatestChip: false } });
     await select.setSelectedValues(['0', '1']);
     setChipRect(1, 160, 215);
     flushFrames();

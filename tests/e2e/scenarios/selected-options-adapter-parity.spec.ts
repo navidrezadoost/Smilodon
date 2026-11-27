@@ -4,7 +4,7 @@ const fixtureUrl = 'http://localhost:5178/adapter-config-qualification.html';
 const frameworks = ['react', 'react-native-web', 'vue', 'svelte', 'solid', 'vanilla', 'web-component'];
 
 async function getOrder(select: import('@playwright/test').Locator): Promise<string[]> {
-  return select.evaluate((element: any) => [...element.shadowRoot.querySelectorAll<HTMLElement>('[part="option"][data-value]')]
+  return select.evaluate((element: any) => [...(element.shadowRoot as ShadowRoot).querySelectorAll<HTMLElement>('[part="option"][data-value]')]
     .map((option) => option.dataset.value ?? ''));
 }
 
