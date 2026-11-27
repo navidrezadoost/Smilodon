@@ -25,10 +25,10 @@
       "CONFIG": 26
     },
     "byCoverage": {
-      "Existing": 44,
+      "Existing": 38,
       "Diagnostic": 48,
-      "Missing": 5,
-      "Partial": 3
+      "Partial": 9,
+      "Missing": 5
     },
     "byTargetIncrement": {
       "P1.1": 4,
@@ -56,6 +56,10 @@
       "Partial",
       "Diagnostic",
       "Missing"
+    ],
+    "deviationsReferenced": [
+      "DEVIATION-07",
+      "DEVIATION-08"
     ]
   },
   "duplicateIds": 0,
@@ -126,8 +130,8 @@
       "id": "API-010",
       "behavior": "getSelectedItems",
       "targetIncrement": "P1.2",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedItems reflects value-based selection incl. retained detached items",
       "status": "Observed",
       "evidence": "select-selection; selected-options-*",
       "sourceLocators": [
@@ -135,14 +139,15 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6620-6623"
         }
-      ]
+      ],
+      "coverageNote": "Selected-items identity via public getter characterized across single/multi/reorder/detached; broader identity matrix in Task 5."
     },
     {
       "id": "API-011",
       "behavior": "getSelectedValues",
       "targetIncrement": "P1.2",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedValues value-based identity matrix",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -154,14 +159,15 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "1271-1273"
         }
-      ]
+      ],
+      "coverageNote": "Value projection characterized (single/multi/limits/reorder/detached); Task 3 covers full state API."
     },
     {
       "id": "API-012",
       "behavior": "setSelectedValues async ordering",
       "targetIncrement": "P1.2",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#deterministic chronology local/server success/failure + supersession + disconnection",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts# (see also w1-p1-2-set-selected-values-ordering.spec.ts)",
       "status": "Observed",
       "evidence": "select-selection; phase-1-search-pagination-characterization (DEVIATION-04)",
       "sourceLocators": [
@@ -210,8 +216,8 @@
       "id": "API-020",
       "behavior": "setItems",
       "targetIncrement": "P1.2",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/grouping/detached/duplicate-key(dev) outcomes",
       "status": "Observed",
       "evidence": "smoke",
       "sourceLocators": [
@@ -219,7 +225,8 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6517-6549"
         }
-      ]
+      ],
+      "coverageNote": "Item replacement, reorder, detached retention, and dev duplicate-key throw characterized; production duplicate policy documented only."
     },
     {
       "id": "API-021",
@@ -1404,8 +1411,8 @@
       "id": "CONFIG-001",
       "behavior": "selection.mode",
       "targetIncrement": "P1.4",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1413,7 +1420,8 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "337"
         }
-      ]
+      ],
+      "coverageNote": "single/multi behavior characterized via setSelectedValues; values via Task 2 spec."
     },
     {
       "id": "CONFIG-002",
@@ -1434,8 +1442,8 @@
       "id": "CONFIG-003",
       "behavior": "selection.disabledOptionBehavior",
       "targetIncrement": "P1.4",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1443,14 +1451,15 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "339-343"
         }
-      ]
+      ],
+      "coverageNote": "disabledOptionBehavior.selectable default=false characterized; true path characterized."
     },
     {
       "id": "CONFIG-004",
       "behavior": "selection.maxSelections",
       "targetIncrement": "P1.4",
-      "coverage": "Existing",
-      "testId": "verify",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1458,7 +1467,8 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "344"
         }
-      ]
+      ],
+      "coverageNote": "maxSelections 0/1/2 characterized in multi mode."
     },
     {
       "id": "CONFIG-005",

@@ -1,0 +1,88 @@
+{
+  "increment": "W1-P1.2 Task 2",
+  "title": "Selection Identity and Policy Matrix",
+  "startingCommit": "b0b3c942e73ac03e12c51baac650043b0a5511ea",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "testFile": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts",
+  "publicInterfaceOnly": true,
+  "testRun": {
+    "config": "packages/core/vitest.config.ts",
+    "tests": "21 passed",
+    "files": "1 passed"
+  },
+  "characterizedAreas": {
+    "singleVsMulti": "empty/one/multi requests; single keeps one eligible; multi keeps all ordered",
+    "maxSelections": "0 unbounded, 1, 2 characterized",
+    "deviation07": {
+      "conclusion": "single-mode surviving value depends on REGISTRY order, not request order",
+      "cases": [
+        [
+          "a,b,c",
+          "[a,c]",
+          "a"
+        ],
+        [
+          "a,b,c",
+          "[c,a]",
+          "a"
+        ],
+        [
+          "c,b,a",
+          "[a,c]",
+          "c"
+        ],
+        [
+          "c,b,a",
+          "[c,a]",
+          "c"
+        ]
+      ]
+    },
+    "identity": {
+      "duplicateValueDistinctKeys": "selects by value",
+      "setItemsFreshInstances": "value-based selection preserved",
+      "duplicateKeys": "dev runtime (NODE_ENV=test) throws; production uses warn (first-wins identity) - documented, not asserted"
+    },
+    "disabledOption": {
+      "default": "blocked from setSelectedValues",
+      "selectableTrue": "selectable"
+    },
+    "reorderReplacementGrouping": "value-based selection retained across reorder; detached value retained on removal",
+    "detachedItems": {
+      "retained": true,
+      "deviation": "DEVIATION-08",
+      "reselectionOnReturn": true
+    },
+    "selectedFirst": "logical selection distinct from render position",
+    "requiredAndDeselection": {
+      "required": "preserves prior valid selection vs setSelectedValues([])",
+      "nonRequired": "explicit empty clears"
+    }
+  },
+  "newDeviations": [
+    "DEVIATION-08"
+  ],
+  "deviationUpdated": [
+    "DEVIATION-07 (confirmed registry-order)"
+  ],
+  "traceabilityUpdates": {
+    "API-010": "Partial",
+    "API-011": "Partial",
+    "API-020": "Partial",
+    "CONFIG-001/003/004": "Partial"
+  },
+  "boundaries": {
+    "task3": "state/validation/clear API matrix",
+    "task4": "interaction-driven event ordering",
+    "task5": "evidence reconciliation"
+  },
+  "productionChanges": "none",
+  "regression": {
+    "coreFullSuite": "801 passed + 1 skipped (57 files); +21 vs 780+1 (T1-R); no regression"
+  },
+  "typecheck": {
+    "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
+    "result": "exit 0"
+  },
+  "validator": "PASS (100 IDs reconcile; Partial accepted; spec refs resolve)"
+}

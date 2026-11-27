@@ -81,6 +81,28 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 - **Risk:** Forms integrations that push multiple values expecting single-mode to store them all will silently lose values. Adapters must not assume multi semantics in single mode.
 - **Disposition.** Characterized, **not** approved as normative. P1.2 (task 2, identity/selection matrix) determines whether this is intended replace semantics or a defect; if a defect, record a minimal reproducer and proposed disposition. No production change in W1-P2.
 
+- **Confirmed investigation (W1-P1.2 Task 2).** Using only public APIs (`setItems`/`setSelectedValues`), the surviving value in single mode was established to depend on **registry order, not request order**. `setSelectedValues()` filters `_itemRegistry.records` (registry order) before forwarding keys to the engine, and the engine keeps the first eligible key.
+
+  | Registry order | Requested values | Surviving selection | Conclusion |
+  | --- | --- | --- | --- |
+  | a, b, c | `['a','c']` | `a` | — |
+  | a, b, c | `['c','a']` | `a` | request order has no effect |
+  | c, b, a | `['a','c']` | `c` | registry order governs |
+  | c, b, a | `['c','a']` | `c` | registry order governs |
+
+  Evidence: `packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts` (`DEVIATION-07` describe block, 4 cases).
+- **Compatibility implication.** In single mode the result is the first *eligible* value in loaded-item order, independent of the order the caller supplied. A consumer that reorders loaded items changes which value survives a multi-value `setSelectedValues`. This is recorded as observed behavior; it is **not** classified as a defect and its design disposition stays open.
+
+---
+
+## DEVIATION-08 — detached selected items are retained after removal from loaded data
+
+- **Observation.** When a currently-selected item is removed from the loaded set via `setItems()` (the value no longer appears in any loaded record), the selection is **not** cleared. `getSelectedEntries()` falls back to the internal `_selectedRecordsByKey` cache, so `getSelectedValues()` / `getSelectedItems()` continue to report the detached value, even though it no longer renders among options. Re-adding an item with the same value re-associates it (as a new instance) and it renders again.
+- **Evidence.** `packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts` ("detached selected value is RETAINED..." and re-selection tests).
+- **Class:** Observed (not previously asserted).
+- **Risk.** A consumer that removes an option from `setItems` expecting its selection to be dropped will instead keep a "phantom" selected value that is not visible in the list. Forms bindings must reconcile removed values explicitly (e.g. `setSelectedValues`), not rely on `setItems` to prune selection.
+- **Disposition.** Characterized; recorded for P1.2 Task 3 (state/clear API matrix) to confirm whether `clear()`/`setSelectedValues([])` is the intended pruning path. No production change in W1-P2.
+
 ---
 
 ## Summary
@@ -94,3 +116,4 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 | DEVIATION-05 | Internal (quirk) | No | P1.4 |
 | DEVIATION-06 | Internal | Guidance only | P1.2 |
 | DEVIATION-07 | Unknown (mode-dependent) | Characterized in P1.2; disposition pending | P1.2 |
+| DEVIATION-08 | Observed (detached retention) | Recorded; pruning path confirmed in P1.2 Task 3 | P1.2 |
