@@ -32,6 +32,8 @@ Rules used throughout:
 
 **New test required:** `Yes` (no adequate black-box coverage yet) - `No` (existing coverage adequate; referenced) - `Diagnostic` (only private/perf coverage exists; a black-box test is still needed).
 
+**Coverage class (matrix):** `Existing` - `Partial` (some contract paths covered by an external test, remaining paths outstanding) - `Diagnostic` - `Missing`. `Partial` was introduced in W1-P1.2-T1-R so partial black-box evidence is not overstated as full contract coverage.
+
 ---
 
 ## 1. Provenance and source locations
@@ -300,7 +302,7 @@ Full detail in `W1-P1-DEVIATIONS.md`. Summary (all six preserved by W1-P1.1-R; D
 
 ## 9. Traceability seed for P1.2-P1.6
 
-The machine-readable matrix is `W1-P1-TRACEABILITY.json`. Coverage today: `Existing` (adequate black-box) - `Diagnostic` (private/perf only) - `Missing`. Every ID in sections 2-7 has exactly one JSON record (R-01). Per-increment rollup:
+The machine-readable matrix is `W1-P1-TRACEABILITY.json`. Coverage classes: `Existing` (adequate black-box across the contract's characterized paths) - `Partial` (externally observable test covers some paths; others outstanding) - `Diagnostic` (private/perf only) - `Missing` (no coverage). Every ID in sections 2-7 has exactly one JSON record (R-01). Per-increment rollup:
 
 | Target | Contracts |
 | --- | --- |

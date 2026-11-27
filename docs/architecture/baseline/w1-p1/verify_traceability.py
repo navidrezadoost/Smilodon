@@ -42,12 +42,19 @@ def main() -> int:
     for r in records:
         if r.get("targetIncrement") not in VALID_TARGETS:
             failures.append("R-06 bad targetIncrement for %s" % r["id"])
-        if r.get("coverage") not in ("Existing", "Diagnostic", "Missing"):
+        if r.get("coverage") not in ("Existing", "Partial", "Diagnostic", "Missing"):
             failures.append("R-06 bad coverage for %s" % r["id"])
         tid = r.get("testId")
+        # testId is 'verify', 'unassigned', or a concrete spec reference of the
+        # form "<path>.spec.<ext>[#anchor]". Concrete references must resolve to
+        # an existing file under the repository root.
         is_ref = isinstance(tid, str) and ".spec." in tid
         if tid not in ("verify", "unassigned") and not is_ref:
             failures.append("R-06 bad testId state for %s" % r["id"])
+        if is_ref:
+            ref_path = tid.split("#", 1)[0]
+            if not os.path.exists(os.path.join(ROOT, ref_path)):
+                failures.append("R-06 testId references missing file %s (%s)" % (ref_path, r["id"]))
         locs = r.get("sourceLocators") or []
         if not locs:
             failures.append("R-05 no source locator for %s" % r["id"])

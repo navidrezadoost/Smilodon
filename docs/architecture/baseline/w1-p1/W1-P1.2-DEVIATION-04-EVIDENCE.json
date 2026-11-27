@@ -1,6 +1,6 @@
 {
-  "increment": "W1-P1.2",
-  "title": "Selection, Identity, and Event Ordering — DEVIATION-04 first",
+  "increment": "W1-P1.2-T1-R",
+  "title": "DEVIATION-04 chronology + coverage-registry correction (T1-R)",
   "startingCommit": "4b02cd10a9aad4406e656bd0357457c91f19ed1b",
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "authorizedScope": "DEVIATION-04 (setSelectedValues ordering) among P1.2 items; task 1 of 5 executed in this commit.",
@@ -11,11 +11,11 @@
   "testFile": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts",
   "testRun": {
     "config": "packages/core/vitest.config.ts",
-    "tests": "13 passed",
+    "tests": "19 passed",
     "files": "1 passed"
   },
   "regression": {
-    "coreFullSuite": "774 passed + 1 skipped (56 files); +13 vs prior 761+1; no regression"
+    "coreFullSuite": "780 passed + 1 skipped (56 files); +6 vs 774+1 (T1), +19 vs 761+1 (P1.1); no regression"
   },
   "typecheck": {
     "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
@@ -87,5 +87,28 @@
   "notYetCovered": [
     "P1.2 tasks 2-5 (identity matrix, public state/validation, user-vs-programmatic interaction, remaining traceability) deferred to subsequent P1.2 commits"
   ],
-  "productionChanges": "none"
+  "productionChanges": "none",
+  "precedingCommit": "832431c",
+  "deterministicTimelineAdded": true,
+  "timelineAssertions": {
+    "local": "change -> onChange -> promise-resolved (select/onSelect absent)",
+    "server-success": "fetch-resolved -> change -> onChange -> promise-resolved (select/onSelect absent)",
+    "server-failure": "error -> onError -> promise-resolved; error.detail.cause === thrown Error; no change/select/onChange/onSelect",
+    "onError-throw": "rejects Promise (documented boundary)",
+    "supersession": "each Promise settles once independently; only latest generation changes; stale invokes no selection/error callbacks",
+    "disconnection": "Promise settles; no change/error; callbacks not invoked"
+  },
+  "coverageCorrection": {
+    "classes": [
+      "Existing",
+      "Partial",
+      "Diagnostic",
+      "Missing"
+    ],
+    "API-012": "Existing (full timeline)",
+    "EVENT-001": "Partial (programmatic absence only)",
+    "EVENT-006": "Partial (one server-failure path)",
+    "EVENT-007": "Partial (programmatic paths only)"
+  },
+  "validator": "accepts Partial; concrete testId spec references must resolve to an existing file"
 }

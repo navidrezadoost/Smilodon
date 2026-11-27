@@ -301,3 +301,234 @@ describe('W1-P1.2 DEVIATION-04 — setSelectedValues ordering (superseded / disc
     tracker.stop();
   });
 });
+
+/**
+ * W1-P1.2-T1-R — deterministic timeline assertions.
+ *
+ * These tests record an explicit ordered timeline of externally observable
+ * milestones (event dispatch, callback invocation, Promise settlement) on a
+ * single shared `order` array, so sequencing is asserted without timers or
+ * sleeps. They also assert `select` / `onSelect` absence on programmatic paths.
+ */
+describe('W1-P1.2-T1-R — deterministic chronology (local success)', () => {
+  let select: EnhancedSelect;
+
+  beforeEach(() => {
+    select = document.createElement('enhanced-select') as EnhancedSelect;
+    select.setItems(ITEMS);
+    document.body.appendChild(select);
+  });
+
+  afterEach(() => select.remove());
+
+  it('records change -> onChange -> Promise resolution, in that order, with no select/onSelect', async () => {
+    const order: string[] = [];
+    select.addEventListener('change', () => order.push('change'));
+    select.addEventListener('select', () => order.push('select'));
+    select.updateConfig({
+      callbacks: {
+        onChange: () => order.push('onChange'),
+        onSelect: () => order.push('onSelect'),
+      },
+    });
+
+    await select.setSelectedValues(['b']).then(() => order.push('promise-resolved'));
+
+    expect(order).toEqual(['change', 'onChange', 'promise-resolved']);
+    expect(order).not.toContain('select');
+    expect(order).not.toContain('onSelect');
+  });
+});
+
+describe('W1-P1.2-T1-R — deterministic chronology (server success)', () => {
+  let select: EnhancedSelect;
+
+  beforeEach(() => {
+    select = document.createElement('enhanced-select') as EnhancedSelect;
+    select.setItems(ITEMS);
+    document.body.appendChild(select);
+  });
+
+  afterEach(() => select.remove());
+
+  it('records fetch -> change -> onChange -> Promise resolution, with no select/onSelect', async () => {
+    const order: string[] = [];
+    const remoteItem = { id: 'remote', value: 'REMOTE', label: 'Remote item' };
+    select.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: async () => {
+          order.push('fetch-resolved');
+          return [remoteItem];
+        },
+      },
+    });
+    select.addEventListener('change', () => order.push('change'));
+    select.addEventListener('select', () => order.push('select'));
+    select.updateConfig({
+      callbacks: {
+        onChange: () => order.push('onChange'),
+        onSelect: () => order.push('onSelect'),
+      },
+    });
+
+    await select.setSelectedValues(['REMOTE']).then(() => order.push('promise-resolved'));
+
+    expect(order).toEqual(['fetch-resolved', 'change', 'onChange', 'promise-resolved']);
+    expect(order).not.toContain('select');
+    expect(order).not.toContain('onSelect');
+  });
+});
+
+describe('W1-P1.2-T1-R — deterministic chronology (server failure)', () => {
+  let select: EnhancedSelect;
+
+  beforeEach(() => {
+    select = document.createElement('enhanced-select') as EnhancedSelect;
+    select.setItems(ITEMS);
+    document.body.appendChild(select);
+  });
+
+  afterEach(() => select.remove());
+
+  it('records error -> onError -> Promise resolution (error swallowed); error.detail.cause carries the thrown Error', async () => {
+    const order: string[] = [];
+    const boom = new Error('fetch failed');
+    let caughtCause: unknown;
+    select.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: async () => {
+          throw boom;
+        },
+      },
+    });
+    select.addEventListener('error', (e) => {
+      order.push('error');
+      caughtCause = (e as CustomEvent<{ cause?: unknown }>).detail.cause;
+    });
+    select.addEventListener('change', () => order.push('change'));
+    select.addEventListener('select', () => order.push('select'));
+    select.updateConfig({
+      callbacks: {
+        onError: () => order.push('onError'),
+        onChange: () => order.push('onChange'),
+        onSelect: () => order.push('onSelect'),
+      },
+    });
+
+    await select.setSelectedValues(['x']).then(() => order.push('promise-resolved'));
+
+    expect(order).toEqual(['error', 'onError', 'promise-resolved']);
+    expect(caughtCause).toBe(boom);
+    expect(order).not.toContain('change');
+    expect(order).not.toContain('select');
+    expect(order).not.toContain('onChange');
+    expect(order).not.toContain('onSelect');
+  });
+
+  it('rejects the Promise when a user onError callback throws (documented rejection boundary)', async () => {
+    const boom = new Error('fetch failed');
+    const callbackError = new Error('onError threw');
+    select.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: async () => {
+          throw boom;
+        },
+      },
+    });
+    select.updateConfig({ callbacks: { onError: () => { throw callbackError; } } });
+
+    // The handled fetch error is swallowed, but an exception thrown by the
+    // user-supplied onError callback propagates and rejects the Promise.
+    await expect(select.setSelectedValues(['x'])).rejects.toThrow('onError threw');
+  });
+});
+
+describe('W1-P1.2-T1-R — supersession and disconnection (individual Promise settlement)', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('settles each superseded Promise independently and never invokes selection/error callbacks for stale work', async () => {
+    const select = document.createElement('enhanced-select') as EnhancedSelect;
+    select.setItems(ITEMS);
+    document.body.appendChild(select);
+
+    const settle: Record<string, string[]> = { first: [], second: [] };
+    const onChange = vi.fn();
+    const onSelect = vi.fn();
+    const onError = vi.fn();
+    const changeCount: string[] = [];
+
+    const resolvers: Array<(items: unknown[]) => void> = [];
+    select.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: (values: unknown[]) =>
+          new Promise<unknown[]>((resolve) => {
+            resolvers.push(() => resolve([{ id: String(values[0]), value: values[0], label: String(values[0]) }]));
+          }),
+      },
+    });
+    select.addEventListener('change', () => changeCount.push('change'));
+    select.updateConfig({ callbacks: { onChange, onSelect, onError } });
+
+    const first = select.setSelectedValues(['first']).then(() => settle.first.push('resolved'));
+    const second = select.setSelectedValues(['second']).then(() => settle.second.push('resolved'));
+
+    // Resolve stale (first) then current (second), deterministically, no timers.
+    resolvers[0]([]);
+    resolvers[1]([]);
+    await Promise.all([first, second]);
+
+    // Both Promises settle exactly once, independently.
+    expect(settle.first).toEqual(['resolved']);
+    expect(settle.second).toEqual(['resolved']);
+    // Only the latest generation published a change and invoked onChange once.
+    expect(changeCount).toEqual(['change']);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    // Stale work invoked no selection/error callbacks.
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    expect(select.getSelectedValues()).toEqual(['second']);
+    select.remove();
+  });
+
+  it('settles the Promise after disconnection mid-fetch without emitting change/error or invoking callbacks', async () => {
+    const select = document.createElement('enhanced-select') as EnhancedSelect;
+    select.setItems(ITEMS);
+    document.body.appendChild(select);
+
+    let release: (items: unknown[]) => void = () => {};
+    const onChange = vi.fn();
+    const onError = vi.fn();
+    select.updateConfig({
+      serverSide: {
+        enabled: true,
+        fetchSelectedItems: () =>
+          new Promise<unknown[]>((resolve) => {
+            release = resolve;
+          }),
+      },
+    });
+    const tracker = trackEvents(select, ['change', 'error']);
+    select.updateConfig({ callbacks: { onChange, onError } });
+
+    let settled = false;
+    const promise = select.setSelectedValues(['a']).then(() => {
+      settled = true;
+    });
+
+    select.remove(); // disconnect while the fetch is in flight
+    release([{ id: 'a', value: 'a', label: 'Alpha' }]);
+
+    await promise;
+    expect(settled).toBe(true);
+    expect(tracker.types()).toEqual([]);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    tracker.stop();
+  });
+});

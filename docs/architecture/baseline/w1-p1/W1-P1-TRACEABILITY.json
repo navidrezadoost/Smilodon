@@ -7,9 +7,10 @@
   "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
   "countingConvention": "One record per contract ID. A contract ID is the ledger/matrix granularity unit; grouped surfaces (getter/setter pairs, multi-token data-* attributes, multi-token ::part groups) are single records whose tokens are enumerated in behavior.",
   "coverageLegend": {
-    "Existing": "adequate black-box coverage referenced",
+    "Existing": "adequate black-box coverage across the contract's characterized paths",
     "Diagnostic": "private/perf-level only; a black-box test is still needed",
-    "Missing": "no coverage"
+    "Missing": "no coverage",
+    "Partial": "externally observable test covers some contract paths; remaining paths still outstanding (not a full contract certification)"
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
@@ -24,9 +25,10 @@
       "CONFIG": 26
     },
     "byCoverage": {
-      "Existing": 43,
-      "Diagnostic": 52,
-      "Missing": 5
+      "Existing": 44,
+      "Diagnostic": 48,
+      "Missing": 5,
+      "Partial": 3
     },
     "byTargetIncrement": {
       "P1.1": 4,
@@ -48,7 +50,13 @@
     "configIds": 26,
     "priorReportedMatrixEntries": 74,
     "priorMarkdownIds": 95,
-    "explanation": "74 -> 95+5: the original JSON omitted the CONFIG-001..021 block (21 records). This correction adds those 21 plus 5 new granular CONFIG IDs (CONFIG-022..026) for configuration completeness. See 11.6 of the ledger."
+    "explanation": "74 -> 95+5: the original JSON omitted the CONFIG-001..021 block (21 records). This correction adds those 21 plus 5 new granular CONFIG IDs (CONFIG-022..026) for configuration completeness. See 11.6 of the ledger.",
+    "coverageClasses": [
+      "Existing",
+      "Partial",
+      "Diagnostic",
+      "Missing"
+    ]
   },
   "duplicateIds": 0,
   "missingIds": 0,
@@ -153,7 +161,7 @@
       "behavior": "setSelectedValues async ordering",
       "targetIncrement": "P1.2",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#W1-P1.2 DEVIATION-04 setSelectedValues ordering (all modes)",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#deterministic chronology local/server success/failure + supersession + disconnection",
       "status": "Observed",
       "evidence": "select-selection; phase-1-search-pagination-characterization (DEVIATION-04)",
       "sourceLocators": [
@@ -165,7 +173,8 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6668-6695"
         }
-      ]
+      ],
+      "coverageNote": "Local + server-success + server-failure + superseded + disconnected timelines asserted (events, callbacks, Promise settlement)."
     },
     {
       "id": "API-013",
@@ -487,8 +496,8 @@
       "id": "EVENT-001",
       "behavior": "select payload + order",
       "targetIncrement": "P1.2",
-      "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#asserts select ABSENCE on programmatic setSelectedValues",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#select ABSENT on programmatic setSelectedValues (user-selection payload/order NOT yet covered)",
       "status": "Observed",
       "evidence": "DEVIATION-04",
       "sourceLocators": [
@@ -508,7 +517,8 @@
           "file": "packages/core/src/types.ts",
           "lines": "40"
         }
-      ]
+      ],
+      "coverageNote": "Programmatic select-absence only; user-selection payload/order remains for P1.2 Task 4."
     },
     {
       "id": "EVENT-002",
@@ -598,8 +608,8 @@
       "id": "EVENT-006",
       "behavior": "error async shape",
       "targetIncrement": "P1.5",
-      "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure emits error, not change",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure: error before onError; error.detail.cause; onError-throw rejects",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -611,14 +621,15 @@
           "file": "packages/core/src/types.ts",
           "lines": "57"
         }
-      ]
+      ],
+      "coverageNote": "Single server-fetch failure path only; broader error contract owned by P1.5."
     },
     {
       "id": "EVENT-007",
       "behavior": "change across emit paths",
       "targetIncrement": "P1.2",
-      "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#change payload/order across local+server paths",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#change payload/order on programmatic local+server paths",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -634,7 +645,8 @@
           "file": "packages/core/src/types.ts",
           "lines": "58"
         }
-      ]
+      ],
+      "coverageNote": "Programmatic local/server paths only; interaction-driven change paths remain for P1.2 Task 4."
     },
     {
       "id": "EVENT-008",
