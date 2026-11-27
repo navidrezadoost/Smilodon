@@ -308,7 +308,7 @@
       "behavior": "setError",
       "targetIncrement": "P1.3",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#setError via validate(required+empty)",
+      "testId": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#setError() sets aria-invalid/aria-describedby + error text",
       "status": "Observed",
       "evidence": "partial",
       "sourceLocators": [
@@ -317,14 +317,17 @@
           "lines": "7281-7290"
         }
       ],
-      "coverageNote": "Error state surfaced through validate(); broader error API/cause in P1.5."
+      "coverageNote": "Directly asserted observable error state via shadowRoot (aria-invalid, aria-describedby, error element text). Error cause/payload detail remains P1.5.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate(required+empty) triggers error presentation"
+      ]
     },
     {
       "id": "API-041",
       "behavior": "clearError",
       "targetIncrement": "P1.3",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate() success path clears prior error",
+      "testId": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#clearError() removes aria-invalid/describedby + empties text; idempotent",
       "status": "Observed",
       "evidence": "partial",
       "sourceLocators": [
@@ -333,7 +336,10 @@
           "lines": "7292-7300"
         }
       ],
-      "coverageNote": "clearError observed via validate(true) path; full error API in P1.5."
+      "coverageNote": "Directly asserted cleared error state via shadowRoot. Full error API surface remains P1.5.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#validate() success after setError() clears previous error"
+      ]
     },
     {
       "id": "API-042",
@@ -1447,7 +1453,7 @@
       "behavior": "selection.allowDeselect",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts",
+      "testId": "verify",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1456,9 +1462,9 @@
           "lines": "338"
         }
       ],
-      "coverageNote": "allowDeselect affects programmatic replace-empty only under required/engine policy; characterized in Task 3.",
+      "coverageNote": "Default false documented; Task 3 exercised allowDeselect:true only under NON-required programmatic replace-empty. Behavior under required/allowDeselect combinations is NOT established here.",
       "supplementaryTests": [
-        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts"
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#allowDeselect:true non-required replace-empty"
       ]
     },
     {
@@ -1732,9 +1738,9 @@
           "lines": "430-433"
         }
       ],
-      "coverageNote": "autoMitigateRuntimeModeSwitch=true clears selection on mode switch; false does not (Task 3).",
+      "coverageNote": "autoMitigateRuntimeModeSwitch=true clears on multi->single (-> []); false yields exact engine-normalized survivor (-> ['a']). Both asserted exactly (Task 3 + T3-R).",
       "supplementaryTests": [
-        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts"
+        "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts#exact mode-switch selection state, mitigation enabled vs disabled"
       ]
     },
     {

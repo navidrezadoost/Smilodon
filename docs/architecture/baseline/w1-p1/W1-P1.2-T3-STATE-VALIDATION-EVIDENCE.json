@@ -7,15 +7,16 @@
   "publicInterfaceOnly": true,
   "testRun": {
     "config": "packages/core/vitest.config.ts",
-    "tests": "26 passed",
-    "files": "1 passed"
+    "t3": "26 passed",
+    "t3r": "8 passed"
   },
   "characterizedAreas": {
     "clear_vs_replace_empty": {
       "events": "clear() and setSelectedValues([]) each emit exactly one change (no clear/select)",
       "nonRequired": "both empty the selection",
-      "required": "both PRESERVE prior selection (semantically identical under required)",
-      "multi_duplicate": "clear() empties duplicate-value multi selection"
+      "required": "both PRESERVE prior selection in the tested configuration (equivalent for tested selection-state and event outcomes; NOT asserted universally identical across all configs/paths)",
+      "multi_duplicate": "clear() empties duplicate-value multi selection",
+      "scoping": "Results describe the tested programmatic paths and configurations only; not a universal equivalence claim."
     },
     "validate_matrix": {
       "nonRequired": "always true",
@@ -56,11 +57,19 @@
   },
   "productionChanges": "none",
   "regression": {
-    "coreFullSuite": "835 passed + 1 skipped (59 files); +26 vs 809+1 (T2-R); no regression"
+    "coreFullSuite": "843 passed + 1 skipped (60 files); +8 vs 835+1 (Task 3); no regression"
   },
   "typecheck": {
     "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
     "result": "exit 0"
   },
-  "validator": "PASS (100 IDs reconcile)"
+  "validator": "PASS (100 IDs reconcile)",
+  "correction": "W1-P1.2-T3-R",
+  "precedingCommit": "e261369",
+  "t3rTestFile": "packages/core/tests/w1-p1-2-t3r-error-state-evidence.spec.ts",
+  "t3rFindings": {
+    "T3-F01": "setError()/clearError() asserted via shadowRoot: aria-invalid flip, aria-describedby wiring, error element text; validate() failure->success clears prior error presentation.",
+    "T3-F02": "multi->single with autoMitigate=false yields EXACT ['a'] (vs [] when enabled), asserted equal to the pre-switch first eligible survivor; enabled vs disabled compared from same initial selection.",
+    "T3-F03": "CONFIG-002 coverage note corrected; allowDeselect only exercised non-required. Prior evidence retained."
+  }
 }
