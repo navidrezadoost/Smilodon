@@ -56,6 +56,7 @@ const issue82ActiveClassScenario = query.get('scenario') === 'issue-82-active-cl
 const issue107Scenario = query.get('scenario') === 'issue-107';
 const issue112Scenario = query.get('scenario') === 'issue-112';
 const issue119Scenario = query.get('scenario') === 'issue-119-custom-arrow';
+const issue121Scenario = query.get('scenario') === 'issue-121-tooltip';
 const busyBucketScenario = query.get('scenario') === 'busy-bucket';
 const busyBucketWithoutIcon = busyBucketScenario && query.get('busy-icon') === 'none';
 const issue82Items: SelectItem[] = [
@@ -78,11 +79,15 @@ const issue112InitialItems: SelectItem[] = Array.from({ length: 6 }, (_, index) 
   value: `issue112-${index + 1}`,
   label: `Issue 112 option ${index + 1}`,
 }));
+const issue121Items: SelectItem[] = [
+  { value: 'issue121-long', label: 'International Pharmaceutical Distribution Company — Central Branch' },
+  { value: 'issue121-short', label: 'Short' },
+];
 const initialProtocol = query.get('protocol') === 'legacy' ? 'legacy' : 'acknowledged';
 const initialSearchMode = query.get('mode') === 'hybrid' ? 'hybrid' : 'remote';
 
 const initialOptions: FixtureOptions = {
-  config: issue82ActiveClassScenario ? {} : {
+  config: issue82ActiveClassScenario || issue121Scenario ? {} : {
     dataLoading: {
       protocol: initialProtocol,
       searchMode: initialSearchMode,
@@ -100,7 +105,7 @@ const initialOptions: FixtureOptions = {
       },
     } : {}),
   },
-  value: issue82ActiveClassScenario || query.has('uncontrolled') ? null : 'apple',
+  value: issue82ActiveClassScenario || query.has('uncontrolled') ? null : issue121Scenario ? 'issue121-long' : 'apple',
   loading: false,
   consumerBusy: false,
   placeholder: 'Choose a fruit',
@@ -133,7 +138,7 @@ function CertificationApp() {
       <output id="controlled-value">{options.value ?? 'uncontrolled'}</output>
       <Select
         ref={handleRef}
-        items={issue82ActiveClassScenario ? issue82Items : items}
+        items={issue82ActiveClassScenario ? issue82Items : issue121Scenario ? issue121Items : items}
         value={options.value === null ? undefined : options.value}
         searchable
         infiniteScroll
@@ -141,6 +146,7 @@ function CertificationApp() {
         placeholder={options.placeholder}
         config={options.config}
         className="react-certification-select"
+        style={issue121Scenario ? { width: '210px' } : undefined}
         loading={options.loading}
         aria-busy={options.consumerBusy}
         classMap={issue82ActiveClassScenario ? issue82ClassMap : undefined}

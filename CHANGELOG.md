@@ -19,6 +19,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Added
 
+- **Selected-label tooltip ([#121](https://github.com/navidrezadoost/Smilodon/issues/121)):** Core shows the full selected display label on hover or keyboard focus only when a single-select value or multi-select chip is actually truncated. It uses the current configured label resolver and keeps search text, chip removal, and selection behavior separate.
 - **Independent input and arrow padding tokens ([#120](https://github.com/navidrezadoost/Smilodon/issues/120)):** Core exposes `--select-input-content-padding` for the selected-value/chip/search wrapper and `--select-dropdown-arrow-container-padding` for the arrow container. Unset values preserve existing single-select, multi-select mode, direction, and horizontal scroll-spacing defaults; explicit values accept the normal CSS padding shorthand and update without remounting.
 
 ### Fixed

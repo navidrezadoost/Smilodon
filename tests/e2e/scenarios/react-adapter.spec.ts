@@ -3,12 +3,18 @@ import { expect, test } from '@playwright/test';
 const fixtureUrl = 'http://localhost:5173/react-certification.html';
 
 async function waitForReactReady(page: import('@playwright/test').Page) {
+  const params = new URL(page.url()).searchParams;
+  if (params.get('scenario') === 'issue-121-tooltip') {
+    await expect.poll(() => page.evaluate(() => window.__smilodonReactCertification?.host()?.isConnected ?? false))
+      .toBe(true);
+    return;
+  }
   await expect.poll(() => page.evaluate(() => {
     return window.__smilodonReactCertification?.state()?.connected ?? false;
   })).toBe(true);
-  const params = new URL(page.url()).searchParams;
   if (params.get('scenario') !== 'issue-82-active-class'
     && params.get('scenario') !== 'issue-119-custom-arrow'
+    && params.get('scenario') !== 'issue-121-tooltip'
     && params.get('protocol') !== 'legacy') {
     await expect.poll(async () => (await readEvents(page)).some((event) => event.type === 'search'))
       .toBe(true);
@@ -23,6 +29,26 @@ test.describe('React adapter browser certification @react-adapter', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(fixtureUrl);
     await waitForReactReady(page);
+  });
+
+  test('Issue #121: controlled selected-label tooltip survives unrelated React rerenders @react-adapter', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=issue-121-tooltip`);
+    await waitForReactReady(page);
+    const host = page.locator('enhanced-select.react-certification-select');
+    const input = host.locator('[part="input"]');
+    const popup = host.locator('[role="tooltip"]');
+    await expect(page.locator('#controlled-value')).toHaveText('issue121-long');
+    await input.hover();
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText('International Pharmaceutical Distribution Company — Central Branch');
+
+    await page.evaluate(() => window.__smilodonReactCertification?.update({ placeholder: 'Updated by React' }));
+
+    await expect(page.locator('#controlled-value')).toHaveText('issue121-long');
+    await expect(input).toHaveValue('International Pharmaceutical Distribution Company — Central Branch');
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText('International Pharmaceutical Distribution Company — Central Branch');
+    expect(await page.evaluate(() => window.__smilodonReactCertification?.selectedValues())).toEqual(['issue121-long']);
   });
 
   test('Issue #119: nested custom arrow clicks toggle once and report one callback per transition', async ({ page }) => {

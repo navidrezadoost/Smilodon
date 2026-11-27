@@ -189,6 +189,8 @@ For concrete Tailwind CSS, Bootstrap, Material UI, and raw-CSS integration recip
 
   Both tokens accept the standard one-to-four-value CSS `padding` shorthand and update dynamically without remounting. The arrow-container token targets the container, not only the icon. See [the full token reference](./STYLING-TOKENS.md) for defaults and related shell/field tokens.
 
+  **Selected-label tooltip:** Core reveals the full display label on hover or keyboard focus only when a selected single value or multi-select chip is actually truncated. It follows the configured item-label resolver, suppresses the selected-value tooltip while the input contains a search query, and adds a temporary `aria-describedby` reference without replacing existing descriptions. Fully visible labels do not create a tooltip. The tooltip is not applied to arbitrary option-renderer content in the dropdown.
+
   For true horizontal chip scrolling, configure `multiSelectDisplay.mode = 'horizontal'`. That mode does more than flip overflow values: it keeps chips on one row, preserves drag-scroll behavior, and reserves space for the arrow / clear controls.
 
   When an option is both selected and active, customize the combined surface with:

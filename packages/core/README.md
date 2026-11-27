@@ -29,6 +29,10 @@ select.updateConfig({
 })
 ```
 
+## Selected-label tooltip
+
+Core displays the full selected display label in a shared tooltip when the closed single-select value or a multi-select chip is visually truncated. The tooltip appears on pointer hover or keyboard focus; a label that fits does not open one. It uses the same configured item-label resolver as the visible selection, so custom `serverSide.getLabelFromItem` labels are reflected. Search queries are not treated as selected values. Multi-select chip labels become tab stops only while truncated, and Escape dismisses the tooltip without moving focus. This behavior covers selected values and chips, not custom option content in the dropdown.
+
 ## Custom busy bucket (Core 1.13.0)
 
 Introduced in `@smilodon/core@1.13.0` (Issue #90), the busy bucket keeps request state in Core and lets the host customize its presentation. Use the native slots with the Web Component or Vanilla API:

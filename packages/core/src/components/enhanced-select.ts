@@ -241,6 +241,16 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _inputContainer: HTMLElement;
   private _inputContent: HTMLElement;
   private _input: HTMLInputElement;
+  private _selectedLabelTooltip: HTMLDivElement;
+  private _selectedLabelTooltipTrigger: HTMLElement | null = null;
+  private _selectedLabelTooltipPointerTrigger: HTMLElement | null = null;
+  private _selectedLabelTooltipFocusTrigger: HTMLElement | null = null;
+  private _selectedLabelTooltipPointerInside = false;
+  private _selectedLabelTooltipDismissedTrigger: HTMLElement | null = null;
+  private _selectedLabelTooltipHideTimer: number | null = null;
+  private _selectedLabelTooltipResizeObserver: ResizeObserver | null = null;
+  private _selectedLabelTooltipMeasureFrame: number | null = null;
+  private _selectedLabelKeys = new WeakMap<HTMLElement, SelectKey>();
   private _dropdown: HTMLElement;
   private _optionsContainer: HTMLElement;
   private _loadMoreTrigger?: HTMLElement;
@@ -532,6 +542,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._inputContainer = this._createInputContainer();
     this._inputContent = this._createInputContent();
     this._input = this._createInput();
+    this._selectedLabelTooltip = this._createSelectedLabelTooltip();
     this._arrowContainer = this._createArrowContainer();
     this._clearControl = this._createClearControl();
     this._dropdown = this._createDropdown();
@@ -559,8 +570,18 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._runEngineEffects(this._engine.dispatch({ type: 'DISABLED_CHANGED', disabled: !this._config.enabled }));
     this._connectionController?.abort();
     this._connectionController = new AbortController();
+    this._observeSelectedLabelTooltipTargets();
     document.addEventListener('pointerdown', this._onDocumentPointerDown, {
       signal: this._connectionController.signal,
+    });
+    window.addEventListener('resize', this._scheduleSelectedLabelTooltipMeasure, {
+      signal: this._connectionController.signal,
+      passive: true,
+    });
+    window.addEventListener('scroll', this._scheduleSelectedLabelTooltipMeasure, {
+      signal: this._connectionController.signal,
+      passive: true,
+      capture: true,
     });
 
     // WORKAROUND: Force display style on host element for Angular compatibility
@@ -643,6 +664,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._runEngineEffects(this._engine.dispatch({ type: 'DISCONNECT' }));
     this._connectionController?.abort();
     this._connectionController = undefined;
+    this._hideSelectedLabelTooltip(true);
+    this._selectedLabelTooltipResizeObserver?.disconnect();
+    this._selectedLabelTooltipResizeObserver = null;
+    if (this._selectedLabelTooltipMeasureFrame !== null) {
+      cancelAnimationFrame(this._selectedLabelTooltipMeasureFrame);
+      this._selectedLabelTooltipMeasureFrame = null;
+    }
     this._asyncGeneration += 1;
     this._cancelGuardedVirtualWindowUpdate();
     this._clearLifecycleTasks();
@@ -1942,6 +1970,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     return input;
   }
 
+  private _createSelectedLabelTooltip(): HTMLDivElement {
+    const tooltip = document.createElement('div');
+    tooltip.id = `${this._uniqueId}-selected-label-tooltip`;
+    tooltip.className = 'selected-label-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.hidden = true;
+    return tooltip;
+  }
+
   private _createDropdown(): HTMLElement {
     const dropdown = document.createElement('div');
     dropdown.className = 'select-dropdown';
@@ -2054,6 +2091,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (this._errorDescription) {
       this._shadow.appendChild(this._errorDescription);
     }
+    this._shadow.appendChild(this._selectedLabelTooltip);
     
     
     // Set ARIA relationships
@@ -2427,6 +2465,29 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       .select-container {
         position: relative;
         width: 100%;
+      }
+
+      .selected-label-tooltip {
+        position: fixed;
+        z-index: 2147483000;
+        box-sizing: border-box;
+        width: max-content;
+        max-width: min(24rem, calc(100vw - 16px));
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        background: #18202e;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24);
+        font: 500 13px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        pointer-events: auto;
+        direction: inherit;
+      }
+
+      .selected-label-tooltip[hidden] {
+        display: none;
       }
       
       .input-container {
@@ -3534,6 +3595,19 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _attachEventListeners(): void {
+    this._shadow.addEventListener('pointerover', (event) => this._handleSelectedLabelPointerOver(event as PointerEvent));
+    this._shadow.addEventListener('pointerout', (event) => this._handleSelectedLabelPointerOut(event as PointerEvent));
+    this._shadow.addEventListener('focusin', (event) => this._handleSelectedLabelFocusIn(event as FocusEvent));
+    this._shadow.addEventListener('focusout', (event) => this._handleSelectedLabelFocusOut(event as FocusEvent));
+    this._shadow.addEventListener('keydown', (event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key !== 'Escape' || this._selectedLabelTooltip.hidden) return;
+      keyboardEvent.preventDefault();
+      keyboardEvent.stopPropagation();
+      this._dismissSelectedLabelTooltip();
+    });
+    this._inputContent.addEventListener('scroll', this._scheduleSelectedLabelTooltipMeasure, { passive: true });
+
     // Arrow click handler
     if (this._arrowContainer) {
       this._boundArrowClick = (e: Event) => {
@@ -3731,6 +3805,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._input.addEventListener('input', (e) => {
       if (!this._config.searchable) return;
       const query = (e.target as HTMLInputElement).value;
+      if (this._selectedLabelTooltipTrigger === this._input
+        && this._getSelectedLabelForTrigger(this._input) === null) {
+        this._hideSelectedLabelTooltip();
+      }
       this._handleSearch(query);
     });
 
@@ -3907,6 +3985,277 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         return index === undefined ? null : this._getOptionElementByIndex(index);
       },
     });
+    this._syncSelectedLabelTooltipDescription();
+  }
+
+  private _selectedLabelTriggerFromTarget(target: EventTarget | null): HTMLElement | null {
+    if (!(target instanceof HTMLElement)) return null;
+    if (target === this._input) return target;
+    const label = target.closest<HTMLElement>('.selection-badge-label');
+    return label && this._inputContent.contains(label) ? label : null;
+  }
+
+  private _getSelectedLabelForTrigger(trigger: HTMLElement): string | null {
+    const entries = this._getSelectedEntries();
+    if (trigger === this._input) {
+      if (this._config.selection.mode !== 'single' || this._state.searchQuery.length > 0) return null;
+      const item = entries[0]?.item;
+      if (item === undefined) return null;
+      const label = this._getItemLabel(item);
+      return this._input.value === label ? label : null;
+    }
+
+    if (!trigger.classList.contains('selection-badge-label')) return null;
+    const key = this._selectedLabelKeys.get(trigger);
+    if (key === undefined) return null;
+    const entry = entries.find((candidate) => candidate.key === key);
+    if (!entry) return null;
+    const label = this._getItemLabel(entry.item);
+    return trigger.textContent === label ? label : null;
+  }
+
+  private _isSelectedLabelTruncated(trigger: HTMLElement): boolean {
+    if (!trigger.isConnected) return false;
+    return trigger.clientWidth > 0 && trigger.scrollWidth > trigger.clientWidth + 1;
+  }
+
+  private _handleSelectedLabelPointerOver(event: PointerEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('.selected-label-tooltip') === this._selectedLabelTooltip) {
+      this._selectedLabelTooltipPointerInside = true;
+      this._clearSelectedLabelTooltipHideTimer();
+      return;
+    }
+    const trigger = this._selectedLabelTriggerFromTarget(target);
+    if (!trigger || (event.relatedTarget instanceof Node && trigger.contains(event.relatedTarget))) return;
+    this._selectedLabelTooltipPointerTrigger = trigger;
+    this._selectedLabelTooltipDismissedTrigger = null;
+    this._showSelectedLabelTooltip(trigger);
+  }
+
+  private _handleSelectedLabelPointerOut(event: PointerEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target === this._selectedLabelTooltip || this._selectedLabelTooltip.contains(target)) {
+      if (event.relatedTarget instanceof Node && this._selectedLabelTooltip.contains(event.relatedTarget)) return;
+      this._selectedLabelTooltipPointerInside = false;
+      this._scheduleSelectedLabelTooltipHide();
+      return;
+    }
+    const trigger = this._selectedLabelTriggerFromTarget(target);
+    if (!trigger || (event.relatedTarget instanceof Node && trigger.contains(event.relatedTarget))) return;
+    if (this._selectedLabelTooltipPointerTrigger === trigger) {
+      this._selectedLabelTooltipPointerTrigger = null;
+      if (this._selectedLabelTooltipDismissedTrigger === trigger) {
+        this._selectedLabelTooltipDismissedTrigger = null;
+      }
+    }
+    if (event.relatedTarget === this._selectedLabelTooltip) {
+      this._selectedLabelTooltipPointerInside = true;
+      this._clearSelectedLabelTooltipHideTimer();
+      return;
+    }
+    this._scheduleSelectedLabelTooltipHide();
+  }
+
+  private _handleSelectedLabelFocusIn(event: FocusEvent): void {
+    const trigger = this._selectedLabelTriggerFromTarget(event.target);
+    if (!trigger) return;
+    this._selectedLabelTooltipFocusTrigger = trigger;
+    this._selectedLabelTooltipDismissedTrigger = null;
+    this._showSelectedLabelTooltip(trigger);
+  }
+
+  private _handleSelectedLabelFocusOut(event: FocusEvent): void {
+    const trigger = this._selectedLabelTriggerFromTarget(event.target);
+    if (!trigger || this._selectedLabelTooltipFocusTrigger !== trigger) return;
+    this._selectedLabelTooltipFocusTrigger = null;
+    if (this._selectedLabelTooltipDismissedTrigger === trigger) {
+      this._selectedLabelTooltipDismissedTrigger = null;
+    }
+    this._scheduleSelectedLabelTooltipHide();
+  }
+
+  private _showSelectedLabelTooltip(trigger: HTMLElement): void {
+    if (this._selectedLabelTooltipDismissedTrigger === trigger) return;
+    if (!trigger.isConnected || !this._isSelectedLabelVisibleInViewport(trigger)) {
+      if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
+      return;
+    }
+    const label = this._getSelectedLabelForTrigger(trigger);
+    if (label === null || !this._isSelectedLabelTruncated(trigger)) {
+      if (trigger.classList.contains('selection-badge-label')) trigger.tabIndex = -1;
+      if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
+      return;
+    }
+
+    if (trigger.classList.contains('selection-badge-label')) trigger.tabIndex = 0;
+    if (this._selectedLabelTooltipTrigger !== trigger) {
+      this._removeSelectedLabelTooltipDescription(this._selectedLabelTooltipTrigger);
+      this._selectedLabelTooltipTrigger = trigger;
+    }
+    this._selectedLabelTooltip.textContent = label;
+    this._selectedLabelTooltip.hidden = false;
+    this._positionSelectedLabelTooltip(trigger);
+    this._syncSelectedLabelTooltipDescription();
+    this._clearSelectedLabelTooltipHideTimer();
+  }
+
+  private _positionSelectedLabelTooltip(trigger: HTMLElement): void {
+    if (this._selectedLabelTooltip.hidden || !trigger.isConnected) return;
+    const triggerRect = trigger.getBoundingClientRect();
+    const tooltip = this._selectedLabelTooltip;
+    tooltip.style.maxWidth = `min(24rem, calc(100vw - 16px))`;
+    tooltip.style.direction = getComputedStyle(trigger).direction;
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+    const rtl = getComputedStyle(trigger).direction === 'rtl';
+    const desiredLeft = rtl ? triggerRect.right - tooltipRect.width : triggerRect.left;
+    const left = Math.max(8, Math.min(desiredLeft, viewportWidth - tooltipRect.width - 8));
+    const above = triggerRect.top - tooltipRect.height - 6;
+    const top = above >= 8 ? above : Math.min(triggerRect.bottom + 6, viewportHeight - tooltipRect.height - 8);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+  }
+
+  private _syncSelectedLabelTooltipDescription(): void {
+    const trigger = this._selectedLabelTooltipTrigger;
+    this._removeSelectedLabelTooltipDescription(trigger);
+    if (trigger && !this._selectedLabelTooltip.hidden) {
+      const ids = new Set((trigger.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean));
+      ids.add(this._selectedLabelTooltip.id);
+      trigger.setAttribute('aria-describedby', [...ids].join(' '));
+    }
+  }
+
+  private _removeSelectedLabelTooltipDescription(trigger: HTMLElement | null): void {
+    if (!trigger) return;
+    const ids = (trigger.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+    const remaining = ids.filter((id) => id !== this._selectedLabelTooltip.id);
+    if (remaining.length) trigger.setAttribute('aria-describedby', remaining.join(' '));
+    else trigger.removeAttribute('aria-describedby');
+  }
+
+  private _dismissSelectedLabelTooltip(): void {
+    this._selectedLabelTooltipDismissedTrigger = this._selectedLabelTooltipFocusTrigger
+      ?? this._selectedLabelTooltipTrigger
+      ?? this._selectedLabelTooltipPointerTrigger;
+    this._hideSelectedLabelTooltip();
+  }
+
+  private _hideSelectedLabelTooltip(clearInteractionState = false): void {
+    this._clearSelectedLabelTooltipHideTimer();
+    this._removeSelectedLabelTooltipDescription(this._selectedLabelTooltipTrigger);
+    this._selectedLabelTooltipTrigger = null;
+    this._selectedLabelTooltip.hidden = true;
+    if (clearInteractionState) {
+      this._selectedLabelTooltipPointerTrigger = null;
+      this._selectedLabelTooltipFocusTrigger = null;
+      this._selectedLabelTooltipPointerInside = false;
+      this._selectedLabelTooltipDismissedTrigger = null;
+    }
+  }
+
+  private _clearSelectedLabelTooltipHideTimer(): void {
+    if (this._selectedLabelTooltipHideTimer === null) return;
+    window.clearTimeout(this._selectedLabelTooltipHideTimer);
+    this._lifecycleTimers.delete(this._selectedLabelTooltipHideTimer);
+    this._selectedLabelTooltipHideTimer = null;
+  }
+
+  private _scheduleSelectedLabelTooltipHide(): void {
+    this._clearSelectedLabelTooltipHideTimer();
+    this._selectedLabelTooltipHideTimer = this._setLifecycleTimeout(() => {
+      this._selectedLabelTooltipHideTimer = null;
+      if (this._selectedLabelTooltipPointerInside) return;
+      const trigger = this._selectedLabelTooltipTrigger;
+      if (trigger && (this._selectedLabelTooltipFocusTrigger === trigger
+        || this._selectedLabelTooltipPointerTrigger === trigger)) return;
+      const focusedTrigger = this._selectedLabelTooltipFocusTrigger;
+      if (focusedTrigger && focusedTrigger !== this._selectedLabelTooltipDismissedTrigger
+        && focusedTrigger.isConnected
+        && this._isSelectedLabelVisibleInViewport(focusedTrigger)) {
+        this._showSelectedLabelTooltip(focusedTrigger);
+        return;
+      }
+      this._hideSelectedLabelTooltip();
+    }, 180);
+  }
+
+  private _isSelectedLabelVisibleInViewport(trigger: HTMLElement): boolean {
+    if (!trigger.classList.contains('selection-badge-label')) return true;
+    const viewport = this._inputContent;
+    const triggerRect = trigger.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+    // DOM-only test environments do not calculate layout rectangles. Leave
+    // visibility indeterminate there; browser measurement handles real layout.
+    if (triggerRect.width === 0 && triggerRect.height === 0
+      && viewportRect.width === 0 && viewportRect.height === 0) return true;
+    const left = viewportRect.left + viewport.clientLeft;
+    const top = viewportRect.top + viewport.clientTop;
+    const right = left + viewport.clientWidth;
+    const bottom = top + viewport.clientHeight;
+    return triggerRect.right > left && triggerRect.left < right
+      && triggerRect.bottom > top && triggerRect.top < bottom;
+  }
+
+  private _observeSelectedLabelTooltipTargets(): void {
+    if (typeof ResizeObserver === 'undefined') return;
+    const hasSingleSelection = this._config.selection.mode === 'single'
+      && this._getSelectedEntries().length > 0;
+    const chipLabels = this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label');
+    if (!hasSingleSelection && chipLabels.length === 0) {
+      this._selectedLabelTooltipResizeObserver?.disconnect();
+      this._selectedLabelTooltipResizeObserver = null;
+      return;
+    }
+    if (!this._selectedLabelTooltipResizeObserver) {
+      this._selectedLabelTooltipResizeObserver = new ResizeObserver(() => this._scheduleSelectedLabelTooltipMeasure());
+    }
+    this._selectedLabelTooltipResizeObserver.disconnect();
+    if (hasSingleSelection) this._selectedLabelTooltipResizeObserver.observe(this._input);
+    chipLabels.forEach((label) => {
+      this._selectedLabelTooltipResizeObserver?.observe(label);
+    });
+  }
+
+  private _scheduleSelectedLabelTooltipMeasure = (): void => {
+    if (this._selectedLabelTooltipMeasureFrame !== null || !this.isConnected) return;
+    this._selectedLabelTooltipMeasureFrame = this._requestLifecycleFrame(() => {
+      this._selectedLabelTooltipMeasureFrame = null;
+      this._refreshSelectedLabelTooltipMeasurements();
+    });
+  };
+
+  private _refreshSelectedLabelTooltipMeasurements(): void {
+    this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label').forEach((label) => {
+      label.tabIndex = this._isSelectedLabelTruncated(label) ? 0 : -1;
+    });
+    const currentTrigger = this._selectedLabelTooltipTrigger;
+    if (currentTrigger?.classList.contains('selection-badge-label')
+      && !this._isSelectedLabelVisibleInViewport(currentTrigger)) {
+      if (this._selectedLabelTooltipPointerTrigger === currentTrigger) {
+        this._selectedLabelTooltipPointerTrigger = null;
+      }
+      this._hideSelectedLabelTooltip();
+    }
+    const trigger = this._selectedLabelTooltipTrigger
+      ?? this._selectedLabelTooltipFocusTrigger
+      ?? this._selectedLabelTooltipPointerTrigger;
+    if (!trigger) return;
+    if (!trigger.isConnected || !this._isSelectedLabelVisibleInViewport(trigger)) {
+      if (this._selectedLabelTooltipPointerTrigger === trigger) {
+        this._selectedLabelTooltipPointerTrigger = null;
+      }
+      if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
+      return;
+    }
+    const label = this._getSelectedLabelForTrigger(trigger);
+    if (label === null || !this._isSelectedLabelTruncated(trigger)) {
+      if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
+      return;
+    }
+    this._showSelectedLabelTooltip(trigger);
   }
 
   private _syncListboxAccessibility(): void {
@@ -4549,6 +4898,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _handleSearch(query: string): void {
+    if (this._selectedLabelTooltipTrigger === this._input
+      && (query.length > 0 || this._getSelectedLabelForTrigger(this._input) === null)) {
+      this._hideSelectedLabelTooltip();
+    }
     if (
       this._dataRequestCoordinator
       && (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling)
@@ -4661,6 +5014,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Escape' && !this._selectedLabelTooltip.hidden) {
+      e.preventDefault();
+      e.stopPropagation();
+      this._dismissSelectedLabelTooltip();
+      return;
+    }
     if (!this._config.enabled) return;
 
     switch (e.key) {
@@ -5310,6 +5669,25 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
   private _updateInputDisplay(): void {
     const selectedEntries = this._getSelectedEntries();
+    const focusedElement = this._shadow.activeElement as HTMLElement | null;
+    const focusedSelectedKey = focusedElement?.classList.contains('selection-badge-label')
+      ? this._selectedLabelKeys.get(focusedElement) ?? null
+      : null;
+    const focusedBadge = focusedSelectedKey !== null
+      ? focusedElement?.closest('.selection-badge') ?? null
+      : null;
+    const focusedBadgeIndex = focusedBadge
+      ? Array.from(this._inputContent.querySelectorAll('.selection-badge')).indexOf(focusedBadge)
+      : -1;
+    if (this._selectedLabelTooltipPointerTrigger?.classList.contains('selection-badge-label')) {
+      this._selectedLabelTooltipPointerTrigger = null;
+    }
+    if (this._selectedLabelTooltipFocusTrigger?.classList.contains('selection-badge-label')) {
+      this._selectedLabelTooltipFocusTrigger = null;
+    }
+    if (this._selectedLabelTooltipTrigger?.classList.contains('selection-badge-label')) {
+      this._hideSelectedLabelTooltip();
+    }
     const selectedItems = selectedEntries.map(({ item }) => item);
     const nextKeys = new Set(selectedEntries.map(({ key }) => key));
     const previousKeys = this._lastRenderedChipKeys;
@@ -5358,6 +5736,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         }
         badgeLabel.setAttribute('part', 'chip-label');
         badgeLabel.textContent = getLabel(item);
+        this._selectedLabelKeys.set(badgeLabel, key);
         badge.appendChild(badgeLabel);
         
         // Add remove button to badge
@@ -5412,6 +5791,33 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       if (newlyAddedKey !== undefined) this._scheduleLatestChipScroll(newlyAddedKey);
     }
     this._syncClearControlState();
+    this._observeSelectedLabelTooltipTargets();
+    this._refreshSelectedLabelTooltipMeasurements();
+    if (focusedSelectedKey !== null) {
+      const replacement = Array.from(this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label'))
+        .find((label) => this._selectedLabelKeys.get(label) === focusedSelectedKey);
+      if (replacement && this._isSelectedLabelTruncated(replacement)) {
+        // The measurement pass assigns the tab stop before focus restoration.
+        replacement.tabIndex = 0;
+        replacement.focus({ preventScroll: true });
+      } else if (replacement) {
+        // A now-visible label must not gain a tab stop just to retain focus.
+        this._input.focus({ preventScroll: true });
+      } else {
+        // Match chip-remove focus policy when the focused selection disappears.
+        const removeButtons = this._inputContent.querySelectorAll<HTMLButtonElement>('[part="chip-remove"]');
+        if (removeButtons.length > 0) {
+          const nextFocusIndex = Math.min(Math.max(focusedBadgeIndex, 0), removeButtons.length - 1);
+          removeButtons[nextFocusIndex].focus({ preventScroll: true });
+        } else {
+          this._input.focus({ preventScroll: true });
+        }
+      }
+    }
+    if (this._selectedLabelTooltipFocusTrigger === this._input
+      || this._selectedLabelTooltipPointerTrigger === this._input) {
+      this._showSelectedLabelTooltip(this._input);
+    }
   }
 
   private _cancelLatestChipScroll(): void {
