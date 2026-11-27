@@ -73,6 +73,16 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 
 ---
 
+## DEVIATION-07 — `setSelectedValues` in single mode collapses to the first matching value
+
+- **Observation.** In the default `selection.mode: 'single'`, `setSelectedValues(values)` replaces selection through the engine `REPLACE_SELECTION_REQUEST` path. `normalizeKeys()` (`engine/selection-policy.ts`) breaks after the first eligible key when `!multiple`, so a call such as `setSelectedValues(['a','c'])` yields only `['a']`. In `multi` mode both eligible values are kept, capped by `maxSelections`.
+- **Evidence.** `packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts` (W1-P1.2) characterizes both modes; `W1-P1.2-DEVIATION-04-EVIDENCE.json`.
+- **Class:** Unknown (mode-dependent replace semantics; not previously asserted).
+- **Risk:** Forms integrations that push multiple values expecting single-mode to store them all will silently lose values. Adapters must not assume multi semantics in single mode.
+- **Disposition.** Characterized, **not** approved as normative. P1.2 (task 2, identity/selection matrix) determines whether this is intended replace semantics or a defect; if a defect, record a minimal reproducer and proposed disposition. No production change in W1-P2.
+
+---
+
 ## Summary
 
 | ID | Class | Blocking for later increments? | Owner increment |
@@ -83,3 +93,4 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 | DEVIATION-04 | Unknown | Yes — pin before selection extraction | P1.2 |
 | DEVIATION-05 | Internal (quirk) | No | P1.4 |
 | DEVIATION-06 | Internal | Guidance only | P1.2 |
+| DEVIATION-07 | Unknown (mode-dependent) | Characterized in P1.2; disposition pending | P1.2 |

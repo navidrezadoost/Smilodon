@@ -376,7 +376,7 @@ Total CONFIG IDs = **26**. Groups represented = 21 original + 5 granular = 26; e
 | PART-011 | `loading`, `loading-content`, `loading-icon`, `loading-message`, `loading-spinner` | 5 |
 | **Total** | | **19** |
 
-(7 single-token IDs × 1) + (2 multi-token IDs × 5) = 7 + 10 = **19 distinct part tokens** across **11 grouped IDs**. Candidate but not counted: `select-option.ts` `part="checkmark"` (line 460) and `part="option"` (line 336) are `SelectOption` internals; `checkmark` is flagged for P1.4, not certified here.
+(9 single-token IDs × 1) + (2 five-token groups × 5) = 9 + 10 = **19 distinct part tokens** across **11 grouped IDs** (PART-001..008 and PART-010 are single-token; PART-009 and PART-011 each hold five tokens). Candidate but not counted: `select-option.ts` `part="checkmark"` (line 460) and `part="option"` (line 336) are `SelectOption` internals; `checkmark` is flagged for P1.4, not certified here.
 
 ### 11.4 Attributes (11 IDs: 7 host-related + 4 shadow-DOM groups)
 

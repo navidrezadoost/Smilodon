@@ -44,7 +44,9 @@ def main() -> int:
             failures.append("R-06 bad targetIncrement for %s" % r["id"])
         if r.get("coverage") not in ("Existing", "Diagnostic", "Missing"):
             failures.append("R-06 bad coverage for %s" % r["id"])
-        if r.get("testId") not in ("verify", "unassigned"):
+        tid = r.get("testId")
+        is_ref = isinstance(tid, str) and ".spec." in tid
+        if tid not in ("verify", "unassigned") and not is_ref:
             failures.append("R-06 bad testId state for %s" % r["id"])
         locs = r.get("sourceLocators") or []
         if not locs:

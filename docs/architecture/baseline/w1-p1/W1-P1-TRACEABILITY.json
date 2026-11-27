@@ -152,8 +152,8 @@
       "id": "API-012",
       "behavior": "setSelectedValues async ordering",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#W1-P1.2 DEVIATION-04 setSelectedValues ordering (all modes)",
       "status": "Observed",
       "evidence": "select-selection; phase-1-search-pagination-characterization (DEVIATION-04)",
       "sourceLocators": [
@@ -487,8 +487,8 @@
       "id": "EVENT-001",
       "behavior": "select payload + order",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#asserts select ABSENCE on programmatic setSelectedValues",
       "status": "Observed",
       "evidence": "DEVIATION-04",
       "sourceLocators": [
@@ -598,8 +598,8 @@
       "id": "EVENT-006",
       "behavior": "error async shape",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure emits error, not change",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -617,8 +617,8 @@
       "id": "EVENT-007",
       "behavior": "change across emit paths",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#change payload/order across local+server paths",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
