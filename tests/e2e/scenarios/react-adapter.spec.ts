@@ -7,7 +7,9 @@ async function waitForReactReady(page: import('@playwright/test').Page) {
     return window.__smilodonReactCertification?.state()?.connected ?? false;
   })).toBe(true);
   const params = new URL(page.url()).searchParams;
-  if (params.get('scenario') !== 'issue-82-active-class' && params.get('protocol') !== 'legacy') {
+  if (params.get('scenario') !== 'issue-82-active-class'
+    && params.get('scenario') !== 'issue-119-custom-arrow'
+    && params.get('protocol') !== 'legacy') {
     await expect.poll(async () => (await readEvents(page)).some((event) => event.type === 'search'))
       .toBe(true);
   }
@@ -21,6 +23,44 @@ test.describe('React adapter browser certification @react-adapter', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(fixtureUrl);
     await waitForReactReady(page);
+  });
+
+  test('Issue #119: nested custom arrow clicks toggle once and report one callback per transition', async ({ page }) => {
+    await page.goto(`${fixtureUrl}?scenario=issue-119-custom-arrow`);
+    await waitForReactReady(page);
+    await page.evaluate(() => window.__smilodonReactCertification?.clearEvents());
+
+    const host = page.locator('enhanced-select');
+    const icon = host.locator('[slot="arrow"] [data-testid="issue119-custom-chevron"]');
+    const path = icon.locator('path');
+    await expect(icon).toBeAttached();
+    await expect(host).toHaveAttribute('data-custom-arrow', 'true');
+    await expect(host).not.toHaveAttribute('data-open');
+
+    await path.click();
+    await expect(host).toHaveAttribute('data-open', 'true');
+    await expect.poll(async () => (await readEvents(page)).filter((event) => event.type === 'open').length)
+      .toBe(1);
+    expect((await readEvents(page)).filter((event) => event.type === 'close')).toHaveLength(0);
+
+    await path.click();
+    await expect(host).not.toHaveAttribute('data-open');
+    await expect.poll(async () => (await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close']);
+    await page.waitForTimeout(200);
+    await expect(host).not.toHaveAttribute('data-open');
+    expect((await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close']);
+
+    await path.click();
+    await expect(host).toHaveAttribute('data-open', 'true');
+    await expect.poll(async () => (await readEvents(page)).filter((event) =>
+      event.type === 'open' || event.type === 'close').map((event) => event.type))
+      .toEqual(['open', 'close', 'open']);
+    expect((await readEvents(page)).filter((event) => event.type === 'change')).toHaveLength(0);
+    await expect(page.locator('#controlled-value')).toHaveText('apple');
   });
 
   test('renders through the React package with controlled value, callback mapping, and className', async ({ page }) => {

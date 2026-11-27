@@ -17,6 +17,10 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- **Custom slotted arrow double toggle ([#119](https://github.com/navidrezadoost/Smilodon/issues/119)):** Pointer events from slotted arrow content are now excluded from the input-container trigger using the composed event path, leaving arrow and clear-control activation with their own handlers.
+
 ## [1.20.0] - 2026-11-23
 
 Web release: Core `1.20.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. React Native is excluded because Android/iOS runtime qualification is incomplete.

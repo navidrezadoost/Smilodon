@@ -3517,6 +3517,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     
   }
 
+  private _isArrowOrClearControlEvent(event: Event): boolean {
+    const path = event.composedPath();
+
+    return (
+      (this._arrowContainer != null && path.includes(this._arrowContainer)) ||
+      (this._clearControl != null && path.includes(this._clearControl))
+    );
+  }
+
   private _attachEventListeners(): void {
     // Arrow click handler
     if (this._arrowContainer) {
@@ -3557,10 +3566,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       // Allow default so browser events (click) on newly opened options still fire.
       // e.stopPropagation(); // BUG: By stopping propagation here, the document click listener doesn't see it, which is fine for not closing it. But be very careful.
 
-      const target = e.target as HTMLElement | null;
       if (!this._config.enabled) return;
-      if (target && target.closest('.dropdown-arrow-container')) return;
-      if (target && target.closest('.clear-control-button')) return;
+      if (this._isArrowOrClearControlEvent(e)) return;
+      const target = e.target as HTMLElement | null;
       if (this._isPointerOnInputScrollbar(e)) {
         this._suppressNextOpenClick = true;
         return;
@@ -3617,7 +3625,6 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     });
 
     this._inputContainer.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement | null;
       const isHorizontalMultiMode = this._config.selection.mode === 'multi'
         && (this._config.multiSelectDisplay?.mode ?? 'wrap') === 'horizontal';
 
@@ -3627,7 +3634,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         return;
       }
 
-      if (target && target.closest('.dropdown-arrow-container, .clear-control-button')) {
+      if (this._isArrowOrClearControlEvent(e)) {
         this._suppressNextOpenClick = false;
         this._multiScrollDrag.moved = false;
         return;
