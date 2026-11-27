@@ -705,7 +705,8 @@ The component implements keyboard interaction paths including:
 | `PageUp` / `PageDown` | Jump 10 options up/down |
 | `Escape` | Close dropdown |
 | `Tab` | Close dropdown and move focus |
-| `Ctrl+A` (multi-select) | Select all options |
+| `Ctrl+A` / `Cmd+A` in a searchable input | Use the browser's native select-all-text behavior; selected options are unchanged |
+| `Ctrl+A` / `Cmd+A` (non-searchable multi-select) | Select all options |
 | Type characters | Type-ahead search |
 
 When an empty single-select opens, it has no active option and does not expose `aria-activedescendant` until keyboard navigation begins. Press `ArrowDown` to activate the first selectable option. If a value is already selected, opening the list activates that selected option.

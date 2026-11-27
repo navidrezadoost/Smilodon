@@ -5109,7 +5109,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         break;
       case 'a':
       case 'A':
-        if ((e.ctrlKey || e.metaKey) && this._config.selection.mode === 'multi') {
+        if ((e.ctrlKey || e.metaKey) && !e.altKey
+          && this._config.selection.mode === 'multi' && !this._config.searchable) {
           e.preventDefault();
           this._selectAll();
         }
