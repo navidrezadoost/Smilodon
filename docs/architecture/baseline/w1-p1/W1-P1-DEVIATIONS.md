@@ -119,6 +119,17 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 
 ---
 
+## DEVIATION-10 — clear-control reports `clearedSelection: true` while `required` preserves the selection
+
+- **Observation.** `_handleClearControlClick()` (`enhanced-select.ts:7229`) computes `hadSelection` **before** delegating to `clear()` and then reports `clearedSelection: shouldClearSelection && hadSelection`. In a `required` configuration, `clear()` does **not** empty the selection (Task 3 characterization), so the selection is preserved — yet the `clear` event and `onClear` callback still report `clearedSelection: true`. The paired `change` event (emitted by `clear()`) still carries the **preserved** selection. Result: three mutually inconsistent public signals for one interaction — the actual state (preserved), the `clear` event (claims cleared), and the `change` event (reports preserved).
+- **Also confirmed.** An **empty** clear-control activation is a genuine no-op: the button is `disabled` when there is nothing to clear, the `click` handler does not run, and **no** `clear`/`change` event or callback fires. (The `clearedSelection: false` branch of `_handleClearControlClick` is therefore only reachable when selection existed but `clearSelection` was configured off — not verified here.)
+- **Evidence.** `packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts` — T4-06 "required + selection: clear-control PRESERVES selection but clear.detail.clearedSelection is TRUE (DEVIATION-10)"; empty-activation and selection-only cases in the same block.
+- **Class:** Observed (event/state inconsistency; not previously asserted).
+- **Risk.** A consumer that treats `clear.detail.clearedSelection === true` as "the form is now empty" will be wrong under `required`, while a listener on `change` correctly sees the preserved value. Adapters must rely on the subsequent `change`/`getSelectedValues()` state, not on the `clear` payload's `clearedSelection` flag, to determine whether a clear-control activation actually emptied the selection.
+- **Disposition.** Characterized, **not** repaired. Whether `clearedSelection` should report the *attempted* vs *effected* clear (or whether `clear()` should refuse earlier under `required`) is a design decision deferred out of W1-P1; recorded as an ADR candidate. No production change.
+
+---
+
 ## Summary
 
 | ID | Class | Blocking for later increments? | Owner increment |
@@ -132,3 +143,4 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 | DEVIATION-07 | Unknown (mode-dependent) | Characterized in P1.2; disposition pending | P1.2 |
 | DEVIATION-08 | Observed (detached retention) | Recorded; pruning path confirmed in P1.2 Task 3 | P1.2 |
 | DEVIATION-09 | Observed (getter/validator inconsistency) | ADR candidate; validation design decision deferred past W1-P1 | P1.6 / forms |
+| DEVIATION-10 | Observed (clear-control payload/state inconsistency) | ADR candidate; clear-control reporting design decision deferred past W1-P1 | W1-P1.2 Task 4 recorded / forms |

@@ -279,7 +279,7 @@ Source: `defaultConfig` - `packages/core/src/config/global-config.ts:335-439`. D
 | CONFIG-023 | `expandable` | `{ enabled:false, collapsedHeight:'300px', expandedHeight:'500px', expandLabel:'Show more', collapseLabel:'Show less' }` | 406-412 | Documented |
 | CONFIG-024 | `styles` | `{ classNames:{} }` (grouped styles object; see CONFIG-025 for the leaf) | 389-391 | Documented |
 | CONFIG-025 | `styles.classNames` | `{}` (empty class->token map) | 390 | Documented |
-| CONFIG-026 | `callbacks` | `{}` (no default callbacks; `onChange`/`onSelect`/`onOpen`/`onClose`/`onError`/`onClear` are opt-in) | 421 | Documented |
+| CONFIG-026 | `callbacks` | `{}` (no default callbacks; `onChange`/`onSelect`/`onOpen`/`onClose`/`onError`/`onClear` are opt-in) | 421 | Documented — **Partial** (`w1-p1-2-t4-interaction-events`: onSelect/onChange/onClear argument shape+ordering characterized; onOpen/onClose/onSearch/onLoadMore/onError outstanding) |
 
 > Data-loading (`dataLoading`) config is validated by `validateDataLoadingConfig` and is **not** part of `defaultConfig`; `_dataLoadingConfig` seeds from `LEGACY_DATA_LOADING_CONFIG = { protocol:'legacy', searchMode:'local', paginationMode:'page', firstPage:1 }`. Characterize in P1.5 (not in the CONFIG-001..026 defaults inventory).
 

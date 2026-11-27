@@ -26,9 +26,9 @@
     },
     "byCoverage": {
       "Existing": 38,
-      "Diagnostic": 43,
-      "Partial": 14,
-      "Missing": 5
+      "Partial": 17,
+      "Diagnostic": 41,
+      "Missing": 4
     },
     "byTargetIncrement": {
       "P1.1": 4,
@@ -60,7 +60,8 @@
     "deviationsReferenced": [
       "DEVIATION-07",
       "DEVIATION-08",
-      "DEVIATION-09"
+      "DEVIATION-09",
+      "DEVIATION-10"
     ]
   },
   "duplicateIds": 0,
@@ -198,7 +199,7 @@
       "behavior": "clear emitted-event set",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#clear() empty/nonempty/multi/required/idempotent + change event",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#T4-06+T4-09 clear-control activation event set and programmatic clear() change-only",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -207,7 +208,7 @@
           "lines": "6697-6706"
         }
       ],
-      "coverageNote": "Programmatic clear() characterized incl required preservation; clear-control interaction & chip-remove ordering remain for Task 4."
+      "coverageNote": "Programmatic clear() (change-only) and clear-control activation (change->clear, incl. DEVIATION-10 preservation case) characterized. Remaining: clear() during active search / acknowledged data-loading paths."
     },
     {
       "id": "API-014",
@@ -529,7 +530,7 @@
       "behavior": "select payload + order",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#select ABSENT on programmatic setSelectedValues (user-selection payload/order NOT yet covered)",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#T4-01..T4-05 exact select payload + select->change->onChange->onSelect order (pointer & keyboard select/deselect)",
       "status": "Observed",
       "evidence": "DEVIATION-04",
       "sourceLocators": [
@@ -550,7 +551,7 @@
           "lines": "40"
         }
       ],
-      "coverageNote": "Programmatic select-absence only; user-selection payload/order remains for P1.2 Task 4."
+      "coverageNote": "Interaction pointer+keyboard select/deselect payload+order now characterized (exact select.detail {item,index,value,label,selected,multi}; change before onSelect). Remaining: select emitted from _selectAll (Ctrl+A) and keyboard range (Shift+arrow) paths remain uncharacterized."
     },
     {
       "id": "EVENT-002",
@@ -661,7 +662,7 @@
       "behavior": "change across emit paths",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#change payload/order on programmatic local+server paths",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#change payload+order on interaction select/deselect, chip/option removal, clear-control and programmatic paths",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -678,7 +679,7 @@
           "lines": "58"
         }
       ],
-      "coverageNote": "Programmatic local/server paths only; interaction-driven change paths remain for P1.2 Task 4."
+      "coverageNote": "Interaction paths (select/deselect/removal/clear-control) + programmatic local replace/clear now characterized; change.detail = {selectedItems, selectedValues, selectedIndices}, values in selection-insertion order. Remaining: acknowledged/server change path."
     },
     {
       "id": "EVENT-008",
@@ -703,8 +704,8 @@
       "id": "EVENT-009",
       "behavior": "remove identity + follow-on",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#remove identity+follow-on: chip-remove and SelectOption option-remove (change->onChange->remove, no select)",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -716,16 +717,17 @@
           "file": "packages/core/src/types.ts",
           "lines": "64"
         }
-      ]
+      ],
+      "coverageNote": "Both user removal surfaces characterized black-box: order change->onChange->remove (no select/onSelect); remove.detail={item,index} with index = source registry index. Remaining: post-removal focus restore/animation follow-on (P1.4 chip-renderer)."
     },
     {
       "id": "EVENT-010",
       "behavior": "clear payload + follow-on",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#clear payload+follow-on: clear-control change->onChange->clear->onClear; empty-disabled; required-preservation",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "DEVIATION-10",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -735,7 +737,8 @@
           "file": "packages/core/src/types.ts",
           "lines": "65"
         }
-      ]
+      ],
+      "coverageNote": "Clear-control activation characterized: change->onChange->clear->onClear; empty activation is disabled/no-event; required PRESERVES selection yet reports clearedSelection=true (DEVIATION-10). Remaining: combined clearSelection+clearSearch with an active search query; post-clear focus follow-on."
     },
     {
       "id": "EVENT-011",
@@ -1826,8 +1829,8 @@
       "id": "CONFIG-026",
       "behavior": "callbacks",
       "targetIncrement": "P1.4",
-      "coverage": "Missing",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t4-interaction-events.spec.ts#onSelect/onChange/onClear argument shape + ordering across interaction and programmatic paths",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1835,7 +1838,8 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "421"
         }
-      ]
+      ],
+      "coverageNote": "onSelect (receives select.detail incl. multi), onChange (items, values) and onClear (clearedSelection/clearedSearch) characterized for interaction + programmatic paths. Remaining callbacks: onOpen, onClose, onSearch, onLoadMore, onError."
     }
   ]
 }
