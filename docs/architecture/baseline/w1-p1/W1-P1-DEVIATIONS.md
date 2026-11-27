@@ -102,9 +102,20 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 - **Class:** Observed (not previously asserted).
 - **Risk.** A consumer that removes an option from `setItems` expecting its selection to be dropped will instead keep a "phantom" selected value that is not visible in the list. Forms bindings must reconcile removed values explicitly (e.g. `setSelectedValues`), not rely on `setItems` to prune selection.
 - **Refined (W1-P1.2-T2-R).** Reattachment is **automatic by key**, not by object reference: re-adding an item with the same `key`/value as a *new object instance* re-attaches the existing selection without any explicit reselection, and `getSelectedItems()` then returns the **new** instance (not the stale original). This upgrade is observable through public getters and the rendered `aria-selected` state.
+- **Key-based reattachment (W1-P1.2 Task 3).** Reattachment is matched by the item **key** (default key = `id`). Re-adding the *same* key as a new instance reattaches to the new instance; re-adding the same *value* under a **different** key does **not** migrate the selection — the old key remains cached/detached and the new record is not selected. Clearing first prevents reattachment entirely.
 - **Duplicate-value note.** With two distinct keys sharing one value, identity is per-record: multi mode selects BOTH records (`getSelectedValues()` == `['dup','dup']`), single mode selects the first in registry order. Value equality alone is not the identity unit; the registry key is.
 - **Evidence (T2-R).** `packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts` (F01/F02/F03).
 - **Disposition.** Characterized; recorded for P1.2 Task 3 (state/clear API matrix) to confirm whether `clear()`/`setSelectedValues([])` is the intended pruning path. No production change in W1-P2.
+
+---
+
+## DEVIATION-09 — detached selection is visible to getters but not to validate()
+
+- **Observation.** After a selected item is detached (removed from loaded data; see DEVIATION-08), `getSelectedValues()` and `getSelectedItems()` still report the value, but `validate()` under `required` returns **false**, because `validate()` inspects the live `selectedIndices` projection which excludes the detached record. The result is an internally inconsistent public view: the component both "has" and "lacks" the selection depending on which public API is consulted.
+- **Evidence.** `packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts` ("required + detached-selected: getters report the value but validate() returns false").
+- **Class:** Observed (getter/validator inconsistency; not previously asserted).
+- **Risk.** A required form can show a selected value to the user (input displays the label) yet fail validation, or vice-versa, leading to confusing submission states. Adapters that derive form validity from `validate()` must reconcile detached selections explicitly (prune via `clear()`/`setSelectedValues([])` when not required, or re-add the item).
+- **Disposition.** Characterized, **not** repaired. Whether detached selections should count toward `required` validity is a design decision deferred out of W1-P1; recorded as an ADR candidate for the eventual validation/reporting work. No production change in W1-P2.
 
 ---
 
@@ -120,3 +131,4 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 | DEVIATION-06 | Internal | Guidance only | P1.2 |
 | DEVIATION-07 | Unknown (mode-dependent) | Characterized in P1.2; disposition pending | P1.2 |
 | DEVIATION-08 | Observed (detached retention) | Recorded; pruning path confirmed in P1.2 Task 3 | P1.2 |
+| DEVIATION-09 | Observed (getter/validator inconsistency) | ADR candidate; validation design decision deferred past W1-P1 | P1.6 / forms |

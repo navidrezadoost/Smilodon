@@ -26,8 +26,8 @@
     },
     "byCoverage": {
       "Existing": 38,
-      "Diagnostic": 48,
-      "Partial": 9,
+      "Diagnostic": 43,
+      "Partial": 14,
       "Missing": 5
     },
     "byTargetIncrement": {
@@ -59,7 +59,8 @@
     ],
     "deviationsReferenced": [
       "DEVIATION-07",
-      "DEVIATION-08"
+      "DEVIATION-08",
+      "DEVIATION-09"
     ]
   },
   "duplicateIds": 0,
@@ -196,8 +197,8 @@
       "id": "API-013",
       "behavior": "clear emitted-event set",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#clear() empty/nonempty/multi/required/idempotent + change event",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -205,7 +206,8 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6697-6706"
         }
-      ]
+      ],
+      "coverageNote": "Programmatic clear() characterized incl required preservation; clear-control interaction & chip-remove ordering remain for Task 4."
     },
     {
       "id": "API-014",
@@ -305,8 +307,8 @@
       "id": "API-040",
       "behavior": "setError",
       "targetIncrement": "P1.3",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#setError via validate(required+empty)",
       "status": "Observed",
       "evidence": "partial",
       "sourceLocators": [
@@ -314,14 +316,15 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "7281-7290"
         }
-      ]
+      ],
+      "coverageNote": "Error state surfaced through validate(); broader error API/cause in P1.5."
     },
     {
       "id": "API-041",
       "behavior": "clearError",
       "targetIncrement": "P1.3",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate() success path clears prior error",
       "status": "Observed",
       "evidence": "partial",
       "sourceLocators": [
@@ -329,14 +332,15 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "7292-7300"
         }
-      ]
+      ],
+      "coverageNote": "clearError observed via validate(true) path; full error API in P1.5."
     },
     {
       "id": "API-042",
       "behavior": "setRequired",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#setRequired before/after selection; preservation",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -344,14 +348,15 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "7302-7313"
         }
-      ]
+      ],
+      "coverageNote": "setRequired enable/disable + preservation characterized; interaction effects in Task 4."
     },
     {
       "id": "API-043",
       "behavior": "validate",
       "targetIncrement": "P1.2",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts#validate() matrix: empty/valid/required-empty/detached/disabled",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -359,7 +364,8 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "7315-7325"
         }
-      ]
+      ],
+      "coverageNote": "validate() matrix characterized incl DEVIATION-09 inconsistency; full validation contract deferred."
     },
     {
       "id": "API-050",
@@ -1441,7 +1447,7 @@
       "behavior": "selection.allowDeselect",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "verify",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1449,6 +1455,10 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "338"
         }
+      ],
+      "coverageNote": "allowDeselect affects programmatic replace-empty only under required/engine policy; characterized in Task 3.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts"
       ]
     },
     {
@@ -1713,7 +1723,7 @@
       "behavior": "limitations",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "verify",
+      "testId": "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts",
       "status": "Documented",
       "evidence": "-",
       "sourceLocators": [
@@ -1721,6 +1731,10 @@
           "file": "packages/core/src/config/global-config.ts",
           "lines": "430-433"
         }
+      ],
+      "coverageNote": "autoMitigateRuntimeModeSwitch=true clears selection on mode switch; false does not (Task 3).",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t3-state-validation-clear.spec.ts"
       ]
     },
     {
