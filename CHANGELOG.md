@@ -24,6 +24,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ### Fixed
 
+- **Space-key editing in searchable selects ([#123](https://github.com/navidrezadoost/Smilodon/issues/123)):** Space now inserts native text into searchable inputs and filters through the normal input event, while Enter and non-searchable Space retain option activation.
 - **Search input select-all and cleared-query recovery ([#122](https://github.com/navidrezadoost/Smilodon/issues/122)):** Ctrl+A/Cmd+A in a searchable input now keeps native text-selection behavior and does not mutate multi-select values. Deleting the selected query continues through the ordinary input/search pipeline so matching options and the empty state update immediately. Non-searchable multi-select retains its select-all shortcut.
 - **Custom slotted arrow double toggle ([#119](https://github.com/navidrezadoost/Smilodon/issues/119)):** Pointer events from slotted arrow content are now excluded from the input-container trigger using the composed event path, leaving arrow and clear-control activation with their own handlers.
 

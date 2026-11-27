@@ -705,6 +705,9 @@ The component implements keyboard interaction paths including:
 | `PageUp` / `PageDown` | Jump 10 options up/down |
 | `Escape` | Close dropdown |
 | `Tab` | Close dropdown and move focus |
+| `Space` in a searchable input | Insert a space at the caret and update search through the native input event |
+| `Space` in a non-searchable select | Activate the active option |
+| `Enter` | Activate the active option |
 | `Ctrl+A` / `Cmd+A` in a searchable input | Use the browser's native select-all-text behavior; selected options are unchanged |
 | `Ctrl+A` / `Cmd+A` (non-searchable multi-select) | Select all options |
 | Type characters | Type-ahead search |

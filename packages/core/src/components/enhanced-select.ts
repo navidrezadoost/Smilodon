@@ -5087,6 +5087,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         break;
       case 'Enter':
       case ' ':
+        if (e.key === ' ' && this._config.searchable && e.target === this._input) {
+          break;
+        }
         e.preventDefault();
         if (!this._state.isOpen) {
           this._handleOpen();
