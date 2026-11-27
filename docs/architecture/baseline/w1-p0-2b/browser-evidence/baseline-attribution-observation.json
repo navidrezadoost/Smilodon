@@ -1,0 +1,41 @@
+{
+  "browser": "Chrome 133.0.6943.126 (diagnostic only)",
+  "sourceCommit": "895f0384744e7ec9d5afeb32fed7b08a4aed961f",
+  "observations": {
+    "afterConstruction": {
+      "scrollListeners": 1,
+      "inputContent": { "callbackId": 2, "passive": true, "capture": false, "signal": false },
+      "optionsContainer": 0
+    },
+    "connected": {
+      "scrollListeners": 1,
+      "inputContentCallbackId": 2,
+      "windowTooltipCallbackId": 2,
+      "windowTooltip": { "capture": true, "passive": true, "signal": true }
+    },
+    "connectedWithGuardedVirtualizer": {
+      "scrollListeners": 2,
+      "inputContentCallbackId": 2,
+      "optionsContainerCallbackId": 3
+    },
+    "disconnected": {
+      "scrollListeners": 1,
+      "inputContentCallbackId": 2,
+      "optionsContainer": 0,
+      "windowTooltipSignalAborted": true
+    },
+    "reconnectedWithGuardedVirtualizer": {
+      "scrollListeners": 2,
+      "inputContentCallbackId": 2,
+      "optionsContainerCallbackId": 3
+    }
+  },
+  "sourceAttribution": {
+    "tooltipRegistration": "EnhancedSelect._attachEventListeners at enhanced-select.ts:3638",
+    "guardedRegistration": "EnhancedSelect._ensureGuardedVirtualizer at enhanced-select.ts:7459",
+    "temporarySelectedScroll": "separate callback in _performOpenSelectedScroll at enhanced-select.ts:4563; disabled in the isolated ownership scenario",
+    "connectionSignal": "window tooltip callback is registered with AbortSignal and aborts on disconnect",
+    "selectedCallbackCleanup": "virtualizer uses explicit removeEventListener in _destroyGuardedVirtualizer at enhanced-select.ts:8072"
+  },
+  "note": "Baseline observations are diagnostic instrumentation, not pinned-browser certification. The post-fix ownership test captures registration stacks and is saved separately."
+}

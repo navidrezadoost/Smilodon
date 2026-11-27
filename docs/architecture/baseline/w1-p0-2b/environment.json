@@ -1,0 +1,18 @@
+{
+  "node": "v20.20.2",
+  "npm": "10.8.2",
+  "playwright": "1.59.1",
+  "playwrightChromiumRevision": "1217",
+  "playwrightPinnedBrowserVersion": "147.0.7727.15",
+  "packageLockSha256": "5be703e3ae683e83bc7167ca08ea7339961824a33213ac3495a1011356331d2c",
+  "diagnosticBrowser": {
+    "version": "133.0.6943.126",
+    "path": "/opt/google/chrome/chrome",
+    "certification": false
+  },
+  "pinnedBrowserInstall": {
+    "status": "failed",
+    "reason": "Playwright CDN returned HTTP 403 AccessDenied",
+    "fallback": "GitHub Actions workflow dispatch at implementation commit"
+  }
+}
