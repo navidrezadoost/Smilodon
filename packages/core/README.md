@@ -939,6 +939,39 @@ enhanced-select {
 }
 ```
 
+#### Multi-select chip animations
+
+Core exposes separate entry and opt-in exit animation tokens. The legacy
+`--select-badge-animation` continues to control entry when
+`--select-badge-enter-animation` is unset. Exit defaults to `none`, so the
+selected value is removed immediately unless an exit animation is configured.
+
+```css
+enhanced-select {
+  --select-badge-enter-animation: badgeEnter 180ms ease-out both;
+  --select-badge-exit-animation: badgeExit 140ms ease-in both;
+}
+```
+
+`badgeEnter` and `badgeExit` are built-in keyframes. Arbitrary keyframe names
+declared in the consuming document cannot be resolved from inside the
+component's Shadow DOM through a custom property. Use the exposed parts for
+consumer-defined keyframes:
+
+```css
+@keyframes app-chip-exit {
+  to { opacity: 0; transform: translateY(-6px) scale(0.96); }
+}
+
+enhanced-select::part(chip-exiting) {
+  animation: app-chip-exit 140ms ease-in both;
+}
+```
+
+Selection state and events update immediately. The exiting chip remains only
+for its visual animation and is inert, hidden from assistive technology, and
+removed on animation completion (or immediately for reduced motion).
+
 **Complete CSS Variables Reference**
 
 The canonical styling inventory now lives in:

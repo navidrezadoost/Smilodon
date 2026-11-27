@@ -495,10 +495,43 @@ Useful variables:
 Motion-related chip hooks are also available:
 
 - `--select-badge-animation`
+- `--select-badge-enter-animation` (falls back to the legacy entry token)
+- `--select-badge-exit-animation` (defaults to `none`)
+- `--select-badge-exit-from-opacity` / `--select-badge-exit-to-opacity`
+- `--select-badge-exit-from-transform` / `--select-badge-exit-to-transform`
 - `--select-badge-hover-transform`
 - `--select-badge-active-transform`
 - `--select-badge-remove-hover-transform`
 - `--select-badge-remove-active-transform`
+
+Selection updates are immediate even when a chip exit is enabled. Core temporarily
+retains only the visual chip node; it is inert, hidden from assistive technology,
+and removed when all exit animations complete. `badgeEnter` and `badgeExit` are
+built-in keyframes. Custom keyframe names declared in the application document do
+not resolve inside the component's Shadow DOM when passed through an internal CSS
+variable. Use the exposed parts for those keyframes:
+
+```css
+@keyframes app-chip-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes app-chip-exit {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+enhanced-select::part(chip) {
+  animation: app-chip-enter 180ms ease-out both;
+}
+enhanced-select::part(chip-exiting) {
+  animation: app-chip-exit 140ms ease-in both;
+}
+```
+
+The entry animation applies only when Core creates a new selected chip. Existing
+keyed chips keep their DOM nodes and do not replay entry motion on unrelated
+updates. Exit defaults to immediate removal and also becomes immediate under a
+reduced-motion preference.
 
 You can also replace the default chip remove mark with custom markup:
 

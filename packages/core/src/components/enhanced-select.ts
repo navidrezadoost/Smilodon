@@ -368,6 +368,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _rangeAnchorKey: SelectKey | null = null;
   /** Chip identity is tracked independently of dropdown option positions. */
   private _lastRenderedChipKeys: Set<SelectKey> | null = null;
+  /** Stable presentation nodes keyed by the engine's selected-item identity. */
+  private _chipElements = new Map<SelectKey, HTMLSpanElement>();
+  private _chipExitStates = new Map<SelectKey, {
+    badge: HTMLSpanElement;
+    animations: Animation[];
+    timer: number;
+  }>();
   private _latestChipScrollGeneration = 0;
   private _latestChipScrollFrame: number | null = null;
   private _optionRenderer?: OptionRendererFn;
@@ -640,6 +647,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   disconnectedCallback(): void {
     this._cancelOpenSelectedScroll();
     this._cancelLatestChipScroll();
+    this._clearChipPresentation();
     this._cancelBusyPresentation();
     if (this._dataRequestCoordinator) {
       const actions = this._dataRequestCoordinator.disconnect();
@@ -2140,6 +2148,10 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         --select-transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
         --select-transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
         --select-badge-animation: badgeEnter 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        --select-badge-exit-from-opacity: 1;
+        --select-badge-exit-from-transform: scale(1) translateY(0);
+        --select-badge-exit-to-opacity: 0;
+        --select-badge-exit-to-transform: scale(0.8) translateY(-4px);
         --select-badge-enter-from-opacity: 0;
         --select-badge-enter-from-transform: scale(0.8) translateY(-4px);
         --select-badge-enter-to-opacity: 1;
@@ -2341,7 +2353,13 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
           transform var(--select-transition-bounce),
           box-shadow var(--select-transition-fast),
           background var(--select-transition-fast);
-        animation: var(--select-badge-animation);
+        animation: var(--select-badge-enter-animation, var(--select-badge-animation));
+      }
+
+      .selection-badge[data-motion="exiting"] {
+        animation: var(--select-badge-exit-animation, none);
+        pointer-events: none;
+        transition: none;
       }
       
       @keyframes badgeEnter {
@@ -2352,6 +2370,17 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         100% {
           opacity: var(--select-badge-enter-to-opacity);
           transform: var(--select-badge-enter-to-transform);
+        }
+      }
+
+      @keyframes badgeExit {
+        0% {
+          opacity: var(--select-badge-exit-from-opacity, 1);
+          transform: var(--select-badge-exit-from-transform, scale(1) translateY(0));
+        }
+        100% {
+          opacity: var(--select-badge-exit-to-opacity, 0);
+          transform: var(--select-badge-exit-to-transform, scale(0.8) translateY(-4px));
         }
       }
       
@@ -4203,7 +4232,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (typeof ResizeObserver === 'undefined') return;
     const hasSingleSelection = this._config.selection.mode === 'single'
       && this._getSelectedEntries().length > 0;
-    const chipLabels = this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label');
+    const chipLabels = this._getActiveChipBadges()
+      .map((badge) => badge.querySelector<HTMLElement>('.selection-badge-label'))
+      .filter((label): label is HTMLElement => label !== null);
     if (!hasSingleSelection && chipLabels.length === 0) {
       this._selectedLabelTooltipResizeObserver?.disconnect();
       this._selectedLabelTooltipResizeObserver = null;
@@ -4228,7 +4259,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   };
 
   private _refreshSelectedLabelTooltipMeasurements(): void {
-    this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label').forEach((label) => {
+    this._getActiveChipBadges().forEach((badge) => {
+      const label = badge.querySelector<HTMLElement>('.selection-badge-label');
+      if (!label) return;
       label.tabIndex = this._isSelectedLabelTruncated(label) ? 0 : -1;
     });
     const currentTrigger = this._selectedLabelTooltipTrigger;
@@ -5626,7 +5659,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       : null;
     const hadFocusedChipRemove = focusedBadge !== null;
     const focusedBadgeIndex = focusedBadge
-      ? Array.from(this._inputContent.querySelectorAll('.selection-badge')).indexOf(focusedBadge)
+      ? this._getActiveChipBadges().indexOf(focusedBadge as HTMLElement)
       : -1;
     const option = this._itemRegistry.keyToRecord.has(entry.key)
       ? this._getOptionElementByIndex(entry.index)
@@ -5656,7 +5689,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._emitChange();
 
     if (hadFocusedChipRemove && this.isConnected) {
-      const removeButtons = this._inputContent.querySelectorAll<HTMLButtonElement>('[part="chip-remove"]');
+      const removeButtons = this._getActiveChipRemoveButtons();
       if (removeButtons.length > 0) {
         const nextFocusIndex = Math.min(Math.max(focusedBadgeIndex, 0), removeButtons.length - 1);
         removeButtons[nextFocusIndex].focus();
@@ -5671,27 +5704,247 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._emit('remove', { item: config?.item ?? item, index: entry.index });
   }
 
+  private _getActiveChipBadges(): HTMLSpanElement[] {
+    return Array.from(this._inputContent.querySelectorAll<HTMLSpanElement>('.selection-badge'))
+      .filter((badge) => badge.dataset.motion !== 'exiting' && !badge.hasAttribute('inert'));
+  }
+
+  private _getActiveChipRemoveButtons(): HTMLButtonElement[] {
+    return this._getActiveChipBadges()
+      .map((badge) => badge.querySelector<HTMLButtonElement>('[part="chip-remove"]'))
+      .filter((button): button is HTMLButtonElement => button !== null && !button.disabled);
+  }
+
+  private _clearChipPresentation(): void {
+    const badges = new Set(this._chipElements.values());
+    const tooltipTriggers = [
+      this._selectedLabelTooltipTrigger,
+      this._selectedLabelTooltipPointerTrigger,
+      this._selectedLabelTooltipFocusTrigger,
+      this._selectedLabelTooltipDismissedTrigger,
+    ];
+    if (tooltipTriggers.some((trigger) => trigger !== null
+      && Array.from(badges).some((badge) => badge.contains(trigger)))) {
+      this._hideSelectedLabelTooltip(true);
+    }
+    for (const [key, state] of this._chipExitStates) {
+      window.clearTimeout(state.timer);
+      this._chipExitStates.delete(key);
+      state.animations.forEach((animation) => animation.cancel());
+    }
+    for (const badge of this._chipElements.values()) {
+      badge.removeAttribute('inert');
+      badge.remove();
+    }
+    this._chipExitStates.clear();
+    this._chipElements.clear();
+  }
+
+  private _cancelChipExit(key: SelectKey, badge: HTMLSpanElement): void {
+    const state = this._chipExitStates.get(key);
+    if (!state || state.badge !== badge) return;
+    window.clearTimeout(state.timer);
+    this._chipExitStates.delete(key);
+    state.animations.forEach((animation) => animation.cancel());
+    badge.removeAttribute('data-motion');
+    badge.removeAttribute('aria-hidden');
+    badge.removeAttribute('inert');
+    badge.setAttribute('part', 'chip');
+    const removeButton = badge.querySelector<HTMLButtonElement>('[part="chip-remove"]');
+    if (removeButton) removeButton.disabled = false;
+  }
+
+  private _finishChipExit(key: SelectKey, expected: HTMLSpanElement): void {
+    const state = this._chipExitStates.get(key);
+    if (!state || state.badge !== expected) return;
+    window.clearTimeout(state.timer);
+    this._chipExitStates.delete(key);
+    state.animations.forEach((animation) => {
+      if (animation.playState !== 'finished') animation.cancel();
+    });
+    this._chipElements.delete(key);
+    expected.remove();
+    if (this.isConnected) {
+      this._observeSelectedLabelTooltipTargets();
+      this._refreshSelectedLabelTooltipMeasurements();
+    }
+  }
+
+  private _moveFocusOutOfChip(badge: HTMLSpanElement): void {
+    const activeElement = this._shadow.activeElement;
+    if (!(activeElement instanceof HTMLElement) || !badge.contains(activeElement)) return;
+    const badges = this._getActiveChipBadges().filter((candidate) => candidate !== badge);
+    const oldIndex = Array.from(this._inputContent.querySelectorAll('.selection-badge')).indexOf(badge);
+    const buttons = badges
+      .map((candidate) => candidate.querySelector<HTMLButtonElement>('[part="chip-remove"]'))
+      .filter((button): button is HTMLButtonElement => button !== null && !button.disabled);
+    const next = buttons[Math.min(Math.max(oldIndex, 0), buttons.length - 1)];
+    if (next) next.focus({ preventScroll: true });
+    else this._input.focus({ preventScroll: true });
+  }
+
+  private _beginChipExit(key: SelectKey, badge: HTMLSpanElement): void {
+    if (this._chipExitStates.has(key)) return;
+    this._moveFocusOutOfChip(badge);
+    const label = badge.querySelector<HTMLElement>('.selection-badge-label');
+    if (label) {
+      this._removeSelectedLabelTooltipDescription(label);
+      label.tabIndex = -1;
+      if (this._selectedLabelTooltipPointerTrigger === label) this._selectedLabelTooltipPointerTrigger = null;
+      if (this._selectedLabelTooltipFocusTrigger === label) this._selectedLabelTooltipFocusTrigger = null;
+      if (this._selectedLabelTooltipDismissedTrigger === label) this._selectedLabelTooltipDismissedTrigger = null;
+      if (this._selectedLabelTooltipTrigger === label) this._hideSelectedLabelTooltip();
+    }
+
+    badge.dataset.motion = 'exiting';
+    badge.setAttribute('aria-hidden', 'true');
+    badge.setAttribute('inert', '');
+    badge.setAttribute('part', 'chip-exiting');
+    const removeButton = badge.querySelector<HTMLButtonElement>('[part="chip-remove"]');
+    if (removeButton) removeButton.disabled = true;
+    // Force style resolution after the exiting part is exposed. This also
+    // verifies that a consumer keyframe is actually available across Shadow DOM.
+    badge.getBoundingClientRect();
+    const animations = (typeof badge.getAnimations === 'function' ? badge.getAnimations() : []).filter((animation) => {
+      const cssAnimation = animation as CSSAnimation;
+      return typeof cssAnimation.animationName === 'string'
+        && cssAnimation.animationName !== 'none'
+        && animation.playState !== 'idle';
+    });
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (reducedMotion || animations.length === 0) {
+      badge.removeAttribute('data-motion');
+      this._chipExitStates.set(key, { badge, animations: [], timer: 0 });
+      this._finishChipExit(key, badge);
+      return;
+    }
+
+    const endTimes = animations.map((animation) => Number(animation.effect?.getComputedTiming().endTime ?? 0));
+    const maxEndTime = Math.max(0, ...endTimes);
+    const fallbackDelay = Math.min(Number.isFinite(maxEndTime) ? maxEndTime + 100 : 1000, 5000);
+    const timer = window.setTimeout(() => this._finishChipExit(key, badge), fallbackDelay);
+    this._chipExitStates.set(key, { badge, animations, timer });
+    void Promise.allSettled(animations.map((animation) => animation.finished))
+      .then(() => this._finishChipExit(key, badge));
+  }
+
+  private _createChip(key: SelectKey): HTMLSpanElement {
+    const badge = document.createElement('span');
+    badge.className = 'selection-badge';
+    badge.setAttribute('part', 'chip');
+    const label = document.createElement('span');
+    label.className = 'selection-badge-label';
+    label.setAttribute('part', 'chip-label');
+    this._selectedLabelKeys.set(label, key);
+    badge.appendChild(label);
+    this._chipElements.set(key, badge);
+    return badge;
+  }
+
+  private _updateChip(key: SelectKey, index: number, item: unknown, badge: HTMLSpanElement): void {
+    const getLabel = this._config.serverSide.getLabelFromItem || ((value) => (value as any)?.label ?? String(value));
+    const labelText = getLabel(item);
+    badge.className = 'selection-badge';
+    if (this._config.styles.classNames?.badge) {
+      badge.classList.add(...this._config.styles.classNames.badge.split(' ').filter(Boolean));
+    }
+    badge.setAttribute('part', 'chip');
+    badge.removeAttribute('aria-hidden');
+    badge.removeAttribute('inert');
+    badge.removeAttribute('data-motion');
+    const label = badge.querySelector<HTMLElement>('.selection-badge-label')!;
+    label.className = 'selection-badge-label';
+    if (this._config.styles.classNames?.badgeLabel) {
+      label.classList.add(...this._config.styles.classNames.badgeLabel.split(' ').filter(Boolean));
+    }
+    label.textContent = labelText;
+    this._selectedLabelKeys.set(label, key);
+
+    const shouldShowRemove = this._config.selection.showRemoveButton !== false;
+    let removeButton = badge.querySelector<HTMLButtonElement>('[part="chip-remove"]');
+    if (!shouldShowRemove) {
+      removeButton?.remove();
+      return;
+    }
+    if (!removeButton) {
+      removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.addEventListener('pointerdown', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+      });
+      removeButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        this._handleOptionRemove(index, key);
+      });
+      const removeIcon = document.createElement('span');
+      removeIcon.className = 'badge-remove-icon';
+      removeIcon.setAttribute('part', 'chip-remove-icon');
+      removeButton.appendChild(removeIcon);
+      badge.appendChild(removeButton);
+    }
+    removeButton.className = 'badge-remove';
+    if (this._config.styles.classNames?.removeButton) {
+      removeButton.classList.add(...this._config.styles.classNames.removeButton.split(' ').filter(Boolean));
+    }
+    if (this._config.styles.classNames?.badgeRemove) {
+      removeButton.classList.add(...this._config.styles.classNames.badgeRemove.split(' ').filter(Boolean));
+    }
+    removeButton.setAttribute('part', 'chip-remove');
+    removeButton.setAttribute('aria-label', `Remove ${labelText}`);
+    removeButton.disabled = false;
+    const removeIcon = removeButton.querySelector<HTMLElement>('[part="chip-remove-icon"]')!;
+    removeIcon.className = 'badge-remove-icon';
+    if (this._config.styles.classNames?.badgeRemoveIcon) {
+      removeIcon.classList.add(...this._config.styles.classNames.badgeRemoveIcon.split(' ').filter(Boolean));
+    }
+    this._setIconContent(removeIcon, this._config.selection.removeButtonIcon, '×');
+  }
+
+  private _renderSelectedChips(entries: { key: SelectKey; index: number; item: unknown }[]): void {
+    const selectedKeys = new Set(entries.map(({ key }) => key));
+    for (const { key, index, item } of entries) {
+      let badge = this._chipElements.get(key);
+      if (!badge) badge = this._createChip(key);
+      this._cancelChipExit(key, badge);
+      this._updateChip(key, index, item, badge);
+    }
+
+    for (const [key, badge] of this._chipElements) {
+      if (!selectedKeys.has(key)) this._beginChipExit(key, badge);
+    }
+
+    // Do not move chips merely because another chip entered its exit period.
+    // That keeps the exiting chip in its original layout slot while the active
+    // sequence remains correct. Reorder only when selected-key order changed.
+    const desiredBadges = entries
+      .map(({ key }) => this._chipElements.get(key))
+      .filter((badge): badge is HTMLSpanElement => badge !== undefined);
+    const currentBadges = this._getActiveChipBadges();
+    const orderChanged = desiredBadges.length !== currentBadges.length
+      || desiredBadges.some((badge, index) => badge !== currentBadges[index]);
+    if (orderChanged) {
+      let nextSibling: Node = this._input;
+      for (let index = desiredBadges.length - 1; index >= 0; index -= 1) {
+        const badge = desiredBadges[index];
+        if (badge.nextSibling !== nextSibling) this._inputContent.insertBefore(badge, nextSibling);
+        nextSibling = badge;
+      }
+    }
+  }
+
   private _updateInputDisplay(): void {
     const selectedEntries = this._getSelectedEntries();
     const focusedElement = this._shadow.activeElement as HTMLElement | null;
     const focusedSelectedKey = focusedElement?.classList.contains('selection-badge-label')
       ? this._selectedLabelKeys.get(focusedElement) ?? null
       : null;
-    const focusedBadge = focusedSelectedKey !== null
-      ? focusedElement?.closest('.selection-badge') ?? null
+    const focusedBadge = focusedElement?.closest('.selection-badge') as HTMLSpanElement | null;
+    const focusedChipKey = focusedBadge
+      ? Array.from(this._chipElements.entries()).find(([, badge]) => badge === focusedBadge)?.[0] ?? null
       : null;
-    const focusedBadgeIndex = focusedBadge
-      ? Array.from(this._inputContent.querySelectorAll('.selection-badge')).indexOf(focusedBadge)
-      : -1;
-    if (this._selectedLabelTooltipPointerTrigger?.classList.contains('selection-badge-label')) {
-      this._selectedLabelTooltipPointerTrigger = null;
-    }
-    if (this._selectedLabelTooltipFocusTrigger?.classList.contains('selection-badge-label')) {
-      this._selectedLabelTooltipFocusTrigger = null;
-    }
-    if (this._selectedLabelTooltipTrigger?.classList.contains('selection-badge-label')) {
-      this._hideSelectedLabelTooltip();
-    }
+    const focusedBadgeIndex = focusedBadge ? this._getActiveChipBadges().indexOf(focusedBadge) : -1;
     const selectedItems = selectedEntries.map(({ item }) => item);
     const nextKeys = new Set(selectedEntries.map(({ key }) => key));
     const previousKeys = this._lastRenderedChipKeys;
@@ -5706,80 +5959,25 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     // Only a newly added selected key can initiate auto-scroll.
     this._cancelLatestChipScroll();
     const getLabel = this._config.serverSide.getLabelFromItem || ((item) => (item as any)?.label ?? String(item));
-    
-    if (selectedItems.length === 0) {
-      this._input.value = '';
-      this._input.placeholder = this._config.placeholder || 'Select an option...';
-      // Clear any badges
-      const existingBadges = this._inputContent.querySelectorAll('.selection-badge');
-      existingBadges.forEach(badge => badge.remove());
-    } else if (this._config.selection.mode === 'single') {
-      this._input.value = getLabel(selectedItems[0]);
+
+    if (this._config.selection.mode === 'multi') {
+      if (selectedItems.length === 0) {
+        this._input.value = '';
+        this._input.placeholder = this._config.placeholder || 'Select an option...';
+      } else {
+        this._input.value = '';
+        this._input.placeholder = '';
+      }
+      this._renderSelectedChips(selectedEntries);
     } else {
-      // Multi-select: show badges instead of text in input
-      this._input.value = '';
-      this._input.placeholder = '';
-      
-      // Clear existing badges
-      const existingBadges = this._inputContent.querySelectorAll('.selection-badge');
-      existingBadges.forEach(badge => badge.remove());
-      
-      // Create badges for each selected item
-      selectedEntries.forEach(({ key, index, item }) => {
-        const badge = document.createElement('span');
-        badge.className = 'selection-badge';
-        if (this._config.styles.classNames?.badge) {
-          badge.classList.add(...this._config.styles.classNames.badge.split(' ').filter(Boolean));
-        }
-        badge.setAttribute('part', 'chip');
-
-        const badgeLabel = document.createElement('span');
-        badgeLabel.className = 'selection-badge-label';
-        if (this._config.styles.classNames?.badgeLabel) {
-          badgeLabel.classList.add(...this._config.styles.classNames.badgeLabel.split(' ').filter(Boolean));
-        }
-        badgeLabel.setAttribute('part', 'chip-label');
-        badgeLabel.textContent = getLabel(item);
-        this._selectedLabelKeys.set(badgeLabel, key);
-        badge.appendChild(badgeLabel);
-        
-        // Add remove button to badge
-        if (this._config.selection.showRemoveButton !== false) {
-          const removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'badge-remove';
-          if (this._config.styles.classNames?.removeButton) {
-            removeBtn.classList.add(...this._config.styles.classNames.removeButton.split(' ').filter(Boolean));
-          }
-          if (this._config.styles.classNames?.badgeRemove) {
-            removeBtn.classList.add(...this._config.styles.classNames.badgeRemove.split(' ').filter(Boolean));
-          }
-          removeBtn.setAttribute('part', 'chip-remove');
-          removeBtn.setAttribute('aria-label', `Remove ${getLabel(item)}`);
-
-          const removeIcon = document.createElement('span');
-          removeIcon.className = 'badge-remove-icon';
-          if (this._config.styles.classNames?.badgeRemoveIcon) {
-            removeIcon.classList.add(...this._config.styles.classNames.badgeRemoveIcon.split(' ').filter(Boolean));
-          }
-          removeIcon.setAttribute('part', 'chip-remove-icon');
-          this._setIconContent(removeIcon, this._config.selection.removeButtonIcon, '×');
-          removeBtn.appendChild(removeIcon);
-
-          removeBtn.addEventListener('pointerdown', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          });
-          removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this._handleOptionRemove(index, key);
-          });
-
-          badge.appendChild(removeBtn);
-        }
-        this._inputContent.insertBefore(badge, this._input);
-      });
+      // A mode switch ends visual exits immediately; a single-select has no chip presentation.
+      this._clearChipPresentation();
+      if (selectedItems.length === 0) {
+        this._input.value = '';
+        this._input.placeholder = this._config.placeholder || 'Select an option...';
+      } else {
+        this._input.value = getLabel(selectedItems[0]);
+      }
     }
 
     // A query typed during an accepted-snapshot projection is a pending user
@@ -5788,8 +5986,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (this._acknowledgedPendingSearchQuery !== null) {
       this._input.value = this._acknowledgedPendingSearchQuery;
     }
-    // Recreating the chip DOM must not reset manual scrolling. In particular,
-    // remove/clear, config rerenders, and item refreshes are not scroll intents.
+    // Preserve manual scrolling. Only a newly selected key can request auto-scroll.
     if (this._config.selection.mode === 'multi') {
       this._inputContent.scrollLeft = previousChipScrollLeft;
       if (newlyAddedKey !== undefined) this._scheduleLatestChipScroll(newlyAddedKey);
@@ -5797,25 +5994,38 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._syncClearControlState();
     this._observeSelectedLabelTooltipTargets();
     this._refreshSelectedLabelTooltipMeasurements();
-    if (focusedSelectedKey !== null) {
-      const replacement = Array.from(this._inputContent.querySelectorAll<HTMLElement>('.selection-badge-label'))
-        .find((label) => this._selectedLabelKeys.get(label) === focusedSelectedKey);
-      if (replacement && this._isSelectedLabelTruncated(replacement)) {
-        // The measurement pass assigns the tab stop before focus restoration.
-        replacement.tabIndex = 0;
-        replacement.focus({ preventScroll: true });
-      } else if (replacement) {
-        // A now-visible label must not gain a tab stop just to retain focus.
-        this._input.focus({ preventScroll: true });
+
+    if (focusedChipKey !== null && !nextKeys.has(focusedChipKey)) {
+      const removeButtons = this._getActiveChipRemoveButtons();
+      if (removeButtons.length > 0) {
+        const nextFocusIndex = Math.min(Math.max(focusedBadgeIndex, 0), removeButtons.length - 1);
+        removeButtons[nextFocusIndex].focus({ preventScroll: true });
       } else {
-        // Match chip-remove focus policy when the focused selection disappears.
-        const removeButtons = this._inputContent.querySelectorAll<HTMLButtonElement>('[part="chip-remove"]');
+        this._input.focus({ preventScroll: true });
+      }
+    } else if (focusedChipKey !== null && focusedElement && !focusedElement.isConnected) {
+      const badge = this._chipElements.get(focusedChipKey);
+      const removeButton = badge?.querySelector<HTMLButtonElement>('[part="chip-remove"]');
+      if (removeButton && !removeButton.disabled) removeButton.focus({ preventScroll: true });
+      else this._input.focus({ preventScroll: true });
+    } else if (focusedSelectedKey !== null) {
+      const replacement = this._getActiveChipBadges()
+        .map((badge) => badge.querySelector<HTMLElement>('.selection-badge-label'))
+        .find((label) => label && this._selectedLabelKeys.get(label) === focusedSelectedKey);
+      if (!replacement) {
+        const removeButtons = this._getActiveChipRemoveButtons();
         if (removeButtons.length > 0) {
           const nextFocusIndex = Math.min(Math.max(focusedBadgeIndex, 0), removeButtons.length - 1);
           removeButtons[nextFocusIndex].focus({ preventScroll: true });
         } else {
           this._input.focus({ preventScroll: true });
         }
+      } else if (this._isSelectedLabelTruncated(replacement)) {
+        // The measurement pass assigns the tab stop before focus restoration.
+        replacement.tabIndex = 0;
+        replacement.focus({ preventScroll: true });
+      } else {
+        this._input.focus({ preventScroll: true });
       }
     }
     if (this._selectedLabelTooltipFocusTrigger === this._input
@@ -5858,7 +6068,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       const entries = this._getSelectedEntries();
       const index = entries.findIndex((entry) => entry.key === key);
       if (index < 0) return;
-      const chip = this._inputContent.querySelectorAll<HTMLElement>('.selection-badge')[index];
+      const chip = this._getActiveChipBadges()[index];
       if (!chip) return;
       const hostBounds = this._inputContent.getBoundingClientRect();
       const chipBounds = chip.getBoundingClientRect();
