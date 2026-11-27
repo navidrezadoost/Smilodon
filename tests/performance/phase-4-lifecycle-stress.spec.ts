@@ -20,6 +20,8 @@ type CycleResult = {
   activeIndexAfterKeyboard: number | null;
   connectedResources: ResourceSnapshot;
   disconnectedResources: ResourceSnapshot;
+  reconnectedResources: ResourceSnapshot | null;
+  reconnectedCleanupResources: ResourceSnapshot | null;
   disconnectedInternals: Record<string, unknown>;
   staleCallbackMutations: number;
   detachedMutations: number;
@@ -33,6 +35,8 @@ type CycleResult = {
 
 type ResourceSnapshot = {
   scrollListeners: number;
+  inputContentScrollListeners: number;
+  optionsContainerScrollListeners: number;
   resizeObservers: number;
   resizeTargets: number;
   resizeCallbacksAfterDisconnect: number;
@@ -51,7 +55,10 @@ async function installResourceProbe(page: Page): Promise<void> {
     const phase = window as any;
     const hostIds = new WeakMap<Element, number>();
     const stateById = new Map<number, ResourceSnapshot & { connected: boolean }>();
-    const listenerRecords = new WeakMap<EventTarget, Map<EventListenerOrEventListenerObject, Set<boolean>>>();
+    const listenerRecords = new WeakMap<EventTarget, Map<
+      EventListenerOrEventListenerObject,
+      Map<boolean, 'input-content' | 'options-container' | null>
+    >>();
     let nextId = 0;
 
     const ensureState = (host: Element): { id: number; state: ResourceSnapshot & { connected: boolean } } => {
@@ -62,6 +69,8 @@ async function installResourceProbe(page: Page): Promise<void> {
         stateById.set(id, {
           connected: false,
           scrollListeners: 0,
+          inputContentScrollListeners: 0,
+          optionsContainerScrollListeners: 0,
           resizeObservers: 0,
           resizeTargets: 0,
           resizeCallbacksAfterDisconnect: 0,
@@ -97,12 +106,20 @@ async function installResourceProbe(page: Page): Promise<void> {
       if (type !== 'scroll' || !listener) return;
       const host = ownerHost(this);
       if (!host) return;
-      const records = listenerRecords.get(this) ?? new Map<EventListenerOrEventListenerObject, Set<boolean>>();
-      const captures = records.get(listener) ?? new Set<boolean>();
+      const records = listenerRecords.get(this) ?? new Map<EventListenerOrEventListenerObject, Map<boolean, 'input-content' | 'options-container' | null>>();
+      const captures = records.get(listener) ?? new Map<boolean, 'input-content' | 'options-container' | null>();
       const capture = typeof options === 'boolean' ? options : Boolean(options?.capture);
+      const category = this instanceof Element && this.classList.contains('input-content')
+        ? 'input-content'
+        : this instanceof Element && this.classList.contains('options-container')
+          ? 'options-container'
+          : null;
       if (!captures.has(capture)) {
-        captures.add(capture);
-        resourceState(host).scrollListeners += 1;
+        captures.set(capture, category);
+        const state = resourceState(host);
+        state.scrollListeners += 1;
+        if (category === 'input-content') state.inputContentScrollListeners += 1;
+        if (category === 'options-container') state.optionsContainerScrollListeners += 1;
       }
       records.set(listener, captures);
       listenerRecords.set(this, records);
@@ -116,8 +133,12 @@ async function installResourceProbe(page: Page): Promise<void> {
       const captures = records?.get(listener);
       const capture = typeof options === 'boolean' ? options : Boolean(options?.capture);
       if (!host || !captures?.has(capture)) return;
+      const category = captures.get(capture);
       captures.delete(capture);
-      resourceState(host).scrollListeners -= 1;
+      const state = resourceState(host);
+      state.scrollListeners -= 1;
+      if (category === 'input-content') state.inputContentScrollListeners -= 1;
+      if (category === 'options-container') state.optionsContainerScrollListeners -= 1;
       if (captures.size === 0) records!.delete(listener);
     } as typeof EventTarget.prototype.removeEventListener;
 
@@ -188,6 +209,8 @@ async function installResourceProbe(page: Page): Promise<void> {
         const { state } = ensureState(host);
         return {
           scrollListeners: state.scrollListeners,
+          inputContentScrollListeners: state.inputContentScrollListeners,
+          optionsContainerScrollListeners: state.optionsContainerScrollListeners,
           resizeObservers: state.resizeObservers,
           resizeTargets: state.resizeTargets,
           resizeCallbacksAfterDisconnect: state.resizeCallbacksAfterDisconnect,
@@ -326,7 +349,13 @@ async function createAndRunCycle(
     const input = host.shadowRoot.querySelector('[part="input"]') as HTMLInputElement;
     const activeIndexAfterKeyboard = cycleIndex % 10 === 0 ? host._state.activeIndex : null;
     const connectedResources = probe.read(host) as ResourceSnapshot;
-    if (connectedResources.scrollListeners !== 1 || connectedResources.resizeObservers < 1 || connectedResources.resizeTargets < 1) {
+    if (
+      connectedResources.scrollListeners !== 2
+      || connectedResources.inputContentScrollListeners !== 1
+      || connectedResources.optionsContainerScrollListeners !== 1
+      || connectedResources.resizeObservers < 1
+      || connectedResources.resizeTargets < 1
+    ) {
       throw new Error(`Expected guarded resources were not active: ${JSON.stringify(connectedResources)}`);
     }
 
@@ -383,6 +412,8 @@ async function createAndRunCycle(
     }
 
     const reconnected = cycleIndex % 20 === 19;
+    let reconnectedResources: ResourceSnapshot | null = null;
+    let reconnectedCleanupResources: ResourceSnapshot | null = null;
     if (reconnected) {
       probe.markConnected(host, true);
       document.body.appendChild(host);
@@ -397,8 +428,23 @@ async function createAndRunCycle(
       if (list.querySelectorAll(':scope > [part="option"]').length > 64) {
         throw new Error('Rapid reconnect lost the bounded virtual window.');
       }
+      reconnectedResources = probe.read(host) as ResourceSnapshot;
+      if (
+        reconnectedResources.scrollListeners !== 2
+        || reconnectedResources.inputContentScrollListeners !== 1
+        || reconnectedResources.optionsContainerScrollListeners !== 1
+      ) {
+        throw new Error(`Reconnect did not restore each owned scroll listener exactly once: ${JSON.stringify(reconnectedResources)}`);
+      }
       host.remove();
       probe.markConnected(host, false);
+      reconnectedCleanupResources = probe.read(host) as ResourceSnapshot;
+      if (
+        reconnectedCleanupResources.inputContentScrollListeners !== 0
+        || reconnectedCleanupResources.optionsContainerScrollListeners !== 0
+      ) {
+        throw new Error(`Reconnect cleanup retained a scroll listener: ${JSON.stringify(reconnectedCleanupResources)}`);
+      }
     }
 
     let detachedMutations = 0;
@@ -431,6 +477,8 @@ async function createAndRunCycle(
       activeIndexAfterKeyboard,
       connectedResources,
       disconnectedResources,
+      reconnectedResources,
+      reconnectedCleanupResources,
       disconnectedInternals,
       staleCallbackMutations,
       detachedMutations,
@@ -582,6 +630,8 @@ test('Phase 4.6.2B: repeated guarded lifecycle cleanup and memory sampling', asy
         expect(result.mountedOptionCount, `${workload.itemCount} options, cycle ${cycle}: mounted option bound`).toBeLessThanOrEqual(64);
         expect(result.disconnectedResources).toEqual({
           scrollListeners: 0,
+          inputContentScrollListeners: 0,
+          optionsContainerScrollListeners: 0,
           resizeObservers: 0,
           resizeTargets: 0,
           resizeCallbacksAfterDisconnect: 0,
@@ -591,7 +641,17 @@ test('Phase 4.6.2B: repeated guarded lifecycle cleanup and memory sampling', asy
         expect(result.documentNodeCountAfterCleanup).toBe(baseline.deepDocumentNodeCount);
         if (workload.itemCount === 10_000) expect(result.filterMatchCounts).toEqual([11, 1, 10_000]);
         if (workload.itemCount === 1_000 && cycle === 0) expect(result.failureInjectionRecovered).toBe(true);
-        if (cycle % 20 === 19) expect(result.reconnected).toBe(true);
+        if (cycle % 20 === 19) {
+          expect(result.reconnected).toBe(true);
+          expect(result.reconnectedResources).toMatchObject({
+            inputContentScrollListeners: 1,
+            optionsContainerScrollListeners: 1,
+          });
+          expect(result.reconnectedCleanupResources).toMatchObject({
+            inputContentScrollListeners: 0,
+            optionsContainerScrollListeners: 0,
+          });
+        }
 
         if ((cycle + 1) % workload.checkpointEvery === 0 && cycle + 1 < workload.cycles) {
           scenario.intermediate.push(await collectGarbageAndSample(page, cdp, `${workload.itemCount}-after-${cycle + 1}-cycles`));

@@ -578,6 +578,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._connectionController?.abort();
     this._connectionController = new AbortController();
     this._observeSelectedLabelTooltipTargets();
+    this._inputContent.addEventListener('scroll', this._scheduleSelectedLabelTooltipMeasure, { passive: true });
     document.addEventListener('pointerdown', this._onDocumentPointerDown, {
       signal: this._connectionController.signal,
     });
@@ -670,6 +671,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._handleClose('disconnect');
     }
     this._runEngineEffects(this._engine.dispatch({ type: 'DISCONNECT' }));
+    this._inputContent.removeEventListener('scroll', this._scheduleSelectedLabelTooltipMeasure);
     this._connectionController?.abort();
     this._connectionController = undefined;
     this._hideSelectedLabelTooltip(true);
@@ -3635,8 +3637,6 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       keyboardEvent.stopPropagation();
       this._dismissSelectedLabelTooltip();
     });
-    this._inputContent.addEventListener('scroll', this._scheduleSelectedLabelTooltipMeasure, { passive: true });
-
     // Arrow click handler
     if (this._arrowContainer) {
       this._boundArrowClick = (e: Event) => {
