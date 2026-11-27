@@ -17,9 +17,9 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
-## [1.21.0] - 2026-11-27 (release candidate; not yet published)
+## [1.21.0] - 2026-11-27
 
-Core-only release candidate. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete.
+Published Core-only release. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete. Registry integrity, tarball provenance, and qualification are recorded in [the Core 1.21.0 release record](docs/releases/CORE-1.21.0-RELEASE.md).
 
 ### Added
 
@@ -32,6 +32,13 @@ Core-only release candidate. Adapter package versions and source remain unchange
 - **Space-key editing in searchable selects ([#123](https://github.com/navidrezadoost/Smilodon/issues/123)):** Space now inserts native text into searchable inputs and filters through the normal input event, while Enter and non-searchable Space retain option activation.
 - **Search input select-all and cleared-query recovery ([#122](https://github.com/navidrezadoost/Smilodon/issues/122)):** Ctrl+A/Cmd+A in a searchable input now keeps native text-selection behavior and does not mutate multi-select values. Deleting the selected query continues through the ordinary input/search pipeline so matching options and the empty state update immediately. Non-searchable multi-select retains its select-all shortcut.
 - **Custom slotted arrow double toggle ([#119](https://github.com/navidrezadoost/Smilodon/issues/119)):** Pointer events from slotted arrow content are now excluded from the input-container trigger using the composed event path, leaving arrow and clear-control activation with their own handlers.
+
+### Release qualification
+
+- Workspace builds passed; unit tests passed 761/762, data-loading passed 48/48, and contracts passed 72/78. Seven tests remain skipped as documented.
+- Chrome for Testing 156 passed 44/44 local browser checks. Firefox, pinned Chromium, and WebKit remain unverified for this change set.
+- Core `1.21.0` was packed as a 56-file package; strict packed consumer checks passed in NodeNext and Bundler modes. A clean registry-installed consumer verified package metadata and the `EnhancedSelect` import.
+- React Native is excluded; Android/iOS runtime qualification remains incomplete.
 
 ## [1.20.0] - 2026-11-23
 

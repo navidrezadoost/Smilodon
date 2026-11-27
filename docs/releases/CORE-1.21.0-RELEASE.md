@@ -1,12 +1,12 @@
 # Core 1.21.0 — Release Candidate
 
-Status: **Versioned and locally qualified; npm publication pending**
+Status: **Published to npm; registry integrity and clean consumer verified**
 
 Candidate source: Issue #125 commit `c4b2cd472972cf518967bc158c262a6cce7cb861` on top of merged web release `057115b681d0c73688ae37fb98e5955a3ccb9709`
 
 Previous published Core version: `1.20.0` (verified against the npm registry on 2026-11-27)
 
-Proposed version: `1.21.0` (registry lookup confirmed this version is unoccupied)
+Published version: `1.21.0`; registry `latest` tag verified on 2026-11-27
 
 ## Release scope
 
@@ -29,7 +29,7 @@ This is a **Core-only** release. The candidate includes the reviewed changes fro
 | `@smilodon/svelte` | `2.2.0` | No version change | No adapter source or package export changes. Its Core peer range accepts Core 1.21.x. |
 | `@smilodon/react-native` | `1.10.0` | Excluded | It embeds a generated Core bundle and Android/iOS runtime qualification is incomplete. This candidate does not update or qualify that bundle. |
 
-Registry lookups also confirmed the currently published adapter versions and that `@smilodon/core@1.21.0` was not occupied at preparation time. Recheck immediately before publication.
+Registry lookups confirmed the currently published adapter versions and that `@smilodon/core@1.21.0` was unoccupied before publication. After publication, npm reported Core `1.21.0` as `latest` and returned the same SRI and shasum as the packed artifact.
 
 ## Documentation and package contents
 
@@ -61,7 +61,7 @@ The packed artifact contains 56 files (package manifest, Core README, generated 
 | npm shasum | `742d24c386bb729e2b229bcf3182e49f3066050b` |
 | npm SRI | `sha512-MS9k8+LfX4BbM3EderOJgXOFhkQdC12csi0no9w900bKAMR/9avgR6nSleupn+9S4m2kYK2xZCdbA9Y4evNdWg==` |
 
-The artifact is preserved at `/tmp/smilodon-core-1.21.0-artifacts/smilodon-core-1.21.0.tgz`. Recheck that `1.21.0` remains unoccupied immediately before publishing. After publication, record registry integrity and verify a clean consumer install directly from npm. This candidate does not claim that the branch is merged to GitHub `main`, or that a GitHub release exists.
+The published artifact is preserved at `/tmp/smilodon-core-1.21.0-artifacts/smilodon-core-1.21.0.tgz`. Registry metadata matches the artifact: npm shasum `742d24c386bb729e2b229bcf3182e49f3066050b` and SRI `sha512-MS9k8+LfX4BbM3EderOJgXOFhkQdC12csi0no9w900bKAMR/9avgR6nSleupn+9S4m2kYK2xZCdbA9Y4evNdWg==`. A fresh temporary npm cache installed `@smilodon/core@1.21.0` from the registry; under JSDOM, the installed package reported version `1.21.0` and imported `EnhancedSelect` successfully. The release source remains on the local `release/core-1.21.0` branch and has not been pushed or merged to GitHub `main`; no GitHub release was created.
 
 ## Release gates
 
@@ -72,5 +72,5 @@ The artifact is preserved at `/tmp/smilodon-core-1.21.0-artifacts/smilodon-core-
 | Release documentation | Candidate record prepared; registry evidence pending |
 | Versioned build, package contents, and tarball integrity | Passed locally |
 | Main integration / release PR | Pending |
-| npm publication and registry consumer verification | Pending |
+| npm publication and registry consumer verification | Passed; `1.21.0` is `latest` |
 | React Native runtime | Excluded; still unqualified |
