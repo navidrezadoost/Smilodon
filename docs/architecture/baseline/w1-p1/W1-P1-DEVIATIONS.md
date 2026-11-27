@@ -101,6 +101,9 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 - **Evidence.** `packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts` ("detached selected value is RETAINED..." and re-selection tests).
 - **Class:** Observed (not previously asserted).
 - **Risk.** A consumer that removes an option from `setItems` expecting its selection to be dropped will instead keep a "phantom" selected value that is not visible in the list. Forms bindings must reconcile removed values explicitly (e.g. `setSelectedValues`), not rely on `setItems` to prune selection.
+- **Refined (W1-P1.2-T2-R).** Reattachment is **automatic by key**, not by object reference: re-adding an item with the same `key`/value as a *new object instance* re-attaches the existing selection without any explicit reselection, and `getSelectedItems()` then returns the **new** instance (not the stale original). This upgrade is observable through public getters and the rendered `aria-selected` state.
+- **Duplicate-value note.** With two distinct keys sharing one value, identity is per-record: multi mode selects BOTH records (`getSelectedValues()` == `['dup','dup']`), single mode selects the first in registry order. Value equality alone is not the identity unit; the registry key is.
+- **Evidence (T2-R).** `packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts` (F01/F02/F03).
 - **Disposition.** Characterized; recorded for P1.2 Task 3 (state/clear API matrix) to confirm whether `clear()`/`setSelectedValues([])` is the intended pruning path. No production change in W1-P2.
 
 ---

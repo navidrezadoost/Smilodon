@@ -7,7 +7,7 @@
   "publicInterfaceOnly": true,
   "testRun": {
     "config": "packages/core/vitest.config.ts",
-    "tests": "21 passed",
+    "t2r": "8 passed",
     "files": "1 passed"
   },
   "characterizedAreas": {
@@ -78,11 +78,36 @@
   },
   "productionChanges": "none",
   "regression": {
-    "coreFullSuite": "801 passed + 1 skipped (57 files); +21 vs 780+1 (T1-R); no regression"
+    "coreFullSuite": "809 passed + 1 skipped (58 files); +8 vs 801+1 (Task 2); no regression"
   },
   "typecheck": {
     "command": "tsc --noEmit -p packages/core/tsconfig.build.json",
     "result": "exit 0"
   },
-  "validator": "PASS (100 IDs reconcile; Partial accepted; spec refs resolve)"
+  "validator": "PASS (100 IDs reconcile)",
+  "correction": "W1-P1.2-T2-R",
+  "precedingCommit": "95f3f57",
+  "t2rTestFile": "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts",
+  "t2rFindings": {
+    "T2-F01 duplicateValue": {
+      "multi": "selects BOTH records by key; getSelectedItems ids=[x1,x2]; getSelectedValues==['dup','dup']",
+      "single": "selects first in registry order (x1); reversed registry -> x2",
+      "conclusion": "identity unit is the registry key/record, not value equality"
+    },
+    "T2-F02 groupedAndSelectedFirst": {
+      "grouped": "setGroupedItems renders grouped options; selection retained by value",
+      "selectedFirst": "at open(), selected option renders first in shadow DOM; aria-selected=true",
+      "detachedAfterGroupedReplacement": "retained in getters but not rendered"
+    },
+    "T2-F03 reattachment": {
+      "conclusion": "re-adding removed item as NEW instance auto-reattaches by key, NO explicit reselect; getSelectedItems returns the NEW instance; renders aria-selected=true",
+      "explicitReselect": "unnecessary; does not change identity outcome"
+    }
+  },
+  "traceabilityCorrection": {
+    "API-012": "primary reference restored to Task 1 ordering spec; identity test listed as supplementary"
+  },
+  "deviationsUpdated": [
+    "DEVIATION-08 (refined: auto-reattach returns new instance; duplicate-value identity)"
+  ]
 }

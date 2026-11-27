@@ -131,7 +131,7 @@
       "behavior": "getSelectedItems",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedItems reflects value-based selection incl. retained detached items",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedItems identity (single/multi/reorder/detached)",
       "status": "Observed",
       "evidence": "select-selection; selected-options-*",
       "sourceLocators": [
@@ -140,14 +140,17 @@
           "lines": "6620-6623"
         }
       ],
-      "coverageNote": "Selected-items identity via public getter characterized across single/multi/reorder/detached; broader identity matrix in Task 5."
+      "coverageNote": "Selected-items identity characterized (single/multi/dup-value/reattachment); full state API in Task 3.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F01 duplicate-value identity; F03 reattachment returns new instance"
+      ]
     },
     {
       "id": "API-011",
       "behavior": "getSelectedValues",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedValues value-based identity matrix",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#getSelectedValues identity matrix",
       "status": "Observed",
       "evidence": "select-selection",
       "sourceLocators": [
@@ -160,14 +163,17 @@
           "lines": "1271-1273"
         }
       ],
-      "coverageNote": "Value projection characterized (single/multi/limits/reorder/detached); Task 3 covers full state API."
+      "coverageNote": "Value projection characterized incl. duplicates; Task 3 covers state API.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F01 multi value dup==['dup','dup']"
+      ]
     },
     {
       "id": "API-012",
       "behavior": "setSelectedValues async ordering",
       "targetIncrement": "P1.2",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts# (see also w1-p1-2-set-selected-values-ordering.spec.ts)",
+      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#deterministic chronology local/server success/failure + supersession + disconnection",
       "status": "Observed",
       "evidence": "select-selection; phase-1-search-pagination-characterization (DEVIATION-04)",
       "sourceLocators": [
@@ -180,7 +186,11 @@
           "lines": "6668-6695"
         }
       ],
-      "coverageNote": "Local + server-success + server-failure + superseded + disconnected timelines asserted (events, callbacks, Promise settlement)."
+      "coverageNote": "Primary: deterministic ordering spec (Task 1). Identity spec corroborates single/multi path coverage.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#single/multi/limits path coverage",
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#identity corroboration"
+      ]
     },
     {
       "id": "API-013",
@@ -217,7 +227,7 @@
       "behavior": "setItems",
       "targetIncrement": "P1.2",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/grouping/detached/duplicate-key(dev) outcomes",
+      "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/detached/duplicate-key(dev)",
       "status": "Observed",
       "evidence": "smoke",
       "sourceLocators": [
@@ -226,7 +236,10 @@
           "lines": "6517-6549"
         }
       ],
-      "coverageNote": "Item replacement, reorder, detached retention, and dev duplicate-key throw characterized; production duplicate policy documented only."
+      "coverageNote": "Replacement/reorder/grouped/detached characterized; production duplicate policy documented only.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-2-t2r-identity-evidence.spec.ts#F02 setGroupedItems grouped replacement; detached retention"
+      ]
     },
     {
       "id": "API-021",
