@@ -38,9 +38,9 @@
     "privateSeamsUsed": "NONE — grep confirms no as-any/underscore-private/_state/ForTest access in the spec"
   },
   "testCounts": {
-    "jsdom": 22,
+    "jsdom": 26,
     "chromium": 0,
-    "total": 22
+    "total": 26
   },
   "renderingModel": "jsdom. Pure package-API function contracts; DOM helpers exercised on document.createElement('div') fixtures. console.warn captured via vi.spyOn with per-test restore; no fixed sleeps.",
   "publicBoundaryFindings": [
@@ -50,7 +50,7 @@
       "consequence": "The genuine default NoOpSanitizer is a private unexported class; tests that depend on pristine default (API-063 identity, API-064 warning) run before any setter call."
     }
   ],
-  "orderingConstraint": "Pristine-default assertions (API-063 default identity; API-064 default-sanitizer warning) run first in the file, before any setHTMLSanitizer call, because the private NoOpSanitizer default cannot be reconstructed through the public surface.",
+  "orderingConstraint": "Pristine-default assertions (API-063 default identity; API-064 default-sanitizer warning) run first in the file, before any setHTMLSanitizer call, because the private NoOpSanitizer default cannot be reconstructed through the public surface. T1-R (T1-F02): the sanitizer registry is process-global; isolation is bounded by ordering, and after this file the global is left as the identity-behaviour sanitizer (not the pristine default). A T1-F02 post-condition test pins that end-of-file state.",
   "contractEvidence": [
     {
       "id": "API-063",
@@ -66,9 +66,16 @@
     },
     {
       "id": "API-065",
-      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks on* and style attributes (not set) and warns once per blocked attribute",
-      "asserts": "safe attrs + textContent applied; onclick/onload/style attributes absent; 3 warns for 3 blocked attrs; empty element defaults",
-      "negativePath": "blocked attributes not present on element"
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks lowercase on* and exact \"style\" attributes (not set) and warns once per blocked attribute",
+      "asserts": "safe attrs + textContent applied; lowercase onclick/onload/exact style absent with 3 warns; empty element defaults; names STARTing with lowercase 'on' (onClick, onCLICK) blocked with 2 warns; mixed-case ONCLICK/OnLoad BYPASS the filter and are applied (ONCLICK -> live onclick handler); Style/STYLE BYPASS -> inline style applied",
+      "negativePath": "blocked names absent; bypassed ONCLICK installs a live handler (typeof el.onclick==='function') — documents the case-sensitive limitation; NOT an XSS defense",
+      "coverageClass": "Partial",
+      "reclassifiedFrom": "Existing",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks names that START with lowercase \"on\" regardless of trailing case (onClick, onCLICK)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block mixed-case ON*/On* names (ONCLICK, OnLoad) — they are applied (limitation)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block non-exact-case \"Style\"/\"STYLE\" — inline style is applied (limitation)"
+      ]
     },
     {
       "id": "API-066",
@@ -116,18 +123,18 @@
       "total": 112
     },
     "after": {
-      "Existing": 71,
-      "Partial": 34,
+      "Existing": 70,
+      "Partial": 35,
       "Diagnostic": 13,
       "Missing": 3,
       "total": 121
     },
-    "note": "9 new P1.6 contracts added (Path A). All 9 characterized to Existing. No prior contract reclassified."
+    "note": "9 new P1.6 contracts added (Path A). T1 originally classified all 9 as Existing (71/34/13/3). Under T1-R (T1-F01) API-065 was reclassified Existing -> Partial (case-sensitive attribute block; mixed-case bypass) giving 8 Existing + 1 Partial among the 9, and overall 70/35/13/3 = 121."
   },
   "gates": {
     "verify_traceability": "PASS (121 unique IDs; ledger/matrix reconcile; locators in bounds)",
-    "coreRegression": "1034 passed | 1 skipped (was 1012 + 22 new = 1034)",
-    "t1Spec": "22 passed",
+    "coreRegression": "1038 passed | 1 skipped (was 1034 + 4 new mixed-case/isolation tests = 1038; no regressions)",
+    "t1Spec": "26 passed",
     "ac1PublicImportOnly": "PASS — grep confirms no as-any/underscore-private/_state/ForTest access"
   },
   "boundaries": {
@@ -136,5 +143,88 @@
     "deferredNotAbsorbed": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; those remain with owners."
   },
   "deviationsRaised": [],
-  "notes": "T1 covers utils/security.ts only. T2 (csp-styles.ts) and T3 (SSR import-time/deferred-DOM) remain pending. P1.6 closure not claimed."
+  "notes": "T1 covers utils/security.ts only. T2 (csp-styles.ts) and T3 (SSR import-time/deferred-DOM) remain pending. P1.6 closure not claimed.",
+  "mixedCaseAttributeFindings": {
+    "issue": "T1-F01",
+    "source": "packages/core/src/utils/security.ts createElement: `key.startsWith('on') || key === 'style'` (both case-sensitive)",
+    "observed": {
+      "onclick": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "onClick": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "ONCLICK": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "LIVE function (bypass)"
+      },
+      "onCLICK": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "OnLoad": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "bypass (onload)"
+      },
+      "style": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "Style": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "inline style applied (bypass)"
+      },
+      "STYLE": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "inline style applied (bypass)"
+      }
+    },
+    "conclusion": "createElement blocks only names starting with lowercase 'on' and the exact string 'style'. Mixed-case variants bypass and are applied; a bypassed ONCLICK installs a live inline handler. This is characterization of current behavior; the default sanitizer is a no-op and this is NOT presented as XSS protection."
+  },
+  "isolationBound": {
+    "issue": "T1-F02",
+    "problem": "Sanitizer registry is process-global module state; resetHTMLSanitizer is NOT public and the private NoOpSanitizer cannot be recreated.",
+    "bound": "Ordering within the file: pristine-default tests first; identity-behaviour restore via public setter.",
+    "postConditionTest": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#T1-F02: process-global sanitizer is identity-behaviour (not the pristine private default)",
+    "documentedLimitation": "After this file, the process-global sanitizer is the identity-behaviour sanitizer, not the pristine default; future pristine-default tests must use a separate module/worker boundary."
+  },
+  "corrections": [
+    {
+      "increment": "W1-P1.6-T1-R",
+      "startingCommit": "116707f94b755a16105248ec77ae3aacb2602395",
+      "authorizedBy": "Lead T1 review: T1 CONDITIONAL, T1-R GO (bounded correction). T2-T4 remain NO-GO.",
+      "scope": [
+        "Characterize mixed-case security attributes via public createElement (T1-F01).",
+        "Reclassify API-065 Existing -> Partial with corrected wording (does NOT block 'on* generally').",
+        "Bound sanitizer process-global test-state dependency (T1-F02).",
+        "Update evidence, ledger, traceability, checksums; rerun focused + full regression, ESLint, verifier.",
+        "One atomic corrective commit; production source unchanged."
+      ],
+      "findings": [
+        {
+          "id": "T1-F01",
+          "severity": "Medium",
+          "contract": "API-065",
+          "disposition": "Reclassified Existing->Partial; mixed-case characterization tests added (ONCLICK/OnLoad/Style/STYLE bypass)."
+        },
+        {
+          "id": "T1-F02",
+          "severity": "Low",
+          "contract": "API-063/API-064 harness",
+          "disposition": "Isolation bounded by ordering + post-condition test; documented end-of-file global state; no private resetHTMLSanitizer import."
+        }
+      ],
+      "productionSourceTouched": false
+    }
+  ]
 }

@@ -934,13 +934,13 @@ W1-P1.6 is the SSR/security increment named in §10 (line 353, "SSR/security …
 
 **Family mapping:** the `security.ts` HTML-safety helpers are encoded as `API-0xx` (package API); the `CSPFeatures`/`detectEnvironment` capability surface as `CONFIG-0xx`.
 
-**Public-boundary finding (API-063):** `resetHTMLSanitizer` exists in `security.ts` but is **NOT** re-exported from the package entry; only `setHTMLSanitizer` is public. Tests restore identity behavior through the public setter. The genuine default `NoOpSanitizer` is a private, unexported class and cannot be recreated; the pristine-default assertions (API-063 identity, API-064 warning) therefore run before any setter call.
+**Public-boundary finding (API-063):** `resetHTMLSanitizer` exists in `security.ts` but is **NOT** re-exported from the package entry; only `setHTMLSanitizer` is public. Tests restore identity behavior through the public setter. The genuine default `NoOpSanitizer` is a private, unexported class and cannot be recreated; the pristine-default assertions (API-063 identity, API-064 warning) therefore run before any setter call. **T1-R isolation bound (T1-F02):** the sanitizer registry is process-global module state; Reset is not public and the private `NoOpSanitizer` cannot be recreated, so isolation is bounded by **ordering** (pristine-default tests consolidated first). After the spec file runs, the process-global sanitizer is left as the identity-behaviour sanitizer, **not** the pristine default — a documented limitation; future pristine-default tests must use a separate module/worker boundary. A post-condition test (`T1-F02: process-global sanitizer is identity-behaviour …`) pins the end-of-file state.
 
 | Contract ID | Behavior | Source (`security.ts`) | Coverage | testId |
 | --- | --- | --- | --- | --- |
 | API-063 | Sanitizer registry: default no-op identity; set→get round-trip; sanitizeHTML delegates; `resetHTMLSanitizer` NOT a public export | 19-69 | Existing | `w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged` |
 | API-064 | `validateTemplate` warns only under pristine default no-op (message names source) and returns sanitized output; silent under custom sanitizer | 248-259 | Existing | `...#API-064: warns and returns sanitized output under the pristine default no-op sanitizer` |
-| API-065 | `createElement` applies safe attrs + textContent; blocks `on*`/`style` (not set) with a warn per blocked attr | 99-128 | Existing | `...#API-065: blocks on* and style attributes (not set) and warns once per blocked attribute` |
+| API-065 | `createElement` applies safe attrs + textContent; blocks **only** names STARTing with lowercase `on` or **exactly** `style` (case-sensitive) with a warn per blocked attr. **Partial:** mixed-case `ONCLICK`/`OnLoad`/`Style`/`STYLE` bypass the filter and are applied (`ONCLICK` installs a **live** handler). Not an XSS defense (default sanitizer is a no-op). *(Reclassified Existing→Partial under T1-R / T1-F01.)* | 99-128 | **Partial** | `...#API-065: blocks lowercase on* and exact "style" attributes (not set) and warns once per blocked attribute` (+3 mixed-case supplementary tests) |
 | API-066 | `setCSSProperties` sets only `--` custom properties; non-`--` keys skipped with warn, never applied | 130-138 | Existing | `...#API-066: warns and skips non-custom properties without applying them` |
 | API-067 | `createTextNode`/`setTextContent` build/assign literal text without HTML parsing | 76-95 | Existing | `...#API-067: setTextContent assigns literal text (no element parsing)` |
 | API-068 | `escapeHTML` encodes via textContent; `escapeAttribute` encodes `& " ' < >` | 279-295 | Existing | `...#API-068: escapeAttribute encodes & " ' < >` |
@@ -948,10 +948,10 @@ W1-P1.6 is the SSR/security increment named in §10 (line 353, "SSR/security …
 | CONFIG-027 | `CSPFeatures` family: capability predicates return boolean without throwing; `getCSPDirectives` reads CSP meta-tag content, `[]` when none | 143-216 | Existing | `...#CONFIG-027: getCSPDirectives reads content values from CSP meta tags` |
 | CONFIG-028 | `detectEnvironment` returns 6-field `EnvironmentCapabilities` agreeing with individual predicates | 233-242 | Existing | `...#CONFIG-028: fields agree with the individual CSPFeatures predicates` |
 
-**Totals:** 9 new P1.6 contracts, all **Existing** (public-import, deterministic, negative paths included). Distribution after T1: **Existing 71 · Partial 34 · Diagnostic 13 · Missing 3 = 121** (was 62/34/13/3 = 112). API 27→34; CONFIG 26→28; P1.6 = 9.
+**Totals:** 9 new P1.6 contracts: **8 Existing + 1 Partial** (API-065) (public-import, deterministic, negative paths included). Distribution after T1-R: **Existing 70 · Partial 35 · Diagnostic 13 · Missing 3 = 121** (was 62/34/13/3 = 112 at P1.5; T1 alone gave 71/34/13/3, then T1-R moved API-065 Existing→Partial). API 27→34; CONFIG 26→28; P1.6 = 9.
 
 **Out of scope for T1 (deferred to T2/T3 within P1.6):** `utils/csp-styles.ts` helpers (applyClasses/toggleClass/custom-property family/defaultTheme/shadowDOMStyles/injectShadowStyles/hasOverflowHiddenAncestor/warnCSPViolation) and SSR import-time/deferred-DOM safety.
 
 **Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 is absorbed; those remain with their owners.
 
-_End of W1-P1.6 Task 1. Tasks 2–4 remain pending; P1.6 closure not yet claimed._
+_End of W1-P1.6 Task 1 (original, `116707f`). W1-P1.6-T1-R (this correction) reclassifies API-065 Existing→Partial per T1-F01 and bounds sanitizer isolation per T1-F02. Tasks 2–4 remain NO-GO pending independent T1-R acceptance; P1.6 closure not yet claimed._

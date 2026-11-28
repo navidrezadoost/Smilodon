@@ -26,8 +26,8 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 71,
-      "Partial": 34,
+      "Existing": 70,
+      "Partial": 35,
       "Diagnostic": 13,
       "Missing": 3
     },
@@ -39,7 +39,7 @@
       "P1.5": 13,
       "P1.6": 9
     },
-    "p16Task1Note": "W1-P1.6 Task 1 (Path A) added 9 P1.6 contracts for the security/CSP utility public surface previously documented-only (ledger section 10 line 353, section 12 line 469): API-063..069 (security.ts helpers) and CONFIG-027..028 (CSPFeatures/detectEnvironment). Total 112 -> 121; API 27 -> 34; CONFIG 26 -> 28; Existing 62 -> 71; P1.6 = 9. All characterized to Existing by packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts (public import only).",
+    "p16Task1Note": "W1-P1.6 Task 1 (Path A) added 9 P1.6 contracts for the security/CSP utility public surface. Total 112 -> 121; API 27 -> 34; CONFIG 26 -> 28; P1.6 = 9. Under W1-P1.6-T1-R (T1-F01) API-065 was reclassified Existing -> Partial (case-sensitive attribute block; mixed-case bypass), so byCoverage is Existing 70 / Partial 35 / Diagnostic 13 / Missing 3 = 121 (was 71/34/13/3). All 9 characterized by packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts (public import only).",
     "apiIds": 27,
     "apiMethodAccessorSignatures": 30,
     "attributeIds": 11,
@@ -2160,10 +2160,10 @@
     },
     {
       "id": "API-065",
-      "behavior": "createElement applies safe attributes and textContent; blocks on* event-handler attributes and the inline style attribute (not set) with a console.warn per blocked attribute.",
+      "behavior": "createElement applies safe attributes and textContent, and only PARTIALLY blocks dangerous attributes: it blocks attribute names that START with a lowercase 'on' (e.g. onclick, onClick, onCLICK) and names that are EXACTLY 'style', warning via console.warn per blocked attribute. The filter is CASE-SENSITIVE (`key.startsWith('on') || key === 'style'`), so mixed-case variants that do NOT begin with lowercase 'on' (ONCLICK, OnLoad) or that are not exactly 'style' (Style, STYLE) BYPASS the filter and are applied — a bypassed ONCLICK becomes a live inline onclick handler and Style/STYLE sets inline style. It does NOT block 'on* generally'.",
       "targetIncrement": "P1.6",
-      "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks on* and style attributes (not set) and warns once per blocked attribute",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks lowercase on* and exact \"style\" attributes (not set) and warns once per blocked attribute",
       "status": "Observed",
       "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
       "sourceLocators": [
@@ -2171,6 +2171,12 @@
           "file": "packages/core/src/utils/security.ts",
           "lines": "99-128"
         }
+      ],
+      "coverageNote": "Blocks start-with-lowercase-'on' and exact-lowercase 'style' only; mixed-case ON*/On*/Style/STYLE bypass the case-sensitive filter and are applied (ONCLICK installs a live handler). Characterized as Partial; NOT an XSS defense (default sanitizer is a no-op). Reclassified from Existing under W1-P1.6-T1-R per T1-F01.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks names that START with lowercase \"on\" regardless of trailing case (onClick, onCLICK)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block mixed-case ON*/On* names (ONCLICK, OnLoad) — they are applied (limitation)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block non-exact-case \"Style\"/\"STYLE\" — inline style is applied (limitation)"
       ]
     },
     {
