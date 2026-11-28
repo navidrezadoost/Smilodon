@@ -13,9 +13,11 @@
  * ENVIRONMENT NOTES (conservative jsdom treatment):
  *  - `process.env.NODE_ENV` is `'test'` in this runner, so the development-only
  *    warning branches of `setCustomProperties` and `warnCSPViolation` execute.
- *    Their PRODUCTION-suppressed behaviour is verified by stubbing
- *    `NODE_ENV='production'` (vi.stubEnv) — this proves the branch the helper
- *    ships, not merely a development-only path.
+ *    Production-CONDITIONED source behavior is verified by stubbing
+ *    `NODE_ENV='production'` (vi.stubEnv). This exercises the SOURCE under a
+ *    controlled environment — it does NOT certify a compiled production
+ *    artifact, nor compatibility with an enforced browser Content Security
+ *    Policy (no such enforcement is exercised here).
  *  - jsdom's `getComputedStyle` reflects *inline* custom properties and inline
  *    `overflow`, so those helpers are testable here. However, jsdom performs no
  *    real layout, so we do NOT claim layout-derived computed-style coverage;
@@ -93,11 +95,20 @@ describe('API-070: class application and toggling', () => {
 });
 
 /**
- * API-071 — custom-property family: setCustomProperties sets only `--` keys
- * (dev-only warn + skip others); getCustomProperty reads the computed value
- * (trimmed); removeCustomProperty removes a set property.
+ * API-071 — custom-property family.
+ *
+ * PREFIX-ENFORCEMENT ASYMMETRY (T2-F02): only the SETTER enforces the `--`
+ * prefix. The getter and remover do NOT validate the prefix — they delegate
+ * arbitrary property names to `getComputedStyle().getPropertyValue()` and
+ * `style.removeProperty()` respectively, so they also act on ordinary CSS
+ * properties (e.g. `color`, `display`). This is characterized as observed
+ * behavior, not a call to add validation.
+ *
+ *   setCustomProperties  -> prefix enforced (warn+skip non-'--')
+ *   getCustomProperty    -> prefix NOT enforced (reads any computed property)
+ *   removeCustomProperty -> prefix NOT enforced (removes any inline property)
  */
-describe('API-071: custom-property set/get/remove family', () => {
+describe('API-071: custom-property set/get/remove family (setter-only prefix enforcement)', () => {
   it('API-071: setCustomProperties applies --prefixed custom properties', () => {
     const node = el();
     setCustomProperties(node, { '--item-height': '48px', '--bg': '#fff' });
@@ -145,6 +156,31 @@ describe('API-071: custom-property set/get/remove family', () => {
     removeCustomProperty(node, '--gone');
     expect(node.style.getPropertyValue('--gone')).toBe('');
   });
+
+  it('API-071: getCustomProperty reads an ORDINARY CSS property too (no -- prefix enforced)', () => {
+    const node = el();
+    document.body.appendChild(node);
+    node.style.setProperty('color', 'rgb(0, 128, 0)');
+    node.style.setProperty('display', 'inline-block');
+    try {
+      // No '--' prefix: the getter still reads the computed value.
+      expect(getCustomProperty(node, 'color')).toBe('rgb(0, 128, 0)');
+      expect(getCustomProperty(node, 'display')).toBe('inline-block');
+    } finally {
+      node.remove();
+    }
+  });
+
+  it('API-071: removeCustomProperty removes an ORDINARY CSS property too (no -- prefix enforced)', () => {
+    const node = el();
+    node.style.setProperty('color', 'blue');
+    node.style.setProperty('--keep', 'v');
+    expect(node.style.getPropertyValue('color')).toBe('blue');
+    removeCustomProperty(node, 'color');
+    expect(node.style.getPropertyValue('color')).toBe('');
+    // Unrelated custom property is untouched.
+    expect(node.style.getPropertyValue('--keep')).toBe('v');
+  });
 });
 
 /**
@@ -153,18 +189,39 @@ describe('API-071: custom-property set/get/remove family', () => {
  * `:host`/`.ns-*` selectors and no `<script>`.
  */
 describe('CONFIG-029: default theme, application, and static shadow styles', () => {
-  it('CONFIG-029: defaultTheme is a stable map of --ns-* custom properties', () => {
-    const keys = Object.keys(defaultTheme);
-    expect(keys.length).toBeGreaterThan(0);
-    for (const key of keys) expect(key.startsWith('--ns-')).toBe(true);
-    // Spot-check a documented entry.
-    expect(defaultTheme['--ns-item-height']).toBe('40px');
+  // Independently-defined expected theme (T2-F03). This literal is NOT derived
+  // from `defaultTheme`; deleting/altering any entry breaks the assertion. We do
+  // NOT assert immutability — the exported object is not frozen.
+  const EXPECTED_DEFAULT_THEME: Record<string, string> = {
+    '--ns-item-height': '40px',
+    '--ns-item-padding': '8px 12px',
+    '--ns-item-bg': 'transparent',
+    '--ns-item-hover-bg': 'rgba(0, 0, 0, 0.05)',
+    '--ns-item-selected-bg': 'rgba(0, 102, 204, 0.1)',
+    '--ns-item-active-bg': 'rgba(0, 102, 204, 0.2)',
+    '--ns-item-color': 'inherit',
+    '--ns-item-selected-color': '#0066cc',
+    '--ns-border-color': '#ccc',
+    '--ns-border-radius': '4px',
+    '--ns-focus-outline': '2px solid #0066cc',
+    '--ns-font-size': '14px',
+    '--ns-font-family': 'system-ui, -apple-system, sans-serif',
+  };
+
+  it('CONFIG-029: defaultTheme is a stable 13-entry map matching the expected pinned values', () => {
+    // Key set pinned exactly (count + membership).
+    expect(Object.keys(defaultTheme).sort()).toEqual(Object.keys(EXPECTED_DEFAULT_THEME).sort());
+    expect(Object.keys(defaultTheme)).toHaveLength(13);
+    // Every value pinned against the independent expected object.
+    expect(defaultTheme).toEqual(EXPECTED_DEFAULT_THEME);
+    // Naming convention.
+    for (const key of Object.keys(defaultTheme)) expect(key.startsWith('--ns-')).toBe(true);
   });
 
   it('CONFIG-029: applyDefaultTheme writes every defaultTheme entry onto the element', () => {
     const node = el();
     applyDefaultTheme(node);
-    for (const [key, value] of Object.entries(defaultTheme)) {
+    for (const [key, value] of Object.entries(EXPECTED_DEFAULT_THEME)) {
       expect(node.style.getPropertyValue(key)).toBe(value);
     }
   });
@@ -202,11 +259,16 @@ describe('API-072: shadow-root style injection', () => {
 });
 
 /**
- * API-073 — hasOverflowHiddenAncestor walks ancestors for overflow hidden/clip,
- * EXCLUDING document.body. Characterized via inline-set overflow (jsdom reflects
- * inline overflow in getComputedStyle; real layout is out of scope).
+ * API-073 — hasOverflowHiddenAncestor walks the parentElement chain for computed
+ * overflow hidden/clip, EXCLUDING document.body. Characterized via inline-set
+ * overflow (jsdom reflects inline overflow in getComputedStyle; real layout is
+ * out of scope).
+ *
+ * IMPORTANT (T2-F01): the helper is PARENT-CHAIN based — it does NOT consult
+ * `element.isConnected`. A DETACHED subtree can still have an overflow-hidden
+ * ancestor and yield `true`; only a PARENTLESS element yields `false`.
  */
-describe('API-073: overflow-hidden ancestor detection (body-excluded)', () => {
+describe('API-073: overflow-hidden ancestor detection (parent-chain, body-excluded)', () => {
   it('API-073: detects an overflow:hidden ancestor', () => {
     const parent = el();
     parent.style.overflow = 'hidden';
@@ -259,8 +321,22 @@ describe('API-073: overflow-hidden ancestor detection (body-excluded)', () => {
     }
   });
 
-  it('API-073: a detached element (no parent) reports false', () => {
-    expect(hasOverflowHiddenAncestor(el())).toBe(false);
+  it('API-073: a detached subtree WITH an overflow:hidden ancestor reports true (parent-chain, not isConnected)', () => {
+    // Both nodes are disconnected from the document, yet the parent-chain walk
+    // still observes the overflow:hidden ancestor — proving the helper does not
+    // gate on element.isConnected.
+    const parent = el();
+    parent.style.overflow = 'hidden';
+    const child = el();
+    parent.appendChild(child); // detached subtree (never appended to document)
+    expect(child.isConnected).toBe(false);
+    expect(hasOverflowHiddenAncestor(child)).toBe(true);
+  });
+
+  it('API-073: a PARENTLESS element reports false (no parent chain to walk)', () => {
+    const lonely = el();
+    expect(lonely.parentElement).toBeNull();
+    expect(hasOverflowHiddenAncestor(lonely)).toBe(false);
   });
 });
 
