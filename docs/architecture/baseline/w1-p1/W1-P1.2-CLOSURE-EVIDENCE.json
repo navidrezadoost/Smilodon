@@ -6,13 +6,14 @@
   "branch": "codex/w1-p1-characterization-7e3adf7",
   "nature": "reconciliation + certification-readiness; documentation-only; no production behavior changed",
   "reconciledIncrements": [
-    { "increment": "Task 1", "focus": "setSelectedValues async ordering (DEVIATION-04)", "status": "Accepted" },
-    { "increment": "Task 1-R", "focus": "deterministic chronology; supersession/disconnection settlement", "status": "Accepted" },
-    { "increment": "Task 2", "focus": "selection identity/limits (DEVIATION-07)", "status": "Accepted" },
-    { "increment": "Task 2-R", "focus": "identity/grouping/reattachment (T2-R F01/F02/F03)", "status": "Accepted" },
-    { "increment": "Task 3", "focus": "state/validation/clear matrix (DEVIATION-08/09)", "status": "Accepted" },
-    { "increment": "Task 3-R", "focus": "error-state and mode-switch (T3-R F01/F02)", "status": "Accepted" },
-    { "increment": "Task 4", "focus": "interaction-driven event ordering (DEVIATION-10)", "status": "Accepted" }
+    { "increment": "Task 1", "commit": "832431c27253014a4288b035dc98d59b6e44c68d", "parent": "4b02cd10a9aad4406e656bd0357457c91f19ed1b", "focus": "setSelectedValues async ordering (DEVIATION-04)", "status": "Accepted" },
+    { "increment": "Task 1-R", "commit": "b0b3c942e73ac03e12c51baac650043b0a5511ea", "parent": "832431c27253014a4288b035dc98d59b6e44c68d", "focus": "deterministic chronology; supersession/disconnection settlement", "status": "Accepted" },
+    { "increment": "Task 2", "commit": "95f3f5747800ec20bbbe93a426fa8759a2930ae5", "parent": "b0b3c942e73ac03e12c51baac650043b0a5511ea", "focus": "selection identity/limits (DEVIATION-07)", "status": "Accepted" },
+    { "increment": "Task 2-R", "commit": "b394b907017135cca2a9343eb21d9555b5aaa891", "parent": "95f3f5747800ec20bbbe93a426fa8759a2930ae5", "focus": "identity/grouping/reattachment (T2-R F01/F02/F03)", "status": "Accepted" },
+    { "increment": "Task 3", "commit": "e26136905d56de58cee933f2c749f5e50a7c7409", "parent": "b394b907017135cca2a9343eb21d9555b5aaa891", "focus": "state/validation/clear matrix (DEVIATION-08/09)", "status": "Accepted" },
+    { "increment": "Task 3-R", "commit": "001d9d3661e3ab373cc6c0dac854526ee81de94d", "parent": "e26136905d56de58cee933f2c749f5e50a7c7409", "focus": "error-state and mode-switch (T3-R F01/F02)", "status": "Accepted" },
+    { "increment": "Task 4", "commit": "8b1131750f281cf853095a9e9e4620bc785a7bed", "parent": "001d9d3661e3ab373cc6c0dac854526ee81de94d", "focus": "interaction-driven event ordering (DEVIATION-10)", "status": "Accepted" },
+    { "increment": "Task 5", "commit": "21b5c7605efcd487fb40646b4bc287a396c7359d", "parent": "8b1131750f281cf853095a9e9e4620bc785a7bed", "focus": "closure + evidence reconciliation", "status": "Accepted (conditional on W1-P1.2-T5-R)" }
   ],
   "testInventory": {
     "w1-p1-2-set-selected-values-ordering.spec.ts": 19,
@@ -121,7 +122,7 @@
     "findings": {
       "T5-F01": {
         "status": "Corrected",
-        "detail": "Closure-report §1 increment-to-commit table repaired: full SHAs, verified parent column, placeholders and the e261369 Task 2-R mis-assignment removed. See reconciledIncrements[].commit/parent.",
+        "detail": "Closure-report §1 increment-to-commit table repaired (full SHAs, verified parent column, placeholders and the e261369 Task 2-R mis-assignment removed) AND the evidence JSON reconciledIncrements array synchronized with it: every entry now carries commit + parent, including Task 5, with ancestry re-verified from git (T5-R-F01).",
         "location": "W1-P1.2-CLOSURE-REPORT.md §1; reconciledIncrements"
       },
       "T5-F02": {
@@ -131,8 +132,18 @@
       },
       "T5-F03": {
         "status": "Corrected",
-        "detail": "Programmatic-vs-interaction statements scoped to characterized setSelectedValues() and clear() paths and characterized interaction surfaces; universal wording removed.",
+        "detail": "Programmatic-vs-interaction statements scoped to characterized setSelectedValues() and clear() paths and characterized interaction surfaces: ledger §13.4, ledger §13.1 consolidated rules, closure report §4 and §10, and consolidatedContracts.scopeLimitation. Universal wording removed (T5-R-F02).",
         "location": "W1-P1-CONTRACT-LEDGER.md §13.1/§13.4; W1-P1.2-CLOSURE-REPORT.md §4/§10; consolidatedContracts.scopeLimitation"
+      },
+      "T5-R-F01": {
+        "status": "Corrected",
+        "detail": "reconciledIncrements entries now include commit + parent (Task 1..Task 5) and incrementLineageVerified records the ancestry check; Task 5 entry carries 21b5c76 / parent 8b11317.",
+        "location": "W1-P1.2-CLOSURE-EVIDENCE.json reconciledIncrements + incrementLineageVerified"
+      },
+      "T5-R-F02": {
+        "status": "Corrected",
+        "detail": "Ledger §13.1 consolidated rules now bounded to the characterized chronology operations (\"change always...\" and \"select fires only...\") and closure-report §4 programmatic-vs-interaction sentence now carries the scope limitation inline.",
+        "location": "W1-P1-CONTRACT-LEDGER.md §13.1; W1-P1.2-CLOSURE-REPORT.md §4"
       }
     },
     "acceptanceGateTrace": {
@@ -143,5 +154,6 @@
       "testsNotRerun": "No executable code changed; full-core regression 877 passed + 1 skipped carried forward from accepted Task 5 evidence (not re-run for T5-R)."
     },
     "productionChanges": "none"
-  }
+  },
+  "incrementLineageVerified": "Verified via `git rev-parse <commit>^` for every entry on 2026-11-28: each reconciledIncrements[].commit is the direct parent of the next entry; Task 1 (832431c) directly follows the W1-P1.1-R reconciliation commit 4b02cd1, and Task 5 (21b5c76) is the head of the chain. Task 2-R is b394b90 with parent 95f3f57 (e261369 is a Task 3 commit). Corrected under W1-P1.2-T5-R (T5-F01) and synchronized with the closure report §1 table under T5-R-F01."
 }

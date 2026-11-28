@@ -11,7 +11,7 @@
 
 > **W1-P1.2-R note (Task 5 closure).** Sections 3-9 carry the accumulated W1-P1.2 coverage annotations. Section 8 now summarizes **all ten** deviations with owner + status; sections 13-14 consolidate the accepted Task 1-4 selection characterization into a single reviewable contract and record the W1-P1.2 closure summary (including the T4-F01/T4-F02 errata corrections). The coverage distribution is unchanged at Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**; no `Partial` was upgraded without full path coverage, and no production source was modified.
 
-> **W1-P1.2-T5-R note (documentation-only).** The final closure review required three corrections. (T5-F03) The programmatic-vs-interaction statements in §13.1 and §13.4 are now **scoped to the characterized `setSelectedValues()` and `clear()` paths and the characterized interaction surfaces**; they are no longer phrased as a universal guarantee. (T5-F02) DEVIATION-08's value-based reattachment claim is marked superseded in `W1-P1-DEVIATIONS.md`; key-based reattachment is authoritative. (T5-F01) The closure report's increment-to-commit table now carries complete, ancestry-verified SHAs. No executable code, test, or contract ID changed.
+> **W1-P1.2-T5-R note (documentation-only).** The final closure review required three corrections. (T5-F03) The programmatic-vs-interaction statements in §13.1 and §13.4 are now **scoped to the characterized `setSelectedValues()` and `clear()` paths and the characterized interaction surfaces**; they are no longer phrased as a universal guarantee. (T5-F02) DEVIATION-08's value-based reattachment claim is marked superseded in `W1-P1-DEVIATIONS.md`; key-based reattachment is authoritative. (T5-F01) The closure report's increment-to-commit table now carries complete, ancestry-verified SHAs. Follow-up review amendments (T5-R-F01/F02) further bound the §13.1 consolidated rules to the characterized operations and synchronize the evidence JSON lineage with the closure report. No executable code, test, or contract ID changed.
 
 ## 0. Purpose and reading rules
 
@@ -494,10 +494,10 @@ All events are `CustomEvent(name, { detail, bubbles: true, composed: true })`. C
 | Rejected (disabled-blocked / `maxSelections`) | none | none | — | no state change; no event/callback |
 | Single re-select, `allowDeselect:false` | `select` → `change` | `onChange` → `onSelect` | same | **no state change but events STILL fire** (compatibility finding) |
 
-**Consolidated rules.**
+**Consolidated rules.** All rules below are **bounded to the characterized operations in the chronology table above** (the interaction surfaces and the programmatic `setSelectedValues()` / `clear()` paths exercised in P1.2); they are not universal guarantees for every public method, asynchronous path, or configuration.
 
-- `change` always fires with exactly three keys and preserves **selection insertion order** (not registry order) in `selectedValues`/`selectedItems`/`selectedIndices` — verified: selecting `c` then `a` yields `['c','a']` / indices `[2,0]`.
-- `select` fires only on user-driven activation, never on programmatic `setSelectedValues()`/`clear()`/removal.
+- On the characterized operations, `change` carries exactly three keys and preserves **selection insertion order** (not registry order) in `selectedValues`/`selectedItems`/`selectedIndices` — verified: selecting `c` then `a` yields `['c','a']` / indices `[2,0]`.
+- `select` fires only on user-driven activation. On the **characterized** programmatic operations — `setSelectedValues()` (local and server-fetch) and `clear()` (local), plus chip/option-level removal — no `select` is emitted. This is asserted only for those operations; it is **not** a universal guarantee for every public method, asynchronous path, or configuration (uncovered programmatic paths remain owned by later increments — see §13.4).
 - `onSelect` receives the **same detail object** as the `select` event, **including `multi`** (T4-F02 errata: earlier title mis-worded this as "without `multi`"; assertion and behavior were always correct).
 - Interaction sequences bubble and are `composed` (observable on a light-DOM ancestor).
 - `select`/`change`/`clear`/`remove` payload shapes are exactly as tabled; exact-key assertions live in `w1-p1-2-t4-interaction-events.spec.ts` (T4-04).
