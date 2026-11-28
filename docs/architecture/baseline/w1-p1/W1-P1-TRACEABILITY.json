@@ -26,8 +26,8 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 63,
-      "Partial": 32,
+      "Existing": 62,
+      "Partial": 33,
       "Diagnostic": 13,
       "Missing": 4
     },
@@ -710,7 +710,7 @@
       "behavior": "loadMore legacy + acknowledged",
       "targetIncrement": "P1.5",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event with the request kind after a page is available",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event carrying a fresh page-mode load-more request at page 2",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -787,8 +787,8 @@
       "id": "EVENT-012",
       "behavior": "diagnostic boundedness",
       "targetIncrement": "P1.5",
-      "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a single bounded diagnostic (source \"event\") for a cursor resource-limit and not more",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a resource-limit diagnostic carrying source, name, bounded detail, and mirrors it in the snapshot",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -830,7 +830,7 @@
       "behavior": "dataRequestCancel",
       "targetIncrement": "P1.5",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"query-changed\" when the query supersedes an active request",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"config-changed\" when a threshold change invalidates an active request",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [

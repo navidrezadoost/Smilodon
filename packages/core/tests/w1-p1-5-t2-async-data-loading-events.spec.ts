@@ -151,7 +151,16 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
   });
 
   describe('EVENT-005: pageLoaded is declared-only', () => {
-    it('does not emit pageLoaded when an acknowledged page completes', async () => {
+    // NOTE ON EVIDENCE BOUNDARY: these are bounded *runtime* observations at
+    // specific completion checkpoints. They establish that `pageLoaded` is not
+    // dispatched at an acknowledged page completion or a legacy load-more. They
+    // do NOT, on their own, prove the event can never be emitted on any
+    // execution path. The "declared-only" conclusion also rests on a separate
+    // source inspection (the type is declared in public-types.ts but no
+    // dispatch site exists in enhanced-select.ts). EVENT-005 therefore remains
+    // Missing with DEVIATION-02 as an ADR candidate — the runtime negative and
+    // the source inspection are distinct evidence, neither over-claiming.
+    it('does not emit pageLoaded at an acknowledged page completion (bounded runtime observation)', async () => {
       const select = createSelect();
       const { events } = capture(select, ['pageLoaded', 'dataProjection']);
 
@@ -166,7 +175,7 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
       expect((events.dataProjection as { status: string }[]).map((d) => d.status)).toEqual(['complete']);
     });
 
-    it('does not emit pageLoaded when a legacy load-more completes', async () => {
+    it('does not emit pageLoaded at a legacy load-more completion (bounded runtime observation)', async () => {
       const select = createSelect({
         searchable: false,
         infiniteScroll: { enabled: false },
@@ -216,15 +225,19 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
   });
 
   describe('EVENT-008: loadMore (legacy + acknowledged)', () => {
-    it('emits an acknowledged loadMore event with the request kind after a page is available', async () => {
+    it('emits an acknowledged loadMore event carrying a fresh page-mode load-more request at page 2', async () => {
       const select = createSelect();
       const { events } = capture(select, ['loadMore']);
 
+      // The initial remote search is issued at firstPage (default 1).
       const first = await startLoading(select);
+      expect(first.position).toEqual({ mode: 'page', page: 1 });
       select.completeDataRequest(
         completion(first, { status: 'succeeded', items: [{ value: 'a', label: 'A' }], hasMore: true }) as never,
       );
       await waitSettled(select, 'succeeded');
+      // A succeeded page at page 1 advances the eligible position to page 2.
+      expect(select.getDataLoadingState().nextEligiblePosition).toEqual({ mode: 'page', page: 2 });
 
       await vi.waitFor(() => {
         if (!loadMoreButton(select)) throw new Error('waiting for load-more button');
@@ -234,13 +247,25 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
         if ((events.loadMore as unknown[]).length === 0) throw new Error('waiting for loadMore');
       }, { timeout: 2000 });
 
+      // Establish the active request explicitly — this test must fail if no
+      // page-mode load-more request was created for the load-more trigger.
+      const active = select.getDataLoadingState().activeRequest;
+      expect(active).not.toBeNull();
+      expect(active!.kind).toBe('loadMore');
+      expect(active!.position.mode).toBe('page');
+      expect((active!.position as { mode: 'page'; page: number }).page).toBe(2);
+      // The load-more request is distinct from the initial search request.
+      expect(active!.requestId).not.toBe(first.requestId);
+
       const detail = events.loadMore[0] as { page: number; items: unknown[]; request: DataRequest };
       expect(detail.request.kind).toBe('loadMore');
       expect(detail.items).toEqual([]);
-      // Page position derives from the projected page mode.
-      expect(detail.page).toBe(select.getDataLoadingState().activeRequest?.position.mode === 'page'
-        ? (select.getDataLoadingState().activeRequest!.position as { page: number }).page
-        : detail.page);
+      // The emitted page derives from the request's own page-mode position.
+      expect(detail.page).toBe(2);
+      expect(detail.request.position).toEqual({ mode: 'page', page: 2 });
+      // The event's request is the same object the snapshot reports as active.
+      expect(detail.request.requestId).toBe(active!.requestId);
+      expect(detail.request.queryGeneration).toBe(active!.queryGeneration);
     });
 
     it('emits a legacy loadMore event with page number and empty items', async () => {
@@ -270,8 +295,8 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
     });
   });
 
-  describe('EVENT-012: diagnostic boundedness', () => {
-    it('emits a single bounded diagnostic (source "event") for a cursor resource-limit and not more', async () => {
+  describe('EVENT-012: diagnostic (boundedness — Partial)', () => {
+    it('emits a resource-limit diagnostic carrying source, name, bounded detail, and mirrors it in the snapshot', async () => {
       const select = createSelect({
         dataLoading: { protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'cursor', fetchLimit: 5 },
       });
@@ -289,10 +314,75 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
 
       expect(result).toBe('resource-limit');
       expect(events.diagnostic).toHaveLength(1);
-      const detail = events.diagnostic[0] as { source: string; name: string; timestamp: number };
+      const detail = events.diagnostic[0] as {
+        source: string;
+        name: string;
+        timestamp: number;
+        detail: {
+          reason: string;
+          maxCursorTokenBytes: number;
+          actualCursorTokenBytes: number;
+          requestId: string;
+        };
+      };
       expect(detail.source).toBe('event');
       expect(detail.name).toBe('acknowledgedDataLoadingResourceLimit');
       expect(typeof detail.timestamp).toBe('number');
+      // The diagnostic's bounded `detail` is the coordinator resource-limit object.
+      expect(detail.detail).toMatchObject({
+        reason: 'cursor-token-size',
+        maxCursorTokenBytes: 1024,
+        actualCursorTokenBytes: 50_000,
+        requestId: request.requestId,
+      });
+      // The same resource-limit is reflected on the public snapshot.
+      expect(select.getDataLoadingState().resourceLimit).toEqual(detail.detail);
+    });
+
+    it('emits one diagnostic per resource-limit result — a replayed completion re-emits (boundedness is per-result, not global)', async () => {
+      const select = createSelect({
+        dataLoading: { protocol: 'acknowledged', searchMode: 'remote', paginationMode: 'cursor', fetchLimit: 5 },
+      });
+      const { events } = capture(select, ['diagnostic']);
+
+      const request = await startLoading(select);
+      const oversized = completion(request, {
+        status: 'succeeded',
+        items: [{ value: 'a', label: 'A' }],
+        hasMore: true,
+        nextCursor: 'x'.repeat(50_000),
+      }) as never;
+
+      expect(select.completeDataRequest(oversized)).toBe('resource-limit');
+      expect(events.diagnostic).toHaveLength(1);
+
+      // A replayed completion against the same still-active request again
+      // classifies as resource-limit and emits a further diagnostic. This is
+      // why the boundedness claim is scoped per-result, not global — EVENT-012
+      // stays Partial (projection-failure diagnostic uncharacterized, below).
+      expect(select.completeDataRequest(oversized)).toBe('resource-limit');
+      expect(events.diagnostic).toHaveLength(2);
+      for (const entry of events.diagnostic as { name: string }[]) {
+        expect(entry.name).toBe('acknowledgedDataLoadingResourceLimit');
+      }
+    });
+
+    it('emits no diagnostic on a healthy acknowledged success (projection-failure diagnostic not exercised)', async () => {
+      const select = createSelect();
+      const { events } = capture(select, ['diagnostic']);
+
+      const request = await startLoading(select);
+      select.completeDataRequest(
+        completion(request, { status: 'succeeded', items: [{ value: 'a', label: 'A' }], hasMore: true }) as never,
+      );
+      await waitSettled(select, 'succeeded');
+
+      // No resource-limit and no projection-failure diagnostic is emitted for a
+      // healthy cycle. The `acknowledgedProjectionFailed` diagnostic is NOT
+      // characterized here: it is reachable only via a projection exception
+      // path that has no deterministic public trigger in this increment (see
+      // EVENT-020 / evidence). EVENT-012 therefore remains Partial.
+      expect(events.diagnostic).toHaveLength(0);
     });
   });
 
@@ -387,6 +477,11 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
       const detail = events.dataRequestCancel[0] as DataRequestCancelNotification;
       expect(detail.reason).toBe('config-changed');
       expect(detail.requestId).toBe(active.requestId);
+      expect(detail.queryGeneration).toBe(active.queryGeneration);
+      // The full cancellation notification carries exactly the three fields.
+      expect(Object.keys(detail).sort()).toEqual(['queryGeneration', 'reason', 'requestId']);
+      // Exactly one cancellation for the one superseded request.
+      expect(events.dataRequestCancel).toHaveLength(1);
     });
 
     it('emits dataRequestCancel with reason "disconnected" when the element is removed while a request is active', async () => {
@@ -402,13 +497,19 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
       const detail = events.dataRequestCancel[0] as DataRequestCancelNotification;
       expect(detail.reason).toBe('disconnected');
       expect(detail.requestId).toBe(request.requestId);
+      expect(detail.queryGeneration).toBe(request.queryGeneration);
+      // The full cancellation notification carries exactly the three fields.
+      expect(Object.keys(detail).sort()).toEqual(['queryGeneration', 'reason', 'requestId']);
+      expect(events.dataRequestCancel).toHaveLength(1);
     });
 
-    it('invokes onDataRequestCancel with the same detail object as the emitted event', async () => {
+    it('invokes onDataRequestCancel with the same detail object (reference identity) and emits before the callback', async () => {
       const select = createSelect();
-      const callback = vi.fn();
+      const order: string[] = [];
+      const callback = vi.fn(() => order.push('callback'));
       select.updateConfig({ callbacks: { onDataRequestCancel: callback } });
       const { events } = capture(select, ['dataRequestCancel']);
+      select.addEventListener('dataRequestCancel', () => order.push('event'));
 
       await startLoading(select);
       typeQuery(select, 'abc');
@@ -417,7 +518,10 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
       }, { timeout: 2000 });
 
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback.mock.calls[0][0]).toEqual(events.dataRequestCancel[0]);
+      // The callback receives the exact same object dispatched on the event.
+      expect(callback.mock.calls[0][0]).toBe(events.dataRequestCancel[0]);
+      // The event is dispatched before the callback is invoked.
+      expect(order).toEqual(['event', 'callback']);
     });
   });
 
