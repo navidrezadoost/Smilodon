@@ -72,10 +72,18 @@
     "baselineAtP16Start": {"note": "At P1.5 closure the P1.6 surface had ZERO registered contract IDs (documented-only per ledger §10/§12). P1.6 defined and registered 17 P1.6-targeted contracts."},
     "final": {"Existing": 15, "Partial": 2, "Diagnostic": 0, "Missing": 0, "total": 17},
     "reclassifications": [
-      {"id": "API-065", "from": "Existing", "to": "Partial", "task": "T1-R", "finding": "T1-F01", "reason": "createElement blocks key.startsWith('on') || key === 'style' CASE-SENSITIVELY; mixed-case ONCLICK/OnLoad/Style bypass to live handler/inline style. Production fix out of scope; classified Partial."},
-      {"id": "API-075", "from": "Missing", "to": "Partial", "task": "T3", "finding": "observed", "reason": "New record. Utility modules import-safe in no-DOM Node, but the public package ENTRY throws ReferenceError (HTMLElement is not defined) at import because exported web components extend HTMLElement at class-declaration time. Import-safety only partially satisfied; limitation recorded."}
+      {"id": "API-065", "from": "Existing", "to": "Partial", "task": "T1-R", "finding": "T1-F01", "reason": "createElement blocks key.startsWith('on') || key === 'style' CASE-SENSITIVELY; mixed-case ONCLICK/OnLoad/Style bypass to live handler/inline style. Production fix out of scope; classified Partial."}
     ],
-    "note": "The two Partial contracts are the only classifications below Existing in P1.6. API-076 is Existing for the SPECIFICALLY TESTED utility-module functions only (not every DOM-dependent export in the package)."
+    "newlyRegistered": [
+      {"id": "API-063", "coverage": "Existing"}, {"id": "API-064", "coverage": "Existing"}, {"id": "API-066", "coverage": "Existing"},
+      {"id": "API-067", "coverage": "Existing"}, {"id": "API-068", "coverage": "Existing"}, {"id": "API-069", "coverage": "Existing"},
+      {"id": "API-070", "coverage": "Existing"}, {"id": "API-071", "coverage": "Existing"}, {"id": "API-072", "coverage": "Existing"},
+      {"id": "API-073", "coverage": "Existing"}, {"id": "API-074", "coverage": "Existing"},
+      {"id": "API-075", "coverage": "Partial", "task": "T3", "finding": "observed", "reason": "NEWLY REGISTERED record (not a reclassification). Utility modules import-safe in no-DOM Node, but the public package ENTRY throws ReferenceError (HTMLElement is not defined) at import because exported web components extend HTMLElement at class-declaration time. First classified as Partial; limitation recorded."},
+      {"id": "API-076", "coverage": "Existing"},
+      {"id": "CONFIG-027", "coverage": "Existing"}, {"id": "CONFIG-028", "coverage": "Existing"}, {"id": "CONFIG-029", "coverage": "Existing"}
+    ],
+    "note": "API-065 is the ONLY reclassification in P1.6 (Existing -> Partial, T1-R, T1-F01). The remaining 16 P1.6 contracts were newly registered at their first-classified coverage (see newlyRegistered). In particular API-075 was NEWLY REGISTERED as Partial by T3; it was NOT reclassified from an existing Missing record (correcting T4-F01). The three pre-existing Missing records (API-054/P1.2, EVENT-005/P1.5, CONFIG-023/P1.4) are unchanged and are not part of this P1.6 surface. API-076 is Existing for the SPECIFICALLY TESTED utility-module functions only (not every DOM-dependent export in the package)."
   },
   "matrixDistribution": {
     "p16Start": {"Existing": 62, "Partial": 34, "Diagnostic": 13, "Missing": 3, "total": 112},
