@@ -49,7 +49,7 @@
     },
     {
       "contract": "API-073",
-      "note": "Ancestor walk characterised via inline-set overflow hidden/clip only. PARENT-CHAIN based, NOT isConnected (T2-F01): a detached subtree with an overflow-hidden ancestor returns true; only a parentless element returns false."
+      "note": "Ancestor walk characterised via inline-set overflow hidden/clip only. PARENT-CHAIN based, NOT isConnected (T2-F01): returns true iff a traversed ancestor has overflow hidden/clip (excluding body); otherwise false. Connection is not required — a detached subtree may return true; a parentless element returns false."
     },
     {
       "contract": "API-072",
@@ -153,7 +153,7 @@
           "id": "T2-F01",
           "severity": "Medium",
           "contract": "API-073",
-          "disposition": "Added detached-subtree test (parent-chain, not isConnected -> true); reworded 'detached->false' to 'parentless->false'; matrix/ledger/evidence reconciled. Existing retained."
+          "disposition": "Added detached-subtree test (parent-chain, not isConnected -> true); rewrote wording to parent-chain behavior (true iff a traversed ancestor has overflow hidden/clip, body excluded; a detached subtree may be true, a parentless element is false — no exclusivity claim). Matrix/ledger/evidence reconciled. Existing retained."
         },
         {
           "id": "T2-F02",
@@ -174,6 +174,19 @@
           "disposition": "Precise wording: 'production-conditioned source behavior under NODE_ENV=production'; no compiled-artifact/CSP-enforcement claim."
         }
       ],
+      "productionSourceTouched": false
+    },
+    {
+      "increment": "W1-P1.6-T2-R1",
+      "startingCommit": "61ebba0d4ebb7702aabcfde6ad62434072f17028",
+      "authorizedBy": "Lead T2-R review: CONDITIONAL; T2-R1 GO (text-only correction of T2-R-F01).",
+      "finding": {
+        "id": "T2-R-F01",
+        "severity": "Low",
+        "contract": "API-073",
+        "detail": "Prior wording stated 'only a parentless element returns false', an unsupported exclusivity claim. The function returns false whenever the traversed parent chain has no qualifying hidden/clip ancestor (parentless, visible ancestors, body-excluded direct child, etc.).",
+        "disposition": "Replaced with canonical wording across matrix behavior/coverageNote/reconciliation note, ledger API-073 row + limitations, evidence limitations, and the spec describe-comment. No test assertions or testIds changed; 25 tests and titles preserved."
+      },
       "productionSourceTouched": false
     }
   ]

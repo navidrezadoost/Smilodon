@@ -265,8 +265,9 @@ describe('API-072: shadow-root style injection', () => {
  * out of scope).
  *
  * IMPORTANT (T2-F01): the helper is PARENT-CHAIN based — it does NOT consult
- * `element.isConnected`. A DETACHED subtree can still have an overflow-hidden
- * ancestor and yield `true`; only a PARENTLESS element yields `false`.
+ * `element.isConnected`. It returns true if a traversed ancestor has computed
+ * overflow `hidden`/`clip`; otherwise it returns false. A DETACHED subtree may
+ * therefore return true; a parentless element (no parent chain) returns false.
  */
 describe('API-073: overflow-hidden ancestor detection (parent-chain, body-excluded)', () => {
   it('API-073: detects an overflow:hidden ancestor', () => {
