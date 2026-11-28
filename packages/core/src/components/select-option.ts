@@ -293,6 +293,15 @@ export class SelectOption extends HTMLElement {
         pointer-events: none;
       }
 
+      .remove-button-icon > [data-smilodon-fallback-icon],
+      .remove-button-icon > [data-smilodon-react-icon-root] {
+        display: contents;
+      }
+
+      .remove-button-icon[data-smilodon-icon-owner="react"] > [data-smilodon-fallback-icon] {
+        display: none;
+      }
+
       .remove-button-icon svg {
         width: 100%;
         height: 100%;
@@ -430,14 +439,19 @@ export class SelectOption extends HTMLElement {
       const removeIcon = document.createElement('span');
       removeIcon.className = 'remove-button-icon';
       removeIcon.setAttribute('part', 'chip-remove-icon');
+      const fallbackIcon = document.createElement('span');
+      fallbackIcon.setAttribute('data-smilodon-fallback-icon', '');
+      const portalRoot = document.createElement('span');
+      portalRoot.setAttribute('data-smilodon-react-icon-root', '');
       const iconMarkup = this._config.removeButtonIcon && this._config.removeButtonIcon.trim()
         ? this._config.removeButtonIcon
         : '×';
       if (iconMarkup.trim().startsWith('<')) {
-        removeIcon.innerHTML = iconMarkup;
+        fallbackIcon.innerHTML = iconMarkup;
       } else {
-        removeIcon.textContent = iconMarkup;
+        fallbackIcon.textContent = iconMarkup;
       }
+      removeIcon.append(fallbackIcon, portalRoot);
       this._removeButton.appendChild(removeIcon);
 
       this._container.appendChild(this._removeButton);

@@ -10,7 +10,7 @@ import React, {
   useMemo,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import type {
   SelectEventDetail,
   SearchEventDetail,
@@ -837,13 +837,26 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
 
   // Register custom element if not already registered
   const [isElementReady, setIsElementReady] = useState(false);
+  const [globalRemoveButtonIcon, setGlobalRemoveButtonIcon] = useState<string | undefined>();
   const [emptyStateContext, setEmptyStateContext] = useState<EmptyStateContext | null>(null);
   const [removeIconTargets, setRemoveIconTargets] = useState<HTMLElement[]>([]);
+  const removeIconPortalKeysRef = useRef(new WeakMap<HTMLElement, string>());
+  const removeIconPortalKeySequenceRef = useRef(0);
+  const warnedUnsupportedRemoveIconCoreRef = useRef(false);
+  const getRemoveIconPortalKey = (target: HTMLElement): string => {
+    let key = removeIconPortalKeysRef.current.get(target);
+    if (!key) {
+      key = `remove-icon-${removeIconPortalKeySequenceRef.current++}`;
+      removeIconPortalKeysRef.current.set(target, key);
+    }
+    return key;
+  };
   const shouldPortalRemoveIcon =
     multiple
     && removeButtonIcon != null
     && typeof removeButtonIcon !== "string"
     && typeof removeButtonIcon !== "boolean"
+    && selectionConfig?.removeButtonIcon === undefined
     && coreConfig?.selection?.removeButtonIcon === undefined;
   const acknowledgedRequested =
     acceptedProtocol === "acknowledged" ||
@@ -1192,6 +1205,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       .then((module) => {
         if (!active) return;
         coreModuleRef.current = module;
+        setGlobalRemoveButtonIcon(module.selectConfig.getConfig().selection.removeButtonIcon);
         setIsCoreModuleLoaded(true);
         const currentConstructor = customElements.get("enhanced-select");
         if (!currentConstructor) {
@@ -1260,7 +1274,12 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       ...selectionConfig,
       mode: multiple ? "multi" : "single",
       maxSelections,
-      removeButtonIcon: typeof removeButtonIcon === "string" ? removeButtonIcon : undefined,
+      // Preserve the configured global fallback and restore it after a local
+      // string prop is removed. Core ignores undefined config entries, so
+      // forwarding undefined would leave the previous instance override in place.
+      removeButtonIcon: typeof removeButtonIcon === "string"
+        ? removeButtonIcon
+        : selectionConfig?.removeButtonIcon ?? globalRemoveButtonIcon,
       disabledOptionBehavior,
       showSelectedIndicator,
       toggleOnTriggerClick,
@@ -1404,11 +1423,21 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       setRemoveIconTargets((previous) => previous.length ? [] : previous);
       return;
     }
+    if (element.getAttribute('data-smilodon-react-icon-portals') !== 'isolated-v1') {
+      if (!warnedUnsupportedRemoveIconCoreRef.current) {
+        warnedUnsupportedRemoveIconCoreRef.current = true;
+        console.error(
+          '[Smilodon React] React-node removeButtonIcon requires a Core version that provides isolated React icon portal roots. Upgrade @smilodon/core to the compatible release; the adapter will not portal into Core-owned icon DOM.',
+        );
+      }
+      setRemoveIconTargets((previous) => previous.length ? [] : previous);
+      return;
+    }
 
     const observed = new Set<ShadowRoot>();
     let currentTargets: HTMLElement[] = [];
     let disposed = false;
-    const observer = new MutationObserver(() => refresh());
+    const observer = new MutationObserver(() => flushSync(refresh));
 
     const refresh = () => {
       if (disposed) return;
@@ -1429,21 +1458,25 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
       }
 
       const targets = [
-        ...Array.from(shadow.querySelectorAll<HTMLElement>('[part="chip-remove-icon"]')),
+        ...Array.from(shadow.querySelectorAll<HTMLElement>('[data-smilodon-react-icon-root]')),
         ...optionRoots.flatMap((root) =>
-          Array.from(root.querySelectorAll<HTMLElement>('[part="chip-remove-icon"]')),
+          Array.from(root.querySelectorAll<HTMLElement>('[data-smilodon-react-icon-root]')),
         ),
       ];
+      const targetSet = new Set(targets);
+      for (const previous of currentTargets) {
+        if (!targetSet.has(previous) && previous.parentElement?.getAttribute('data-smilodon-icon-owner') === 'react') {
+          previous.parentElement.removeAttribute('data-smilodon-icon-owner');
+        }
+      }
+      for (const target of targets) {
+        target.parentElement?.setAttribute('data-smilodon-icon-owner', 'react');
+      }
       if (
         targets.length === currentTargets.length
         && targets.every((target, index) => target === currentTargets[index])
       ) return;
 
-      // Remove Core's fallback glyph only for *new* portal destinations.
-      // Previously mounted targets stay under React ownership.
-      for (const target of targets) {
-        if (!currentTargets.includes(target)) target.replaceChildren();
-      }
       currentTargets = targets;
       setRemoveIconTargets(targets);
     };
@@ -1452,6 +1485,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     return () => {
       disposed = true;
       observer.disconnect();
+      for (const target of currentTargets) {
+        if (target.parentElement?.getAttribute('data-smilodon-icon-owner') === 'react') {
+          target.parentElement.removeAttribute('data-smilodon-icon-owner');
+        }
+      }
     };
   }, [isElementUsable, shouldPortalRemoveIcon]);
 
@@ -1719,11 +1757,11 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
         )
       : null,
     shouldPortalRemoveIcon
-      ? removeIconTargets.map((target, index) =>
+      ? removeIconTargets.map((target) =>
           createPortal(
             React.createElement("span", { "aria-hidden": "true" }, removeButtonIcon),
             target,
-            index,
+            getRemoveIconPortalKey(target),
           ),
         )
       : null,

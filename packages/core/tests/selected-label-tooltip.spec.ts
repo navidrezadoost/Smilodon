@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnhancedSelect } from '../src/components/enhanced-select';
 
 if (!customElements.get('enhanced-select')) {
@@ -20,6 +20,10 @@ describe('selected label tooltip', () => {
   function setDimensions(element: HTMLElement, clientWidth: number, scrollWidth: number): void {
     Object.defineProperty(element, 'clientWidth', { configurable: true, value: clientWidth });
     Object.defineProperty(element, 'scrollWidth', { configurable: true, value: scrollWidth });
+    if (element.matches('[part="input"]')) {
+      vi.spyOn((select as any)._selectedLabelTooltipTextMeasure, 'getBoundingClientRect')
+        .mockReturnValue({ width: scrollWidth } as DOMRect);
+    }
   }
 
   it('creates one hidden tooltip in the instance shadow root', () => {
@@ -86,19 +90,61 @@ describe('selected label tooltip', () => {
     expect(input.getAttribute('aria-describedby')?.split(/\s+/)).not.toContain(tooltip.id);
   });
 
-  it('suppresses a selected-value tooltip while the input displays a search query', async () => {
+  it('uses the visible pending query instead of a selected or stale committed label', async () => {
     const label = 'A very long selected label that cannot fit in the input';
     select.updateConfig({ searchable: true });
     await select.setItems([{ value: 'long', label }]);
     await select.setSelectedValues(['long']);
     const input = select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!;
     const tooltip = select.shadowRoot!.querySelector<HTMLElement>('[role="tooltip"]')!;
-    setDimensions(input, 80, 240);
-    input.value = 'searching for another option';
-    (select as any)._state.searchQuery = 'searching for another option';
+    const query = 'searching for a different option with a long visible query';
+    Object.defineProperty(input, 'clientWidth', { configurable: true, value: 80 });
+    input.value = query;
+    (select as any)._state.searchQuery = 'older committed query';
+    (select as any)._acknowledgedPendingSearchQuery = query;
+    vi.spyOn((select as any)._selectedLabelTooltipTextMeasure, 'getBoundingClientRect')
+      .mockReturnValue({ width: 260 } as DOMRect);
 
     (select as any)._showSelectedLabelTooltip(input);
 
+    expect(tooltip.hidden).toBe(false);
+    expect(tooltip.textContent).toBe(query);
+    expect(tooltip.textContent).not.toBe(label);
+    expect(input.getAttribute('aria-describedby')?.split(/\s+/)).toContain(tooltip.id);
+  });
+
+  it('does not show a query tooltip when the measured visible query fits', async () => {
+    select.updateConfig({ searchable: true, selection: { mode: 'multi' } });
+    const input = select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!;
+    const tooltip = select.shadowRoot!.querySelector<HTMLElement>('[role="tooltip"]')!;
+    Object.defineProperty(input, 'clientWidth', { configurable: true, value: 120 });
+    input.value = 'Short query';
+    (select as any)._state.searchQuery = input.value;
+    vi.spyOn((select as any)._selectedLabelTooltipTextMeasure, 'getBoundingClientRect')
+      .mockReturnValue({ width: 60 } as DOMRect);
+
+    (select as any)._showSelectedLabelTooltip(input);
+
+    expect(tooltip.hidden).toBe(true);
+    expect(input.hasAttribute('aria-describedby')).toBe(false);
+  });
+
+  it('clears a query tooltip and its description through programmatic clearSearch', async () => {
+    select.updateConfig({ searchable: true, selection: { mode: 'multi' } });
+    const input = select.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!;
+    const tooltip = select.shadowRoot!.querySelector<HTMLElement>('[role="tooltip"]')!;
+    Object.defineProperty(input, 'clientWidth', { configurable: true, value: 80 });
+    input.value = 'A query that is visibly longer than the input field';
+    (select as any)._state.searchQuery = input.value;
+    (select as any)._selectedLabelTooltipFocusTrigger = input;
+    vi.spyOn((select as any)._selectedLabelTooltipTextMeasure, 'getBoundingClientRect')
+      .mockReturnValue({ width: 260 } as DOMRect);
+    (select as any)._showSelectedLabelTooltip(input);
+    expect(tooltip.hidden).toBe(false);
+
+    select.clearSearch();
+
+    expect(input.value).toBe('');
     expect(tooltip.hidden).toBe(true);
     expect(input.hasAttribute('aria-describedby')).toBe(false);
   });

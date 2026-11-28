@@ -17,6 +17,26 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.22.0] - Unpublished candidate
+
+Core `1.22.0` adds the truncated search-query tooltip and isolated icon-root capability required by the React remove-icon correction. Local qualification is recorded in [the release candidate record](docs/releases/WEB-1.22.0-RELEASE.md); the package remains unpublished pending PR integration.
+
+### Added
+
+- **Truncated search-query tooltip ([#129](https://github.com/navidrezadoost/Smilodon/issues/129)):** Core shows the full current query in the existing tooltip when the visible query is clipped. Pending acknowledged queries are handled without treating search text as a selected value; edits and clearing update the tooltip and accessibility description.
+
+### Fixed
+
+- **Core icon-root ownership ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** Core updates only its fallback icon subtree and provides isolated portal roots so framework renderers can own icon children without Core clearing them.
+
+## [1.14.0] - Unpublished candidate
+
+React `1.14.0` requires Core `^1.22.0` for the isolated remove-icon portal capability. React Native is not part of this release.
+
+### Fixed
+
+- **React remove-icon configuration precedence and portal lifecycle ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** preserve global and instance icon fallback precedence, mount React-node icons in isolated Core roots, and retain stable portal ownership through selection changes and Core option refreshes.
+
 ## [1.21.0] - 2026-11-27
 
 Published Core-only release. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete. Registry integrity, tarball provenance, and qualification are recorded in [the Core 1.21.0 release record](docs/releases/CORE-1.21.0-RELEASE.md).

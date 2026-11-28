@@ -12,6 +12,8 @@
 
 > **Verification status:** `EnhancedSelect`'s public `virtualize` setting chunks large-list rendering but does not bound the final option DOM. Viewport-windowed rendering remains behind a private test seam and is not production-activated. ARIA and keyboard behaviors have automated coverage in progress; WCAG conformance and manual assistive-technology review have not been certified. See [known limitations](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status) and the [Phase 4 certification record](../../docs/architecture/PHASE-4-CERTIFICATION.md).
 
+> **Next Core candidate (unpublished):** Core `1.22.0` adds the truncated search-query tooltip and isolated icon-root support for React-node remove icons. See the [release candidate record](../../docs/releases/WEB-1.22.0-RELEASE.md) for package pairing and qualification status.
+
 > **Issue #100:** `multiSelectDisplay.scrollToLatestChip` is available in `@smilodon/core@1.17.0`. See [Multi-Select Display Modes](#multi-select-display-modes) and the [release verification](../../docs/releases/WEB-1.17.0-REGISTRY-VERIFICATION.json).
 
 > **Core 1.20.0:** Adds selected-first option presentation and selected-option open positioning through `selectedOptions` and `scrollToSelected`. It also includes Core 1.19.0's styling fixes and search threshold. See [selected-option configuration](#selected-option-presentation-and-opening-scroll), [arrow container positioning](#custom-arrow-slot), and the [release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
@@ -32,6 +34,10 @@ select.updateConfig({
 ## Selected-label tooltip
 
 Core displays the full selected display label in a shared tooltip when the closed single-select value or a multi-select chip is visually truncated. The tooltip appears on pointer hover or keyboard focus; a label that fits does not open one. It uses the same configured item-label resolver as the visible selection, so custom `serverSide.getLabelFromItem` labels are reflected. Search queries are not treated as selected values. Multi-select chip labels become tab stops only while truncated, and Escape dismisses the tooltip without moving focus. This behavior covers selected values and chips, not custom option content in the dropdown.
+
+### Truncated search queries (Issue #129)
+
+When a searchable input's current query is wider than the visible input area, Core uses the same tooltip to expose the full query on hover or keyboard focus. Search content remains a query, never a selected label; pending acknowledged input is considered while its update is in flight. The tooltip follows edits, query clearing, resize, and direction changes without changing the input value, caret, selection, or scroll position. Escape dismisses the tooltip, and a later edit can show it again. This behavior is included in Core `1.22.0`.
 
 ## Custom busy bucket (Core 1.13.0)
 

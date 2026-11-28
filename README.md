@@ -17,9 +17,11 @@
 
 Smilodon is a shared select runtime built around the `enhanced-select` custom element and wrapped by framework-specific adapters. The goal is simple: one behavior model, one styling model, one diagnostics model, and one performance story across every supported platform.
 
-**Published package status (2026-11-27):** Core `1.21.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. Svelte supports Svelte 5 only. React Native remains at `1.10.0` and is excluded because Android/iOS runtime qualification is incomplete.
+**Published package status (verified 2026-11-28):** Core `1.21.0`, React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0`. Svelte supports Svelte 5 only. React Native remains at `1.10.0` and is excluded because Android/iOS runtime qualification is incomplete.
 
 **Latest Core release:** `@smilodon/core@1.21.0` adds independent chip/input padding tokens, selected-label tooltips, and configurable multi-select chip enter/exit animations, plus fixes for custom arrow activation and searchable-input behavior. The existing web adapters' `@smilodon/core: ^1.13.0` peer ranges include Core 1.21.x, so no adapter package version change was required. React Native is unchanged and excluded. See the [Core 1.21.0 release record](docs/releases/CORE-1.21.0-RELEASE.md).
+
+**Next web release candidate (unpublished):** Core `1.22.0` contains Issue #128's remove-icon ownership/configuration fixes and Issue #129's tooltip for truncated search queries. React `1.14.0` pairs with Core `^1.22.0` for the isolated React icon portal capability. Vue, Solid, Vanilla, and Svelte require no package update; their existing Core peer ranges accept Core `1.22.x`. React Native is excluded. See the [release candidate record](docs/releases/WEB-1.22.0-RELEASE.md).
 
 **Previous web release:** Core `1.20.0` adds selected-first ordering and `scrollToSelected` open policies; React `1.13.0`, Vue/Solid/Vanilla `1.12.0`, and Svelte `2.2.0` expose the configuration. Chrome 156 and pinned Firefox 148 passed the selected-options browser suite. Pinned Chromium 147 and WebKit remain unverified; React Native is excluded. See the [1.20.0 release record](docs/releases/WEB-1.20.0-RELEASE.md) and [selected-options qualification](docs/architecture/SELECTED-OPTIONS-PROJECTION.md).
 
