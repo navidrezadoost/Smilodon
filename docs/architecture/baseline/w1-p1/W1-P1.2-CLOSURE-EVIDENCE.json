@@ -62,7 +62,8 @@
       "validateDetached": "returns false for detached selection (DEVIATION-09)",
       "disabledPolicy": "selectable:false blocks (no event); selectable:true allows full sequence"
     },
-    "programmaticVsInteraction": "programmatic mutation emits only change (+onChange); interaction adds the driving event and callback"
+    "programmaticVsInteraction": "On the characterized programmatic paths (setSelectedValues() local + server-fetch; clear() local) the component emits only change (+onChange) and no select/remove/clear; the characterized interaction surfaces add the driving event and callback. Scope-limited characterization: NOT a universal guarantee for every public method, asynchronous path, or configuration (see scopeLimitation).",
+    "scopeLimitation": "Bounded to paths exercised by P1.2 (T5-F03). Acknowledged/dataProjection paths, active-search clear-control semantics, and keyboard/APG-driven selection remain outstanding under later increments and are not certified by this statement."
   },
   "deviationDispositions": {
     "DEVIATION-04": { "status": "Resolved-for-P1.2", "owner": "P1.2 (closed)", "evidence": "w1-p1-2-set-selected-values-ordering.spec.ts" },
@@ -111,5 +112,36 @@
     "T5-10": "this evidence + W1-P1.2-CLOSURE-REPORT.md; single commit"
   },
   "productionChanges": "none",
-  "precedingCommit": "8b11317"
+  "precedingCommit": "8b11317",
+  "correctiveIncrement": {
+    "increment": "W1-P1.2-T5-R",
+    "incorporates": "Task 5 final closure review (conditional acceptance) corrections",
+    "startingCommit": "21b5c7605efcd487fb40646b4bc287a396c7359d",
+    "nature": "documentation-only correction; no executable code, no characterization spec, no production source changed",
+    "findings": {
+      "T5-F01": {
+        "status": "Corrected",
+        "detail": "Closure-report §1 increment-to-commit table repaired: full SHAs, verified parent column, placeholders and the e261369 Task 2-R mis-assignment removed. See reconciledIncrements[].commit/parent.",
+        "location": "W1-P1.2-CLOSURE-REPORT.md §1; reconciledIncrements"
+      },
+      "T5-F02": {
+        "status": "Corrected",
+        "detail": "DEVIATION-08 value-based reattachment clause labeled SUPERSEDED; retention clause preserved; key-based reattachment (T2-R F03, Task 3) authoritative.",
+        "location": "W1-P1-DEVIATIONS.md DEVIATION-08 + Task 5 reconciliation note"
+      },
+      "T5-F03": {
+        "status": "Corrected",
+        "detail": "Programmatic-vs-interaction statements scoped to characterized setSelectedValues() and clear() paths and characterized interaction surfaces; universal wording removed.",
+        "location": "W1-P1-CONTRACT-LEDGER.md §13.1/§13.4; W1-P1.2-CLOSURE-REPORT.md §4/§10; consolidatedContracts.scopeLimitation"
+      }
+    },
+    "acceptanceGateTrace": {
+      "provenanceVerified": "T5-F01: every SHA in reconciledIncrements is the direct parent of the next (git log -1 --format='%H %P').",
+      "traceabilityValidator": "PASS (100 IDs reconcile) - re-run after edits",
+      "checksumVerification": "sha256sum -c SHA256SUMS -> all OK (refreshed in this commit)",
+      "productionIsolation": "git diff 21b5c76 -- packages/core/src packages/core/engine packages/core/adapters = empty; git diff 7e3adf7 21b5c76 -- (same paths) = empty",
+      "testsNotRerun": "No executable code changed; full-core regression 877 passed + 1 skipped carried forward from accepted Task 5 evidence (not re-run for T5-R)."
+    },
+    "productionChanges": "none"
+  }
 }

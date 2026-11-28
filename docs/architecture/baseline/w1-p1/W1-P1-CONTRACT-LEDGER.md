@@ -11,6 +11,8 @@
 
 > **W1-P1.2-R note (Task 5 closure).** Sections 3-9 carry the accumulated W1-P1.2 coverage annotations. Section 8 now summarizes **all ten** deviations with owner + status; sections 13-14 consolidate the accepted Task 1-4 selection characterization into a single reviewable contract and record the W1-P1.2 closure summary (including the T4-F01/T4-F02 errata corrections). The coverage distribution is unchanged at Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**; no `Partial` was upgraded without full path coverage, and no production source was modified.
 
+> **W1-P1.2-T5-R note (documentation-only).** The final closure review required three corrections. (T5-F03) The programmatic-vs-interaction statements in §13.1 and §13.4 are now **scoped to the characterized `setSelectedValues()` and `clear()` paths and the characterized interaction surfaces**; they are no longer phrased as a universal guarantee. (T5-F02) DEVIATION-08's value-based reattachment claim is marked superseded in `W1-P1-DEVIATIONS.md`; key-based reattachment is authoritative. (T5-F01) The closure report's increment-to-commit table now carries complete, ancestry-verified SHAs. No executable code, test, or contract ID changed.
+
 ## 0. Purpose and reading rules
 
 This ledger is a source-grounded inventory of every externally observable contract of the `EnhancedSelect` custom element and the public surfaces that surround it. It lets W1-P1.2-P1.6 write black-box characterization tests against a known list instead of re-discovering the surface each time.
@@ -521,7 +523,9 @@ All events are `CustomEvent(name, { detail, bubbles: true, composed: true })`. C
 
 ### 13.4 Programmatic vs interaction — authoritative distinction
 
-The single most important P1.2 boundary: **programmatic mutation never emits `select`/`remove`/`clear`; it emits only `change` (+`onChange`).** Interaction adds the driving event (`select`, `remove`, `clear`) and its dedicated callback. This is what later extraction (engine/adapter) must preserve.
+The single most important P1.2 boundary, **scoped to the characterized paths**: on the programmatic paths exercised in P1.2 — `setSelectedValues()` (local, server-fetch success/failure/superseded/disconnected) and `clear()` (local) — the component emits only `change` (+`onChange`) and **no `select`/`remove`/`clear`**. On the characterized interaction surfaces (pointer/Enter select, multi toggle off, single deselect, chip/option remove, clear-control), interaction adds the driving event (`select`, `remove`, `clear`) and its dedicated callback.
+
+**Scope limitation (T5-F03).** This is a characterization of the paths tested in P1.2, not a universal guarantee. It does **not** certify every public method, every asynchronous path, or every configuration (for example the acknowledged/`dataProjection` path, active-search clear semantics, and keyboard/APG-driven selection remain outstanding — see §9 and the closure report §8). Later extraction (engine/adapter) must preserve this behavior on the characterized paths and must extend characterization before relying on the same boundary elsewhere.
 
 ## 14. W1-P1.2 closure summary (Task 5)
 

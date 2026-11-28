@@ -97,7 +97,9 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 
 ## DEVIATION-08 — detached selected items are retained after removal from loaded data
 
-- **Observation.** When a currently-selected item is removed from the loaded set via `setItems()` (the value no longer appears in any loaded record), the selection is **not** cleared. `getSelectedEntries()` falls back to the internal `_selectedRecordsByKey` cache, so `getSelectedValues()` / `getSelectedItems()` continue to report the detached value, even though it no longer renders among options. Re-adding an item with the same value re-associates it (as a new instance) and it renders again.
+- **Observation.** When a currently-selected item is removed from the loaded set via `setItems()` (the value no longer appears in any loaded record), the selection is **not** cleared. `getSelectedEntries()` falls back to the internal `_selectedRecordsByKey` cache, so `getSelectedValues()` / `getSelectedItems()` continue to report the detached value, even though it no longer renders among options.
+  - **Reattachment — SUPERSEDED (T5-F02).** The original primary observation concluded that re-adding an item with the same **value** re-associates it as a new instance. That clause is **superseded** by the later key-based characterization below (W1-P1.2-T2-R and Task 3): reattachment is matched by the **registry key**, not by value equality. Same value under a *different* key does **not** migrate the selection. Read reattachment semantics from the key-based characterization, not from this historical clause.
+  - **Retention — unchanged and still authoritative.** The retention half of this observation (a detached selection is retained and remains visible to the getters) stands as accepted.
 - **Evidence.** `packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts` ("detached selected value is RETAINED..." and re-selection tests).
 - **Class:** Observed (not previously asserted).
 - **Risk.** A consumer that removes an option from `setItems` expecting its selection to be dropped will instead keep a "phantom" selected value that is not visible in the list. Forms bindings must reconcile removed values explicitly (e.g. `setSelectedValues`), not rely on `setItems` to prune selection.
@@ -150,6 +152,8 @@ W1-P1 is a characterization phase. **Discovering a defect or quirk is not permis
 ## W1-P1.2 Task 5 — deviation disposition reconciliation
 
 Reconciliation of DEVIATION-04 and 06–10 at P1.2 closure (the specific items the Technical Lead assigned to Task 5). **No disposition here repairs production code**; it records, per deviation, what evidence exists, whether it is resolved for P1.2, and who owns the eventual decision.
+
+> **T5-R note (T5-F02).** DEVIATION-08's reattachment semantics are **key-based**. The original value-based reattachment clause is marked **SUPERSEDED** in the DEVIATION-08 body; the historical evidence is preserved and the key-based characterization (T2-R F03, Task 3) is authoritative. Retention of a detached selection is unchanged. This supersession is a wording correction only — no test, behavior, or disposition changes.
 
 | ID | Evidence (spec) | Status at P1.2 closure | Owner of the eventual decision |
 | --- | --- | --- | --- |

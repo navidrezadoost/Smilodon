@@ -1,7 +1,7 @@
 {
   "$schema": "w1-p1-traceability/v2",
   "increment": "W1-P1.2-R",
-  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes).",
+  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes). W1-P1.2-T5-R added documentary notes only (T5-F01/F02/F03); no contract record, coverage class, source locator, or testId changed.",
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "branch": "codex/w1-p1-characterization-7e3adf7",
   "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
