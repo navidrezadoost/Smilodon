@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
-  FOUR, assignCustomArrow, close, countPart, countVirtualSpacers, dropdownDisplay,
+  FOUR, assignCustomArrow, countPart, countVirtualSpacers, dropdownDisplay,
   dropdownMotion, gotoDemo, hostCustomArrow, hostDisplay, mount, open, reconnect,
+  setHostDisplay,
 } from './harness';
 
 /**
@@ -16,10 +17,12 @@ import {
  *             animation-name (duration 0), so this is only observable with a
  *             real computed `dropdownExit` animation — hence Chromium;
  *   ATTR-012  custom-arrow marker confirmed under real slot flattening;
- *   ATTR-013  forced host display:block confirmed on connect + reconnect;
- *   ATTR-023  NEGATIVE: `[data-virtual-spacer]` is absent from the public
- *             surface even for a large virtualizable list (documented gap —
- *             the guarded virtualizer is only reachable via a private seam).
+ *   ATTR-013  forced host display:block confirmed on connect, and reconnect
+ *             overwrites a conflicting caller-set inline display;
+ *   ATTR-023  NEGATIVE, bounded to a 2,000-item + virtualize:true public
+ *             configuration: `[data-virtual-spacer]` is absent at a settled
+ *             completed-render checkpoint (documented gap — the guarded
+ *             virtualizer is only reachable via a private seam).
  *
  * Public surface only. No private fields/methods.
  */
@@ -73,23 +76,36 @@ test.describe('W1-P1.4 T2 — attribute & state markers in a real browser', () =
   test('ATTR-013: host display:block is forced on connect and re-asserted on reconnect', async ({ page }) => {
     await mount(page);
     expect(await hostDisplay(page)).toBe('block');
+
+    // Write a conflicting caller value between lives, then force a re-connection.
+    // The reconnect must overwrite that value back to "block" (DEVIATION-05).
+    await setHostDisplay(page, 'inline-block');
+    expect(await hostDisplay(page)).toBe('inline-block');
     await reconnect(page);
     await expect.poll(() => hostDisplay(page)).toBe('block');
   });
 
   test('ATTR-023: no data-virtual-spacer renders on the public surface for a large list (gap)', async ({ page }) => {
+    // Bounded to this exact public configuration: 2,000 items + virtualize:true,
+    // driven only through public methods. This asserts ABSENCE at a settled
+    // checkpoint; it does not claim universal unreachability (see evidence gap).
     await mount(page, { items: BIG, config: { virtualize: true } });
     await open(page);
-    // Rendered options confirm the popup is populated; scrolling does not
-    // introduce spacers because the guarded virtualizer is only reachable
-    // through a private test seam, not public config.
-    await expect.poll(() => countPart(page, 'option')).toBeGreaterThan(0);
+
+    // Observable synchronization (no arbitrary sleep): the public render path
+    // is non-windowing and settles only after every item is rendered. Wait for
+    // that completed-render state — exactly BIG.length options — then read.
+    await expect.poll(() => countPart(page, 'option'), { timeout: 10_000 }).toBe(BIG.length);
+    expect(await countVirtualSpacers(page)).toBe(0);
+
+    // Drive a full scroll cycle on the options container (public DOM gesture),
+    // then synchronize on the render still being complete and stable.
     const listbox = page.locator('#p14-select');
     await listbox.evaluate((el) => {
       const dropdown = el.shadowRoot?.querySelector('[part="listbox"]') as HTMLElement | null;
       if (dropdown) dropdown.scrollTop = 2000;
     });
-    await page.waitForTimeout(50);
+    await expect.poll(() => countPart(page, 'option'), { timeout: 10_000 }).toBe(BIG.length);
     expect(await countVirtualSpacers(page)).toBe(0);
   });
 });

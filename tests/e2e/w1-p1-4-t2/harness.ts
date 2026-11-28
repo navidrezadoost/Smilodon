@@ -163,6 +163,11 @@ export async function hostDisplay(page: Page, sel = `#${DEFAULT_ID}`): Promise<s
   return page.locator(sel).evaluate((el: any) => el.style.display as string);
 }
 
+/** Set the host inline `style.display` to a caller-supplied value. */
+export async function setHostDisplay(page: Page, value: string, sel = `#${DEFAULT_ID}`): Promise<void> {
+  await page.locator(sel).evaluate((el: any, v) => { el.style.display = v; }, value);
+}
+
 /** Remove the host from the DOM and re-append it to force a re-connection. */
 export async function reconnect(page: Page, sel = `#${DEFAULT_ID}`): Promise<void> {
   await page.locator(sel).evaluate((el) => {

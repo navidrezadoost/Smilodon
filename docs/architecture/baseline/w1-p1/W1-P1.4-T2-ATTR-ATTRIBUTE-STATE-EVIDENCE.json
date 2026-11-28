@@ -55,11 +55,11 @@
       "marker": "host style.display = 'block' (inline)",
       "jsdomTest": "ATTR-013: connecting forces inline style.display=\"block\" on the host",
       "browserTest": "ATTR-013: host display:block is forced on connect and re-asserted on reconnect",
-      "observable": "host inline style.display becomes \"block\" on connection; a caller-set inline display is overwritten back to \"block\" on re-connection",
+      "observable": "host inline style.display becomes \"block\" on connection; re-connection overwrites a caller-supplied conflicting value back to \"block\"",
       "positivePaths": [
         "connect: display \"\" -> \"block\" (jsdom)",
         "connect: display \"block\" (browser)",
-        "reconnect after caller writes inline-block: re-asserted to \"block\" (jsdom + browser)"
+        "reconnect after caller writes inline-block: re-asserted to \"block\" (jsdom + browser — browser now sets the conflicting value before reconnect)"
       ],
       "negativePaths": [
         "before connect, inline display is empty (jsdom)"
@@ -71,7 +71,7 @@
           "lines": "598"
         }
       ],
-      "coverageAttribution": "jsdom + browser-confirmed"
+      "coverageAttribution": "jsdom + browser-confirmed (override of conflicting caller value proven in both)"
     },
     "ATTR-021": {
       "marker": "dropdown [data-motion=\"closing\"] on part=\"listbox\"",
@@ -127,7 +127,7 @@
       "gap": "data-virtual-spacer is NOT reachable through the public surface in the current build. The guarded virtualizer that emits spacers (_createGuardedSpacer) is created only inside _ensureGuardedVirtualizer; every entered caller requires _guardedVirtualizer/_guardedVirtualizationRequested to already be established. The only setter of _guardedVirtualizationRequested=true is the private _updateGuardedVirtualWindow, which has NO callers in src; the existing accepted spacer tests (enhanced-select-virtualization-integration.spec.ts, selected-options-virtualization.spec.ts) drive it via the private helper setGuardedWindow -> _updateGuardedVirtualWindow. No public config/method (incl. dataLoading.protocol='acknowledged' + startDataLoading, or virtualize:true) establishes the window. A 2000-item virtualizable list renders options with 0 spacers in real Chromium. NEGATIVE-ONLY coverage recorded: the browser test asserts safe, deterministic absence rather than positive spacer behavior. Remains Diagnostic (private/test-seam reachable only), analogous to PART-009's documented gap; deferred, not forced with a private stub.",
       "positivePaths": [],
       "negativePaths": [
-        "2000-item list with virtualize:true, opened + scrolled -> 0 [data-virtual-spacer] in the open shadow root"
+        "BOUNDED to 2,000 items + virtualize:true via public methods: at the settled completed-render checkpoint (all 2,000 [part=\"option\"] rendered) there are 0 [data-virtual-spacer]; a subsequent options scroll cycle keeps the render complete and still 0 spacers"
       ],
       "activationSeams": {
         "privateOnly": [
@@ -155,7 +155,8 @@
           "lines": "8606,8700"
         }
       ],
-      "coverageAttribution": "browser-negative-only (public-unobservable gap)"
+      "coverageAttribution": "browser-negative-only (public-unobservable gap)",
+      "synchronization": "No arbitrary sleep: synchronized on the observable completed-render state (expect.poll until exactly BIG.length options render), then a public scroll gesture followed by re-synchronization on the same completed-render state before reading spacer count. Bounded claim: absence at this tested public configuration/checkpoint, not universal unreachability."
     }
   },
   "coverageChanges": {
@@ -182,13 +183,13 @@
     }
   },
   "gates": {
-    "jsdom": "9/9 passed",
-    "chromium": "5/5 passed (12/12 full T2 suite)",
-    "coreRegression": "947 passed | 1 skipped (938 baseline + 9 new T2)",
-    "traceability": "PASS (112 IDs, unique; new testId targets resolve to real titles)",
+    "jsdom": "9/9 passed (unchanged test bodies)",
+    "chromium": "5/5 attribute-state passed (12/12 full T2 suite)",
+    "coreRegression": "947 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; testId titles unchanged — ATTR-013/023 browser titles stable)",
     "eslint": "clean",
-    "productionIsolation": "0 files changed vs c174876 (src/engine/adapters)",
-    "acceptedPriorTestsUnchanged": "0 files changed vs c174876 (w1-p1-2-*, w1-p1-3-*, e2e w1-p1-3-*)",
+    "productionIsolation": "0 files changed vs 7ae3193 (src/engine/adapters)",
+    "acceptedPriorTestsUnchanged": "0 files changed vs 7ae3193",
     "checksums": "sha256sum -c SHA256SUMS OK (21 entries incl. new T2 evidence)"
   },
   "boundaries": {
@@ -204,5 +205,18 @@
     "ATTR-023: the guarded virtualizer / data-virtual-spacer is only reachable via a private test seam; unlike ATTR-021 there is no public activation path, so it cannot be promoted without a production seam (out of scope). Kept Diagnostic with a NEGATIVE-ONLY browser assertion as the safely-testable public surface.",
     "Dev server consumed a stale packages/core/dist; the core package was rebuilt (gitignored build artifact) so the browser spec exercises current src. No production source changed."
   ],
-  "correction": "n/a (initial Task 2)"
+  "correction": "W1-P1.4-T2-R (T2-F01/F02)",
+  "correctiveStartingCommit": "7ae3193de2fa632b54f3814989b4eb7d94a3203b",
+  "corrections": [
+    {
+      "id": "T2-F01",
+      "finding": "Arbitrary page.waitForTimeout(50) in the ATTR-023 test; AC-4 requires deterministic tests without arbitrary delays, and a 50ms probe does not establish a settled lifecycle.",
+      "resolution": "Removed the fixed wait. The test now synchronizes on the observable completed-render state (expect.poll until exactly 2,000 [part=\"option\"] render), reads spacers, drives a public scroll cycle, re-synchronizes on the same completed-render state, and re-asserts 0 spacers. Claim explicitly bounded to the tested 2,000-item + virtualize:true configuration and checkpoint (no universal-unreachability claim)."
+    },
+    {
+      "id": "T2-F02",
+      "finding": "The browser ATTR-013 test reconnected without first writing a conflicting caller display, so it only showed display stays 'block', not that Chromium overwrites a conflicting caller value (jsdom proved the override).",
+      "resolution": "Browser test now sets a conflicting inline display ('inline-block') before reconnect and asserts it is overwritten back to 'block' after reconnection — the override is proven in Chromium as well as jsdom. Attribution updated to jsdom + browser-confirmed override."
+    }
+  ]
 }
