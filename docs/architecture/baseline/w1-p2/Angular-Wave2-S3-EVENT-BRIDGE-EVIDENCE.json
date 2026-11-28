@@ -1,0 +1,112 @@
+{
+  "artifactId": "Angular-Wave2-S3-EVENT-BRIDGE-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S3 — typed event-output bridge",
+  "startingCommit": "b22e9595b2b4e9a8dae046d8aafb38e57c3ef87c",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S3 directive at b22e959: expose the element CustomEvent contract through typed Angular @Output()s. No second state machine, single-listener authority, lifecycle correctness, preserved semantics, no controlled-value feedback loop, packaging intact. No CVA/S4, forms, SSR hydration/S5, core refactor, API-065/API-075, peer expansion.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "outputs": {
+    "count": 12,
+    "names": ["select", "change", "open", "close", "search", "loadMore", "remove", "clear", "pageLoaded", "error", "emptyStateChange", "diagnostic"],
+    "aliased": ["error"],
+    "aliasDetail": {
+      "error": {
+        "propertyName": "coreError",
+        "bindingName": "error",
+        "reason": "@Input() error (string) already owns the `error` identifier; a member cannot be both a string input and an EventEmitter. @Output('error') binds the wire name; payload ErrorEventDetail unchanged.",
+        "payload": "ErrorEventDetail"
+      }
+    },
+    "payloadTypes": {
+      "select": "SelectEventDetail",
+      "change": "ChangeEventDetail",
+      "open": "OpenEventDetail",
+      "close": "CloseEventDetail",
+      "search": "SearchEventDetail",
+      "loadMore": "LoadMoreEventDetail",
+      "remove": "RemoveEventDetail",
+      "clear": "ClearEventDetail",
+      "pageLoaded": "PageLoadedEventDetail",
+      "error": "ErrorEventDetail",
+      "emptyStateChange": "EmptyStateChangeDetail",
+      "diagnostic": "DiagnosticEventDetail"
+    }
+  },
+  "designGuarantees": {
+    "payloadIdentity": "The output value IS CustomEvent.detail (same object reference); asserted in tests.",
+    "singleListenerAuthority": "Exactly one listener per event registered on this component's own <enhanced-select>; idempotent; asserted one addEventListener('change') per mount.",
+    "doubleDeliveryFix": "Events bubble (bubbles+composed) and collide with native DOM event names, so Angular binds template (change) to both @Output and a native bubbling listener -> double delivery (raw CustomEvent + detail). Fixed by event.stopPropagation() at element boundary; regression test + negative control.",
+    "installBeforeInit": "attachEventListeners() runs in ngAfterViewInit before initialize(); events emitted during init are captured (asserted).",
+    "cleanupOnDestroy": "detachEventListeners() removes all captured listeners; no delivery after teardown (asserted).",
+    "noFeedbackLoop": "Programmatic change forwarded as-is; never written back to the value input (asserted cmp.value unchanged).",
+    "ordering": "select then change forwarded in dispatch order (asserted).",
+    "ssrSafety": "events.ts references core type-only; module import-safe on server (new SSR test)."
+  },
+  "changeSummary": {
+    "newFiles": ["packages/angular/src/events.ts", "packages/angular/tests/events.spec.ts"],
+    "modifiedFiles": [
+      "packages/angular/src/select.component.ts",
+      "packages/angular/src/index.ts",
+      "packages/angular/tests/ssr-import-safety.ssr.spec.ts",
+      "packages/angular/tests/consumer/consumer-app.component.ts",
+      "packages/angular/tests/consumer/run-consumer.mjs",
+      "packages/angular/README.md"
+    ],
+    "netDiff": "+325 / -21 across 6 tracked files (+ 2 new files)",
+    "coreTouched": false,
+    "packagingTouched": false,
+    "versionOrPeerTouched": false,
+    "publicApiAdditiveOnly": true
+  },
+  "testCounts": {
+    "angularJsdomBefore": 26,
+    "angularJsdomAfter": 36,
+    "eventsSpecTests": 10,
+    "componentTests": 22,
+    "loaderTests": 4,
+    "angularSsrBefore": 3,
+    "angularSsrAfter": 4,
+    "consumerAssertionsBefore": 7,
+    "consumerAssertionsAfter": 9
+  },
+  "gates": {
+    "R1_angularJsdom": { "command": "vitest run --config packages/angular/vitest.config.ts", "result": "PASS", "count": "36 (22 component + 10 events + 4 loader)" },
+    "R2_angularSsr": { "command": "vitest run --config packages/angular/vitest.ssr.config.ts", "result": "PASS", "count": "4 (was 3; +1 events module)" },
+    "R3_aotConsumer": { "command": "node packages/angular/tests/consumer/run-consumer.mjs", "result": "PASS", "count": "9/9 assertions" },
+    "R4_ngPackagrBuild": { "command": "npm run build:angular", "result": "PASS", "detail": "exit 0; FESM has no static @smilodon/core import" },
+    "R5_angularTsc": { "command": "tsc -p packages/angular/tsconfig.json --noEmit", "result": "PASS", "detail": "exit 0" },
+    "R6_coreJsdom": { "command": "vitest run --config packages/core/vitest.config.ts", "result": "PASS", "count": "1071 passed | 1 skipped (71 files)" },
+    "R7_coreSsr": { "command": "vitest run --config packages/core/vitest.ssr.config.ts", "result": "PASS", "count": "10" },
+    "R8_coreTsc": { "command": "tsc -p packages/core/tsconfig.json --noEmit", "result": "PASS", "detail": "44 pre-existing, none angular" },
+    "R9_eslint": { "command": "eslint packages/angular/src packages/angular/tests", "result": "PASS", "detail": "exit 0" },
+    "R10_traceability": { "command": "verify_traceability.py", "result": "PASS", "detail": "129/129 reconcile" }
+  },
+  "negativeControl": {
+    "target": "single-delivery guard (stopPropagation)",
+    "method": "Removed event.stopPropagation() from the bridge handler and ran the double-delivery test.",
+    "result": "1 failed (the guard test); source restored byte-identical; 36/36 pass with the fix."
+  },
+  "disclosedLimitations": [
+    "44 pre-existing @smilodon/core TSC errors (none angular); unchanged.",
+    "Peer range >=21 <22 unchanged; expansion DEFERRED.",
+    "Pre-existing unrelated contract-suite failures (test:contracts); unchanged.",
+    "pageLoaded output exposed but enhanced-select does not currently _emit('pageLoaded'); contract completeness only.",
+    "error output uses documented coreError property / error binding alias."
+  ],
+  "nonGoals": [
+    "No ControlValueAccessor (S4)",
+    "No Angular forms validation",
+    "No SSR rendering/hydration certification (S5)",
+    "No core refactor",
+    "No API-065/API-075 remediation",
+    "No peer-range change",
+    "No re-emission / duplicate state machine"
+  ],
+  "relationshipToPriorIncrements": {
+    "buildsOn": "Angular-Wave2-S2R2-CORRECTIVE-EVIDENCE (b22e959, S2 CLOSED)",
+    "authorizedBy": "Lead S3 directive at b22e959",
+    "effect": "Completes the Angular event bridge; S4 (CVA) and S5 (SSR hydration) remain NO-GO pending authorization."
+  }
+}

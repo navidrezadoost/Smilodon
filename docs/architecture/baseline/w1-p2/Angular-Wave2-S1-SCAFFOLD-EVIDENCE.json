@@ -1,0 +1,95 @@
+{
+  "artifactId": "Angular-Wave2-S1-SCAFFOLD-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S1 — package scaffold only",
+  "startingCommit": "8cf634d96c48e120014398efb78d79edfd748689",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead directive: GO S1 package scaffold only. No standalone wrapper, CVA, event bridge, demo, or SSR production remediation. @smilodon/core as existing dependency contract (peer), no second runtime copy.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "files": {
+    "package.json": "manifest (@smilodon/angular; peer @smilodon/core ^1.13.0 + @angular/core >=16; build = vite build + tsc emitDeclarationOnly + cleanup)",
+    "tsconfig.json": "extends root; declaration emit to dist/types",
+    "vite.config.ts": "lib build ESM+CJS; external @smilodon/core + @angular/core; alias core->src for type resolution",
+    "scripts/cleanup-types.js": "flatten tsc declarations to dist/types/index.d.ts (vanilla-style)",
+    "src/index.ts": "public export surface: type-only core re-exports + adapter-owned exports",
+    "src/types.ts": "adapter-owned types + frozen descriptor; no core/Angular runtime import",
+    "README.md": "scope + import-safety discipline"
+  },
+  "rootWiring": {
+    "package.json": "added build:angular script",
+    "tsconfig.json": "added @smilodon/angular path mapping",
+    "autoPickedUp": "root build uses --workspaces --if-present"
+  },
+  "publicExportSurface": {
+    "typeOnlyCoreReexports": ["GroupedItem", "SelectEventDetail", "ChangeEventDetail", "SearchEventDetail", "LoadMoreEventDetail", "ClearEventDetail", "OpenEventDetail", "CloseEventDetail", "RemoveEventDetail", "DiagnosticEventDetail", "EmptyStateContext", "SelectInstanceConfig"],
+    "adapterOwned": ["SmilodonSelectItem", "SmilodonAngularAdapterInfo", "SMILODON_ANGULAR_ADAPTER"]
+  },
+  "importSafety": {
+    "discipline": "All @smilodon/core re-exports are type-only (export type); erased at build; runtime bundle has NO require/import of @smilodon/core.",
+    "rule": "No value import of @smilodon/core in S1 sources.",
+    "rationale": "Lets S2 add browser-deferred dynamic import('@smilodon/core') without static top-level value import that would re-trigger API-075 no-DOM throw."
+  },
+  "peerDependencies": {
+    "@smilodon/core": "^1.13.0",
+    "@angular/core": ">=16.0.0"
+  },
+  "acceptanceGates": {
+    "A1_buildsFromClean": "PASS",
+    "A2_typeEntryPoints": "PASS",
+    "A3_noRuntimeCoreImport": "PASS (grep no match on dist/index.js + dist/index.cjs)",
+    "A4_noAngularRuntimeImport": "PASS (no @angular code import in src)",
+    "A5_angularTsc": "PASS (exit 0, 0 errors)",
+    "A6_coreTsc": "PASS (44 pre-existing errors unchanged; none reference angular)",
+    "A7_coreJsdom": "PASS (1071 passed | 1 skipped, 71 files)",
+    "A8_eslint": "PASS (exit 0)",
+    "A9_traceability": "PASS (129 IDs reconcile)",
+    "A10_lockUnchanged": "PASS at S1 commit b972cd7 (package-lock.json untouched); CORRECTED in S1-R: lockfile required the angular workspace record that S1 omitted (S1-F01); see s1rCorrection",
+    "A11_distIgnored": "PASS (dist gitignored)"
+  },
+  "s1rCorrection": {
+    "authorization": "GO - lockfile correction only",
+    "finding": "S1-F01 (Medium, build reproducibility)",
+    "problem": "packages/angular is a workspace (root workspaces packages/*) but the b972cd7 package-lock.json had no packages/angular record and no node_modules/@smilodon/angular link; fresh npm ci failed with 'Missing: @angular/core@21.2.26 from lock file'.",
+    "added": [
+      "node_modules/@smilodon/angular (link:true -> packages/angular)",
+      "packages/angular record (@smilodon/angular@1.13.0; devDeps typescript/vite; engines; peerDeps + peerDependenciesMeta)",
+      "node_modules/@angular/core@21.2.26 (peer:true; concrete resolution for the non-optional @angular/core>=16 peer)"
+    ],
+    "changed": [
+      "rxjs/tslib: removed dev:true (required at runtime by @angular/core so they install in production)"
+    ],
+    "preservationGuarantees": {
+      "addedNodes": 3,
+      "removedNodes": 0,
+      "versionOrResolvedChanges": "none",
+      "note": "Earlier broad npm regeneration pruned lightningcss*/detect-libc (optional peers of vite); those nodes were RESTORED so nothing from the S1 commit is dropped. Zero dependency-version changes; only non-version delta is the rxjs/tslib dev flag."
+    },
+    "netDiff": "52 insertions, 2 deletions",
+    "verification": {
+      "R1_cleanInstallReproducibility": "PASS - npm ci in pristine copy of b972cd7 + corrected lock: exit 0, 744 packages; @smilodon/angular symlinked; @angular/core@21.2.26 installed; rxjs 7.8.2/tslib 2.8.1 resolvable",
+      "R2_lockfileValid": "PASS",
+      "R3_noVersionDrift": "PASS - full version+resolved diff vs b972cd7: none",
+      "R4_buildFromClean": "PASS - npm run build -w @smilodon/angular (vite ES+CJS + declarations) in clean copy",
+      "R5_noEagerCoreImport": "PASS - no @smilodon/core match in dist/index.js or dist/index.cjs",
+      "R6_angularTsc": "PASS (exit 0)",
+      "R7_coreTsc": "PASS (44 pre-existing errors unchanged; none angular)",
+      "R8_coreJsdom": "PASS (1071 passed | 1 skipped, 71 files)",
+      "R9_eslint": "PASS (exit 0)",
+      "R10_traceability": "PASS (129 IDs reconcile)"
+    },
+    "nonGoalsHonored": "No change to Angular API surface, src/ sources, root package.json/tsconfig.json (already committed at b972cd7), core production code, or prior tests; S1 scaffold artifacts unchanged; only lockfile metadata corrected.",
+    "status": "S1-F01 RESOLVED"
+  },
+  "buildArtifacts": {
+    "dist/index.js": "ESM 0.28kB; only SMILODON_ANGULAR_ADAPTER; no core import",
+    "dist/index.cjs": "CJS 0.39kB; only SMILODON_ANGULAR_ADAPTER; no core import",
+    "dist/types/index.d.ts": "flat declaration entry",
+    "dist/types/types.d.ts": "adapter-owned declarations",
+    "committed": false,
+    "note": "dist is gitignored"
+  },
+  "nonGoals": ["standalone wrapper", "ControlValueAccessor", "event bridge", "application demo", "SSR production remediation", "core changes"],
+  "disclosedLimitation": "Repository has 44 pre-existing @smilodon/core TypeScript errors; unchanged by S1 and none reference angular; pre-existing condition not attributable to S1.",
+  "nextSlice": "S2 — browser-deferred standalone component (requires separate authorization; Angular Wave 2 S2-S6 currently NO-GO)."
+}

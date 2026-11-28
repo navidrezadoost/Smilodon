@@ -14,30 +14,32 @@
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
-    "totalRecords": 112,
+    "totalRecords": 129,
     "byFamily": {
-      "API": 27,
+      "API": 41,
       "EVENT": 15,
       "ATTR": 11,
       "PART": 11,
       "SLOT": 4,
       "LIFECYCLE": 6,
-      "CONFIG": 26,
+      "CONFIG": 29,
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 59,
-      "Partial": 30,
-      "Diagnostic": 19,
-      "Missing": 4
+      "Existing": 77,
+      "Partial": 36,
+      "Diagnostic": 13,
+      "Missing": 3
     },
     "byTargetIncrement": {
       "P1.1": 4,
       "P1.2": 14,
       "P1.3": 25,
       "P1.4": 56,
-      "P1.5": 13
+      "P1.5": 13,
+      "P1.6": 17
     },
+    "p16Task1Note": "W1-P1.6 Task 1 (Path A) added 9 P1.6 contracts for the security/CSP utility public surface. Total 112 -> 121; API 27 -> 34; CONFIG 26 -> 28; P1.6 = 9. Under W1-P1.6-T1-R (T1-F01) API-065 was reclassified Existing -> Partial (case-sensitive attribute block; mixed-case bypass), so byCoverage is Existing 70 / Partial 35 / Diagnostic 13 / Missing 3 = 121 (was 71/34/13/3). All 9 characterized by packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts (public import only).",
     "apiIds": 27,
     "apiMethodAccessorSignatures": 30,
     "attributeIds": 11,
@@ -74,7 +76,9 @@
       "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
       "w1-p1-2-t4-interaction-events.spec.ts": 34,
       "total": 116
-    }
+    },
+    "p16Task2Note": "W1-P1.6 Task 2 (Path A) added 6 P1.6 contracts for the csp-styles.ts public surface: API-070 (classes), API-071 (custom-property family), CONFIG-029 (theme/defaultTheme/applyDefaultTheme/shadowDOMStyles), API-072 (injectShadowStyles), API-073 (hasOverflowHiddenAncestor), API-074 (warnCSPViolation). All 6 characterised to Existing via packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts (public import only; NODE_ENV=test dev branch + NODE_ENV=production stub). Total 121 -> 127; P1.6 9 -> 15; API 34 -> 39; CONFIG 28 -> 29. byCoverage Existing 70 -> 76 (76/35/13/3 = 127). W1-P1.6-T2-R (T2-F01..F04) strengthened characterization without changing coverage: API-071 (getter/remover do NOT enforce '--'; ordinary properties readable/removable), API-073 (parent-chain: true iff a traversed ancestor has overflow hidden/clip, excluding body; detached subtree may be true, parentless false), CONFIG-029 (full 13-entry map pinned), plus evidence precision (NODE_ENV=production conditioned source). Counts unchanged: 127 total; 76/35/13/3.",
+    "p16Task3Note": "W1-P1.6 Task 3 (Path A) characterized the two planned Missing SSR contracts as new P1.6 API contracts: API-075 (import-time safety) and API-076 (deferred DOM access) via packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts run in a REAL Node process (vitest.ssr.config.ts, environment=node; excluded from the jsdom config). OBSERVED: the utility modules (security.ts, csp-styles.ts) import without a DOM and defer document access to CALL time (API-076 Existing); the package ENTRY (index.ts) import THROWS ReferenceError (HTMLElement is not defined) because exported components extend HTMLElement at class-declaration time, so import-time safety is only partially satisfied (API-075 Partial, entry limitation recorded — NOT claimed safe). Total 127 -> 129; P1.6 15 -> 17; API 39 -> 41. byCoverage 76/35/13/3 -> 77/36/13/3 (Existing 76->77, Partial 35->36; the three pre-existing Missing records API-054/EVENT-005/CONFIG-023 are unchanged — API-075 and API-076 are NEW records, not reclassifications of Missing ones). No prior contract reclassified."
   },
   "duplicateIds": 0,
   "missingIds": 0,
@@ -524,7 +528,7 @@
       "id": "API-062",
       "behavior": "completeDataRequest matrix",
       "targetIncrement": "P1.5",
-      "coverage": "Existing",
+      "coverage": "Partial",
       "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#accepts a matching completion synchronously while projecting the result asynchronously",
       "status": "Observed",
       "evidence": "phase-2e-acknowledged-data-loading; w1-p1-5-t1-acknowledged-data-loading-api",
@@ -619,8 +623,8 @@
       "id": "EVENT-004",
       "behavior": "search local + acknowledged",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged search event whose request reflects the typed query and normalizedQuery",
       "status": "Observed",
       "evidence": "DEVIATION-03",
       "sourceLocators": [
@@ -666,9 +670,9 @@
       "behavior": "error async shape",
       "targetIncrement": "P1.5",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure: error before onError; error.detail.cause; onError-throw rejects",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an error whose detail carries message and cause on an async server failure, before onError",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "P1.2 server-fetch error shape (w1-p1-2-set-selected-values-ordering); P1.5 async error-before-onError (w1-p1-5-t2)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -679,7 +683,7 @@
           "lines": "57"
         }
       ],
-      "coverageNote": "Single server-fetch failure path only; broader error contract owned by P1.5."
+      "coverageNote": "Async server-failure error shape + error-before-onError characterized (P1.5 T2); broader error contract/tests remain outstanding."
     },
     {
       "id": "EVENT-007",
@@ -709,8 +713,8 @@
       "id": "EVENT-008",
       "behavior": "loadMore legacy + acknowledged",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event carrying a fresh page-mode load-more request at page 2",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -787,8 +791,8 @@
       "id": "EVENT-012",
       "behavior": "diagnostic boundedness",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a resource-limit diagnostic carrying source, name, bounded detail, and mirrors it in the snapshot",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -810,8 +814,8 @@
       "id": "EVENT-020",
       "behavior": "dataProjection",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits one dataProjection \"complete\" whose detail matches the request id, generation, and attempt",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -829,8 +833,8 @@
       "id": "EVENT-021",
       "behavior": "dataRequestCancel",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"config-changed\" when a threshold change invalidates an active request",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -848,8 +852,8 @@
       "id": "EVENT-022",
       "behavior": "dataLoadingConfigError",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataLoadingConfigError whose detail is an issues array describing the rejected field",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -1447,10 +1451,10 @@
       "id": "LIFECYCLE-005",
       "behavior": "stale async guard",
       "targetIncrement": "P1.5",
-      "coverage": "Missing",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#applies only the newest of two superseded fetches even when the stale fetch resolves last",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.5-T3-LIFECYCLE-STALE-ASYNC-GUARD-EVIDENCE (public supersession + disconnect + acknowledged stale-completion; discriminating — 6/6 fail with guard neutralized)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -2125,6 +2129,323 @@
         }
       ],
       "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "API-063",
+      "behavior": "HTML sanitizer registry: default is a no-op identity sanitizer; setHTMLSanitizer installs a custom sanitizer returned by getHTMLSanitizer and used by sanitizeHTML. resetHTMLSanitizer exists in source but is NOT a public package export.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "19-69"
+        }
+      ]
+    },
+    {
+      "id": "API-064",
+      "behavior": "validateTemplate warns only while the pristine default no-op sanitizer is active (message names the source) and returns sanitized output; under a custom sanitizer it does not warn and returns that sanitizer's output.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-064: warns and returns sanitized output under the pristine default no-op sanitizer",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "248-259"
+        }
+      ]
+    },
+    {
+      "id": "API-065",
+      "behavior": "createElement applies safe attributes and textContent, and only PARTIALLY blocks dangerous attributes: it blocks attribute names that START with a lowercase 'on' (e.g. onclick, onClick, onCLICK) and names that are EXACTLY 'style', warning via console.warn per blocked attribute. The filter is CASE-SENSITIVE (`key.startsWith('on') || key === 'style'`), so mixed-case variants that do NOT begin with lowercase 'on' (ONCLICK, OnLoad) or that are not exactly 'style' (Style, STYLE) BYPASS the filter and are applied — a bypassed ONCLICK becomes a live inline onclick handler and Style/STYLE sets inline style. It does NOT block 'on* generally'.",
+      "targetIncrement": "P1.6",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks lowercase on* and exact \"style\" attributes (not set) and warns once per blocked attribute",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "99-128"
+        }
+      ],
+      "coverageNote": "Blocks start-with-lowercase-'on' and exact-lowercase 'style' only; mixed-case ON*/On*/Style/STYLE bypass the case-sensitive filter and are applied (ONCLICK installs a live handler). Characterized as Partial; NOT an XSS defense (default sanitizer is a no-op). Reclassified from Existing under W1-P1.6-T1-R per T1-F01.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks names that START with lowercase \"on\" regardless of trailing case (onClick, onCLICK)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block mixed-case ON*/On* names (ONCLICK, OnLoad) — they are applied (limitation)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block non-exact-case \"Style\"/\"STYLE\" — inline style is applied (limitation)"
+      ]
+    },
+    {
+      "id": "API-066",
+      "behavior": "setCSSProperties sets only --prefixed CSS custom properties; non-custom keys are skipped with a console.warn and never applied.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-066: warns and skips non-custom properties without applying them",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "130-138"
+        }
+      ]
+    },
+    {
+      "id": "API-067",
+      "behavior": "createTextNode and setTextContent build/assign literal text without HTML parsing (no element creation from markup).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-067: setTextContent assigns literal text (no element parsing)",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "76-95"
+        }
+      ]
+    },
+    {
+      "id": "API-068",
+      "behavior": "escapeHTML encodes markup via textContent; escapeAttribute encodes the five HTML-significant characters & \" ' < >.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-068: escapeAttribute encodes & \" ' < >",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "279-295"
+        }
+      ]
+    },
+    {
+      "id": "API-069",
+      "behavior": "containsSuspiciousPatterns returns true for <script, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns and false for safe markup/plain text.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-069: flags <script>, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "262-274"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-027",
+      "behavior": "CSPFeatures detection family: hasInlineScripts/hasEval/hasSharedArrayBuffer/hasWorkers/isSandboxed each return a boolean without throwing; getCSPDirectives reads content values from meta[http-equiv=Content-Security-Policy] and returns [] when none present.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-027: getCSPDirectives reads content values from CSP meta tags",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "143-216"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-028",
+      "behavior": "detectEnvironment returns the six-field EnvironmentCapabilities object (canUseWorkers, canUseSharedArrayBuffer, canUseInlineScripts, canUseEval, isSandboxed, cspDirectives[]) whose fields agree with the individual CSPFeatures predicates.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-028: fields agree with the individual CSPFeatures predicates",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "233-242"
+        }
+      ]
+    },
+    {
+      "id": "API-070",
+      "behavior": "applyClasses joins non-empty (truthy) class names into element.className (replacing any existing class list); toggleClass toggles a class with optional force (true=add, false=remove), idempotent under force. Note: applyClasses assigns className (not additive).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "10-19"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses REPLACES existing classes (assigns className, not additive)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: toggleClass honors forced state (true adds, false removes) idempotently"
+      ]
+    },
+    {
+      "id": "API-071",
+      "behavior": "Custom-property family. PREFIX ENFORCEMENT IS ASYMMETRIC: setCustomProperties enforces the '--' prefix and (in non-production) warns+skips non-'--' keys (silent+skip under NODE_ENV=production); getCustomProperty and removeCustomProperty do NOT validate the prefix and delegate arbitrary names to getComputedStyle().getPropertyValue() and style.removeProperty(), so they also read/remove ORDINARY CSS properties (e.g. color, display). getCustomProperty returns the trimmed computed value ('' when unset).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties applies --prefixed custom properties",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "31-61"
+        }
+      ],
+      "coverageNote": "getCustomProperty reads INLINE/computed properties in jsdom (layout-derived values out of scope). Getter/remover do not enforce '--' (characterized, T2-F02).",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties warns and skips non-custom keys in development (NODE_ENV=test)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties does NOT warn for non-custom keys under NODE_ENV=production (still skips)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: getCustomProperty returns the trimmed computed value, or \"\" when unset",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: removeCustomProperty removes a previously set custom property",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: getCustomProperty reads an ORDINARY CSS property too (no -- prefix enforced)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: removeCustomProperty removes an ORDINARY CSS property too (no -- prefix enforced)"
+      ]
+    },
+    {
+      "id": "CONFIG-029",
+      "behavior": "Theme surface: defaultTheme is a stable 13-entry map of '--ns-*' custom-property values (pinned against an independently-defined expected object; NOT frozen/immutability not claimed); applyDefaultTheme applies every defaultTheme entry via setCustomProperties; shadowDOMStyles is a STATIC string containing ':host' and '.ns-*' selectors and var(--ns-*) references, with no <script>.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: defaultTheme is a stable 13-entry map matching the expected pinned values",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "66-201"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: applyDefaultTheme writes every defaultTheme entry onto the element",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: shadowDOMStyles is a static string with :host and .ns-* selectors and NO <script>"
+      ],
+      "coverageNote": "defaultTheme pinned to the full 13-entry expected map (T2-F03); immutability NOT asserted (object is not frozen)."
+    },
+    {
+      "id": "API-072",
+      "behavior": "injectShadowStyles appends a single <style> element (textContent = static shadowDOMStyles) to a ShadowRoot; it is additive on repeated calls (no dedupe).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "205-209"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles is additive (no dedupe) on repeated calls"
+      ]
+    },
+    {
+      "id": "API-073",
+      "behavior": "hasOverflowHiddenAncestor traverses the parentElement chain, excluding document.body, and returns true if a traversed ancestor has computed overflow equal to 'hidden' or 'clip'; otherwise it returns false. Connection to the document is not required: a detached subtree may return true, while a parentless element returns false. Characterised via inline-set overflow (jsdom reflects inline overflow in getComputedStyle; real layout out of scope).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects an overflow:hidden ancestor",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "214-226"
+        }
+      ],
+      "coverageNote": "Ancestor walk characterised via inline-set overflow only; layout-/stylesheet-derived computed overflow not claimed in jsdom. Detached-subtree (parent-chain, not isConnected) behaviour characterised, T2-F01.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects overflow:clip and a non-immediate (grandparent) ancestor",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: returns false when no ancestor sets overflow hidden/clip",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: EXCLUDES document.body (a direct body child with body overflow:hidden reports false)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: a detached subtree WITH an overflow:hidden ancestor reports true (parent-chain, not isConnected)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: a PARENTLESS element reports false (no parent chain to walk)"
+      ]
+    },
+    {
+      "id": "API-074",
+      "behavior": "warnCSPViolation emits a console.warn ONLY in non-production; the message names both the feature and the fallback. Under NODE_ENV=production it is silent.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: warns in development naming both the feature and the fallback",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "231-238"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: is SILENT under NODE_ENV=production"
+      ]
+    },
+    {
+      "id": "API-075",
+      "behavior": "Import-time safety in a no-DOM Node process: the pure utility modules (utils/security.ts, utils/csp-styles.ts) import WITHOUT touching document/window at module-evaluation time; BUT the package ENTRY (index.ts) import THROWS a ReferenceError (HTMLElement is not defined) because it re-exports web components whose class declarations extend HTMLElement at import. Import-time safety is only PARTIALLY satisfied (utility modules yes; mandatory package entry no — limitation recorded, not claimed safe).",
+      "targetIncrement": "P1.6",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the package ENTRY import THROWS in no-DOM Node (limitation recorded, not claimed safe)",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T3-SSR-IMPORT-SAFETY-EVIDENCE (Node env; public import; no-document/window precondition asserted before import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/index.ts",
+          "lines": "1-92"
+        },
+        {
+          "file": "packages/core/src/components/native-select.ts",
+          "lines": "17-17"
+        },
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "1-295"
+        },
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "1-238"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: runs without document/window before any import (precondition)",
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the security utility module imports without a DOM (no top-level browser access)",
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the csp-styles utility module imports without a DOM (no top-level browser access)"
+      ]
+    },
+    {
+      "id": "API-076",
+      "behavior": "Deferred DOM access: utility modules import successfully in no-DOM Node; calling a document-dependent helper (escapeHTML, createElement) throws a ReferenceError at CALL time (document is not defined), not at import. Non-DOM helpers (escapeAttribute, containsSuspiciousPatterns, defaultTheme/shadowDOMStyles) and duck-typed element operations (applyClasses, hasOverflowHiddenAncestor) operate normally without a global DOM.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: DOM-dependent helpers throw ReferenceError at CALL time (deferred, not import)",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T3-SSR-IMPORT-SAFETY-EVIDENCE (Node env; import success + call-time failure = deferred DOM access)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "78-169"
+        },
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "10-226"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: non-DOM helpers operate normally in a no-DOM process (facilities they need are present)"
+      ]
     }
   ]
 }

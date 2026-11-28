@@ -1,0 +1,100 @@
+{
+  "artifact": "Angular-Wave2-S5P1-PACKAGING-CORRECTION",
+  "increment": "Angular Wave 2 - S5-P1 Packaging and Publication-Metadata Correction (Option A)",
+  "startingCommit": "8f22492b021a0a1893ce1ae6cd3a06dde2df8952",
+  "startingCommitDescription": "S5-P0 publication preflight (accepted/closed, NO-GO release)",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "scope": "bounded correction: package metadata + consumer docs + packed-install regression test; no runtime/core change; no version change; no publish",
+  "published": false,
+  "releaseDecision": "S5-P1 CORRECTION COMPLETE - ready for independent acceptance (publication remains separately gated)",
+  "environment": {
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "ngPackagr": "21.2.7",
+    "angular": "21.2.26"
+  },
+  "changedFiles": [
+    { "path": "packages/angular/package.json", "change": "add module/types/exports (ESM-only, ./dist/... paths); fix engines.node; add test:packed-install script", "authorizedArea": "source package.json exports, engines, test wiring" },
+    { "path": "packages/angular/README.md", "change": "add Known limitations (L-01/L-02/L-03); document ESM-only entry points + Node engine range", "authorizedArea": "consumer README disclosures" },
+    { "path": "packages/angular/tests/packed-install/run-packed-install.mjs", "change": "new packed-install regression runner (build->pack->install->resolve+import+AOT)", "authorizedArea": "packed-install regression tests" },
+    { "path": "packages/angular/tests/packed-install/.gitignore", "change": "ignore stray temp artifacts", "authorizedArea": "support" }
+  ],
+  "notChanged": {
+    "angularRuntimeOrComponentImplementation": false,
+    "coreSource": false,
+    "packageVersion": "1.13.0 (unchanged)",
+    "registryAction": false
+  },
+  "fix": {
+    "problem": "Source package.json had no main/module/types/exports; ng-packagr wrote a complete manifest only to dist/package.json, which is excluded from the tarball via dist/.npmignore (**/package.json). Published root manifest had no usable entry points; require.resolve/import failed.",
+    "option": "Option A - declare entry points in source package.json pointing into ./dist/... (matches @smilodon/{core,vanilla,vue,svelte,solid} convention). ESM-only; no CJS main/require advertised.",
+    "entryPoints": {
+      "module": "./dist/fesm2022/smilodon-angular.mjs",
+      "types": "./dist/types/smilodon-angular.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/types/smilodon-angular.d.ts",
+          "import": "./dist/fesm2022/smilodon-angular.mjs",
+          "default": "./dist/fesm2022/smilodon-angular.mjs"
+        },
+        "./package.json": { "default": "./package.json" }
+      }
+    },
+    "engines": { "node": "^20.19.0 || ^22.12.0 || ^24.0.0", "npm": ">=9" },
+    "ngPackagrWarningNote": "ng-packagr prints 'conflicting export condition ... would be overridden by ng-packagr' warnings while generating the EXCLUDED dist/package.json. The published root manifest (source) carries the correct ./dist/... entry points. Build exits 0; tarball resolves/imports/serves an AOT consumer. Warnings are benign."
+  },
+  "guardValidation": {
+    "description": "Packed-install test was run with entry points deliberately removed (simulating the S5-P0 defect) and correctly FAILED with exit 1.",
+    "withDefectExitCode": 1,
+    "withDefectErrors": [
+      "packed root manifest declares `exports` -> fail",
+      "packed root manifest declares `module` -> fail",
+      "packed root manifest declares `types` -> fail",
+      "import.meta.resolve FAILED: ERR_MODULE_NOT_FOUND",
+      "require.resolve FAILED: MODULE_NOT_FOUND Cannot find module '@smilodon/angular'"
+    ],
+    "withFixExitCode": 0,
+    "conclusion": "Test fails when the packed package loses its entry points (correct failure mode), passes when fixed."
+  },
+  "acceptanceCriteria": [
+    { "id": "P1-01", "requirement": "Packed root manifest has valid runtime and type entry points", "verdict": "PASS", "evidence": "packed-install: exports/module/types present; no main; no require condition; ESM-only" },
+    { "id": "P1-02", "requirement": "Every exported path exists in the packed tarball", "verdict": "PASS", "evidence": "packed-install: each ./dist/... target EXISTS; FESM + .d.ts shipped" },
+    { "id": "P1-03", "requirement": "Clean-install ESM resolution and import succeed under a supported env", "verdict": "PASS", "evidence": "clean npm install -> import.meta.resolve + require.resolve -> dist/fesm2022/smilodon-angular.mjs; import resolves" },
+    { "id": "P1-04", "requirement": "AOT consumer compiles against the installed tarball", "verdict": "PASS", "evidence": "ngc full compile against installed tarball; TestBed boots under jsdom; <enhanced-select> rendered + configured" },
+    { "id": "P1-05", "requirement": "Source and packed metadata agree", "verdict": "PASS", "evidence": "packed-install: module/types/exports/engines agree byte-for-byte" },
+    { "id": "P1-06", "requirement": "Node.js engine range matches Angular 21", "verdict": "PASS", "evidence": "engines.node = ^20.19.0 || ^22.12.0 || ^24.0.0; peer range unchanged" },
+    { "id": "P1-07", "requirement": "L-01, L-02 and L-03 appear in consumer documentation", "verdict": "PASS", "evidence": "README Known limitations section covers L-01 (WebKit), L-02 (async provenance), L-03 (multi init change)" },
+    { "id": "P1-08", "requirement": "No Angular/core runtime behavior changes", "verdict": "PASS", "evidence": "only package.json, README.md, tests/packed-install/* changed; no src/ or core .ts" },
+    { "id": "P1-09", "requirement": "Existing regression and traceability gates remain unchanged or pass", "verdict": "PASS", "evidence": "see gateResults" },
+    { "id": "P1-10", "requirement": "Repeated npm pack yields a usable artifact without the dist symlink workaround", "verdict": "PASS", "evidence": "packed-install: 2nd pack still carries entry points; consumer installs the tarball (not a symlink)" }
+  ],
+  "gateResults": {
+    "buildAngular": "PASS",
+    "packedInstall": "PASSED (P1-01..P1-05, P1-10)",
+    "aotConsumerExisting": "PASSED",
+    "angularUnit": "62 passed",
+    "angularSSR": "4 passed",
+    "angularTsc": "0 errors",
+    "eslintSrcAndTests": "0 errors",
+    "coreUnit": "1071 passed / 1 skipped",
+    "coreSSR": "10 passed",
+    "coreTsc": "44 (pre-existing, unchanged)",
+    "traceability": "129/129 PASS"
+  },
+  "scopeGuardrails": {
+    "optionAOnly": true,
+    "esmOnly": true,
+    "angularRuntimeUntouched": true,
+    "coreSourceUntouched": true,
+    "packageVersionUnchanged": "1.13.0",
+    "npmPublication": "not performed (NO-GO)"
+  },
+  "preservedLimitations": {
+    "L-01": "WebKit unverified on build host; now disclosed in README",
+    "L-02": "Async provenance accepted limitation; disclosed in README",
+    "L-03": "Multi init empty change (core behavior); now disclosed in README",
+    "L-04": "Core tsc 44 pre-existing, S6 NO-GO scope",
+    "L-05": "Developer-reported gates, disclosure retained"
+  },
+  "recommendation": "S5-P0 blocking findings (P0-01/P0-02 packaging, P0-03=P01 engines, P0-06 disclosure) are remediated within authorized scope. Distributable resolves, imports, and serves a real AOT consumer. Ready for independent acceptance of S5-P1. Post-correction publication preflight PENDING; package version and publication remain explicitly-gated decisions."
+}

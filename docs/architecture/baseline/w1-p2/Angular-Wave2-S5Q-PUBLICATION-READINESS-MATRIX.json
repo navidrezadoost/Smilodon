@@ -1,0 +1,94 @@
+{
+  "artifactId": "Angular-Wave2-S5Q-PUBLICATION-READINESS-MATRIX",
+  "increment": "Angular Wave 2",
+  "slice": "S5-Q — Publication-readiness matrix (Q-12)",
+  "startingCommit": "74fc5fce2d1bd5dae3a27c8b30676f451d8b2230",
+  "adapter": "@smilodon/angular",
+  "adapterVersionSource": "packages/angular/package.json",
+  "published": false,
+  "overallStatus": "PUBLICATION-READY-WITH-DOCUMENTED-LIMITATIONS",
+
+  "readinessCriteria": [
+    { "id": "R-01", "criterion": "Standalone CSR render + interaction (pointer + keyboard) in Chromium + Firefox", "status": "MET", "gate": "Q-01/Q-04", "evidence": "csr qualification 18/18 chromium + 18/18 firefox" },
+    { "id": "R-02", "criterion": "Genuine SSR render + hydration node reuse, zero mismatch diagnostics", "status": "MET", "gate": "Q-02/Q-03", "evidence": "ssr hydration 10/10 chromium + 10/10 firefox" },
+    { "id": "R-03", "criterion": "S3 event forwarding (select/change/clear) with array-vs-scalar contracts", "status": "MET", "gate": "Q-05", "evidence": "csr Q-05 tests; unit events.spec" },
+    { "id": "R-04", "criterion": "S4 forms: reactive/template/FormControlName with zero initial echo, exactly-one change per edit", "status": "MET", "gate": "Q-06", "evidence": "csr Q-06 tests; unit control-value-accessor.spec; AOT consumer" },
+    { "id": "R-05", "criterion": "Focus transitions + touched at real focus-loss (once)", "status": "MET", "gate": "Q-07", "evidence": "csr Q-07; ssr focus tests; unit touched spec" },
+    { "id": "R-06", "criterion": "Disabled-state + programmatic updates reconciled", "status": "MET", "gate": "Q-08", "evidence": "csr Q-08 tests" },
+    { "id": "R-07", "criterion": "Deferred init + destroy/recreate safe, no teardown errors", "status": "MET", "gate": "Q-09", "evidence": "csr Q-09 tests" },
+    { "id": "R-08", "criterion": "Full-core import cannot revive host collision", "status": "MET", "gate": "Q-10", "evidence": "csr Q-10; ssr F02-R02" },
+    { "id": "R-09", "criterion": "All regression gates + traceability green", "status": "MET", "gate": "Q-11", "evidence": "gateResults in S5Q evidence" },
+    { "id": "R-10", "criterion": "Every remaining limitation recorded", "status": "MET", "gate": "Q-12", "evidence": "this matrix" }
+  ],
+
+  "limitations": [
+    {
+      "id": "L-01",
+      "title": "WebKit not verified on this build host",
+      "classification": "unverified-due-to-environmental-limitations",
+      "isAdapterDefect": false,
+      "severity": "coverage-gap",
+      "detail": "WebKit fails to launch in ~1ms: 'Host system is missing dependencies to run browsers' (libicu74, libxml2, libflite1). Fails before any test body runs. Never an assumed pass. Playwright projects remain wired (csr-webkit, ssr-hydration-webkit).",
+      "owner": "release environment provisioning",
+      "remediation": "sudo npx playwright install-deps (or install libicu74/libxml2/libflite1); re-run both Playwright projects.",
+      "gatingEffect": "Does NOT block publication of Chromium/Firefox-qualified adapter; WebKit support is unverified until provisioned."
+    },
+    {
+      "id": "L-02",
+      "title": "S4 async (server-backed) provenance conservative classification",
+      "classification": "documented-adapter-limitation",
+      "isAdapterDefect": true,
+      "severity": "low",
+      "detail": "While a server-backed setSelectedValues() fetch is in flight, ANY observed change is classified programmatic; a genuine user edit made DURING the fetch window is conservatively NOT reported to the form model (strictly safer than a false echo). Documented in select.component.ts and provenance.ts. PRESERVED and NOT silently classified resolved.",
+      "owner": "next forms-hardening increment",
+      "remediation": "Track a precise origin across the await gap (out of S5-Q scope — no production change permitted here).",
+      "gatingEffect": "Documented; not a blocker for the common (non-server-backed) forms paths which are fully qualified."
+    },
+    {
+      "id": "L-03",
+      "title": "Multi select emits one initial empty change at init",
+      "classification": "documented-core-behavior",
+      "isAdapterDefect": false,
+      "severity": "informational",
+      "detail": "Core updateConfig() calls clear() on a single->multi mode switch at init, emitting an empty change. Correctly classified programmatic by the adapter (no form-model write-back). Single selects are unaffected.",
+      "owner": "core (informational for adapter consumers)",
+      "remediation": "None required; documented so consumers are not surprised by one initial empty change on newly-multi controls.",
+      "gatingEffect": "None."
+    },
+    {
+      "id": "L-04",
+      "title": "44 pre-existing core tsc errors",
+      "classification": "pre-existing-out-of-scope",
+      "isAdapterDefect": false,
+      "severity": "none-for-angular",
+      "detail": "npx tsc -p packages/core/tsconfig.json --noEmit reports 44 errors, identical to the accepted baseline. Core remediation is a separate NO-GO track (S6).",
+      "owner": "S6 core remediation (NO-GO)",
+      "remediation": "Core track.",
+      "gatingEffect": "None for the Angular adapter (Angular tsc is 0 errors)."
+    },
+    {
+      "id": "L-05",
+      "title": "Regression gates are developer-reported",
+      "classification": "disclosed",
+      "isAdapterDefect": false,
+      "severity": "process",
+      "detail": "Gate results are produced by the developer; traceability is independently recomputed by verify_traceability.py (129/129).",
+      "owner": "Lead acceptance",
+      "remediation": "None.",
+      "gatingEffect": "None; disclosed for transparency."
+    }
+  ],
+
+  "publicationPreconditions": [
+    "Lead acceptance of the S5-Q artifact bundle",
+    "Explicit publication/publish decision (S5-Q does NOT publish)"
+  ],
+
+  "notDoneHere": [
+    "No npm publish performed",
+    "No production source change",
+    "No core change",
+    "No selector redesign",
+    "No unrelated dependency changes"
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "artifactId": "Angular-Wave2-S5VR-TEST-CORRECTION-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S5-VR — Hydration Verification Test-Correction (corrects S5-V)",
+  "acceptedBaselineCommit": "2a9bd9985315507cefc215d30dbebf0c286466c4",
+  "startingCommit": "04847cd0271dd9c6f7f0e2717af1de9f317ab98c",
+  "supersedes": "Angular-Wave2-S5V-VERIFICATION-EVIDENCE (the S5-V 'collision benign' classification was WRONG — see defectF02)",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S5-VR directive (after independent review of 04847cd): GO — ONE bounded test-only correction increment. The 8/8 S5-V passing tests did NOT prove real hydration and masked a serious risk. Correct F01 (verify real hydration via server-side provideClientHydration + ngh annotations + node reuse + warnings), F02 (test REAL widget visibility/geometry/pointer/keyboard/a11y — a programmatic container.click() inside page.evaluate() masked an invisible widget), F03 ((change) OUTPUT delivery + real form-model behavior). Retain WebKit environmental qualification. If corrected tests expose a genuine adapter defect, PRESERVE the failing reproduction and STOP at that boundary; production remediation requires separate authorization. NO production source/selector/core/runtime-dep/S4-contract changes.",
+  "verificationType": "test-only",
+  "productionChanges": false,
+  "testChanges": true,
+  "dependencyChanges": false,
+  "dependencyNotes": "No new dependencies in this increment. (The @angular/platform-server devDependency was added in S5-V and is unchanged here.)",
+
+  "headlineOutcome": "F01 fixed in the TEST FIXTURE and real hydration now PROVEN; F03 verified; F02 EXPOSED A GENUINE ADAPTER DEFECT — the <enhanced-select> widget is invisible/unusable under the tag collision because core's host shadow root has no <slot>. The S5-V 'benign' classification is retracted. The defect reproduction is PRESERVED as Playwright expected-failures (test.fail). Production source is unchanged vs 2a9bd99.",
+
+  "findings": {
+    "F01": {
+      "title": "Real Angular hydration was NOT enabled; corrected and now proven",
+      "previousState": "S5-V asserted only ng-version/ng-server-context presence as a proxy for hydration. In fact the server injector had no hydration DOM-reuse flag, so no ngh annotations were emitted and the client RECREATED the app instead of hydrating.",
+      "rootCause": "ngh annotations are emitted by ɵannotateForHydration only when ɵIS_HYDRATION_DOM_REUSE_ENABLED is true in the SERVER injector. SsrAppModule provided only ServerModule, so the flag was unset. Using provideClientHydration(withEventReplay()) on the server ALSO fails, because the event-replay feature's client-only providers prevent server-side annotation.",
+      "fix": "Added provideClientHydration() (WITHOUT withEventReplay()) to SsrAppModule.providers in packages/angular/tests/ssr/ssr-server.module.ts (test fixture only). Client keeps provideClientHydration(withEventReplay()).",
+      "evidence": {
+        "serverHtml": "4x ngh=\"0\" annotations plus <!--nghm--> content-integrity marker present",
+        "clientLog": "Angular hydrated 4 component(s) and 9 node(s), 0 component(s) were skipped",
+        "nodeReuseProof": "hydrate-server.mjs injects a blocking inline script that stamps data-server-node on app-ssr-shell, #plain, and #plain enhanced-select at parse time; hydrate-client.ts compares those node identities before bootstrap and verifies the stamp survives after whenStable(), setting window.__serverNodesReused = true"
+      },
+      "verdict": "CONFIRMED — genuine hydration + node reuse, no NG05xx warnings"
+    },
+    "F02": {
+      "title": "Tag collision hides the real widget — GENUINE ADAPTER DEFECT (previous 'benign' classification retracted)",
+      "previousState": "S5-V used a programmatic container.click() inside page.evaluate() and concluded 'benign / no visible artifact'. That click bypasses visibility/hit-testing and therefore masked an invisible, un-usable widget.",
+      "mechanism": "The <smilodon-select> host is upgraded by core's NativeSelectElement, whose constructor does attachShadow({mode:'open'}) and appends only _listRoot (role=listbox) + _liveRegion (role=status). There is NO <slot>. The light-DOM <enhanced-select> (the real widget) is therefore NOT composed into the rendered shadow tree and is not painted.",
+      "measurements": {
+        "hostShadowHasSlot": false,
+        "enhancedSelectClientRects": 0,
+        "enhancedSelectBox": "0x0",
+        "elementFromPointAtWidgetCentre": "null (not painted / not hittable)",
+        "controlExperiment": "cloning the SAME <enhanced-select> into a plain div renders at 48x1264 — the widget itself works; the slotless foreign host shadow suppresses it",
+        "focus": "the combobox INPUT is tabIndex:0 but readOnly:true and offsetHeight:0; .focus() does NOT move document.activeElement -> real focus impossible"
+      },
+      "engines": ["chromium", "firefox"],
+      "verdict": "GENUINE ADAPTER DEFECT — the S5-V 'benign' claim was WRONG. Preserved as reproduction; NOT remediated (production remediation requires separate authorization).",
+      "preservedAs": "Three Playwright tests marked test.fail() (expected failure while F02 is open; a loud unexpected-pass if it is ever silently 'fixed'): 'tag collision does NOT hide the real widget', 'collision does NOT suppress layout', 'REAL focus cannot reach the widget (F02 consequence)'."
+    },
+    "F03": {
+      "title": "Angular (change) OUTPUT delivery and genuine form-model behavior verified",
+      "notes": "ChangeEventDetail shape is { selectedItems, selectedValues, selectedIndices } (NOT .value). The fixture exposes window.__fixture = { lastChange, changeCount, formChanges, formLastValue }.",
+      "observed": [
+        "initial value 'b' applied with NO programmatic echo; control untouched AND pristine",
+        "selection forwards the Angular (change) output (changeCount increments; lastChange.selectedValues === ['a'])",
+        "reactive FormControl model updates to 'c' after the corresponding option is clicked",
+        "synthetic focusin/focusout(relatedTarget) marks ng-touched — retained as a separate UNIT check"
+      ],
+      "verdict": "CONFIRMED (Chromium + Firefox)"
+    }
+  },
+
+  "testResults": {
+    "runner": "npx playwright test --config tests/ssr/playwright.ssr.config.ts",
+    "engines": {
+      "chromium": {
+        "genuinePasses": 5,
+        "expectedFailures": 3,
+        "status": "PASS (5 passed + 3 expected-fail = F02 reproduction)"
+      },
+      "firefox": {
+        "genuinePasses": 5,
+        "expectedFailures": 3,
+        "status": "PASS (5 passed + 3 expected-fail = F02 reproduction)"
+      },
+      "webkit": {
+        "status": "UNVERIFIED-ENVIRONMENTAL",
+        "class": "unverified-due-to-environmental-limitations",
+        "reason": "Host system missing dependencies to launch WebKit (libicu74, libxml2, libflite1, ...). Launch fails before any test body runs. NOT an application defect. Project remains wired for a host with the system libraries."
+      }
+    },
+    "specs": [
+      { "name": "F01 server HTML hydration-annotated (ngh + nghm)", "type": "genuine", "status": "PASS" },
+      { "name": "F01 client reuses server DOM nodes + positive hydration", "type": "genuine", "status": "PASS" },
+      { "name": "F02 tag collision does NOT hide the real widget", "type": "F02-reproduction", "status": "EXPECTED-FAIL" },
+      { "name": "F02 collision does NOT suppress layout", "type": "F02-reproduction", "status": "EXPECTED-FAIL" },
+      { "name": "F03 reactive initial value, no echo (H2)", "type": "genuine", "status": "PASS" },
+      { "name": "F03 selection forwards (change) output + form model", "type": "genuine", "status": "PASS" },
+      { "name": "REAL focus cannot reach the widget (F02 consequence)", "type": "F02-reproduction", "status": "EXPECTED-FAIL" },
+      { "name": "UNIT synthetic focusin/focusout marks touched", "type": "genuine", "status": "PASS" }
+    ]
+  },
+
+  "gateResults": {
+    "angularJsdom": { "command": "npx vitest run --config packages/angular/vitest.config.ts", "result": "6 files / 62 tests passed" },
+    "angularSsr": { "command": "npx vitest run --config packages/angular/vitest.ssr.config.ts", "result": "4 passed" },
+    "consumer": { "command": "cd packages/angular && node ./tests/consumer/run-consumer.mjs", "result": "PASSED (run AFTER build:angular — dist must be fresh)" },
+    "buildAngular": { "command": "npm run build:angular", "result": "PASS" },
+    "angularTsc": { "command": "npx tsc -p packages/angular/tsconfig.json --noEmit", "result": "0 errors" },
+    "eslint": { "command": "npx eslint packages/angular/src packages/angular/tests", "result": "0 errors" },
+    "coreJsdom": { "command": "npx vitest run --config packages/core/vitest.config.ts", "result": "1071 passed | 1 skipped" },
+    "coreSsr": { "command": "npx vitest run --config packages/core/vitest.ssr.config.ts", "result": "10 passed" },
+    "coreTsc": { "command": "npx tsc -p packages/core/tsconfig.json --noEmit", "result": "44 errors (pre-existing, unchanged)" },
+    "traceability": { "command": "python3 docs/architecture/baseline/w1-p1/verify_traceability.py", "result": "129/129 PASS" }
+  },
+
+  "filesChangedThisIncrement": [
+    "packages/angular/tests/ssr/ssr-server.module.ts",
+    "packages/angular/tests/ssr/hydrate-client.ts",
+    "packages/angular/tests/ssr/ssr-app.component.ts",
+    "packages/angular/tests/ssr/hydrate-server.mjs",
+    "packages/angular/tests/ssr/hydration.spec.ts"
+  ],
+
+  "compliance": {
+    "productionChanges": false,
+    "productionSourceUnchangedVs": "2a9bd99",
+    "publicSelectorChanged": false,
+    "coreEngineChanged": false,
+    "coreRegistrationSuppressed": false,
+    "runtimeDepsChanged": false,
+    "existingContractBehaviorChanged": false,
+    "webkitClassification": "unverified-due-to-environmental-limitations (not app defect)",
+    "onlyTestFixtureFilesAndDocsTouched": true
+  },
+
+  "recommendation": {
+    "s5vrDecision": "VERIFIED-WITH-DEFECT-PRESERVED",
+    "summary": "F01 corrected and real hydration proven (server-annotated + node reuse). F03 verified. F02 exposed a GENUINE adapter defect: the <enhanced-select> widget is invisible and unusable under the tag collision because core's host shadow root has no <slot> — the S5-V 'benign' classification is retracted. The defect is PRESERVED as expected-failing reproduction. No production remediation performed.",
+    "s5ImplementationDecision": "STILL separate gate (NO-GO for S5 production implementation until F02 has an authorized remediation decision).",
+    "requiredNextStep": "Lead decision required on F02: this is an adapter-level defect (slotless `smilodon-select` host shadow suppresses the light-DOM `<enhanced-select>`). Remediation options (e.g. host-side slot handling, selector divergence, or core registration strategy) each touch production source and require separate authorization.",
+    "openItems": [
+      "WebKit verification once host system libraries are installed (npx playwright install-deps)",
+      "F02 adapter remediation — NOT authorized in this increment"
+    ]
+  }
+}

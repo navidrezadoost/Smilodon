@@ -1,0 +1,99 @@
+{
+  "name": "@smilodon/angular",
+  "version": "1.13.0",
+  "description": "Angular adapter for @smilodon/core (browser-deferred custom-element host)",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "module": "./dist/fesm2022/smilodon-angular.mjs",
+  "types": "./dist/types/smilodon-angular.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/smilodon-angular.d.ts",
+      "import": "./dist/fesm2022/smilodon-angular.mjs",
+      "default": "./dist/fesm2022/smilodon-angular.mjs"
+    },
+    "./package.json": {
+      "default": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "ng-packagr -p ng-package.json",
+    "test": "vitest run --config vitest.config.ts",
+    "test:ssr": "vitest run --config vitest.ssr.config.ts",
+    "test:consumer": "node ./tests/consumer/run-consumer.mjs",
+    "prepublishOnly": "npm run build",
+    "test:packed-install": "node ./tests/packed-install/run-packed-install.mjs"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=21.0.0 <22.0.0",
+    "@angular/forms": ">=21.0.0 <22.0.0",
+    "@smilodon/core": "^1.13.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@angular/core": {
+      "optional": false
+    },
+    "@angular/forms": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@angular/common": "21.2.26",
+    "@angular/compiler": "21.2.26",
+    "@angular/compiler-cli": "21.2.26",
+    "@angular/core": "21.2.26",
+    "@angular/forms": "^21.2.26",
+    "@angular/platform-browser": "21.2.26",
+    "@angular/platform-server": "^21.2.26",
+    "jsdom": "^24.0.0",
+    "ng-packagr": "21.2.7",
+    "rxjs": "7.8.2",
+    "typescript": "^5.9.3",
+    "vite": "6.4.6",
+    "vitest": "4.1.12",
+    "zone.js": "0.16.3"
+  },
+  "keywords": [
+    "angular",
+    "select",
+    "dropdown",
+    "combobox",
+    "autocomplete",
+    "searchable",
+    "multi-select",
+    "virtualization",
+    "infinite-scroll",
+    "accessible",
+    "wcag",
+    "aria",
+    "typescript",
+    "web-components",
+    "standalone"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/navidrezadoost/smilodon.git",
+    "directory": "packages/angular"
+  },
+  "bugs": {
+    "url": "https://github.com/navidrezadoost/smilodon/issues"
+  },
+  "homepage": "https://github.com/navidrezadoost/smilodon#readme",
+  "author": "Navid Rezadoost <navidrezadoost07@gmail.com>",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || ^24.0.0",
+    "npm": ">=9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

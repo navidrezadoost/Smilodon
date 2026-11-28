@@ -1,0 +1,234 @@
+{
+  "artifactId": "Angular-Wave2-S5Q-FINAL-QUALIFICATION-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S5-Q — Final Angular Qualification (consolidated, publication-readiness)",
+  "authorizedStartingCommit": "74fc5fce2d1bd5dae3a27c8b30676f451d8b2230",
+  "acceptedProductionBaseline": "2a9bd9985315507cefc215d30dbebf0c286466c4",
+  "supersedes": "None — final consolidation gate. Consumes evidence from S1, S2/S2-R/S2-R2, S3, S4/S4-R, S5-V/S5-VR, S5-D, F02-R.",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S5-Q directive: a QUALIFICATION increment (NOT implementation) starting at 74fc5fc. Consolidate evidence that the Angular adapter behaves correctly across real browser interactions, SSR, hydration, forms, event forwarding, lifecycle cleanup. Establish publication-readiness WITHOUT publishing. Permitted: test fixtures, qualification tests, config strictly necessary for testing, evidence MD/JSON, checksum manifest. NOT permitted: production source changes, core changes, unrelated dependency changes, further selector redesign. Preserve the accepted production implementation unchanged.",
+
+  "verificationType": "final-qualification",
+  "productionChanges": false,
+  "coreChanges": false,
+  "testInfrastructureChanges": true,
+  "dependencyChanges": false,
+  "dependencyNotes": "No dependency changes. Existing Angular 21.2.26, @playwright/test 1.59.1, vitest 4.1.12.",
+
+  "headlineOutcome": "The Angular adapter is QUALIFIED for publication with documented limitations. In REAL browsers (Chromium + Firefox) the adapter passes: standalone CSR rendering and interaction (pointer + keyboard), S3 event forwarding (select/change/clear with array-vs-scalar contracts), S4 forms integration (reactive FormControl, FormControlName in a FormGroup, template-driven ngModel) with ZERO initial-write echo and EXACTLY-ONE change per user edit, real focus transitions with focus-loss touched (exactly once), disabled-state + programmatic reconciliation, deferred-init durability, destroy/recreate safety, and full-core import NOT reviving the host collision. SSR/hydration is proven by the existing SSR qualification fixture (server annotated + node reuse + zero hydration diagnostics). No production or core source was changed. WebKit is environmentally unavailable on this build host (recorded as a coverage limitation, never an assumed pass). The documented S4 async provenance limitation is preserved and NOT silently classified resolved.",
+
+  "startingCommit": "74fc5fce2d1bd5dae3a27c8b30676f451d8b2230",
+
+  "filesAddedThisIncrement": [
+    "packages/angular/tests/csr/csr-app.component.ts",
+    "packages/angular/tests/csr/csr-main.ts",
+    "packages/angular/tests/csr/tsconfig.json",
+    "packages/angular/tests/csr/build-csr.mjs",
+    "packages/angular/tests/csr/csr-server.mjs",
+    "packages/angular/tests/csr/global-setup.ts",
+    "packages/angular/tests/csr/playwright.csr.config.ts",
+    "packages/angular/tests/csr/qualification.spec.ts",
+    "packages/angular/tests/csr/.gitignore",
+    "docs/architecture/baseline/w1-p2/Angular-Wave2-S5Q-FINAL-QUALIFICATION-EVIDENCE.md",
+    "docs/architecture/baseline/w1-p2/Angular-Wave2-S5Q-FINAL-QUALIFICATION-EVIDENCE.json",
+    "docs/architecture/baseline/w1-p2/Angular-Wave2-S5Q-PUBLICATION-READINESS-MATRIX.md",
+    "docs/architecture/baseline/w1-p2/Angular-Wave2-S5Q-PUBLICATION-READINESS-MATRIX.json"
+  ],
+
+  "filesModifiedThisIncrement": [
+    "packages/angular/vitest.config.ts"
+  ],
+  "modificationJustification": "packages/angular/vitest.config.ts: added an `exclude` for `packages/angular/tests/csr/**` so the new Playwright-driven CSR qualification suite is not collected by vitest (mirrors the existing exclusion for tests/ssr/**. Strictly necessary to keep the vitest unit gate green after adding a Playwright suite). No production source touched.",
+
+  "qualificationDesign": {
+    "csrFixture": "A standalone Angular application (CsrAppComponent) AOT-compiled by ngc against the BUILT @smilodon/angular package and bundled with esbuild into `.aot-csr/csr-bundle.js`. Bootstrapped entirely CLIENT-SIDE (bare HTML document, no server markup) — the pure-CSR shape contrasting the SSR/hydration fixture. Nine controls exercise: standalone single (#plain), standalone multi with clearControl enabled via [config] (#multi), reactive FormControl (#reactive), FormControlName multi in FormGroup (#formgroup), template-driven ngModel (#template), statically disabled (#disabled), programmatically toggled disabled FormControl (#toggled), deferred items binding (#late), and *ngIf destroy/recreate (#removable).",
+    "zonelessNote": "Angular 21 bootstraps zoneless by default; the fixture drives change detection explicitly (ChangeDetectorRef/ApplicationRef.tick) after async host-state mutations (deferred items, *ngIf recreation, programmatic setValue/toggle) so the [items]/[ngModel]/[disabled] bindings re-evaluate and the adapter's ngOnChanges → applyInputs path runs.",
+    "liveStateGetters": "window.__csrApi.live() returns the AUTHORITATIVE live Angular state (FormControl value/touched/pristine, ngModel value, FormGroup value) so the qualification reads genuine form state rather than a publish-time snapshot. window.__csr holds event counters (which by nature only advance on events).",
+    "driver": "Real Playwright pointer (actionability-checked clicks that pierce shadow roots) and real Playwright keyboard (focus + ArrowDown/Enter). No programmatic container.click() anywhere. Shadow-aware focus walks element.shadowRoot.activeElement down the composed chain."
+  },
+
+  "acceptanceCriteria": {
+    "Q-01": {
+      "title": "Standalone CSR consumer works without SSR",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "App bootstraps client-side (window.__csrBooted===true, bootError null); all 8+ select hosts render their real <enhanced-select> widget visible; document has NO SSR hydration marker (<!--nghm--> absent); initial models exact (reactive 'b', template 'c', group ['a']); deferred items bound."
+    },
+    "Q-02": {
+      "title": "Genuine SSR rendering preserves expected placeholder",
+      "verdict": "PASS (chromium + firefox) — via tests/ssr/hydration.spec.ts F01",
+      "evidence": "Server HTML is hydration-annotated (ngh annotations >=4, <!--nghm--> marker) and serializes exactly 2 <smilodon-angular-select> hosts each containing the empty <enhanced-select> placeholder; no combobox/listbox serialized server-side; core not evaluated server-side."
+    },
+    "Q-03": {
+      "title": "Hydration reuses server DOM, no mismatch diagnostics",
+      "verdict": "PASS (chromium + firefox) — via tests/ssr/hydration.spec.ts F01",
+      "evidence": "window.__serverNodesReused===true (node identity preserved); Angular logs 'hydrated 4 component(s) and 9 node(s), 0 component(s) were skipped'; zero NG05xx/hydration/mismatch warnings."
+    },
+    "Q-04": {
+      "title": "Chromium + Firefox pointer + keyboard interaction",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Pointer: combobox click opens listbox + option click selects (exactly one change, selectedValues ['a']). Keyboard: focus + ArrowDown open + navigate + Enter commits a concrete option. Both engines."
+    },
+    "Q-05": {
+      "title": "Selection/clearing/event forwarding preserve S3 contracts",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Multi accumulates 2 values (array contract), the REAL clear control (enabled via [config]) clears selection and forwards (clear) with clearCount>=1 and selection emptied to []; forwarded (change) detail carries selectedValues + selectedItems (S3 shape)."
+    },
+    "Q-06": {
+      "title": "Reactive + template-driven forms preserve S4 contracts",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Reactive initial write -> ZERO valueChanges, untouched, pristine. Reactive user edit -> model 'c', exactly ['c'] valueChanges. Template-driven ngModel user edit -> live model 'a'. FormControlName multi -> group value ['a','b'] with >=1 group valueChanges. All read from authoritative live state."
+    },
+    "Q-07": {
+      "title": "Actual focus transitions + touched callbacks correct",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Shadow-aware composed active element IS the widget combobox. Real focus INTO control (not touched) then REAL focus-loss to an external button -> FormControl.touched===true exactly once, host carries ng-touched."
+    },
+    "Q-08": {
+      "title": "Disabled-state + programmatic updates reconciled",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Static [disabled]=true -> element _config.enabled===false and combobox input disabled. Programmatic setValue('c') -> live value 'c' with exactly one (the model's own) valueChanges, no programmatic echo. Programmatic enable/disable -> FormControl.disabled toggles AND element _config.enabled reconciles to match."
+    },
+    "Q-09": {
+      "title": "Deferred init + component destruction safe",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Items bound AFTER init (lateItemsBound) are applied and render options (deferred ngOnChanges path, driven via CD tick). Destroy + recreate via *ngIf keeps app healthy: removedOnce true, recreated widget visible and re-opens; ZERO console/page errors after teardown (late async settles ignored)."
+    },
+    "Q-10": {
+      "title": "Full-core import cannot revive host collision",
+      "verdict": "PASS (chromium + firefox)",
+      "evidence": "Full core is loaded (customElements.get('smilodon-select'|'enhanced-select'|'select-option') all defined) yet each Angular host has tag 'smilodon-angular-select', NO foreign shadow root, non-zero widget geometry, and remains pointer-openable."
+    },
+    "Q-11": {
+      "title": "Regression gates + traceability pass",
+      "verdict": "PASS",
+      "evidence": "All gates green (see gateResults) — Angular unit 62, Angular SSR 4, AOT consumer PASSED, Angular tsc 0, eslint 0, core unit 1071+1skip, core SSR 10, core tsc 44 pre-existing, traceability 129/129. SSE + CSR Playwright green in chromium + firefox."
+    },
+    "Q-12": {
+      "title": "Publication-readiness matrix records every remaining limitation",
+      "verdict": "PASS",
+      "evidence": "Angular-Wave2-S5Q-PUBLICATION-READINESS-MATRIX.{md,json} records status PUBLICATION-READY-WITH-DOCUMENTED-LIMITATIONS (NOT published), each limitation with classification + owner + gating effect."
+    }
+  },
+
+  "testResults": {
+    "csrQualification": {
+      "runner": "npx playwright test --config tests/csr/playwright.csr.config.ts",
+      "spec": "packages/angular/tests/csr/qualification.spec.ts",
+      "testCount": 18,
+      "engines": {
+        "chromium": { "project": "csr-chromium", "tests": 18, "passed": 18, "failed": 0, "status": "PASS" },
+        "firefox": { "project": "csr-firefox", "tests": 18, "passed": 18, "failed": 0, "status": "PASS" },
+        "webkit": {
+          "project": "csr-webkit",
+          "status": "UNAVAILABLE-ENVIRONMENTAL",
+          "class": "unverified-due-to-environmental-limitations",
+          "reason": "browserType.launch fails in ~1ms: 'Host system is missing dependencies to run browsers' (libicu74, libxml2, libflite1). Fails before any test body runs. NOT an application defect and NOT an assumed pass. Project remains wired for a host with the system libraries (sudo npx playwright install-deps)."
+        }
+      },
+      "breakdown": [
+        { "gate": "Q-01", "tests": 1, "status": "PASS" },
+        { "gate": "Q-04", "tests": 2, "status": "PASS" },
+        { "gate": "Q-05", "tests": 2, "status": "PASS" },
+        { "gate": "Q-06", "tests": 4, "status": "PASS" },
+        { "gate": "Q-07", "tests": 2, "status": "PASS" },
+        { "gate": "Q-08", "tests": 3, "status": "PASS" },
+        { "gate": "Q-09", "tests": 3, "status": "PASS" },
+        { "gate": "Q-10", "tests": 1, "status": "PASS" }
+      ]
+    },
+    "ssrQualification": {
+      "runner": "npx playwright test --config tests/ssr/playwright.ssr.config.ts",
+      "spec": "packages/angular/tests/ssr/hydration.spec.ts",
+      "covers": ["Q-02", "Q-03", "F02-R regression"],
+      "engines": {
+        "chromium": { "project": "ssr-hydration-chromium", "tests": 10, "passed": 10, "status": "PASS" },
+        "firefox": { "project": "ssr-hydration-firefox", "tests": 10, "passed": 10, "status": "PASS" },
+        "webkit": { "project": "ssr-hydration-webkit", "status": "UNAVAILABLE-ENVIRONMENTAL", "class": "unverified-due-to-environmental-limitations", "reason": "Same host-system dependency limitation as CSR WebKit." }
+      }
+    }
+  },
+
+  "gateResults": {
+    "buildAngular": { "command": "npm run build:angular", "result": "PASS" },
+    "csrChromium": { "command": "npx playwright test --config tests/csr/playwright.csr.config.ts --project=csr-chromium", "result": "18 passed" },
+    "csrFirefox": { "command": "npx playwright test --config tests/csr/playwright.csr.config.ts --project=csr-firefox", "result": "18 passed" },
+    "csrWebkit": { "command": "npx playwright test --config tests/csr/playwright.csr.config.ts --project=csr-webkit", "result": "ENVIRONMENTAL-UNAVAILABLE (launch deps missing)" },
+    "ssrChromium": { "command": "npx playwright test --config tests/ssr/playwright.ssr.config.ts --project=ssr-hydration-chromium", "result": "10 passed" },
+    "ssrFirefox": { "command": "npx playwright test --config tests/ssr/playwright.ssr.config.ts --project=ssr-hydration-firefox", "result": "10 passed" },
+    "angularJsdom": { "command": "npx vitest run --config packages/angular/vitest.config.ts", "result": "6 files / 62 tests passed" },
+    "angularSsr": { "command": "npx vitest run --config packages/angular/vitest.ssr.config.ts", "result": "4 passed" },
+    "consumer": { "command": "cd packages/angular && node ./tests/consumer/run-consumer.mjs", "result": "PASSED (run after build:angular)" },
+    "angularTsc": { "command": "npx tsc -p packages/angular/tsconfig.json --noEmit", "result": "0 errors" },
+    "eslint": { "command": "npx eslint packages/angular/src packages/angular/tests", "result": "0 errors" },
+    "coreJsdom": { "command": "npx vitest run --config packages/core/vitest.config.ts", "result": "1071 passed | 1 skipped" },
+    "coreSsr": { "command": "npx vitest run --config packages/core/vitest.ssr.config.ts", "result": "10 passed" },
+    "coreTsc": { "command": "npx tsc -p packages/core/tsconfig.json --noEmit", "result": "44 errors (pre-existing, unchanged from baseline)" },
+    "traceability": { "command": "python3 docs/architecture/baseline/w1-p1/verify_traceability.py", "result": "129/129 PASS" }
+  },
+
+  "observedCharacteristics": {
+    "multiSelectInitChange": {
+      "title": "Multi selects emit one initial EMPTY change at init (core mode-switch mitigation)",
+      "detail": "When a control's selection mode changes from the default single to multi at init, core's updateConfig() calls clear() as a runtime-mitigation, which emits a `change` with empty selectedItems/selectedValues/selectedIndices. This is GENUINE CORE BEHAVIOR in updateConfig()->clear()->_emitChange(), NOT an adapter echo and NOT a #plain issue. It surfaces only on multi controls (#multi, #formgroup); a standalone single select (#plain) emits NO boot change. It is correctly classified PROGRAMMATIC by the adapter's provenance (no write-back into the form model: #formgroup groupChanges===0 at init; #multi has no form binding).",
+      "classification": "documented-behavior (not a defect); core-owned"
+    }
+  },
+
+  "preservedLimitations": [
+    {
+      "id": "L-S4-ASYNC-PROVENANCE",
+      "title": "S4 async (server-backed) provenance limitation",
+      "status": "PRESERVED — NOT fixed, NOT silently classified resolved",
+      "detail": "While a server-backed setSelectedValues() fetch is in flight (pendingProgrammaticApplications > 0), the adapter conservatively classifies ANY change as programmatic, so a genuine user edit made DURING the fetch window is not reported to the form model. This is strictly safer than a false echo and is a documented limitation of the adapter's provenance model (see select.component.ts handleChangeForValueAccessor and provenance.ts).",
+      "owner": "next forms-hardening increment (out of S5-Q scope)"
+    },
+    {
+      "id": "L-WEBKIT-ENV",
+      "title": "WebKit not run on this build host",
+      "status": "UNVERIFIED-ENVIRONMENTAL",
+      "detail": "WebKit cannot launch: host missing libicu74/libxml2/libflite1. Coverage limitation, not an app failure and not an assumed pass. Projects remain wired.",
+      "owner": "release environment provisioning (sudo npx playwright install-deps)"
+    },
+    {
+      "id": "L-CORE-TSC-44",
+      "title": "44 pre-existing core tsc errors",
+      "status": "PRE-EXISTING — out of Angular scope",
+      "detail": "npx tsc -p packages/core/tsconfig.json --noEmit reports 44 errors, identical to the accepted baseline. Not introduced by any Angular increment; core remediation is a separate NO-GO track (S6).",
+      "owner": "S6 core remediation (NO-GO)"
+    },
+    {
+      "id": "L-DEV-REPORTED-GATES",
+      "title": "Regression gates are developer-reported",
+      "status": "DISCLOSED",
+      "detail": "All regression gate results in this artifact are produced by the developer running the commands in gateResults. Traceability is independently recomputed by verify_traceability.py (129/129).",
+      "owner": "Lead acceptance"
+    }
+  ],
+
+  "compliance": {
+    "productionSourceChanged": false,
+    "coreSourceChanged": false,
+    "selectorRedesign": false,
+    "unrelatedDependencyChanges": false,
+    "testOnlyConfigChange": "packages/angular/vitest.config.ts exclude for tests/csr/**",
+    "buildOutputCommitted": false,
+    "webkitClassification": "unverified-due-to-environmental-limitations (not app defect, not assumed pass)",
+    "s4AsyncProvenanceLimitation": "preserved-and-disclosed (NOT resolved)"
+  },
+
+  "recommendation": {
+    "decision": "QUALIFIED FOR PUBLICATION — WITH DOCUMENTED LIMITATIONS",
+    "published": false,
+    "summary": "The Angular adapter meets all S5-Q acceptance criteria (Q-01..Q-12) in real Chromium + Firefox across CSR, forms, interaction, focus, lifecycle, and full-core collision resistance; SSR/hydration is proven by the SSR fixture. No production or core source changed. Remaining limitations (S4 async provenance, WebKit environmental, 44 core tsc, developer-reported gates) are recorded in the publication-readiness matrix and none is an Angular adapter defect.",
+    "publicationPreconditions": [
+      "Lead acceptance of this S5-Q artifact",
+      "A publishing decision (this increment does NOT publish)"
+    ],
+    "openItems": [
+      "WebKit verification once host system libraries are installed",
+      "S4 async-provenance hardening (separate increment)",
+      "S6 core remediation remains NO-GO",
+      "Core tsc baseline remediation remains NO-GO / out of scope"
+    ]
+  }
+}

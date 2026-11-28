@@ -1,0 +1,193 @@
+{
+  "artifactId": "W1-P1.6-T2-CSP-STYLES-EVIDENCE",
+  "increment": "W1-P1.6",
+  "task": "Task 2 — CSP-compliant styling utilities (public surface) characterization",
+  "startingCommit": "e598e5cdf05f004e42e543c9006364aa1c799c2f",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.6 Task 2 GO from Lead final acceptance review of T1-R1 (e598e5c). Scope: public-package-surface characterization of packages/core/src/utils/csp-styles.ts ONLY. T3 (SSR) and everything downstream remain NO-GO.",
+  "scopeContracts": [
+    "API-070",
+    "API-071",
+    "CONFIG-029",
+    "API-072",
+    "API-073",
+    "API-074"
+  ],
+  "surfaces": {
+    "import": "import { ... } from '../src/index.js' (public package entry re-export of utils/csp-styles.ts)",
+    "exportsCharacterized": [
+      "applyClasses",
+      "toggleClass",
+      "setCustomProperties",
+      "getCustomProperty",
+      "removeCustomProperty",
+      "defaultTheme",
+      "applyDefaultTheme",
+      "shadowDOMStyles",
+      "injectShadowStyles",
+      "hasOverflowHiddenAncestor",
+      "warnCSPViolation"
+    ],
+    "privateSeamsUsed": "NONE — grep confirms no as-any/underscore-private/_state/ForTest access; import is the public entry, not ../src/utils/*"
+  },
+  "testCounts": {
+    "jsdom": 25,
+    "chromium": 0,
+    "total": 25
+  },
+  "renderingModel": "jsdom. Pure package-API function contracts exercised on detached document.createElement('div') fixtures and attachShadow roots. console.warn captured via vi.spyOn with per-test restore; NODE_ENV branches driven via vi.stubEnv. No fixed sleeps.",
+  "environmentNotes": [
+    "Runner NODE_ENV=test => development-only warning branches execute; verified they warn+skip (setCustomProperties) and warn (warnCSPViolation).",
+    "Production-CONDITIONED source behavior verified via vi.stubEnv('NODE_ENV','production'): setCustomProperties still skips non-'--' keys with NO warn; warnCSPViolation emits NOTHING. This exercises the SOURCE under a controlled environment; it does NOT certify a compiled production artifact nor compatibility with an enforced browser CSP.",
+    "jsdom reflects INLINE custom properties and INLINE overflow in getComputedStyle; getCustomProperty and hasOverflowHiddenAncestor characterised via inline-set values only. Layout-/stylesheet-derived computed styles are out of scope (jsdom performs no layout)."
+  ],
+  "limitations": [
+    {
+      "contract": "API-071",
+      "note": "getCustomProperty characterised against inline/computed properties (jsdom). Stylesheet-derived values not claimed. PREFIX ASYMMETRY (T2-F02): getter/remover do NOT enforce '--' and also act on ordinary CSS properties."
+    },
+    {
+      "contract": "API-073",
+      "note": "Ancestor walk characterised via inline-set overflow hidden/clip only. PARENT-CHAIN based, NOT isConnected (T2-F01): returns true iff a traversed ancestor has overflow hidden/clip (excluding body); otherwise false. Connection is not required — a detached subtree may return true; a parentless element returns false."
+    },
+    {
+      "contract": "API-072",
+      "note": "injectShadowStyles is additive (no dedupe); repeated calls append multiple <style> elements — observed, matching the frozen csp.spec.ts observation."
+    }
+  ],
+  "contractEvidence": [
+    {
+      "id": "API-070",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries",
+      "asserts": "applyClasses joins truthy names in order; REPLACES existing className (not additive); all-empty -> ''; toggleClass toggles with/without force; force idempotent",
+      "negativePath": "empty/falsy entries dropped; existing class removed on re-apply; forced toggle idempotent"
+    },
+    {
+      "id": "API-071",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties applies --prefixed custom properties",
+      "asserts": "sets '--' keys; dev warn+skip of non-'--' key; production: NO warn but still skips; getCustomProperty trimmed value and '' when unset; removeCustomProperty removes; getCustomProperty READS an ORDINARY CSS property (no prefix); removeCustomProperty REMOVES an ORDINARY CSS property (no prefix)",
+      "negativePath": "non-'--' key not set by setter; no warn in production; unset property -> ''; getter/remover enforce NO prefix (ordinary property read/removed — asymmetry, T2-F02)",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties warns and skips non-custom keys in development (NODE_ENV=test)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties does NOT warn for non-custom keys under NODE_ENV=production (still skips)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: getCustomProperty returns the trimmed computed value, or \"\" when unset",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: removeCustomProperty removes a previously set custom property",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: getCustomProperty reads an ORDINARY CSS property too (no -- prefix enforced)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: removeCustomProperty removes an ORDINARY CSS property too (no -- prefix enforced)"
+      ]
+    },
+    {
+      "id": "CONFIG-029",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: defaultTheme is a stable 13-entry map matching the expected pinned values",
+      "asserts": "defaultTheme equals an INDEPENDENTLY-defined 13-entry expected map (key set + every value; not derived from defaultTheme); applyDefaultTheme writes every expected entry; shadowDOMStyles static string contains :host/.ns-item/var(--ns-); no <script>. Immutability NOT asserted.",
+      "negativePath": "shadowDOMStyles contains no <script>; no immutability claim (object not frozen)",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: applyDefaultTheme writes every defaultTheme entry onto the element",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: shadowDOMStyles is a static string with :host and .ns-* selectors and NO <script>"
+      ]
+    },
+    {
+      "id": "API-072",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles",
+      "asserts": "single <style> appended with textContent === shadowDOMStyles; repeated call appends a second (additive, no dedupe)",
+      "negativePath": "n/a (additive behaviour characterised)"
+    },
+    {
+      "id": "API-073",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects an overflow:hidden ancestor",
+      "asserts": "detects overflow:hidden ancestor; detects overflow:clip grandparent; false when none; EXCLUDES document.body; DETACHED subtree with overflow:hidden ancestor -> true (parent-chain, not isConnected); PARENTLESS element -> false",
+      "negativePath": "body excluded; visible ancestor -> false; parentless element -> false (NOT 'detached -> false' generally — T2-F01)",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects overflow:clip and a non-immediate (grandparent) ancestor",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: returns false when no ancestor sets overflow hidden/clip",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: EXCLUDES document.body (a direct body child with body overflow:hidden reports false)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: a detached subtree WITH an overflow:hidden ancestor reports true (parent-chain, not isConnected)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: a PARENTLESS element reports false (no parent chain to walk)"
+      ]
+    },
+    {
+      "id": "API-074",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: warns in development naming both the feature and the fallback",
+      "asserts": "dev warn once naming feature+fallback+CSP; SILENT under NODE_ENV=production",
+      "negativePath": "no warn under NODE_ENV=production"
+    }
+  ],
+  "coverageChanges": {
+    "before": {
+      "Existing": 70,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 121
+    },
+    "after": {
+      "Existing": 76,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 127
+    },
+    "note": "6 new P1.6 contracts added (Path A), all Existing. No prior contract reclassified. API 34->39; CONFIG 28->29; P1.6 9->15."
+  },
+  "gates": {
+    "verify_traceability": "PASS (127 unique IDs; ledger/matrix reconcile; locators in bounds)",
+    "coreRegression": "1063 passed | 1 skipped (was 1060 + 3 new = 1063; no regressions)",
+    "t2Spec": "25 passed",
+    "ac1PublicImportOnly": "PASS — import is ../src/index.js; grep confirms no as-any/underscore-private/_state/ForTest access"
+  },
+  "boundaries": {
+    "productionIsolation": "0 files changed under packages/core/src vs e598e5c",
+    "acceptedPriorTestsUnchanged": "csp.spec.ts and all w1-p1-1..6-T1-R1 specs untouched",
+    "deferredNotAbsorbed": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; SSR (T3) not touched."
+  },
+  "deviationsRaised": [],
+  "notes": "T2 covers utils/csp-styles.ts only. T3 (SSR import-time/deferred-DOM safety) and T4 (closure) remain NO-GO. P1.6 closure not claimed.",
+  "corrections": [
+    {
+      "increment": "W1-P1.6-T2-R",
+      "startingCommit": "dc1131ff65c06c842f80d2c5e3d7876d349cd843",
+      "authorizedBy": "Lead T2 review: CONDITIONAL ACCEPTANCE; T2-R GO (four findings).",
+      "findings": [
+        {
+          "id": "T2-F01",
+          "severity": "Medium",
+          "contract": "API-073",
+          "disposition": "Added detached-subtree test (parent-chain, not isConnected -> true); rewrote wording to parent-chain behavior (true iff a traversed ancestor has overflow hidden/clip, body excluded; a detached subtree may be true, a parentless element is false — no exclusivity claim). Matrix/ledger/evidence reconciled. Existing retained."
+        },
+        {
+          "id": "T2-F02",
+          "severity": "Medium",
+          "contract": "API-071",
+          "disposition": "Added ordinary-CSS-property getter + remover tests; documented prefix-enforcement asymmetry (setter enforces; getter/remover do not). Existing retained."
+        },
+        {
+          "id": "T2-F03",
+          "severity": "Low",
+          "contract": "CONFIG-029",
+          "disposition": "Replaced spot-check with pinned, independently-defined 13-entry expected map (key set + values); no immutability claim."
+        },
+        {
+          "id": "T2-F04",
+          "severity": "Low",
+          "contract": "evidence/ledger",
+          "disposition": "Precise wording: 'production-conditioned source behavior under NODE_ENV=production'; no compiled-artifact/CSP-enforcement claim."
+        }
+      ],
+      "productionSourceTouched": false
+    },
+    {
+      "increment": "W1-P1.6-T2-R1",
+      "startingCommit": "61ebba0d4ebb7702aabcfde6ad62434072f17028",
+      "authorizedBy": "Lead T2-R review: CONDITIONAL; T2-R1 GO (text-only correction of T2-R-F01).",
+      "finding": {
+        "id": "T2-R-F01",
+        "severity": "Low",
+        "contract": "API-073",
+        "detail": "Prior wording stated 'only a parentless element returns false', an unsupported exclusivity claim. The function returns false whenever the traversed parent chain has no qualifying hidden/clip ancestor (parentless, visible ancestors, body-excluded direct child, etc.).",
+        "disposition": "Replaced with canonical wording across matrix behavior/coverageNote/reconciliation note, ledger API-073 row + limitations, evidence limitations, and the spec describe-comment. No test assertions or testIds changed; 25 tests and titles preserved."
+      },
+      "productionSourceTouched": false
+    }
+  ]
+}

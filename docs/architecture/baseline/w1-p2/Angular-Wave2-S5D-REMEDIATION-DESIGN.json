@@ -1,0 +1,200 @@
+{
+  "artifactId": "Angular-Wave2-S5D-REMEDIATION-DESIGN",
+  "increment": "Angular Wave 2",
+  "slice": "S5-D — Angular Host Ownership & Selector Compatibility Decision",
+  "type": "Architecture Decision Record (read-only; NO production changes)",
+  "startingCommit": "272f0e9b4619e935031a65e93537a5d11454160c",
+  "acceptedBaselineCommit": "2a9bd9985315507cefc215d30dbebf0c286466c4",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S5-D directive: GO for a read-only architectural decision increment. Investigate public API exposure, release history, selector alternatives (Rename 'smilodon-angular-select' / attribute selector / isolated core entry), compatibility policy, and the minimal production diff + exact tests to close F02. Produce an ADR in Markdown + JSON. NO production implementation authorized. Preferred direction: selector divergence (Option A), but the rename is NOT yet authorized — compatibility consequences must be established first.",
+  "status": "PROPOSED — awaits Lead acceptance of the selector compatibility decision",
+
+  "problemStatement": "F02 (CONFIRMED production defect, S5-VR): the Angular adapter's host selector `smilodon-select` collides with core's `NativeSelectElement` custom element (`packages/core/src/components/native-select.ts:562-563`). When the deferred `import('@smilodon/core')` runs, the custom element upgrades the Angular host, `attachShadow({mode:'open'})` is called WITHOUT a <slot>, and the light-DOM `<enhanced-select>` (the real widget) is excluded from the composed rendering tree — 0x0, invisible, unhittable, unfocusable. The widget internals still function; it is the host wrapper that suppresses them. This affects BOTH CSR and SSR consumers (it is an adapter architecture defect, not SSR-specific).",
+
+  "investigation": {
+    "publicApiExposure": {
+      "selectorDeclaration": "packages/angular/src/select.component.ts:106 → selector: 'smilodon-select' (the ONLY declaration)",
+      "publicExports": "packages/angular/src/index.ts exports SmilodonSelectComponent (standalone) — the selector IS the public integration contract for every Angular consumer",
+      "consumerFacingOccurrences": [
+        "packages/angular/README.md: lines 31/39/149/152/156 (usage examples)",
+        "packages/angular/tests/consumer/consumer-app.component.ts: 4 <smilodon-select> template usages (AOT consumer verification)",
+        "packages/angular/tests/ssr/ssr-app.component.ts: 2 <smilodon-select> template usages",
+        "packages/angular/src/select.component.ts: JSDoc example (line ~97-102) + 2 code comments (lines 335, 944, 1056)"
+      ],
+      "notReferencedByUnitTests": "packages/angular/tests/*.spec.ts instantiate `new SmilodonSelectComponent()` with a mocked ElementRef and assert on the INNER `enhanced-select` tag (select.component.test.ts:70) — the host tag name is NEVER asserted, so a rename is invisible to the 62 unit tests",
+      "declaredByCore": "packages/core/src/components/native-select.ts:562-563 registers the custom element `smilodon-select` (NativeSelectElement) as a top-level side effect of the full core entry",
+      "alternativesFree": "`smilodon-angular-select` is unused across the repo (only a doc suggestion mentions it); no `smilodonSelect` attribute selector exists"
+    },
+    "releaseHistory": {
+      "npmRegistry": "npm view @smilodon/angular → 404 Not Found (NOT currently published on npm)",
+      "changelog": "Root CHANGELOG.md states 'Angular support has been discontinued as of December 2025 … @smilodon/angular is now deprecated on npm', with a historical commit `c4248e0 refactor: Remove Angular support completely`",
+      "revival": "The current branch REVIVED packages/angular from scratch: `b972cd7 feat(angular): S1 package scaffold` (Wave-2 program). The version field is 1.13.0 (carried from the historical line) but the package is a development/unpublished artifact.",
+      "conclusion": "The current `smilodon-select` Angular selector is NOT an established, in-the-wild public API. The package is effectively PRE-RELEASE (unpublished, revived after a removal). A selector rename carries NO installed-base breakage cost at this time."
+    },
+    "siblingAdapters": {
+      "finding": "ALL other Smilodon adapters host the real `<enhanced-select>` element DIRECTLY (no wrapper custom element):",
+      "evidence": {
+        "vue": "packages/vue/src/Select.vue → renders <enhanced-select>",
+        "svelte": "packages/svelte/src/Select.svelte → renders <enhanced-select>",
+        "solid": "packages/solid/src/Select.tsx → queries/renders enhanced-select",
+        "vanilla": "packages/vanilla/src/index.ts → document.createElement('enhanced-select')",
+        "react-native-web": "packages/react-native/src/Select.web.tsx",
+        "playground": "playground/src/scenarios.ts → document.createElement('smilodon-select') (uses the core native element directly, NOT the Angular adapter)"
+      },
+      "significance": "The Angular adapter is the ONLY one that wraps the widget in a colliding host element. The collision is a deviation from the established sibling pattern; the fix aligns Angular with the others (host the real element, with an adapter-owned, non-colliding host name)."
+    },
+    "coreRegistrationSideEffects": {
+      "fact": "Importing the full `@smilodon/core` entry registers THREE custom elements: `smilodon-select` (NativeSelectElement), `enhanced-select`, `select-option`.",
+      "implicationForD03": "If the Angular host is renamed (Option A) or made an attribute selector (Option D), full-core import still registers `smilodon-select`, but it no longer matches the Angular host → the widget cannot be hidden. So D-03 ('full core imports cannot hide the Angular widget') is satisfiable WITHOUT a core change, because the collision requires the host to be NAMED `smilodon-select`."
+    }
+  },
+
+  "optionsEvaluated": {
+    "A": {
+      "name": "Selector divergence (rename)",
+      "sketch": "@Component({ selector: 'smilodon-angular-select' })",
+      "hostOwnership": "Unambiguous — the Angular element owns a name no core element registers (D-01 satisfied)",
+      "foreignShadowRoot": "None — nothing upgrades `smilodon-angular-select` (D-02 satisfied)",
+      "fullCoreImport": "Full core still registers `smilodon-select`, but the Angular host is a different tag → widget cannot be hidden (D-03 satisfied without core change)",
+      "minimalProductionDiff": "ONE line: select.component.ts:106 selector change. Plus doc/comment updates. NO logic change: ElementRef still resolves to the component host (new tag); @ViewChild('host') still finds the inner <enhanced-select>; :host styles and focus tracking are tag-agnostic.",
+      "consumerImpact": "Templates change `<smilodon-select>` → `<smilodon-angular-select>`. Pre-release → no installed-base breakage; README + consumer + SSR fixtures updated.",
+      "compatibility": "Breaking to the (unpublished) template surface only — but there is no released surface.",
+      "risk": "LOW",
+      "recommended": true
+    },
+    "B": {
+      "name": "Shadow-root slot injection",
+      "sketch": "Adapter injects a <slot> into the foreign shadow root at runtime",
+      "hostOwnership": "Ambiguous — Angular depends on the private DOM of another component (violates D-01 spirit)",
+      "foreignShadowRoot": "Directly DEPENDENT on the foreign shadow root → violates D-02",
+      "verdict": "REJECTED — couples Angular to NativeSelectElement internals; foreign listbox/ARIA/event semantics remain",
+      "risk": "HIGH"
+    },
+    "C": {
+      "name": "Isolated core entry (enhanced-select only)",
+      "sketch": "Adapter imports a core sub-entry that registers only `enhanced-select`, avoiding `smilodon-select` registration",
+      "hostOwnership": "Still ambiguous if the host keeps `smilodon-select` — a consumer that independently imports full core re-registers the colliding element (D-03 fails for mixed consumers)",
+      "scope": "Requires core package architecture changes (new entry point) → expands beyond the adapter; risks mixed-import registration divergence",
+      "verdict": "NOT SUFFICIENT ALONE — does not solve D-03 for applications that import full core independently; would be a core-architecture change (D-10 risk)",
+      "risk": "MEDIUM-HIGH"
+    },
+    "D": {
+      "name": "Attribute selector",
+      "sketch": "@Component({ selector: '[smilodonSelect]' }) used as <div smilodonSelect>",
+      "hostOwnership": "Unambiguous — attribute on an Angular-owned element (D-01 satisfied)",
+      "foreignShadowRoot": "None (a <div> is not upgraded) (D-02 satisfied)",
+      "fullCoreImport": "`smilodon-select` element never present → no collision (D-03 satisfied)",
+      "downside": "Changes the consumer integration contract more than a rename (element + attribute mental model); styling via :host still works but the public usage shape is less element-like and diverges further from the sibling adapters (which are element-shaped)",
+      "verdict": "VIABLE ALTERNATIVE — satisfies invariants, but a larger consumer-contract change than Option A and less consistent with the other element-based adapters",
+      "risk": "LOW (runtime) / MEDIUM (contract consistency)"
+    }
+  },
+
+  "decision": {
+    "preferred": "A — selector divergence to `smilodon-angular-select`",
+    "rationale": [
+      "Satisfies D-01, D-02, D-03 with NO core change and NO foreign-shadow dependency.",
+      "Aligns the Angular adapter with the sibling adapters' pattern (adapter owns a non-colliding host that renders the real <enhanced-select>).",
+      "Minimal production diff (one-line selector change + docs); zero logic change; zero unit-test change.",
+      "Pre-release status means no installed-base compatibility cost for a direct rename.",
+      "Option B is architecturally unsound; Option C is insufficient for mixed consumers and expands into core; Option D is viable but a larger contract change and less consistent with the element-based siblings."
+    ],
+    "notYetAuthorized": "The rename itself is NOT authorized in S5-D. This ADR proposes it and spells out the exact production diff and tests; the Lead must accept the selector compatibility decision before F02 remediation is executed.",
+    "fallbackIfContractPreservationMandated": "Option D (attribute selector) — kept on record as the invariants-satisfying alternative if the Lead prefers a host the adapter fully controls without a new custom-element-looking tag."
+  },
+
+  "compatibilityPolicy": {
+    "releaseStatus": "pre-release / unpublished",
+    "policy": "DIRECT REPLACEMENT is acceptable: rename the selector to `smilodon-angular-select` with no deprecation shim and no migration tooling, because there is no published/installed surface to preserve.",
+    "versionImpact": "At publication time, follow semver for the unpublished package; since nothing was ever released under the colliding selector, publish the corrected selector as the initial public shape (no major bump owed to consumers).",
+    "migrationMechanism": "Not required. If a migration aid is desired for internal forks, document the one-line template rename; no runtime compatibility alias will be provided (an alias would reintroduce the colliding `smilodon-select` host).",
+    "note": "Do NOT keep `smilodon-select` as an alias for the Angular component — an alias would re-introduce the exact tag collision this decision exists to eliminate."
+  },
+
+  "remediationPlan": {
+    "minimalProductionDiff": [
+      {
+        "file": "packages/angular/src/select.component.ts",
+        "change": "line 106 → selector: 'smilodon-angular-select'",
+        "note": "No logic change. ElementRef still targets the component host; @ViewChild('host') still resolves the inner <enhanced-select>; focus tracking + :host styles are tag-agnostic."
+      },
+      {
+        "file": "packages/angular/src/select.component.ts",
+        "change": "update JSDoc example (lines ~97-102) and code comments (335, 944, 1056) to the new tag",
+        "note": "documentation only"
+      },
+      {
+        "file": "packages/angular/README.md",
+        "change": "replace `<smilodon-select>` usage examples with `<smilodon-angular-select>`",
+        "note": "documentation only"
+      },
+      {
+        "file": "packages/angular/tests/consumer/consumer-app.component.ts",
+        "change": "4 template usages → `<smilodon-angular-select>`",
+        "note": "test fixture"
+      },
+      {
+        "file": "packages/angular/tests/ssr/ssr-app.component.ts",
+        "change": "2 template usages → `<smilodon-angular-select>`",
+        "note": "test fixture; SSR serialized markup tag changes accordingly"
+      }
+    ],
+    "explicitlyNotChanged": [
+      "packages/core/** (no core change — D-08/D-10)",
+      "component inputs/outputs/CVA/provenance/lifecycle (D-06/D-07)",
+      "core-loader.ts deferred core import (unchanged; still loads full core which harmlessly registers `smilodon-select`)",
+      "the 62 unit tests (they instantiate the class directly and are host-tag-agnostic)"
+    ],
+    "exactTestsToCloseF02": {
+      "flipExpectedFailuresToPasses": [
+        "hydration.spec.ts → 'tag collision does NOT hide the real widget (visible, sized, hittable)'  — remove test.fail(); widget must be visible with >0 box; combobox must be clickable (Playwright actionability)",
+        "hydration.spec.ts → 'collision does NOT suppress layout (host + widget have real geometry)'       — remove test.fail(); enhClientRects>0, width/height>0, hitInsideWidget",
+        "hydration.spec.ts → 'REAL focus cannot reach the widget while it is unrendered (F02 consequence)' — remove test.fail(); real .focus() must move document.activeElement into the combobox (shadow-aware)"
+      ],
+      "alsoUpdate": "F01 node-reuse stamp must now target `smilodon-angular-select` (not `smilodon-select`) so node identity is still verified on the renamed host; SSR serialized-region assertions reflect the new tag",
+      "mustNot": "Do NOT delete or weaken assertions. The three F02 tests must become genuine PASSES, not removed. Additionally address watchpoints W01–W06 during production qualification."
+    }
+  },
+
+  "watchpointFollowups": {
+    "W01": "Replace 'foreign shadow root has a slot' assertion with implementation-independent visibility/geometry assertions (the slot check is defect-mechanism-specific and must not gate the fixed state).",
+    "W02": "Focus test must use shadow-aware activeElement traversal (walk composed path / shadowRoot.activeElement chain), not a direct document.activeElement === innerElement comparison.",
+    "W03": "Initial forms test must assert formChanges === 0 exactly (currently collected but not asserted).",
+    "W04": "Output test must assert EXACTLY one event per intended selection (changeCount === 1), not '>=1'.",
+    "W05": "F03 must use genuine pointer + keyboard interactions against the real widget once rendered (not programmatic container.click()).",
+    "W06": "Real focus-loss/touched must be exercised via genuine browser focus transitions (tab/blur to an outside element), not synthetic FocusEvent only."
+  },
+
+  "invariants": {
+    "D-01": { "requirement": "Angular host ownership is unambiguous", "satisfiedBy": "Option A: Angular owns `smilodon-angular-select`, a tag no core element registers", "status": "SATISFIED" },
+    "D-02": { "requirement": "No dependency on a foreign shadow root", "satisfiedBy": "Option A: nothing upgrades `smilodon-angular-select`; adapter touches only its own host + the inner <enhanced-select> it renders", "status": "SATISFIED" },
+    "D-03": { "requirement": "Full core imports cannot hide the Angular widget", "satisfiedBy": "Full core registers `smilodon-select`, which no longer matches the Angular host → no upgrade of the Angular element → widget not suppressed", "status": "SATISFIED" },
+    "D-04": { "requirement": "CSR and SSR consumers both considered", "satisfiedBy": "Both use the same selector; fixture covers CSR (consumer) + SSR (hydration); SSR serialized tag updated", "status": "SATISFIED" },
+    "D-05": { "requirement": "Genuine Angular hydration remains intact", "satisfiedBy": "Selector change does not alter hydration; F01 node-reuse stamp retargeted to the new tag; ngh/hydration flow unchanged", "status": "SATISFIED (design); verify at remediation" },
+    "D-06": { "requirement": "S3 typed event contracts remain intact", "satisfiedBy": "No change to events.ts / @Output wiring; only the host tag changes", "status": "SATISFIED" },
+    "D-07": { "requirement": "S4 forms contracts remain intact", "satisfiedBy": "No change to CVA / provenance / touched logic; ElementRef + @ViewChild unaffected", "status": "SATISFIED" },
+    "D-08": { "requirement": "Core selection authority remains unchanged", "satisfiedBy": "No core change; the <enhanced-select> engine remains the sole selection authority", "status": "SATISFIED" },
+    "D-09": { "requirement": "Public API compatibility impact is explicit", "satisfiedBy": "Explicit: template tag `<smilodon-select>`→`<smilodon-angular-select>`; pre-release → no installed-base breakage; documented here", "status": "SATISFIED" },
+    "D-10": { "requirement": "No unauthorized core remediation", "satisfiedBy": "Option A touches zero core files; Option C (the only core-touching option) is NOT selected", "status": "SATISFIED" }
+  },
+
+  "compliance": {
+    "readOnlyIncrement": true,
+    "productionChanges": false,
+    "testChanges": false,
+    "dependencyChanges": false,
+    "productionSourceUnchangedVs": "2a9bd99",
+    "f02ReproductionPreserved": true,
+    "noProductionImplementation": true
+  },
+
+  "recommendation": {
+    "s5dDecision": "ADOPT Option A (selector divergence to `smilodon-angular-select`) as the F02 remediation direction, subject to Lead acceptance.",
+    "nextGate": "F02 production remediation (one-line selector change + doc/fixture updates + flip the three expected-failures to genuine passes, addressing W01–W06).",
+    "explicitlyBlocked": [
+      "S5 production source changes — NO-GO until this ADR is accepted",
+      "Angular package release — BLOCKED",
+      "S6 core remediation — NO-GO (not needed for F02 under Option A)"
+    ]
+  }
+}

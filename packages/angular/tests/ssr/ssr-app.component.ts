@@ -1,0 +1,116 @@
+/**
+ * S5-V — real Angular SSR/hydration fixture component.
+ *
+ * This is NOT part of the library build. It is a minimal application component
+ * (compiled AOT by ngc against the BUILT `@smilodon/angular` package, resolved
+ * via the tests/ssr/node_modules link → packages/angular/dist) used to prove
+ * ACTUAL server rendering and browser hydration of `SmilodonSelectComponent`.
+ *
+ * It intentionally exercises BOTH the standalone (event-bridged) path and the
+ * reactive-forms path so the SSR/hydration verification can check:
+ *   - the server-serialized light-DOM placeholder,
+ *   - absence of server-side core evaluation (no shadow DOM on the server),
+ *   - the host custom-element (tag-collision) upgrade observed after hydration,
+ *   - inputs / selection / typed events after hydration,
+ *   - reactive forms initial `writeValue` with no programmatic echo.
+ *
+ * The two selects:
+ *   - `#plain`   : [items] + (change) — standalone event-bridged select.
+ *   - `#reactive`: [formControl] — reactive single select (initial value 'b').
+ *
+ * The component is STANDALONE so it can be reused by BOTH the server-side
+ * `SsrAppModule` (which adds `ServerModule`) and the browser-side
+ * `SsrHydrateModule` (which adds `BrowserModule` + client hydration) without
+ * being declared by two NgModules (which ngc rejects).
+ */
+import { Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { SmilodonSelectComponent } from '@smilodon/angular';
+import type { SmilodonSelectItem, ChangeEventDetail } from '@smilodon/angular';
+
+export const SSR_ITEMS: SmilodonSelectItem[] = [
+  { value: 'a', label: 'Alpha' },
+  { value: 'b', label: 'Bravo' },
+  { value: 'c', label: 'Charlie' },
+];
+
+/**
+ * S5-VR-F03: fixture-observable state, exposed on `window.__fixture` so the
+ * Playwright test can assert genuine Angular behavior (not just DOM capture):
+ *   - `lastChange`   : the detail received by the `(change)` OUTPUT handler.
+ *   - `changeCount`  : how many times the `(change)` output fired.
+ *   - `formChanges`  : reactive FormControl.valueChanges emissions (model writes).
+ *   - `formLastValue`: the last value the FormControl model observed.
+ */
+export interface SsrFixtureState {
+  lastChange: ChangeEventDetail | null;
+  changeCount: number;
+  formChanges: number;
+  formLastValue: string | number | null;
+}
+
+declare global {
+  interface Window {
+    __fixture?: SsrFixtureState;
+  }
+}
+
+@Component({
+  selector: 'app-ssr',
+  standalone: true,
+  imports: [SmilodonSelectComponent, ReactiveFormsModule],
+  template: `
+    <smilodon-angular-select
+      id="plain"
+      [items]="items"
+      placeholder="Pick one"
+      (change)="onChange($event)"
+    ></smilodon-angular-select>
+
+    <smilodon-angular-select
+      id="reactive"
+      [items]="items"
+      [formControl]="ctrl"
+    ></smilodon-angular-select>
+  `,
+})
+export class SsrAppComponent {
+  readonly items: SmilodonSelectItem[] = SSR_ITEMS;
+  /** Reactive single-select starting on 'b' (applied via writeValue). */
+  readonly ctrl = new FormControl<string | number | null>('b');
+  /** Last forwarded (change) detail from `#plain`. */
+  lastChange: ChangeEventDetail | null = null;
+  /** Number of times the Angular (change) OUTPUT fired. */
+  changeCount = 0;
+  /** Number of reactive model changes (valueChanges emissions). */
+  formChanges = 0;
+  /** Last value observed by the FormControl model. */
+  formLastValue: string | number | null = this.ctrl.value;
+
+  constructor() {
+    this.ctrl.valueChanges.subscribe((value) => {
+      this.formChanges += 1;
+      this.formLastValue = value;
+      this.publishState();
+    });
+    this.publishState();
+  }
+
+  onChange(detail: ChangeEventDetail): void {
+    this.lastChange = detail;
+    this.changeCount += 1;
+    this.publishState();
+  }
+
+  /** Mirror observable state onto `window.__fixture` for the browser test. */
+  private publishState(): void {
+    if (typeof window !== 'undefined') {
+      window.__fixture = {
+        lastChange: this.lastChange,
+        changeCount: this.changeCount,
+        formChanges: this.formChanges,
+        formLastValue: this.formLastValue,
+      };
+    }
+  }
+}

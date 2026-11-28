@@ -1,0 +1,89 @@
+{
+  "artifactId": "W1-P2-T2-ANGULAR-INTEGRATION-READINESS",
+  "increment": "W1-P2 (Extraction → Framework Readiness)",
+  "task": "Task 2 — Angular framework-integration readiness assessment (read-only)",
+  "baselineCommit": "a305c424293e660111d8a49e95a5c642702987e7",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P2 Task 2 GO (assessment only) from Lead directive. NO production modifications, NO new Angular package, NO SSR remediation, NO test changes. Finish with a Wave 2 entry recommendation and smallest implementation slices.",
+  "nature": "Read-only assessment. No source, package, SSR, or test changes. Grounded in real code citations.",
+  "decision": "GO for a browser-only (CSR) thin Angular standalone adapter reusing @smilodon/core UNCHANGED. SSR deferred: minimum-viable = browser-deferred dynamic import + isPlatformBrowser guard + hydration-stable placeholder (no core change). API-075 remediation = separate, NOT AUTHORIZED follow-on.",
+  "coreFinding": "The runtime is a browser custom element (<enhanced-select>) that owns ALL rendering/selection/keyboard/ARIA/data-loading. All adapters (React/Vue/Svelte/Vanilla) are thin imperative host bindings via the DOM contract. Selection authority is already engine-owned (W1-P2-T1 closed). An Angular adapter needs NO engine extraction/parity work.",
+  "capabilitiesVsComponent": {
+    "engineOwned": ["selection membership/policy", "selection ordering", "required", "disabled keys", "maxSelections", "allowDeselect", "item identity/registry"],
+    "componentOwned": ["keyboard navigation", "ARIA/roles/live-region", "rendering/shadow DOM/chips/popup", "data loading", "custom renderers (DOM-returning)", "event dispatch", "config via updateConfig"],
+    "integrationSurface": "DOM custom element: imperative methods + CustomEvents (bubbles+composed). NOT the headless engine directly.",
+    "engineRefactorNeeded": false
+  },
+  "angularBoundaries": {
+    "inputs": "Map to updateConfig()/setItems()/setGroupedItems()/setSelectedValues()/setError()/setRequired(). MUST be method/property binding, NOT raw attributes (only aria-* observed).",
+    "outputs": "Map element CustomEvents to @Output(): select, open, close, search, pageLoaded, error, change, loadMore, remove, clear, emptyStateChange, diagnostic.",
+    "lifecycle": "ngAfterViewInit: await customElements.whenDefined('enhanced-select') (browser-only) -> configure -> attach listeners -> ngOnDestroy cleanup. Do NOT touch element/import core on server.",
+    "forms": "ControlValueAccessor: writeValue->setSelectedValues, change->onChange, validate->validate(), setDisabledState->updateConfig({enabled}).",
+    "renderingOwnership": "Element owns all rendering (shadow DOM). Angular only creates host + attribute/class/style binding + slot/renderer projection."
+  },
+  "ssr": {
+    "api075": {
+      "status": "Partial",
+      "observed": "Package ENTRY import throws ReferenceError (HTMLElement is not defined) in no-DOM Node.",
+      "rootCause": "Components `extends HTMLElement` at class-declaration time + UNGUARDED top-level customElements.get('enhanced-select') at enhanced-select.ts:9107.",
+      "evidence": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts (API-075); W1-P1.6-CLOSURE-EVIDENCE.json (API-075=Partial)."
+    },
+    "api076": {"status": "Existing (tested utility modules only)"},
+    "deeperBlocker": "Even a guarded import does not fix server INSTANTIATION: EnhancedSelect constructor eagerly builds shadow DOM (attachShadow + _createContainer + _initializeObservers, enhanced-select.ts:512-572). Server-rendering the element fails regardless of import guarding.",
+    "strategyRecommended": "Option A — defer element to browser: browser-only dynamic import('@smilodon/core'), isPlatformBrowser guard, hydration-stable placeholder. Needs NO core change.",
+    "strategyAlternative": "Option B — SSR-safe core entry (corrects API-075) = PRODUCTION source change; NOT AUTHORIZED in T2; does not by itself fix constructor SSR.",
+    "ssrIsSeparateGate": "ARCHITECTURE-DECISIONS.md:61 and 179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md:29 list SSR/hydration as a separate, not-yet-passed gate."
+  },
+  "designConstraints": [
+    "observedAttributes = ['aria-label','aria-description','aria-busy'] ONLY (enhanced-select.ts:219). Behavior attributes are NOT observed; adapter must call updateConfig/setItems/etc.",
+    "Custom element upgrade timing: instance ready only after customElements.whenDefined; gate first setItems on readiness.",
+    "Existing Angular-specific workaround in connectedCallback: this.style.display='block' (comment 'for Angular compatibility'); review whether still needed; do NOT alter core in Wave 2."
+  ],
+  "blockersPrioritized": {
+    "must": [
+      {"id": "B1", "item": "Package entry import throws under no-DOM (API-075)", "severity": "High for SSR / none for CSR", "class": "Mandatory only if SSR in scope", "mitigation": "Browser-deferred dynamic import (Option A); no core change"},
+      {"id": "B2", "item": "Behavior not attribute-driven; only aria-* observed", "severity": "Medium", "class": "Design constraint (adapter must bind via methods)", "mitigation": "Implement + document method bindings"},
+      {"id": "B3", "item": "Custom element upgrade timing", "severity": "Medium", "class": "Lifecycle constraint", "mitigation": "Gate on customElements.whenDefined / readiness"},
+      {"id": "B4", "item": "Constructor builds shadow DOM (server instantiation fails)", "severity": "High for true element SSR", "class": "Mandatory only if element must SSR-render", "mitigation": "Render placeholder server-side (Option A)"}
+    ],
+    "should": [
+      {"id": "S1", "item": "Verify Angular style.display='block' workaround", "class": "Improvement"},
+      {"id": "S2", "item": "Custom renderer/slot bridging", "class": "Improvement"},
+      {"id": "S3", "item": "Forms (ControlValueAccessor + validators)", "class": "Improvement"},
+      {"id": "S4", "item": "Data-loading event wiring (search/loadMore)", "class": "Improvement"}
+    ],
+    "canWait": ["Engine refactoring (not needed)", "API-075 remediation (nice ergonomic, not required for CSR-first)", "Full internal shadow-DOM hydration equivalence"]
+  },
+  "wave2Entry": {
+    "recommendation": "Browser-only (CSR) thin Angular standalone adapter reusing @smilodon/core unchanged. SSR is a follow-on (Option A, no core change).",
+    "slices": [
+      {"id": "S1", "scope": "Package scaffold packages/angular (standalone, peer @smilodon/core), per-framework package.json pattern", "coreChange": false},
+      {"id": "S2", "scope": "Minimal standalone component (CSR): whenDefined -> setItems/setSelectedValues/updateConfig; inputs map to methods; ngOnDestroy cleanup; type-only core imports", "coreChange": false},
+      {"id": "S3", "scope": "Outputs: wire select/change/open/close/search/loadMore/clear/emptyStateChange -> @Output; controlled-value parity", "coreChange": false},
+      {"id": "S4", "scope": "Forms: ControlValueAccessor (writeValue->setSelectedValues, change->onChange, validate)", "coreChange": false},
+      {"id": "S5", "scope": "SSR hardening (Option A): browser-only dynamic import, isPlatformBrowser guards, hydration-stable placeholder", "coreChange": false},
+      {"id": "S6", "scope": "OPTIONAL/GATED: API-075 remediation for SSR-safe entry in core", "coreChange": true, "authorization": "Requires explicit Lead authorization; not needed for S1-S5"}
+    ],
+    "entryGate": [
+      "Lead confirms CSR-first scope acceptable (SSR deferred to S5/Option A)",
+      "Agreement that no core refactor is in scope; core consumed as-is",
+      "Acceptance that API-075 remediation (S6) is out of scope unless separately authorized"
+    ]
+  },
+  "scopeCompliance": {
+    "noProductionSourceChanged": true,
+    "noAngularPackageCreated": true,
+    "noSsrRemediation": true,
+    "noTestChanges": true,
+    "citesRealCode": true
+  },
+  "evidenceCited": {
+    "component": "packages/core/src/components/enhanced-select.ts (observedAttributes:219, attributeChangedCallback:637, constructor:512-572, connectedCallback Angular workaround:595-598, imperative API 6517+/6620/6635/6697/6709/6733/6740/6747/7281/7292/7302/7315, _emit:6278, unguarded registration:9107)",
+    "types": "packages/core/src/types.ts:139-154 (SelectEventsDetailMap)",
+    "entry": "packages/core/src/index.ts (re-exports components -> SSR throw source)",
+    "ssrTests": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts; packages/core/tests/w1-p2-t1-engine-framework-independence.spec.node.ts",
+    "contracts": "docs/architecture/baseline/w1-p1/W1-P1.6-CLOSURE-EVIDENCE.json (API-075=Partial, API-076=Existing)",
+    "adr": "docs/architecture/ARCHITECTURE-DECISIONS.md:61; docs/architecture/179-SVELTE-MULTI-VERSION-DISTRIBUTION-ADR.md:29",
+    "adapterPatterns": "packages/react/src/Select.tsx; packages/vue/src/Select.vue; packages/svelte/src/Select.svelte; packages/vanilla/src/index.ts"
+  }
+}

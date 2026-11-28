@@ -1,0 +1,64 @@
+/**
+ * S5-V — hydration static server + Playwright web server.
+ *
+ * Serves the SERVER-RENDERED HTML (produced by `render-server.mjs` into
+ * `.aot-out/server-render.html`) at `/`, injecting the client hydration bundle
+ * (`.aot-client/client-bundle.js`) as a `<script type="module">`. This gives the
+ * Playwright hydration test a real document: server markup + client bundle that
+ * hydrates it — the exact production shape (framework SSR then framework
+ * hydration).
+ *
+ * Exits non-zero if the SSR HTML is missing so the test fails fast with a clear
+ * message rather than a blank page.
+ */
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PORT = Number(process.env.SSR_HYDRATE_PORT || 5174);
+
+const serverHtml = readFileSync(join(__dirname, '.aot-out', 'server-render.html'), 'utf8');
+const clientBundle = readFileSync(join(__dirname, '.aot-client', 'client-bundle.js'), 'utf8');
+
+// Inject the hydration bundle just before </body>. Keep `type=module` so the
+// hydrate entry runs after the server markup is parsed.
+//
+// We ALSO inject a tiny INLINE (blocking) script immediately before the module
+// script that stamps every server-rendered node with `data-server-node`. Inline
+// scripts run synchronously during parse, so the stamps exist BEFORE the deferred
+// module script executes. The client bundle then proves true hydration by
+// checking the SAME node objects still carry that stamp after bootstrap — a
+// client recreation would drop the attribute. (Stamping server output here keeps
+// the proof independent of Playwright init-script timing.)
+const stampScript =
+  '<script>(function(){var m="data-server-node";' +
+  'document.querySelectorAll("app-ssr-shell,#plain,#plain enhanced-select")' +
+  '.forEach(function(n){n.setAttribute(m,"");});})();</script>';
+
+const pageHtml = serverHtml.replace(
+  '</body>',
+  `${stampScript}<script type="module" src="/client-bundle.js"></script></body>`,
+);
+
+const server = createServer((req, res) => {
+  const url = req.url || '/';
+  if (url === '/client-bundle.js') {
+    res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+    res.end(clientBundle);
+    return;
+  }
+  if (url === '/' || url.startsWith('/?')) {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(pageHtml);
+    return;
+  }
+  res.writeHead(404, { 'content-type': 'text/plain' });
+  res.end('not found');
+});
+
+server.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`[ssr-hydrate-server] listening on http://localhost:${PORT}/`);
+});

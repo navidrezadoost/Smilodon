@@ -1,0 +1,177 @@
+{
+  "artifactId": "W1-P1.5-T2-ASYNC-DATA-LOADING-EVENTS-EVIDENCE",
+  "increment": "W1-P1.5",
+  "task": "Task 2 — Async Data-Loading Public Event Characterization",
+  "correctiveStartingCommit": "84b760a",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "startingCommit": "810ae6513960ee286b21729e1e091dd68151f1db",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.5 implementation authorized after T1-R acceptance by Technical Lead",
+  "scopeContracts": [
+    "EVENT-004",
+    "EVENT-005",
+    "EVENT-006",
+    "EVENT-008",
+    "EVENT-012",
+    "EVENT-020",
+    "EVENT-021",
+    "EVENT-022"
+  ],
+  "surfaces": {
+    "config": "updateConfig({ dataLoading:{protocol:'acknowledged',searchMode,paginationMode,firstPage,fetchLimit,minSearchCharacters} })",
+    "methods": [
+      "startDataLoading()",
+      "getDataLoadingState()",
+      "completeDataRequest(completion)"
+    ],
+    "events": [
+      "search",
+      "loadMore",
+      "error",
+      "diagnostic",
+      "dataProjection",
+      "dataRequestCancel",
+      "dataLoadingConfigError",
+      "pageLoaded (negative)"
+    ],
+    "callbacks": [
+      "onError",
+      "onDataRequestCancel"
+    ],
+    "publicInput": "[part=\"input\"] value + input event; .load-more-button click (public fallback when no IntersectionObserver)",
+    "privateSeamsUsed": "NONE — harness-integrity grep confirms no _state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/*ForTest/as-any access in the spec"
+  },
+  "testCounts": {
+    "jsdom": 17,
+    "chromium": 0,
+    "total": 17
+  },
+  "renderingModel": "jsdom; deterministic settlement via vi.waitFor polling public getDataLoadingState() (projectionPending false + terminal status) and awaited public events. No arbitrary sleeps.",
+  "contractEvidence": {
+    "EVENT-004": {
+      "coverage": "Existing",
+      "characterized": "acknowledged search detail {query,results:[],count:0,request}; acknowledged typed query normalizes whitespace (normalizedQuery 'Apple'); local non-acknowledged search detail {query,results,count} with filtered count",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged search event whose detail carries query, empty results, and the request",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged search event whose request reflects the typed query and normalizedQuery",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a local (non-acknowledged) search event with the filtered result count"
+      ]
+    },
+    "EVENT-005": {
+      "coverage": "Missing",
+      "characterized": "negative: pageLoaded not emitted on acknowledged page completion nor legacy load-more completion; completion signalled via dataProjection 'complete' / loadMore",
+      "note": "declared-only event; DEVIATION-02 ADR candidate; conservatively Missing",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#does not emit pageLoaded when an acknowledged page completes",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#does not emit pageLoaded when a legacy load-more completes"
+      ]
+    },
+    "EVENT-006": {
+      "coverage": "Partial",
+      "characterized": "async server failure emits error {message,cause} BEFORE onError (public setSelectedValues path)",
+      "note": "broader async error sources owned by P1.5 remain outstanding; conservatively Partial",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an error whose detail carries message and cause on an async server failure, before onError"
+      ]
+    },
+    "EVENT-008": {
+      "coverage": "Existing",
+      "characterized": "acknowledged loadMore {page,items:[],request.kind:'loadMore'} via public .load-more-button after a succeeded page; legacy loadMore {page:2,items:[]} without request envelope",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event with the request kind after a page is available",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a legacy loadMore event with page number and empty items"
+      ]
+    },
+    "EVENT-012": {
+      "coverage": "Existing",
+      "characterized": "exactly one bounded diagnostic {source:'event',name:'acknowledgedDataLoadingResourceLimit',timestamp:number} per cursor token-size resource-limit",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a single bounded diagnostic (source \"event\") for a cursor resource-limit and not more"
+      ]
+    },
+    "EVENT-020": {
+      "coverage": "Partial",
+      "characterized": "dataProjection {status:'complete',requestId,queryGeneration,attempt}; one per accepted completion across successive requests with distinct request ids",
+      "outstandingSubpath": "dataProjection status:'failed' (and acknowledgedProjectionFailed diagnostic) only reachable via private seam _failNextAcknowledgedProjectionForTest; no public trigger",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits one dataProjection \"complete\" whose detail matches the request id, generation, and attempt",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits exactly one dataProjection per accepted completion across successive requests"
+      ]
+    },
+    "EVENT-021": {
+      "coverage": "Existing",
+      "characterized": "dataRequestCancel {requestId,queryGeneration,reason} for all three public reasons: query-changed (input), config-changed (threshold change flips eligibility), disconnected (element removed); onDataRequestCancel receives the same detail object",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"query-changed\" when the query supersedes an active request",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"config-changed\" when a threshold change invalidates an active request",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"disconnected\" when the element is removed while a request is active",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#invokes onDataRequestCancel with the same detail object as the emitted event"
+      ]
+    },
+    "EVENT-022": {
+      "coverage": "Existing",
+      "characterized": "dataLoadingConfigError {issues:[{path,code,message}]} for an invalid field; no emit on a valid update; identical repeated candidate deduplicated",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataLoadingConfigError whose detail is an issues array describing the rejected field",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#does not emit dataLoadingConfigError for a valid update and deduplicates an identical repeated candidate"
+      ]
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "EVENT-004": "Diagnostic",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Diagnostic",
+      "EVENT-012": "Diagnostic",
+      "EVENT-020": "Diagnostic",
+      "EVENT-021": "Diagnostic",
+      "EVENT-022": "Diagnostic"
+    },
+    "to": {
+      "EVENT-004": "Existing",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Existing",
+      "EVENT-012": "Existing",
+      "EVENT-020": "Partial",
+      "EVENT-021": "Existing",
+      "EVENT-022": "Existing"
+    },
+    "distributionBefore": {
+      "Existing": 58,
+      "Partial": 31,
+      "Diagnostic": 19,
+      "Missing": 4
+    },
+    "distributionAfter": {
+      "Existing": 63,
+      "Partial": 32,
+      "Diagnostic": 13,
+      "Missing": 4
+    },
+    "rationale": "EVENT-004/008/012/021/022 are fully characterized on the public surface (positive + negative where wired) and upgraded to Existing. EVENT-020 is upgraded to Partial because the 'failed' projection variant is only reachable via a private test seam (public-unobservable), preserving the conservative convention. EVENT-005 remains Missing (pageLoaded is declared-only; the negative is now proven). EVENT-006 remains Partial (only one public async error path exercised). No path is upgraded without full public coverage."
+  },
+  "gates": {
+    "jsdom": "17/17 T2 passed",
+    "chromium": "not required (public event detail contracts observable in jsdom)",
+    "coreRegression": "1004 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; 6 T2 testId literals verified present in spec; byCoverage 63/32/13/4)",
+    "eslint": "clean",
+    "harnessIntegrity": "no private seam access (_state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/*ForTest/as-any) in T2 spec",
+    "productionIsolation": "0 files changed in packages/core/src (or engine/adapters) vs 84b760a",
+    "acceptedPriorTestsUnchanged": "0 files changed vs 84b760a (phase-2e-*, phase-2f-*, data-loading/*, public-config-integration, w1-p1-5-t1-*)"
+  },
+  "boundaries": {
+    "noProductionChange": true,
+    "noPrivateSeamAssertions": true,
+    "publicSurfaceOnly": true,
+    "noFixedSleeps": true
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "EVENT-020 'failed' projection and its acknowledgedProjectionFailed diagnostic are not publicly triggerable; recorded as a public-unobservable gap per plan §7 risk 2 (analogous to ATTR-023).",
+    "Acknowledged load-more is driven via the public .load-more-button (jsdom has no IntersectionObserver); legacy load-more requires infiniteScroll:false + searchable:false so the button (not the sentinel) renders.",
+    "pageLoaded negative is proven on both completion channels; DEVIATION-02 remains an ADR candidate (not repaired)."
+  ]
+}

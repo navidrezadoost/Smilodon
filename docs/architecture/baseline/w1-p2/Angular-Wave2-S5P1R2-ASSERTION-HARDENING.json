@@ -1,0 +1,100 @@
+{
+  "artifact": "Angular-Wave2-S5P1R2-ASSERTION-HARDENING",
+  "increment": "Angular Wave 2 - S5-P1R2 Final Assertion Hardening (bounded test-only)",
+  "startingCommit": "4463d795c872f5fcdce271431c2b55e85d3bb459",
+  "startingCommitDescription": "S5-P1R test-harness correction (Lead: SUBSTANTIALLY VERIFIED; F03/F04 assertion weaknesses found)",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "scope": "bounded test-only assertion correction: harden negative-control reason and narrow the JIT matcher; no package metadata/runtime/core/dependency/version change; no publish",
+  "published": false,
+  "releaseDecision": "S5-P1R2 COMPLETE - two false-positive risks corrected; ready for S5-P1 COMPLETE closure (test-evidence portion); publication remains separately gated",
+  "environment": {
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "ngPackagr": "21.2.7",
+    "angular": "21.2.26"
+  },
+  "changedFiles": [
+    {
+      "path": "packages/angular/tests/packed-install/run-packed-install.mjs",
+      "change": "F03: numeric non-zero exit + TS2307 diagnostic-provenance assertions (ANSI-stripped); F04: strict JIT-unavailable clause matcher; added stripAnsi() helper; header doc updated",
+      "authorizedArea": "packed-install regression test (test-only)"
+    }
+  ],
+  "runnerSha256": "409470b16d415a8098c1c8029d1eeed61030e9250787986e3759ba1cbd67e422",
+  "notChanged": {
+    "packageMetadata": false,
+    "angularRuntimeOrComponentImplementation": false,
+    "coreSource": false,
+    "dependencies": false,
+    "packageVersion": "1.13.0 (unchanged)",
+    "registryAction": false
+  },
+  "weaknessesCorrected": [
+    {
+      "id": "F03",
+      "severity": "negative-control false positive",
+      "weakness": "The sabotage gate previously only checked `status !== 0`, which also passes on a signal termination (status === null), a missing compiler executable, or any unrelated failure.",
+      "correction": "Require a NUMERIC non-zero exit (typeof status === 'number' && status > 0) AND a diagnostic implicating the sabotaged package (TS2307 \"Cannot find module '@smilodon/angular'\"), matched after stripping ngc ANSI color codes."
+    },
+    {
+      "id": "F04",
+      "severity": "over-broad JIT matcher",
+      "weakness": "Runtime predicate /needs to be compiled using the JIT compiler|@angular\\/compiler/i passed ANY error merely mentioning @angular/compiler.",
+      "correction": "Match ONLY the specific JIT-unavailable clause: \"needs to be compiled using the JIT compiler, but '@angular/compiler' is not available\"."
+    }
+  ],
+  "f03Details": {
+    "numericExitPredicate": "typeof sabotage.status === 'number' && sabotage.status > 0",
+    "observedExit": 1,
+    "diagnosticPredicate": "/TS2307:\\s*Cannot find module '@smilodon\\/angular'/ (on ANSI-stripped output)",
+    "observedDiagnostic": "TS2307: Cannot find module '@smilodon/angular' or its corresponding type declarations.",
+    "ansNote": "ngc prints 'error\\x1b[90m TS2307: \\x1b[0mCannot find module ...'; matched after stripAnsi()",
+    "rejects": ["signal termination (status null)", "missing compiler executable", "unrelated-dependency TS2307 (e.g. 'rxjs')"]
+  },
+  "f04Details": {
+    "matcher": "/needs to be compiled using the JIT compiler, but '@angular\\/compiler' is not available/i",
+    "genuineMessage": "The injectable 'PlatformLocation' needs to be compiled using the JIT compiler, but '@angular/compiler' is not available.",
+    "discrimination": [
+      { "input": "genuine JIT-unavailable message", "old": "pass", "new": "pass" },
+      { "input": "unrelated error mentioning @angular/compiler", "old": "pass (WRONG)", "new": "reject" },
+      { "input": "random ENOENT", "old": "reject", "new": "reject" },
+      { "input": "partial clause '... but not really'", "old": "pass (WRONG)", "new": "reject" }
+    ]
+  },
+  "acceptanceCriteria": [
+    { "id": "P1R2-01", "requirement": "Negative control requires a numeric non-zero compiler exit (no signal/spawn pass)", "verdict": "PASS", "evidence": "typeof status === 'number' && status > 0; observed exit 1" },
+    { "id": "P1R2-02", "requirement": "Negative-control diagnostic implicates the sabotaged @smilodon/angular exports/declarations", "verdict": "PASS", "evidence": "ANSI-stripped match TS2307: Cannot find module '@smilodon/angular'; unrelated-dep TS2307 rejected" },
+    { "id": "P1R2-03", "requirement": "JIT predicate narrowed to the specific JIT-unavailable diagnostic", "verdict": "PASS", "evidence": "strict clause matcher; unrelated @angular/compiler mention rejected" },
+    { "id": "P1R2-04", "requirement": "Isolated AOT compile + trace-resolution + repeat-pack + regression coverage preserved", "verdict": "PASS", "evidence": "packed-install PASSED (exit 0); all gates green" },
+    { "id": "P1R2-05", "requirement": "No package metadata/runtime/core/dependency/version changes", "verdict": "PASS", "evidence": "diff = only run-packed-install.mjs; version 1.13.0" },
+    { "id": "P1R2-06", "requirement": "Evidence + checksums regenerated", "verdict": "PASS", "evidence": "this artifact + SHA256SUMS regenerated" }
+  ],
+  "gateResults": {
+    "packedInstallHardened": "PASSED (exit 0, 0 failures)",
+    "aotConsumerExisting": "PASSED",
+    "angularUnit": "62 passed",
+    "angularSSR": "4 passed",
+    "angularTsc": "0 errors",
+    "eslint": "0 errors",
+    "coreUnit": "1071 passed / 1 skipped",
+    "coreSSR": "10 passed",
+    "coreTsc": "44 (pre-existing, unchanged)",
+    "traceability": "129/129 PASS"
+  },
+  "scopeGuardrails": {
+    "testOnly": true,
+    "angularRuntimeUntouched": true,
+    "coreSourceUntouched": true,
+    "dependenciesUnchanged": true,
+    "packageVersionUnchanged": "1.13.0",
+    "npmPublication": "not performed (NO-GO)"
+  },
+  "preservedLimitations": {
+    "L-01": "WebKit unverified on build host; disclosed in README",
+    "L-02": "Async provenance accepted limitation; disclosed in README",
+    "L-03": "Multi init empty change (core behavior); disclosed in README",
+    "L-04": "Core tsc 44 pre-existing, S6 NO-GO scope",
+    "L-05": "Developer-reported gates, disclosure retained"
+  },
+  "recommendation": "The two Lead-identified false-positive risks (F03, F04) are corrected and demonstrated to discriminate correctly. The negative control now fails only on a genuine numeric exit with a package-specific diagnostic; the JIT predicate accepts only the exact JIT-unavailable clause. Approved package implementation intact; all regression gates green and identical to prior baseline. S5-P1 COMPLETE closure (test-evidence portion) ready; post-correction publication preflight and npm publication remain PENDING / NO-GO."
+}

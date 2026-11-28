@@ -1,0 +1,89 @@
+{
+  "artifactId": "Angular-Wave2-S2-COMPONENT-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S2 — minimal browser-deferred standalone component (CSR)",
+  "startingCommit": "4daffa0fb23c916040f872588a4be775eeee6702",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead directive: GO S2. Browser-deferred Angular standalone component: Angular-compatible compilation, imperative bindings for items/configuration/selected values, safe async init, destruction cleanup, focused integration tests. No @Output bridge (S3), no CVA (S4), no SSR rendering qualification (S5), no core change.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "angularToolchain": {
+    "pinnedDevDependencies": {
+      "@angular/core": "21.2.26",
+      "@angular/compiler": "21.2.26",
+      "@angular/common": "21.2.26",
+      "zone.js": "0.16.3",
+      "rxjs": "7.8.2",
+      "jsdom": "^24.0.0",
+      "vitest": "4.1.12"
+    },
+    "peerAngularCore": ">=16.0.0",
+    "decoratorMode": "legacy (experimentalDecorators + emitDecoratorMetadata + useDefineForClassFields:false)",
+    "jitInTests": "import '@angular/compiler' in tests/setup.ts before any partially-compiled @angular/* package is evaluated"
+  },
+  "files": {
+    "src/select.component.ts": "SmilodonSelectComponent (standalone, OnPush); inputs->imperative API; ngAfterViewInit init; ngOnChanges reconcile; ngOnDestroy cancels pending init",
+    "src/core-loader.ts": "browser-guarded dynamic import('@smilodon/core') + customElements.whenDefined; idempotent; sole core reference",
+    "src/index.ts": "adds exports of SmilodonSelectComponent + ENHANCED_SELECT_TAG/ensureEnhancedSelectDefined/isBrowserEnvironment",
+    "src/types.ts": "unchanged from S1",
+    "tests/setup.ts": "JIT compiler + jsdom polyfills + element registration",
+    "tests/select.component.spec.ts": "11 integration tests against real <enhanced-select>",
+    "tests/core-loader.spec.ts": "4 loader unit tests",
+    "tests/ssr-import-safety.ssr.spec.ts": "3 no-DOM Node import-safety tests (API-075)",
+    "vitest.config.ts": "jsdom + legacy decorators; excludes *.ssr.spec.ts",
+    "vitest.ssr.config.ts": "node env (no DOM) import-safety",
+    "vite.config.ts": "unchanged; @angular/core + @smilodon/core external",
+    "tsconfig.json": "adds experimentalDecorators/emitDecoratorMetadata/useDefineForClassFields:false",
+    "package.json": "adds Angular dev toolchain + test scripts"
+  },
+  "inputMapping": {
+    "items": "setItems()",
+    "groupedItems": "setGroupedItems() (precedence over items)",
+    "value": "setSelectedValues() (async)",
+    "multiple": "updateConfig({ selection: { mode } })",
+    "searchable": "updateConfig({ searchable })",
+    "disabled": "updateConfig({ enabled: !disabled })",
+    "required": "setRequired()",
+    "error": "setError()/clearError()",
+    "placeholder": "updateConfig({ placeholder })",
+    "config": "layered into a single updateConfig() call",
+    "note": "All bindings are imperative method/property calls, never attributes (only aria-* are observed by the element)."
+  },
+  "lifecycle": {
+    "init": "ngAfterViewInit (browser only) -> ensureEnhancedSelectDefined() -> whenDefined -> apply latest inputs",
+    "reconcile": "ngOnChanges re-applies inputs once ready",
+    "cleanup": "ngOnDestroy sets destroyed flag + bumps generation; pending init ignored; idempotent"
+  },
+  "acceptanceGates": {
+    "A1_componentJsdom": "PASS (15 tests: 11 component + 4 loader)",
+    "A2_ssrImportSafety": "PASS (3 no-DOM Node tests)",
+    "A3_noEagerCoreImport": "PASS (only dynamic import() in dist/index.js + dist/index.cjs; no static top-level import/require)",
+    "A4_angularTsc": "PASS (exit 0)",
+    "A5_buildFromClean": "PASS (vite ES+CJS + declarations)",
+    "A6_cleanInstallReproducible": "PASS (npm ci 747 pkgs; build ok; 15+3 tests in pristine copy)",
+    "A7_coreTsc": "PASS (44 pre-existing; none angular)",
+    "A8_coreJsdom": "PASS (1071 passed | 1 skipped, 71 files)",
+    "A9_coreSsr": "PASS (10)",
+    "A10_eslint": "PASS (exit 0)",
+    "A11_traceability": "PASS (129 IDs reconcile)"
+  },
+  "buildArtifacts": {
+    "dist/index.js": "ESM ~6.75kB; core referenced only via dynamic import(); @angular/core external",
+    "dist/index.cjs": "CJS ~8.24kB; same",
+    "dist/types": "flat declarations; @smilodon/core only as import type",
+    "committed": false,
+    "note": "dist gitignored"
+  },
+  "lockfileChange": {
+    "addedDependencyNodes": ["node_modules/@angular/core (already present from S1-R, now dev)", "node_modules/@angular/common", "node_modules/@angular/compiler", "node_modules/zone.js"],
+    "versionOrResolvedChanges": "none",
+    "prunedOptionalPeersRestored": "lightningcss*/detect-libc restored (same correction as S1-R)",
+    "note": "rxjs/tslib are dev:true because @angular/core is a devDependency here; no source/version drift."
+  },
+  "nonGoals": ["@Output() event bridge (S3)", "ControlValueAccessor (S4)", "SSR rendering/hydration qualification (S5)", "core production change", "API-075/API-065 remediation", "custom renderer/slot bridging"],
+  "disclosedLimitations": [
+    "44 pre-existing @smilodon/core TypeScript errors remain (unchanged; none angular)",
+    "S2 is CSR-first; server-side init is a no-op (API-075-safe placeholder path). Full SSR rendering/hydration qualification is S5."
+  ],
+  "nextSlice": "S3 — @Output() event bridge (requires separate authorization; S3-S6 currently gated)."
+}

@@ -1,0 +1,254 @@
+{
+  "artifactId": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE",
+  "increment": "W1-P1.6",
+  "task": "Task 1 — Security utilities (public surface) characterization",
+  "startingCommit": "654c22a118a8dece10e3ca6436b9785f587a90b8",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.6 planning approved; Q1 ratified as Path A (extend certified matrix using verifier-accepted API/CONFIG prefixes). Task 1 covers the security.ts public surface only; csp-styles.ts and SSR import-time safety remain for T2/T3.",
+  "scopeContracts": [
+    "API-063",
+    "API-064",
+    "API-065",
+    "API-066",
+    "API-067",
+    "API-068",
+    "API-069",
+    "CONFIG-027",
+    "CONFIG-028"
+  ],
+  "surfaces": {
+    "import": "import { ... } from '../src/index.js' (public package entry re-export of utils/security.ts)",
+    "exportsCharacterized": [
+      "setHTMLSanitizer",
+      "getHTMLSanitizer",
+      "sanitizeHTML",
+      "validateTemplate",
+      "createElement",
+      "createTextNode",
+      "setTextContent",
+      "setCSSProperties",
+      "containsSuspiciousPatterns",
+      "escapeHTML",
+      "escapeAttribute",
+      "CSPFeatures",
+      "detectEnvironment"
+    ],
+    "notPublic": "resetHTMLSanitizer exists in security.ts but is NOT re-exported from index.ts — asserted NOT 'in' the public module (API-063)",
+    "privateSeamsUsed": "NONE — grep confirms no as-any/underscore-private/_state/ForTest access in the spec"
+  },
+  "testCounts": {
+    "jsdom": 26,
+    "chromium": 0,
+    "total": 26
+  },
+  "renderingModel": "jsdom. Pure package-API function contracts; DOM helpers exercised on document.createElement('div') fixtures. console.warn captured via vi.spyOn with per-test restore; no fixed sleeps.",
+  "publicBoundaryFindings": [
+    {
+      "id": "API-063",
+      "finding": "resetHTMLSanitizer is exported by security.ts but NOT part of the public package entry (index.ts). Only setHTMLSanitizer is public. Restoration to identity must use the public setter.",
+      "consequence": "The genuine default NoOpSanitizer is a private unexported class; tests that depend on pristine default (API-063 identity, API-064 warning) run before any setter call."
+    }
+  ],
+  "orderingConstraint": "Pristine-default assertions (API-063 default identity; API-064 default-sanitizer warning) run first in the file, before any setHTMLSanitizer call, because the private NoOpSanitizer default cannot be reconstructed through the public surface. T1-R (T1-F02): the sanitizer registry is process-global; isolation is bounded by ordering, and after this file the global is left as the identity-behaviour sanitizer (not the pristine default). A T1-F02 post-condition test pins that end-of-file state.",
+  "contractEvidence": [
+    {
+      "id": "API-063",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged",
+      "asserts": "default getter identity + sanitizeHTML passthrough; custom set->get round-trip; resetHTMLSanitizer NOT a public export",
+      "negativePath": "resetHTMLSanitizer absence asserted"
+    },
+    {
+      "id": "API-064",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-064: warns and returns sanitized output under the pristine default no-op sanitizer",
+      "asserts": "warn-once with 'no sanitizer is configured' + source name under pristine default; silent under a custom sanitizer with custom output",
+      "negativePath": "no warn under custom sanitizer"
+    },
+    {
+      "id": "API-065",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks lowercase on* and exact \"style\" attributes (not set) and warns once per blocked attribute",
+      "asserts": "safe attrs + textContent applied; lowercase onclick/onload/exact style absent with 3 warns; empty element defaults; names STARTing with lowercase 'on' (onClick, onCLICK) blocked with 2 warns; mixed-case ONCLICK/OnLoad BYPASS the filter and are applied (ONCLICK -> live onclick handler); Style/STYLE BYPASS -> inline style applied",
+      "negativePath": "blocked names absent; bypassed ONCLICK installs a live handler (typeof el.onclick==='function') — documents the case-sensitive limitation; NOT an XSS defense",
+      "coverageClass": "Partial",
+      "reclassifiedFrom": "Existing",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks names that START with lowercase \"on\" regardless of trailing case (onClick, onCLICK)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block mixed-case ON*/On* names (ONCLICK, OnLoad) — they are applied (limitation)",
+        "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: does NOT block non-exact-case \"Style\"/\"STYLE\" — inline style is applied (limitation)"
+      ]
+    },
+    {
+      "id": "API-066",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-066: warns and skips non-custom properties without applying them",
+      "asserts": "--props set; non--- key skipped with 1 warn and not applied",
+      "negativePath": "non-custom key getPropertyValue('color') === ''"
+    },
+    {
+      "id": "API-067",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-067: setTextContent assigns literal text (no element parsing)",
+      "asserts": "createTextNode nodeType TEXT + data literal; setTextContent single text child, no <script> element created",
+      "negativePath": "querySelector('script') is null"
+    },
+    {
+      "id": "API-068",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-068: escapeAttribute encodes & \" ' < >",
+      "asserts": "escapeHTML encodes < > via textContent; escapeAttribute encodes all five chars incl injection attempt",
+      "negativePath": "attribute-injection string fully escaped"
+    },
+    {
+      "id": "API-069",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-069: flags <script>, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns",
+      "asserts": "seven executable-code heuristics flagged; safe markup/plain text false",
+      "negativePath": "safe markup returns false"
+    },
+    {
+      "id": "CONFIG-027",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-027: getCSPDirectives reads content values from CSP meta tags",
+      "asserts": "each predicate returns boolean without throwing; getCSPDirectives [] when no meta; reads injected meta content",
+      "negativePath": "empty directives when no CSP meta"
+    },
+    {
+      "id": "CONFIG-028",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-028: fields agree with the individual CSPFeatures predicates",
+      "asserts": "six-field object present; cspDirectives array; boolean fields; fields equal individual CSPFeatures predicates",
+      "negativePath": "field/predicate agreement cross-check"
+    }
+  ],
+  "coverageChanges": {
+    "before": {
+      "Existing": 62,
+      "Partial": 34,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 112
+    },
+    "after": {
+      "Existing": 70,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 121
+    },
+    "note": "9 new P1.6 contracts added (Path A). T1 originally classified all 9 as Existing (71/34/13/3). Under T1-R (T1-F01) API-065 was reclassified Existing -> Partial (case-sensitive attribute block; mixed-case bypass) giving 8 Existing + 1 Partial among the 9, and overall 70/35/13/3 = 121."
+  },
+  "gates": {
+    "verify_traceability": "PASS (121 unique IDs; ledger/matrix reconcile; locators in bounds)",
+    "coreRegression": "1038 passed | 1 skipped (T1-R1 final-test rewrite; no regressions)",
+    "t1Spec": "26 passed",
+    "ac1PublicImportOnly": "PASS — grep confirms no as-any/underscore-private/_state/ForTest access"
+  },
+  "boundaries": {
+    "productionIsolation": "0 files changed under packages/core/src (or engine/adapters) vs 654c22a",
+    "acceptedPriorTestsUnchanged": "csp.spec.ts and all w1-p1-1..5 specs untouched",
+    "deferredNotAbsorbed": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; those remain with owners."
+  },
+  "deviationsRaised": [],
+  "notes": "T1 covers utils/security.ts only. T2 (csp-styles.ts) and T3 (SSR import-time/deferred-DOM) remain pending. P1.6 closure not claimed.",
+  "mixedCaseAttributeFindings": {
+    "issue": "T1-F01",
+    "source": "packages/core/src/utils/security.ts createElement: `key.startsWith('on') || key === 'style'` (both case-sensitive)",
+    "observed": {
+      "onclick": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "onClick": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "ONCLICK": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "LIVE function (bypass)"
+      },
+      "onCLICK": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "OnLoad": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "bypass (onload)"
+      },
+      "style": {
+        "blocked": true,
+        "attrPresent": false,
+        "effectiveHandler": "none"
+      },
+      "Style": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "inline style applied (bypass)"
+      },
+      "STYLE": {
+        "blocked": false,
+        "attrPresent": true,
+        "effectiveHandler": "inline style applied (bypass)"
+      }
+    },
+    "conclusion": "createElement blocks only names starting with lowercase 'on' and the exact string 'style'. Mixed-case variants bypass and are applied; a bypassed ONCLICK installs a live inline handler. This is characterization of current behavior; the default sanitizer is a no-op and this is NOT presented as XSS protection."
+  },
+  "isolationBound": {
+    "issue": "T1-F02 / T1-R1",
+    "problem": "Sanitizer registry is process-global module state; resetHTMLSanitizer is NOT public and the private NoOpSanitizer cannot be recreated.",
+    "bound": "Ordering within the file: pristine-default tests first; THEN explicit restoration to identity behaviour via the PUBLIC setter as the final step.",
+    "restorationTest": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#T1-F02: reinstalls identity sanitizer via the public setter and asserts reference + behaviour",
+    "restorationAssertions": [
+      "setHTMLSanitizer(identitySanitizer) installed explicitly at end of file",
+      "getHTMLSanitizer() === identitySanitizer (reference identity)",
+      "sanitizeHTML('<b>MixedCase</b>') === '<b>MixedCase</b>' (behaviour: passthrough, not transformed)",
+      "validateTemplate() emits NO pristine-default warning (a sanitizer IS configured)"
+    ],
+    "documentedLimitation": "After this file, identity BEHAVIOUR is restored via the public setter; the original private NoOpSanitizer INSTANCE is not (cannot be recreated). Future pristine-default tests must use a separate module/worker boundary.",
+    "t1r1Note": "T1-R1 fixes the earlier defect where the final test only proved a sanitizer existed (the API-064 test left an html.toUpperCase() sanitizer installed) instead of explicitly restoring and verifying identity behaviour."
+  },
+  "corrections": [
+    {
+      "increment": "W1-P1.6-T1-R",
+      "startingCommit": "116707f94b755a16105248ec77ae3aacb2602395",
+      "authorizedBy": "Lead T1 review: T1 CONDITIONAL, T1-R GO (bounded correction). T2-T4 remain NO-GO.",
+      "scope": [
+        "Characterize mixed-case security attributes via public createElement (T1-F01).",
+        "Reclassify API-065 Existing -> Partial with corrected wording (does NOT block 'on* generally').",
+        "Bound sanitizer process-global test-state dependency (T1-F02).",
+        "Update evidence, ledger, traceability, checksums; rerun focused + full regression, ESLint, verifier.",
+        "One atomic corrective commit; production source unchanged."
+      ],
+      "findings": [
+        {
+          "id": "T1-F01",
+          "severity": "Medium",
+          "contract": "API-065",
+          "disposition": "Reclassified Existing->Partial; mixed-case characterization tests added (ONCLICK/OnLoad/Style/STYLE bypass)."
+        },
+        {
+          "id": "T1-F02",
+          "severity": "Low",
+          "contract": "API-063/API-064 harness",
+          "disposition": "Isolation bounded by ordering + post-condition test; documented end-of-file global state; no private resetHTMLSanitizer import."
+        }
+      ],
+      "productionSourceTouched": false
+    },
+    {
+      "increment": "W1-P1.6-T1-R1",
+      "startingCommit": "7183165547af8a3fee0746958e4b3624b5b41b59",
+      "authorizedBy": "Lead T1-R review: T1-R CONDITIONALLY ACCEPTED; T1-R-F01 (Medium). T1-R1 GO — bounded correction of the final sanitizer-state test only.",
+      "finding": {
+        "id": "T1-R-F01",
+        "severity": "Medium",
+        "detail": "The prior final test only asserted a sanitizer exists and the getter is stable; the preceding API-064 test left an html.toUpperCase() sanitizer installed, so the end-of-file state was the UPPERCASE sanitizer, not identity — contradicting the evidence/ledger claim.",
+        "disposition": "Reinstalled identitySanitizer via the public setter as the final step and verified reference identity + behaviour (passthrough) + no pristine-default warning. Updated isolationBound wording to 'identity behaviour restored; private instance not recreated'."
+      },
+      "scope": [
+        "Final sanitizer-state test rewritten (explicit restore + behaviour assertions).",
+        "Evidence isolationBound corrected; ledger §24 T1-R1 note added.",
+        "Refreshed checksums. No API-065 / mixed-case test changes; no reclassification; no production changes."
+      ],
+      "productionSourceTouched": false
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "artifactId": "W1-P1.5-T3-LIFECYCLE-STALE-ASYNC-GUARD-EVIDENCE",
+  "increment": "W1-P1.5",
+  "task": "Task 3 — LIFECYCLE-005 stale asynchronous result guard",
+  "startingCommit": "bc30c0f2937e59a58a5832c2890679e95fe9ab3f",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.5 Task 3 authorized GO at bc30c0f (LIFECYCLE-005 only). Task 4 and downstream remain NO-GO until Task 3 is independently accepted.",
+  "scopeContracts": [
+    "LIFECYCLE-005"
+  ],
+  "surfaces": {
+    "methods": [
+      "setSelectedValues(values)",
+      "getSelectedValues()",
+      "startDataLoading()",
+      "getDataLoadingState()",
+      "completeDataRequest(completion)"
+    ],
+    "config": "updateConfig({ serverSide:{enabled,fetchSelectedItems}, dataLoading:{protocol:'acknowledged',searchMode:'remote',fetchLimit} })",
+    "events": [
+      "change",
+      "select",
+      "error",
+      "dataProjection"
+    ],
+    "publicInput": "[part=\"input\"] value + input event (to supersede the active acknowledged request)",
+    "privateSeamsUsed": "NONE — grep confirms no _state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/_asyncGeneration/*ForTest/as-any access in the spec"
+  },
+  "testCounts": {
+    "jsdom": 6,
+    "chromium": 0,
+    "total": 6
+  },
+  "renderingModel": "jsdom; deterministic control via manually-resolved promises (setSelectedValues server fetch) and vi.waitFor polling public getDataLoadingState(). No fixed sleeps.",
+  "discriminatorDesign": "Every scenario resolves the obsolete operation with a deliberately NON-BENIGN payload that WOULD change observable state/events if the guard were missing. This was empirically proven by neutralizing the production guards locally: all 6 tests FAIL with the guards broken and PASS with them intact. No benign 'nothing changed' observation is used as evidence.",
+  "guardLocations": {
+    "setSelectedValues_generation_and_disconnect": "packages/core/src/components/enhanced-select.ts _loadSelectedItemsByValues — `if (generation !== this._asyncGeneration || !this.isConnected) return;` on success and reject branches; finally only clears busy when current+connected",
+    "acknowledged_stale_completion": "packages/core/src/data-loading/request-coordinator.ts completeDataRequest — inactive/unknown requestId routes to classifyInactiveRequest returning 'stale'/'unknown-request' (not 'accepted'); component only projects on 'accepted'"
+  },
+  "contractEvidence": {
+    "LIFECYCLE-005": {
+      "coverage": "Partial",
+      "characterized": [
+        "Two overlapping setSelectedValues server fetches; resolving the NEWER first then the OLDER (stale) with a DIFFERENT non-benign item leaves exactly the newer selection and emits exactly one change (stale 'first' does not overwrite 'second').",
+        "Stale success resolving after a newer success: no value overwrite and no additional change event.",
+        "Stale FAILURE (older rejects after newer succeeds): swallowed — no error event, selection stays the newer value.",
+        "Disconnect mid-flight with a real resolved item: no change/error/select events and no selection change (the detached non-benign result is dropped).",
+        "Acknowledged stale completion after the request is superseded by a new query: completeDataRequest returns 'stale', no dataProjection, status stays 'loading' (not advanced to succeeded); the current request then completes with 'accepted' and a single 'complete' projection.",
+        "Acknowledged completion from an unknown request identity: rejected (not 'accepted'), no projection, status stays 'loading'."
+      ],
+      "outstandingPublicUnobservable": "Not exhaustively characterized: concurrent acknowledged completions across cursor + page modes, load-more staleness interleavings, and any stale path that could be reached through presentation-only churn without a new request identity. Coverage kept Partial (not promoted to Existing merely because these discriminating scenarios pass).",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#applies only the newest of two superseded fetches even when the stale fetch resolves last",
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#does not apply a stale success that resolves after a newer success (value and event non-mutation)",
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#drops a stale failure so it cannot surface an error after a newer success",
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#drops a non-benign fetch result when the element is disconnected mid-flight",
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#rejects a stale completion after the request is superseded; only the current request is projected",
+        "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#treats a completion from an unknown request identity as rejected (no projection, no state advance)"
+      ]
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "LIFECYCLE-005": "Missing"
+    },
+    "to": {
+      "LIFECYCLE-005": "Partial"
+    },
+    "distributionBefore": {
+      "Existing": 62,
+      "Partial": 33,
+      "Diagnostic": 13,
+      "Missing": 4
+    },
+    "distributionAfter": {
+      "Existing": 62,
+      "Partial": 34,
+      "Diagnostic": 13,
+      "Missing": 3
+    },
+    "rationale": "LIFECYCLE-005 is characterized on the public surface across supersession, stale-failure, disconnect, and acknowledged stale/unknown completion, proven discriminating (6/6 fail with guard neutralized). It is classified Partial, not Existing, because additional async surfaces (cursor/page concurrency, load-more interleavings) are not exhaustively characterized. Total remains 112; no IDs added or removed."
+  },
+  "gates": {
+    "jsdom": "6/6 T3 passed",
+    "discriminatorProof": "All 6 T3 tests FAIL with the production guards neutralized (setSelectedValues success+reject+disconnect guard; acknowledged inactive-completion guard); all 6 PASS with guards intact. Production restored (0 BROKEN-GUARD remnants; diff vs bc30c0f empty).",
+    "coreRegression": "1012 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; LIFECYCLE-005 testId resolves; byCoverage 62/34/13/3)",
+    "eslint": "clean",
+    "harnessIntegrity": "no private seam access (_state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/_asyncGeneration/*ForTest/as-any) in T3 spec",
+    "productionIsolation": "0 files changed in packages/core/src (or engine/adapters) vs bc30c0f",
+    "acceptedPriorTestsUnchanged": "0 files changed vs bc30c0f (all prior specs unchanged)"
+  },
+  "boundaries": {
+    "noProductionChange": true,
+    "noPrivateSeamAssertions": true,
+    "publicSurfaceOnly": true,
+    "noFixedSleeps": true
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "The pre-existing P1.2 supersession test (w1-p1-2-set-selected-values-ordering.spec.ts) resolves the stale fetch to an EMPTY array (benign), so it cannot by itself distinguish a working guard from an implementation applying obsolete results. T3 uses non-benign, distinct stale payloads and resolves newer-before-older to close that gap.",
+    "LIFECYCLE-005 classified Partial (not Existing) per the Task 3 directive that one passing scenario must not promote the contract.",
+    "Acknowledged stale completion is publicly reachable (supersede via [part=input] typed query; stale completeDataRequest returns 'stale'); no coordinator internals accessed."
+  ]
+}

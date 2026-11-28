@@ -1,0 +1,91 @@
+{
+  "artifactId": "Angular-Wave2-S2R2-CORRECTIVE-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S2-R2 — corrective: destruction-safe value generations + latest-wins evidence precision",
+  "startingCommit": "b5941c34051168ae77e8855561bcd52353f8f90b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S2-R review at b5941c3 -> CONDITIONAL ACCEPTANCE; S2-R2 GO. Fix S2-R2-F01 (pending value ops outlive destroy) and S2-R2-F02 (latest-wins evidence/wording precision) only. No engine/packaging/version/API change.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "findingsAddressed": {
+    "S2-R2-F01": {
+      "severity": "Medium",
+      "title": "Pending value applications outlive destruction",
+      "resolution": "ngOnDestroy() now also increments valueGeneration (previously only initGeneration). applySelectedValues() uses an isCurrent() predicate (!destroyed && generation === valueGeneration) for the synchronous catch, resolve, and reject paths, so a late settle (resolve or reject) after teardown cannot mutate adapter state. Defense-in-depth: the !destroyed term ignores completions even without the generation bump.",
+      "tests": [
+        "ignores a LATE RESOLVE that lands after ngOnDestroy()",
+        "ignores a LATE REJECTION that lands after ngOnDestroy() (also asserts no unhandled rejection)",
+        "does not overwrite existing error state when a rejection lands after destroy()"
+      ],
+      "negativeControl": "With pre-fix logic restored, 2/3 tests fail; with fix, 3/3 pass (source restored byte-identical).",
+      "status": "PASS"
+    },
+    "S2-R2-F02": {
+      "severity": "Low",
+      "title": "Latest-wins claim overstated (adapter error supersession vs end-to-end selection ordering)",
+      "resolution": "JSDoc in applySelectedValues rewritten to scope the 'latest wins' guarantee to ADAPTER error state and to state that SELECTION supersession is engine-owned (non-server synchronous replacement; server path guarded by isConnected + _asyncGeneration). Two S2-F03 test titles retitled to say 'error state wins' / 'adapter-level'; behavior unchanged.",
+      "status": "PASS"
+    }
+  },
+  "changeSummary": {
+    "filesChanged": [
+      "packages/angular/src/select.component.ts",
+      "packages/angular/tests/select.component.spec.ts"
+    ],
+    "sourceChanges": [
+      "ngOnDestroy(): added `this.valueGeneration += 1;` with comment",
+      "applySelectedValues(): introduced `const isCurrent = (): boolean => !this.destroyed && generation === this.valueGeneration;`; all three completion paths use isCurrent()",
+      "applySelectedValues(): JSDoc rewritten (3 adapter hazards; latest-wins scoped to adapter error state; selection supersession noted as engine-owned)",
+      "valueGeneration field comment updated (destroy bump + post-destroy settle safety)"
+    ],
+    "testChanges": {
+      "added": 3,
+      "retitled": 2,
+      "addedDescribe": "value application survives destroy (S2-R2-F01)"
+    },
+    "netDiff": "+170 / -19 across 2 files",
+    "engineTouched": false,
+    "packagingTouched": false,
+    "versionOrPeerTouched": false,
+    "apiTouched": false
+  },
+  "testCounts": {
+    "angularJsdomBefore": 23,
+    "angularJsdomAfter": 26,
+    "componentTests": 22,
+    "loaderTests": 4
+  },
+  "gates": {
+    "R1_angularJsdom": { "command": "vitest run --config packages/angular/vitest.config.ts", "result": "PASS", "count": "26 (22 component + 4 loader)" },
+    "R2_angularSsr": { "command": "vitest run --config packages/angular/vitest.ssr.config.ts", "result": "PASS", "count": "3" },
+    "R3_aotConsumer": { "command": "node packages/angular/tests/consumer/run-consumer.mjs", "result": "PASS", "count": "7/7 assertions" },
+    "R4_ngPackagrBuild": { "command": "npm run build:angular", "result": "PASS", "detail": "exit 0" },
+    "R5_angularTsc": { "command": "tsc -p packages/angular/tsconfig.json --noEmit", "result": "PASS", "detail": "exit 0" },
+    "R6_coreJsdom": { "command": "vitest run --config packages/core/vitest.config.ts", "result": "PASS", "count": "1071 passed | 1 skipped (71 files)" },
+    "R7_coreSsr": { "command": "vitest run --config packages/core/vitest.ssr.config.ts", "result": "PASS", "count": "10" },
+    "R8_coreTsc": { "command": "tsc -p packages/core/tsconfig.json --noEmit", "result": "PASS", "detail": "44 pre-existing, none angular" },
+    "R9_eslint": { "command": "eslint packages/angular/src packages/angular/tests", "result": "PASS", "detail": "exit 0" },
+    "R10_traceability": { "command": "verify_traceability.py", "result": "PASS", "detail": "129/129 reconcile" }
+  },
+  "disclosedLimitations": [
+    "44 pre-existing @smilodon/core TSC errors remain; unchanged; none reference angular.",
+    "Peer range remains >=21 <22 (narrowed at S2-R; not revisited in S2-R2).",
+    "Pre-existing failing suite npm run test:contracts (React/Solid/Vue/Svelte) unrelated to S2-R2.",
+    "No new end-to-end selection-ordering test: the adapter does not own selection supersession; asserting engine-driven selection order would exercise the engine's server-fetch path (out of authorized scope) and is documented rather than tested at the adapter level."
+  ],
+  "nonGoals": [
+    "No engine/core change",
+    "No packaging/version/peer-range change",
+    "No API change",
+    "No @Output() event bridge (S3)",
+    "No ControlValueAccessor (S4)",
+    "No SSR rendering/hydration (S5)",
+    "No change to previously-accepted S2 test behavior (two titles retitled only)",
+    "No API-065/API-075 remediation"
+  ],
+  "relationshipToPriorIncrements": {
+    "buildsOn": "Angular-Wave2-S2R-CORRECTIVE-EVIDENCE (b5941c3)",
+    "closesFindingsFrom": "Lead S2-R review of b5941c3 (CONDITIONAL ACCEPTANCE)",
+    "effect": "Enables formal S2 closure; S3 (typed @Output() event bridge) is next."
+  }
+}

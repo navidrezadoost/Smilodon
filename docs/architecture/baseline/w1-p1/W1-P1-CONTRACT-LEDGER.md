@@ -99,7 +99,7 @@ All members reachable on an `EnhancedSelect` instance unless noted. `HTMLElement
 | --- | --- | --- | --- | --- | --- |
 | API-030 | `open(): void` - opens popup. | 6733-6735 | `interaction`, `dropdown-open-scroll` | Observed | No (verify idempotency + emit) |
 | API-031 | `close(): void` | 6740-6742 | `interaction` | Observed | No |
-| API-032 | `updateConfig(config: SelectInstanceConfig): void` - validates `dataLoading`/`selectedOptions`/`scrollToSelected`; may emit `dataLoadingConfigError`; handles mode/enabled changes. | 6747-6950 | `public-config-integration`, `phase-2e-*`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (invalid-config emission timing, dedup, callback) |
+| API-032 | `updateConfig(config: SelectInstanceConfig): void` - validates `dataLoading`/`selectedOptions`/`scrollToSelected`; may emit `dataLoadingConfigError`; handles mode/enabled changes. | 6747-6950 | `public-config-integration`, `phase-2e-*`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (emission+issues, event-before-callback order, dedup+reset, no-emit for valid/unrelated-invalid) |
 
 ### 2.5 Error / validation API
 
@@ -127,7 +127,7 @@ All members reachable on an `EnhancedSelect` instance unless noted. `HTMLElement
 | --- | --- | --- | --- | --- | --- |
 | API-060 | `startDataLoading(): void` - deferred until connected if needed. | 6960-6991 | `phase-2e-acknowledged-data-loading`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (deferred start, repeated-start idempotence) |
 | API-061 | `getDataLoadingState(): DataLoadingStateSnapshot` | 6993-7042 | `phase-2e-*`, `phase-2f-*`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (idle/active/completed, detached snapshot) |
-| API-062 | `completeDataRequest(completion): DataRequestCompletionResult` - **sync** return; validates shape; projects accepted snapshots async. | 7044-7120 | `phase-2e-acknowledged-data-loading`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (return matrix + async projection + resource-limit) |
+| API-062 | `completeDataRequest(completion): DataRequestCompletionResult` - **sync** return; validates shape; projects accepted snapshots async. | 7044-7120 | `phase-2e-acknowledged-data-loading`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | **Partial** (5-status terminal matrix + async projection + token-size resource-limit + rejection non-mutation; **cursor-depth subpath outstanding** — `maxCursorPages` is not publicly configurable) |
 
 > Request/response payload types for the acknowledged path live in `data-loading/public-types.ts`: `SearchDataRequest:70`, `LoadMoreDataRequest:75`, `DataRequestCompletion:97`, `DataRequestCompletionResult:134`, `DataLoadingStateSnapshot:161`.
 
@@ -146,23 +146,23 @@ All component events are dispatched via `_emit` (`6278`) as `new CustomEvent(nam
 | EVENT-001 | `select` | `SelectEventDetail` (40) `{ item, index, value, label, selected, multi? }` | 5296, 5504, 5633 | `onSelect(detail)` | Observed | Yes (payload + order vs `change`) |
 | EVENT-002 | `open` | `OpenEventDetail` (49) `{}` | 4399 | `onOpen()` | Observed | Yes |
 | EVENT-003 | `close` | `CloseEventDetail` (50) `{}` | 4424 | `onClose()` | Observed | Yes (reasons) |
-| EVENT-004 | `search` | `SearchEventDetail` (51) `{ query, results?, count? }` | 5043 (local); 7715 (acknowledged) | - | Observed | Yes (both paths; DEVIATION-03) |
-| EVENT-005 | `pageLoaded` | `PageLoadedEventDetail` (56) `{ page, count }` | **none** | - | **Unknown** | Yes (DEVIATION-02) |
-| EVENT-006 | `error` | `ErrorEventDetail` (57) `{ message, cause? }` | 6274 | `onError(error)` | Observed | Yes |
+| EVENT-004 | `search` | `SearchEventDetail` (51) `{ query, results?, count? }` | 5043 (local); 7715 (acknowledged) | - | Observed | **Existing** (both paths + normalizedQuery pinned; P1.5-T2) |
+| EVENT-005 | `pageLoaded` | `PageLoadedEventDetail` (56) `{ page, count }` | **none** | - | **Unknown** | **Missing** (bounded runtime negative: not emitted at acknowledged page nor legacy load-more completion; plus source inspection — type declared, no dispatch site; DEVIATION-02) |
+| EVENT-006 | `error` | `ErrorEventDetail` (57) `{ message, cause? }` | 6274 | `onError(error)` | Observed | **Partial** (async server-failure shape + error-before-onError; broader error sources outstanding) |
 | EVENT-007 | `change` | `ChangeEventDetail` (58) `{ selectedItems, selectedValues, selectedIndices }` | 6494 | `onChange(items, values)` | Observed | Yes (all emit paths) |
-| EVENT-008 | `loadMore` | `LoadMoreEventDetail` (63) `{ page, items }` | 6251 | - | Observed | Yes |
+| EVENT-008 | `loadMore` | `LoadMoreEventDetail` (63) `{ page, items }` | 6251 | - | Observed | **Existing** (acknowledged: fresh page-mode load-more request at page 2, request identity + queryGeneration pinned; legacy: `{page:2,items:[]}` no envelope; T2-R) |
 | EVENT-009 | `remove` | `RemoveEventDetail` (64) `{ item, index }` | 5704 | - | Observed | Yes |
 | EVENT-010 | `clear` | `ClearEventDetail` (65) `{ clearedSelection, clearedSearch }` | 7244 | - | Observed | Yes |
 | EVENT-011 | `emptyStateChange` | `EmptyStateChangeDetail` (77) `{ context }` | 6468 | - | Observed | Yes |
-| EVENT-012 | `diagnostic` | `DiagnosticEventDetail` (132) `{ timestamp, source, name, detail? }` | 7092, 7960 | - | Observed | Yes |
+| EVENT-012 | `diagnostic` | `DiagnosticEventDetail` (132) `{ timestamp, source, name, detail? }` | 7092, 7960 | Observed | **Partial** (resource-limit diagnostic payload pinned + snapshot mirror + per-result boundedness scoped true; `acknowledgedProjectionFailed` diagnostic uncharacterized — no deterministic public trigger; T2-R) |
 
 ### 3.2 Acknowledged events (NOT in `SelectEventsDetailMap`)
 
 | Contract ID | Event | Detail | Source (`enhanced-select.ts`) | Status | New test |
 | --- | --- | --- | --- | --- | --- |
-| EVENT-020 | `dataProjection` | `DataProjectionEventDetail` (`complete` / `failed`) | 7978 | Observed | Yes |
-| EVENT-021 | `dataRequestCancel` | `DataRequestCancelNotification { requestId, queryGeneration, reason }` | 7679 | Observed | Yes |
-| EVENT-022 | `dataLoadingConfigError` | `{ issues }` | 6950, 7130 | Observed | Yes |
+| EVENT-020 | `dataProjection` | `DataProjectionEventDetail` (`complete` / `failed`) | 7978 | Observed | **Partial** (`complete` + request/generation/attempt pinned; `failed` variant — no deterministic *public* trigger was established in this increment; production has a general projection-exception path that calls `_recordAcknowledgedProjectionFailure`, but existing tests reach it only via a private seam) |
+| EVENT-021 | `dataRequestCancel` | `DataRequestCancelNotification { requestId, queryGeneration, reason }` | 7679 | Observed | **Existing** (all three reasons with requestId + queryGeneration; event-before-callback ordering; callback receives the same detail *object* by reference; T2-R) |
+| EVENT-022 | `dataLoadingConfigError` | `{ issues }` | 6950, 7130 | Observed | **Existing** (issues array shape + dedup; P1.5-T2) |
 
 > `pageLoaded` is declared in the event map but neither `getCapabilities().events.emitted` (`6433`) nor runtime source emits it. Characterize (DEVIATION-02); do not silently fix.
 
@@ -246,7 +246,7 @@ Status: `Observed`. Existing evidence: `custom-arrow-slot`, `empty-state-slot`, 
 | LIFECYCLE-002 | `connectedCallback`: register instance, CONNECT dispatch, **create `AbortController`**, attach document `pointerdown` (via signal) **and `_inputContent` scroll + window resize/scroll listeners** (W1-P0.2B fix), sync direction, re-render if items present, emit `onOpen` if configured. | 572-635 | `lifecycle`, `memory-lifecycle`, phase-4 lifecycle | Observed | **Yes** (black-box reconnect + listener ownership) |
 | LIFECYCLE-003 | `disconnectedCallback`: coordinator disconnect, unregister, close if open, DISCONNECT dispatch, **abort connection controller**, **remove scroll listener**, bump `_asyncGeneration`, cancel rafs/timers, destroy guarded virtualizer, remove option/spacer children, disconnect observers, teardown global-style mirroring. | 648-768 | `memory-lifecycle`, phase-4 lifecycle | Observed | **Yes** (resource cleanup) |
 | LIFECYCLE-004 | Reconnection restores connection-scoped resources deterministically; disconnection releases them. | connect/disconnect | phase-4 lifecycle | Observed | **Yes** (the W1-P0.2B invariant) |
-| LIFECYCLE-005 | Stale async work guarded by `_asyncGeneration` + `isConnected`. | guards in 6668-6695, 7078-7120, etc. | partial | Observed | Yes (P1.5) |
+| LIFECYCLE-005 | Stale async work guarded by `_asyncGeneration` + `isConnected`; superseded/disconnected `setSelectedValues` results and stale/unknown acknowledged completions are dropped (not applied, not projected). | guards in 6668-6695, 7078-7120, etc.; `_loadSelectedItemsByValues` + `completeDataRequest` | `w1-p1-5-t3-lifecycle-stale-async-guard` (6 discriminating tests) | Observed | **Yes** (P1.5 T3; Partial) |
 | LIFECYCLE-006 | `attributeChangedCallback` early-returns on equal values. | 637-646 | - | Observed | Yes |
 
 > **Invariant to preserve (accepted W1-P0.2B):** a connected component owns its connection-scoped resources; disconnection releases them deterministically. Binding constraint on all future extraction (LIFECYCLE-004).
@@ -300,8 +300,8 @@ Full detail in `W1-P1-DEVIATIONS.md`. Summary (**all ten** — 01-10 — reconci
 | ID | Finding (short) | Class | Owner | Status at P1.2 closure |
 | --- | --- | --- | --- | --- |
 | DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.6 | Closed-for-P1.1; archival note in provenance (section 1, 12). |
-| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Open — characterize; ADR candidate. (matrix `EVENT-005`/`API-054` = Missing.) |
-| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Open — pin both payloads. (matrix `EVENT-004` = Diagnostic.) |
+| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | **Characterized (W1-P1.5-T2 / T2-R)** — two distinct evidence streams: (1) **bounded runtime observation** — not emitted at acknowledged page completion nor legacy load-more completion; (2) **source inspection** — type declared, no dispatch site in `enhanced-select.ts`. Neither claims the event can never fire on any execution path. Completion is signalled via `dataProjection`/`loadMore`. ADR candidate; matrix `EVENT-005` remains `Missing` (declared-only). |
+| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | **Characterized (W1-P1.5-T2)** — local (`{query,results,count}`) and acknowledged (`{query,results:[],count:0,request}`) payloads pinned via public surface; matrix `EVENT-004` = `Existing`. |
 | DEVIATION-04 | `setSelectedValues` async ordering not asserted by prior tests. | Unknown | P1.2 | **Characterized** — local + server-fetch success/failure/superseded/disconnected ordering locked by black-box tests (`w1-p1-2-set-selected-values-ordering`, T1-R chronology). Not a defect. |
 | DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | **Characterized** (W1-P1.4-T2) — host inline `display:block` forced on connect *and* re-connect re-asserts it (black-box, jsdom + Chromium). Characterized, not endorsed; ADR still open. (matrix `ATTR-013` = Existing.) |
 | DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | **Guidance-only, honored** — all P1.2 tests drive public API only; no legacy projection is manipulated. Not a behavioral finding to repair. |
@@ -802,3 +802,271 @@ None authorizes a production change, removal, or ADR during W1-P1.
 - **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); LIFECYCLE results are observable-only (no internal listener-cardinality/cleanup claim); no implementation-completeness claim.
 
 _End of W1-P1.4 (Task 4 closure). W1-P1.4 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom P1.4 40 (carried), Chromium P1.4 12/12, core 962+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
+
+---
+
+## 20. W1-P1.5 Task 2 — async data-loading public event characterization
+
+Task 2 characterizes the eight **P1.5 event contracts** (EVENT-004/005/006/008/012/020/021/022) through the **public surface only** — public `dataLoading` config, public methods, public `search` event / `[part="input"]` input, the `callbacks` map, and rendered shadow DOM. No private seam (`_state`, `_dataRequestCoordinator`, `_handleSearch`, `_loadMoreItems`, `*ForTest`) is touched (harness-integrity verified by grep). No production source changed; no accepted prior test was modified.
+
+- **Spec:** `packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts` (**17 tests**), jsdom, public surface only.
+- **Public load-more trigger:** without an `IntersectionObserver` (jsdom) the acknowledged/legacy `.load-more-button` is the public fallback trigger; acknowledged load-more is exercised by completing a `succeeded` first page then clicking the button; legacy load-more requires `infiniteScroll:false` + `searchable:false` so the button (not the sentinel) renders.
+- **Determinism:** all assertions synchronize on the public `getDataLoadingState()` predicate and awaited public promises/events via `vi.waitFor`; no fixed sleeps.
+
+### 20.1 Per-contract outcome
+
+| ID | Characterized (public surface) | Coverage move |
+| --- | --- | --- |
+| EVENT-004 | Acknowledged `{query,results:[],count:0,request}`; acknowledged typed `{normalizedQuery}`; local `{query,results,count}` filtered count | Diagnostic → **Existing** |
+| EVENT-005 | Negative: not emitted on acknowledged page completion nor legacy load-more; completion via `dataProjection`/`loadMore` | Missing → **Missing** (confirmed declared-only; DEVIATION-02) |
+| EVENT-006 | Async server-failure `error` `{message,cause}` emitted before `onError` | Partial → **Partial** (broader error sources outstanding) |
+| EVENT-008 | Acknowledged `{page,items:[],request.kind:'loadMore'}`; legacy `{page:2,items:[]}` (no request envelope) | Diagnostic → **Existing** |
+| EVENT-012 | Single bounded `diagnostic` `{source:'event',name:'acknowledgedDataLoadingResourceLimit',timestamp}` | Diagnostic → **Existing** |
+| EVENT-020 | `dataProjection` `{status:'complete',requestId,queryGeneration,attempt}`; one per accepted completion | Diagnostic → **Partial** (`failed` projection only via private seam; outstanding) |
+| EVENT-021 | `dataRequestCancel` `{requestId,queryGeneration,reason}` for `query-changed`/`config-changed`/`disconnected`; callback detail parity | Diagnostic → **Existing** |
+| EVENT-022 | `dataLoadingConfigError` `{issues:[{path,code,message}]}`; no-emit-on-valid; dedup | Diagnostic → **Existing** |
+
+### 20.2 Outstanding (not forced)
+
+- **EVENT-020 `failed` projection** — the `dataProjection` `'failed'` variant (and its `acknowledgedProjectionFailed` diagnostic) is only reachable via `_failNextAcknowledgedProjectionForTest`; no public trigger exists. Recorded as **public-unobservable** (plan §7 risk 2); EVENT-020 conservatively **Partial**.
+- **EVENT-005** stays **Missing** — `pageLoaded` is declared-only; the negative is now proven (DEVIATION-02 ADR candidate).
+
+### 20.3 Distribution & integrity
+
+- **112 records.** Distribution **Existing 63 · Partial 32 · Diagnostic 13 · Missing 4 = 112** (from 58/31/19/4 after T1-R; six event rows upgraded, none silently). `verify_traceability.py` **PASS** (112 unique, locators in bounds, all 6 new `testId` literals resolved).
+- Production isolation: **0** files changed in `packages/core/src` (or engine/adapters) vs the corrective base; accepted prior tests unchanged; no probe files remain.
+
+_End of W1-P1.5 Task 2 (original submission, `3dff949`). Superseded for classification by §21 (T2-R): EVENT-012 moved Existing → Partial; distribution now 62/33/13/4. Tasks 3–4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until T2-R is independently accepted._
+
+---
+
+## 21. W1-P1.5 Task 2 — corrective increment (T2-R)
+
+T2-R responds to the independent review of `3dff949` (CONDITIONALLY ACCEPTED; findings T2-F01..T2-F05). It **strengthens** the existing 17 T2 tests (no prior test deleted); the spec grows to **19 tests** (EVENT-012 split into three bounded cases; EVENT-021 callback test gains ordering + reference identity). Same public surface only, no private seam, no fixed sleeps. No production source changed; no accepted prior test modified.
+
+### 21.1 Findings and resolutions
+
+| Finding | Severity | Resolution |
+| --- | --- | --- |
+| **T2-F01** EVENT-008 vacuous self-comparison | Medium | Acknowledged load-more now establishes the active request explicitly: `kind='loadMore'`, `position.mode='page'`, `page=2`, request id ≠ initial search id, and the emitted `detail.page`/`detail.request.position`/`requestId`/`queryGeneration` are pinned to that request. The `? :` self-fallback is removed — the test fails if no page-mode load-more request exists. |
+| **T2-F02** EVENT-012 boundedness overstated | Medium | Asserts the resource-limit diagnostic **payload** (`detail.{reason:'cursor-token-size',maxCursorTokenBytes:1024,actualCursorTokenBytes:50000,requestId}`) and the snapshot `resourceLimit` mirror. Proves boundedness is **per-result, not global** — a replayed completion re-emits (2 diagnostics). A healthy-success test documents that the `acknowledgedProjectionFailed` diagnostic is **not** characterized. **EVENT-012 reclassified Existing → Partial** (no private failure injection used). |
+| **T2-F03** EVENT-021 evidence/assertion mismatch | Low | Callback test now uses `toBe()` (reference identity — probe-confirmed true) and asserts event-before-callback ordering. `config-changed` and `disconnected` now assert `queryGeneration` in addition to `requestId` + `reason`, plus exact key set `{queryGeneration,reason,requestId}` and cardinality 1. |
+| **T2-F04** EVENT-020 unreachability overstated | Low (evidence) | Ledger + evidence now state: *no deterministic public trigger for the `failed`-projection variant was established in this increment*; production's general projection-exception path (`_recordAcknowledgedProjectionFailure`) is acknowledged, but existing coverage reaches it only via private seam. EVENT-020 stays **Partial**; absolute "only reachable via this seam" claim removed. |
+| **T2-F05** EVENT-005 negative boundary | Low (evidence) | Tests renamed to `(bounded runtime observation)` and an in-spec boundary note added: the runtime negative is distinct from the source-inspection "declared, no dispatch site" finding; neither over-claims. EVENT-005 stays **Missing**; DEVIATION-02 ADR candidate. |
+
+### 21.2 Reconciliation & integrity
+
+- **112 records** (no ID added/removed). Distribution **Existing 62 · Partial 33 · Diagnostic 13 · Missing 4 = 112** — from 63/32/13/4 after T2 (EVENT-012 only, Existing → Partial). Matches the Lead's expected conservative distribution.
+- `verify_traceability.py` **PASS** (112 unique; locators in bounds; testIds resolve to existing spec files). Changed `testId`s: EVENT-008 (renamed title), EVENT-012 (new title), EVENT-021 (config-changed title).
+- Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `3dff949`; accepted prior tests unchanged; no probe files remain.
+
+_End of W1-P1.5 Task 2 (T2-R). Tasks 3–4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until T2-R is independently accepted._
+
+## 22. W1-P1.5 Task 3 — lifecycle stale async result guard (LIFECYCLE-005)
+
+Task 3 characterizes the single authorized contract **LIFECYCLE-005** (stale asynchronous result guard) on the public surface only: **6** new jsdom tests in `w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts`. No production source changed; no prior test modified; no private seam; no fixed sleeps.
+
+### 22.1 Discriminating scenarios
+
+Every superseded/disconnected/unknown operation is resolved with a **non-benign payload that would change observable state/events if the guard were absent**, and supersession resolves **newer-before-older** so a missing guard would visibly overwrite the current result or emit an unintended follow-on event.
+
+| # | Scenario | Public surface | Non-benign result |
+| --- | --- | --- | --- |
+| 1 | Two overlapping `setSelectedValues` server fetches; stale resolves last | `setSelectedValues`, `getSelectedValues`, `change` | stale `'first'` must not overwrite newer `'second'`; exactly one `change` |
+| 2 | Stale success resolving after a newer success | value + `change` non-mutation | stale distinct item dropped |
+| 3 | Stale **failure** after newer success | `error` absent; selection retained | stale rejection swallowed |
+| 4 | Disconnect mid-flight with a real resolved item | remove before resolve | detached non-benign item dropped; 0 events |
+| 5 | Acknowledged stale completion after supersession | `startDataLoading`, `completeDataRequest`, `getDataLoadingState`, `dataProjection` | stale returns `'stale'`; no projection; status stays `loading`; current then `'accepted'` + single `complete` |
+| 6 | Acknowledged completion with unknown request identity | `completeDataRequest`, `getDataLoadingState` | not `'accepted'`; no projection; status stays `loading` |
+
+### 22.2 Discriminator proof
+
+The production guards (`_loadSelectedItemsByValues` generation/disconnect guard; `completeDataRequest` inactive/unknown routing to `classifyInactiveRequest`) were **temporarily neutralized locally**: **all 6 tests FAIL** with the guards broken and **all 6 PASS** with them intact. Production source was restored (0 remnants; `git diff` vs `bc30c0f` on `packages/core/src` empty). This empirically demonstrates the tests discriminate a working guard from one that applies obsolete results; no benign "nothing changed" observation is used as evidence.
+
+### 22.3 Reconciliation & integrity
+
+- **112 records** (no ID added/removed). Distribution **Existing 62 · Partial 34 · Diagnostic 13 · Missing 3 = 112** — from 62/33/13/4 after T2-R (LIFECYCLE-005 only, Missing → Partial). LIFECYCLE-005 is classified **Partial**, not Existing, because cursor/page concurrency and load-more interleavings are not exhaustively characterized.
+- `verify_traceability.py` **PASS** (112 unique; locators in bounds; LIFECYCLE-005 testId resolves to the first scenario title).
+- Core regression **1012 passed | 1 skipped** (1006 + 6 new); ESLint clean.
+- Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `bc30c0f`; accepted prior tests unchanged; no probe files remain.
+- Note: the pre-existing P1.2 supersession test resolves its stale fetch to an **empty** array (benign) and cannot by itself distinguish a working guard; T3 closes that gap with non-benign stale payloads.
+
+_End of W1-P1.5 Task 3. Task 4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until Task 3 is independently accepted._
+
+## 23. W1-P1.5 Task 4 — increment closure (acknowledged / asynchronous data-loading)
+
+Task 4 is the **documentation-only** closure of W1-P1.5: it consolidates Tasks 1–3 into a single closure report (`W1-P1.5-CLOSURE-REPORT.md`) and machine-readable evidence (`W1-P1.5-CLOSURE-EVIDENCE.json`). **No production source changed; no behavioral test added or modified; no classification changed beyond what Tasks 1–3 already committed.**
+
+### 23.1 Lineage (ancestry-verified, linear)
+
+`73cd954` (T1) → `84b760a` (T1-R) → `3dff949` (T2) → `6682c83` (T2-R) → `bc30c0f` (T2-R1) → `693aaca` (T3) → this (T4).
+
+### 23.2 Final coverage of the 13 P1.5 contracts
+
+| Contract | Final class | Contract | Final class |
+| --- | --- | --- | --- |
+| API-032 | Existing | EVENT-008 | Existing |
+| API-060 | Existing | EVENT-012 | **Partial** |
+| API-061 | Existing | EVENT-020 | **Partial** |
+| API-062 | **Partial** | EVENT-021 | Existing |
+| EVENT-004 | Existing | EVENT-022 | Existing |
+| EVENT-005 | **Missing** | LIFECYCLE-005 | **Partial** |
+| EVENT-006 | **Partial** | | |
+
+**13-target disposition: Existing 7 · Partial 5 · Missing 1.** Preserved gaps: API-062 (cursor-depth), EVENT-005 (declared-only, DEVIATION-02), EVENT-006 (broader error sources), EVENT-012 (`acknowledgedProjectionFailed`), EVENT-020 (`failed`-projection), LIFECYCLE-005 (concurrency interleavings).
+
+### 23.3 Reconciliation & integrity
+
+- **112 records** (no ID added/removed). Distribution **Existing 62 · Partial 34 · Diagnostic 13 · Missing 3 = 112** — unchanged by this closure (Tasks 1–3 already set it; T4 does not reclassify).
+- `verify_traceability.py` **PASS** (112 unique; locators in bounds; testIds resolve).
+- Core regression **1012 passed | 1 skipped**; P1.5 specs **50 passing** (25 + 19 + 6). All jsdom (async `detail`/snapshot contracts are DOM-independent).
+- Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `693aaca`; accepted prior tests unchanged; no test files touched.
+- Deferred residuals **not absorbed** (unchanged prior classes): EVENT-009, CONFIG-001/003/004/026 (P1.4 residuals); PART-009, ATTR-023, CONFIG-023 (P1.4 gaps); KBD-001..012, P1.3-D01 (P1.3 residuals).
+- **Limitations preserved:** no browser-parity claim; no comprehensive async-safety claim; no implementation-completeness claim.
+
+_End of W1-P1.5 Task 4 closure. W1-P1.5 remains open until this closure commit is independently accepted. W1-P1.6, W1-P2 Extraction, Angular Wave 2 remain NO-GO until then._
+
+---
+
+## 24. W1-P1.6 Task 1 — Security utilities (public surface) characterization
+
+W1-P1.6 is the SSR/security increment named in §10 (line 353, "SSR/security … P1.6") and §12 (line 469, security/CSP utilities "Documented-only per section 10; not certified"). These surfaces carried **zero** contract IDs; this section defines and certifies them through the **public package import only** (`packages/core/src/index.ts`). The utilities are imported by no component — they are a standalone public utility surface.
+
+**Family mapping:** the `security.ts` HTML-safety helpers are encoded as `API-0xx` (package API); the `CSPFeatures`/`detectEnvironment` capability surface as `CONFIG-0xx`.
+
+**Public-boundary finding (API-063):** `resetHTMLSanitizer` exists in `security.ts` but is **NOT** re-exported from the package entry; only `setHTMLSanitizer` is public. Tests restore identity behavior through the public setter. The genuine default `NoOpSanitizer` is a private, unexported class and cannot be recreated; the pristine-default assertions (API-063 identity, API-064 warning) therefore run before any setter call. **T1-R isolation bound (T1-F02):** the sanitizer registry is process-global module state; Reset is not public and the private `NoOpSanitizer` cannot be recreated, so isolation is bounded by **ordering** (pristine-default tests consolidated first). After the spec file runs, the process-global sanitizer is left as the identity-behaviour sanitizer, **not** the pristine default — a documented limitation; future pristine-default tests must use a separate module/worker boundary. A post-condition test (`T1-F02: process-global sanitizer is identity-behaviour …`) pins the end-of-file state. **T1-R1 (T1-R-F01):** the prior final test only proved a sanitizer existed; the preceding API-064 test left an `html.toUpperCase()` sanitizer installed, so the claimed identity end-state was wrong. T1-R1 rewrites the final step to explicitly `setHTMLSanitizer(identitySanitizer)` via the public setter and verify reference identity, `sanitizeHTML` passthrough (`<b>MixedCase</b>` unchanged), and that `validateTemplate` emits no pristine-default warning. Identity **behaviour** is restored; the private `NoOpSanitizer` **instance** is not.
+
+| Contract ID | Behavior | Source (`security.ts`) | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-063 | Sanitizer registry: default no-op identity; set→get round-trip; sanitizeHTML delegates; `resetHTMLSanitizer` NOT a public export | 19-69 | Existing | `w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged` |
+| API-064 | `validateTemplate` warns only under pristine default no-op (message names source) and returns sanitized output; silent under custom sanitizer | 248-259 | Existing | `...#API-064: warns and returns sanitized output under the pristine default no-op sanitizer` |
+| API-065 | `createElement` applies safe attrs + textContent; blocks **only** names STARTing with lowercase `on` or **exactly** `style` (case-sensitive) with a warn per blocked attr. **Partial:** mixed-case `ONCLICK`/`OnLoad`/`Style`/`STYLE` bypass the filter and are applied (`ONCLICK` installs a **live** handler). Not an XSS defense (default sanitizer is a no-op). *(Reclassified Existing→Partial under T1-R / T1-F01.)* | 99-128 | **Partial** | `...#API-065: blocks lowercase on* and exact "style" attributes (not set) and warns once per blocked attribute` (+3 mixed-case supplementary tests) |
+| API-066 | `setCSSProperties` sets only `--` custom properties; non-`--` keys skipped with warn, never applied | 130-138 | Existing | `...#API-066: warns and skips non-custom properties without applying them` |
+| API-067 | `createTextNode`/`setTextContent` build/assign literal text without HTML parsing | 76-95 | Existing | `...#API-067: setTextContent assigns literal text (no element parsing)` |
+| API-068 | `escapeHTML` encodes via textContent; `escapeAttribute` encodes `& " ' < >` | 279-295 | Existing | `...#API-068: escapeAttribute encodes & " ' < >` |
+| API-069 | `containsSuspiciousPatterns` flags `<script`/`javascript:`/`on*=`/`eval(`/`Function(`/`setTimeout(`/`setInterval(`; false for safe markup | 262-274 | Existing | `...#API-069: flags <script>, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns` |
+| CONFIG-027 | `CSPFeatures` family: capability predicates return boolean without throwing; `getCSPDirectives` reads CSP meta-tag content, `[]` when none | 143-216 | Existing | `...#CONFIG-027: getCSPDirectives reads content values from CSP meta tags` |
+| CONFIG-028 | `detectEnvironment` returns 6-field `EnvironmentCapabilities` agreeing with individual predicates | 233-242 | Existing | `...#CONFIG-028: fields agree with the individual CSPFeatures predicates` |
+
+**Totals:** 9 new P1.6 contracts: **8 Existing + 1 Partial** (API-065) (public-import, deterministic, negative paths included). Distribution after T1-R: **Existing 70 · Partial 35 · Diagnostic 13 · Missing 3 = 121** (was 62/34/13/3 = 112 at P1.5; T1 alone gave 71/34/13/3, then T1-R moved API-065 Existing→Partial). API 27→34; CONFIG 26→28; P1.6 = 9.
+
+**Out of scope for T1 (deferred to T2/T3 within P1.6):** `utils/csp-styles.ts` helpers (applyClasses/toggleClass/custom-property family/defaultTheme/shadowDOMStyles/injectShadowStyles/hasOverflowHiddenAncestor/warnCSPViolation) and SSR import-time/deferred-DOM safety.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 is absorbed; those remain with their owners.
+
+_End of W1-P1.6 Task 1 (original, `116707f`). W1-P1.6-T1-R (`7183165`) reclassified API-065 Existing→Partial (T1-F01) and bounded sanitizer isolation (T1-F02). W1-P1.6-T1-R1 fixes the sanitizer end-state test to explicitly restore+verify identity behaviour (T1-R-F01). Tasks 2–4 remain NO-GO pending independent acceptance; P1.6 closure not yet claimed._
+
+---
+
+## 25. W1-P1.6 Task 2 — CSP-compliant styling utilities (public surface) characterization
+
+W1-P1.6 Task 2 certifies the `packages/core/src/utils/csp-styles.ts` public surface through the **public package import only** (`packages/core/src/index.ts`), continuing the §24 approach. These six contracts were previously documented-only (plan §1.1: zero contract IDs; the frozen `csp.spec.ts` imports the utils modules directly and pins no W1-P1 contract). Family mapping follows the Task 2 workstreams: class/style/theme/shadow/overflow/warning helpers as `API-0xx` (package API); the theme/config-shaped surface (`defaultTheme`/`applyDefaultTheme`/`shadowDOMStyles`) as `CONFIG-0xx` (per plan §2.2 CONF-z).
+
+**Environment note (conservative jsdom):** the runner sets `NODE_ENV=test`, so the development-only warning branches execute. Production-**conditioned** source behavior is verified by `vi.stubEnv('NODE_ENV','production')` — this exercises the SOURCE under a controlled environment; it does NOT certify a compiled production artifact, nor compatibility with an enforced browser CSP (T2-F04). jsdom reflects **inline** custom properties and **inline** `overflow` in `getComputedStyle`; layout-/stylesheet-derived computed styles are NOT claimed.
+
+| Contract ID | Behavior | Source (`csp-styles.ts`) | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-070 | `applyClasses` joins non-empty (truthy) names into `className` (REPLACES, not additive); `toggleClass` toggles with optional force (true=add/false=remove), idempotent under force | 10-19 | Existing | `w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries` |
+| API-071 | Custom-property family: `setCustomProperties` sets only `--` keys (dev warn+skip others; silent+skip under production) — **prefix enforced**; `getCustomProperty` reads trimmed computed value (empty string when unset) and `removeCustomProperty` removes — **prefix NOT enforced** (getter/remover also act on ordinary CSS properties like `color`/`display`; asymmetry characterized, T2-F02) | 31-61 | Existing | `...#API-071: setCustomProperties applies --prefixed custom properties` |
+| CONFIG-029 | `defaultTheme` stable **13-entry** `--ns-*` map (pinned vs independent expected object; not frozen); `applyDefaultTheme` applies every entry; `shadowDOMStyles` static string with `:host`/`.ns-*`/`var(--ns-*)`, no `<script>` | 66-201 | Existing | `...#CONFIG-029: defaultTheme is a stable 13-entry map matching the expected pinned values` |
+| API-072 | `injectShadowStyles` appends a single `<style>` (text = static `shadowDOMStyles`) to a ShadowRoot; additive on repeat (no dedupe) | 205-209 | Existing | `...#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles` |
+| API-073 | `hasOverflowHiddenAncestor` **traverses the `parentElement` chain**, **excluding `document.body`**, and returns `true` if a traversed ancestor has computed overflow `hidden`/`clip`; otherwise returns `false`. Connection is not required: a detached subtree may return `true`, while a **parentless** element returns `false` (T2-F01) | 214-226 | Existing | `...#API-073: detects an overflow:hidden ancestor` |
+| API-074 | `warnCSPViolation` warns ONLY in non-production naming feature+fallback; silent under `NODE_ENV=production` | 231-238 | Existing | `...#API-074: warns in development naming both the feature and the fallback` |
+
+**Totals:** 6 new P1.6 contracts, all **Existing** (public-import, deterministic, positive+negative paths; production branch stubbed). Distribution after T2: **Existing 76 · Partial 35 · Diagnostic 13 · Missing 3 = 127** (was 70/35/13/3 = 121 after T1-R1). API 34→39; CONFIG 28→29; P1.6 9→15.
+
+**Characterized limitations (documented, not defects):** (1) `getCustomProperty` and `hasOverflowHiddenAncestor` rest on jsdom reflection of inline styles; stylesheet-/layout-derived computed values are out of scope. (2) **Prefix asymmetry (T2-F02):** only `setCustomProperties` enforces `--`; `getCustomProperty`/`removeCustomProperty` also read/remove ordinary CSS properties. (3) **Parent-chain, not connection (T2-F01):** `hasOverflowHiddenAncestor` returns true iff a traversed ancestor has overflow hidden/clip (excluding body); connection is not required — a detached subtree may return true and a parentless element returns false. (4) `injectShadowStyles` does not dedupe (callers must guard).
+
+**Out of scope for T2:** SSR / import-time / deferred-DOM safety (`security.ts`/`csp-styles.ts` import in a no-DOM Node env) — that is Task 3.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
+
+_End of W1-P1.6 Task 2. W1-P1.6-T2-R (T2-F01..F04) strengthened characterization (API-071 prefix asymmetry, API-073 parent-chain/detached, CONFIG-029 full 13-entry map) and evidence precision; coverage counts unchanged (127; 76/35/13/3). Tasks 3–4 remain NO-GO pending independent T2-R acceptance; P1.6 closure not yet claimed._
+
+---
+
+## 26. W1-P1.6 Task 3 — SSR / import-time safety (no-DOM Node) characterization
+
+W1-P1.6 Task 3 characterizes the core package's behavior in a **genuine Node process with no `document`/`window`/`HTMLElement`**. It runs via `packages/core/vitest.ssr.config.ts` (`environment: 'node'`, **no** shared setup) — the shared `tests/setup.ts` imports the web components, which `extend HTMLElement` at class-declaration time and throw on import without a DOM, so it is intentionally not run here. The SSR spec is **excluded** from `vitest.config.ts` so the jsdom suite never picks it up. This is the plan §2.3 pair of contracts (SEC/API-m → API-075, SEC/API-n → API-076), both previously **Missing**. The package entry is the mandatory target (boundary #3); a caught import-time exception is recorded as a limitation, not claimed as safety (boundary #7).
+
+**Environment (proven, not assumed):** a shared `assertNoDom()` helper asserts `typeof document === 'undefined'`, `typeof window === 'undefined'`, `typeof HTMLElement === 'undefined'` and is called immediately before **every** dynamic import in every test (T3-F02). No DOM globals are fabricated or deleted.
+
+**Key observed finding:** the **utility modules** (`security.ts`, `csp-styles.ts`) import without a DOM and defer `document` access to **call time** — but the **package entry** (`index.ts`) **throws** `ReferenceError: HTMLElement is not defined` at import, because it re-exports components whose class declarations `extends HTMLElement` (e.g. `native-select.ts:17`). Package-entry import-safety is therefore **not satisfied today** (recorded limitation; fixing it is a production change and out of scope for this characterization).
+
+| Contract ID | Behavior | Source | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-075 | Import-time safety (no-DOM Node): utility modules import without top-level `document`/`window` access; package ENTRY **throws** `ReferenceError` (HTMLElement) because exported components `extend HTMLElement` at import. Import-safety only partially satisfied — **entry limitation recorded, not claimed safe** | `index.ts:1-92`; `components/native-select.ts:17`; `security.ts:1-295`; `csp-styles.ts:1-238` | Partial | `w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the package ENTRY import THROWS in no-DOM Node (limitation recorded, not claimed safe)` |
+| API-076 | Deferred DOM access: utility modules import successfully; calling DOM-dependent helpers (`escapeHTML`, `createElement`) throws `ReferenceError: document is not defined` at **call time**, not import; non-DOM helpers (`escapeAttribute`, `containsSuspiciousPatterns`, `defaultTheme`/`shadowDOMStyles`) and duck-typed `applyClasses`/`hasOverflowHiddenAncestor` work without a global DOM | `security.ts:78-169`; `csp-styles.ts:10-226` | Existing | `w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: DOM-dependent helpers throw ReferenceError at CALL time (deferred, not import)` |
+
+**Totals:** 2 new P1.6 contracts: **1 Existing (API-076) + 1 Partial (API-075)**. Distribution after T3: **Existing 77 · Partial 36 · Diagnostic 13 · Missing 3 = 129** (was 76/35/13/3 = 127 after T2-R1). API 39→41; P1.6 15→17. The three pre-existing **Missing** records (API-054/P1.2, EVENT-005/P1.5, CONFIG-023/P1.4) are **unchanged** — API-075 and API-076 are **new** records, not reclassifications. (The two SSR contracts were previously *planned* but not *registered*, so registering them does not reduce the Missing count. Prior 'Missing 3→1' text was incorrect — T3-F01.)
+
+**Characterized limitations (documented, not defects):** (1) **Package-entry import-safety is NOT satisfied** — `index.ts` import throws in a no-DOM process because web-component classes extend `HTMLElement` at module-evaluation time (API-075). Consumers needing SSR import-safety must import the utility modules directly, not the entry. (2) The deferred-access proof (API-076) is exercised via the utility modules reachable without the entry.
+
+**Test harness note:** the SSR spec is run separately (`npx vitest run --config packages/core/vitest.ssr.config.ts`, 6 tests) and excluded from the jsdom config; the main core suite remains **1063 passed | 1 skipped** unchanged. **Verifier scope (T3-F03):** `python3 docs/architecture/baseline/w1-p1/verify_traceability.py` prints `ledger IDs=129 json records=129 unique json=129` / `PASS: ledger/matrix reconcile; IDs unique; targets valid; locators in bounds` (exit 0). It checks ID-set equality, uniqueness, target validity, coverage-label validity, testId file existence, and locator bounds — but it does **NOT** recompute `reconciliation.byCoverage`. A passing run is therefore not proof the coverage summary reconciles; the summary was reconciled manually in T3-R. The verifier validation gap is identified for a separate decision and not fixed here.
+
+**Out of scope for T3:** Task 4 (reconciliation + closure docs + checksums) and any production fix of the package-entry import failure. No adapter hydration, no Angular integration, no production CSP remediation, no DEVIATION-09.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
+
+_End of W1-P1.6 Task 3. W1-P1.6-T3 characterizes SSR import-time safety (API-075, Partial — package-entry limitation recorded) and deferred DOM access (API-076, Existing). Coverage 76/35/13/3 → 77/36/13/3 = 129. W1-P1.6-T3-R corrects the coverage summary (T3-F01: 77/36/13/3, not 77/36/13/1), adds no-DOM guards before every import in the API-076 tests (T3-F02), and corrects the verifier-evidence claim (T3-F03). Task 4 (closure) and P1.6 closure remain NO-GO pending independent T3-R acceptance._
+
+---
+
+## 27. W1-P1.6 Task 4 — Closure (reconciliation & closure evidence, documentation only)
+
+W1-P1.6 Task 4 consolidates the accepted P1.6 increments (Tasks 1, 1-R, 1-R1, 2, 2-R, 2-R1, 3, 3-R) into the final closure package. **Documentation only:** no production source changed, no behavioral test added or modified, no reclassification beyond what Tasks 1–3 committed, no verifier change. This section adds no contract ID and preserves the **129-record** inventory; it records the final P1.6 coverage, the reconciliation, and the outstanding limitations. Machine-readable detail is in `W1-P1.6-CLOSURE-EVIDENCE.json`; narrative in `W1-P1.6-CLOSURE-REPORT.md`. Task 4 was submitted at `975fb6c`; the corrective increment **Task 4-R** (`52a4013`) fixed T4-F01 (API-075 recorded as a NEWLY REGISTERED Partial, not a Missing→Partial reclassification; only API-065 remains a reclassification) and T4-F02 (API-063 row: `resetHTMLSanitizer` is NOT a public export). **Task 4-R was accepted; W1-P1.6 Task 4 is formally closed.**
+
+**Lineage (linear):** `116707f` (T1) → `7183165` (T1-R) → `e598e5c` (T1-R1) → `dc1131f` (T2) → `61ebba0` (T2-R) → `44dc148` (T2-R1) → `98935ca` (T3) → `e6b89fa` (T3-R) → `975fb6c` (T4) → `52a4013` (T4-R).
+
+### 27.1 P1.6 test inventory
+
+| Harness | Spec | Tests | Contracts |
+| --- | --- | --- | --- |
+| jsdom | `w1-p1-6-t1-security-utilities.spec.ts` | 26 | API-063..069, CONFIG-027..028 |
+| jsdom | `w1-p1-6-t2-csp-styles.spec.ts` | 25 | API-070..074, CONFIG-029 |
+| Node | `w1-p1-6-t3-ssr-import-safety.spec.ts` | 6 | API-075, API-076 |
+| **Total** | | **57** | 17 P1.6 contracts |
+
+### 27.2 Final P1.6 coverage (17 contracts)
+
+**Existing 15 · Partial 2 (API-065, API-075) · Diagnostic 0 · Missing 0 = 17.** All 17 `testId`s resolve to real `it()` titles; all source locators within bounds.
+
+| Contract | Coverage | Note |
+| --- | --- | --- |
+| API-063, API-064, API-066, API-067, API-068, API-069 | Existing | security utilities (sanitizer, construction, escaping, detection) |
+| **API-065** | **Partial** | `createElement` blocks `on*`/`style` **case-sensitively** (mixed-case bypass) — open production security limitation |
+| CONFIG-027, CONFIG-028 | Existing | `CSPFeatures`, `detectEnvironment` |
+| API-070, API-071, API-072, API-073, API-074 | Existing | csp-styles (classes, custom-props w/ prefix asymmetry, shadow inject, overflow ancestor, CSP warn) |
+| CONFIG-029 | Existing | `defaultTheme`/`applyDefaultTheme`/`shadowDOMStyles` |
+| **API-075** | **Partial** | SSR import-time safety: utils import-safe, **package entry throws** (`HTMLElement` undefined) — open production compatibility limitation |
+| API-076 | Existing | Deferred DOM access — certified **only for the tested utility functions** |
+
+### 27.3 Matrix reconciliation (whole matrix)
+
+| Stage | Existing | Partial | Diagnostic | Missing | Total |
+| --- | --- | --- | --- | --- | --- |
+| P1.5 closure | 62 | 34 | 13 | 3 | 112 |
+| after T1-R1 | 70 | 35 | 13 | 3 | 121 |
+| after T2-R1 | 76 | 35 | 13 | 3 | 127 |
+| **final (T3-R)** | **77** | **36** | **13** | **3** | **129** |
+
+P1.6 added 17 contracts (API +14, CONFIG +3); Existing +15, Partial +2 (API-065 reclassified in T1-R; API-075 new). **The three pre-existing Missing records — API-054 (P1.2), EVENT-005 (P1.5), CONFIG-023 (P1.4) — are unchanged.**
+
+### 27.4 Outstanding limitations (disclosed, not remediated)
+
+- **API-065** — case-sensitive `on*`/`style` filtering: **open production security limitation.**
+- **API-075** — package-entry SSR import failure: **open production compatibility limitation.**
+- **API-076** — deferred DOM access: **certified only for the tested utility functions.**
+- **Traceability verifier summary-validation gap** — `verify_traceability.py` does not recompute `reconciliation.byCoverage`: **open tooling improvement** (summary reconciled manually; verifier change not authorized).
+- **Browser CSP enforcement** — **not certified** (source-conditioned behavior only).
+- **Framework hydration / adapters** — **not certified** (out of W1-P1 scope).
+
+### 27.5 Findings resolved (all CLOSED)
+
+T1-F01, T1-F02, T1-R-F01, T2-F01, T2-F02, T2-F03, T2-F04, T2-R-F01, T3-F01, T3-F02, T3-F03, T4-F01, T4-F02. The API-065 and API-075 deficiencies remain **open production limitations** (recorded, not remediated).
+
+### 27.6 Disposition / non-absorption
+
+No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; the three Missing records and all residuals retain their original owners. **DEVIATION-09** ("P1.6 / forms") is a forms/validation decision, **excluded** from the security/SSR scope.
+
+_End of W1-P1.6 Task 4 (closure). Accepted & closed via Task 4-R `52a4013` (T4-F01, T4-F02). Documentation only; 129-record inventory preserved; P1.6 coverage 15 Existing / 2 Partial = 17; whole-matrix 77/36/13/3 = 129. W1-P1.6 Task 4 is formally closed; W1-P2/Angular remain NO-GO (separately gated). No production source, behavioral test, verifier, adapter, or previously-accepted artifact changed._

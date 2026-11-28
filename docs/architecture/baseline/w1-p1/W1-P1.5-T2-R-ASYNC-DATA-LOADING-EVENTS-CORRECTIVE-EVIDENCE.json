@@ -1,0 +1,170 @@
+{
+  "artifactId": "W1-P1.5-T2-R-ASYNC-DATA-LOADING-EVENTS-CORRECTIVE-EVIDENCE",
+  "increment": "W1-P1.5",
+  "task": "Task 2 — corrective increment (T2-R)",
+  "startingCommit": "3dff949f7e4944eb07ea79eb118af1e1f517ba3c",
+  "correctiveBase": "3dff949f7e4944eb07ea79eb118af1e1f517ba3c",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "T2 reviewed as CONDITIONALLY ACCEPTED at 3dff949 by Technical Lead; T2-R authorized GO (findings T2-F01..T2-F05). Task 3 remains NO-GO until T2-R is independently accepted.",
+  "authority": "AUTHORITATIVE for EVENT-008 / EVENT-012 / EVENT-021 test-title references. This T2-R artifact supersedes the original W1-P1.5-T2-ASYNC-DATA-LOADING-EVENTS-EVIDENCE.json for those references; that earlier artifact is retained as a HISTORICAL record of the 3dff949 submission and its (now superseded) test titles and regression count must not be treated as the current state.",
+  "supersedesTestTitleReferences": {
+    "EVENT-008": "original T2 title 'emits an acknowledged loadMore event with the request kind after a page is available' is superseded by the T2-R title (see testIdChanges.EVENT-008)",
+    "EVENT-012": "original T2 title 'emits a single bounded diagnostic (source \"event\") for a cursor resource-limit and not more' is superseded by the T2-R title (see testIdChanges.EVENT-012)",
+    "EVENT-021": "original T2 title 'emits dataRequestCancel with reason \"query-changed\" ...' is superseded for traceability by the T2-R title 'emits dataRequestCancel with reason \"config-changed\" ...' (see testIdChanges.EVENT-021)"
+  },
+  "scopeContracts": [
+    "EVENT-004",
+    "EVENT-005",
+    "EVENT-006",
+    "EVENT-008",
+    "EVENT-012",
+    "EVENT-020",
+    "EVENT-021",
+    "EVENT-022"
+  ],
+  "surfaces": {
+    "config": "updateConfig({ dataLoading:{protocol:'acknowledged',searchMode,paginationMode,firstPage,fetchLimit,minSearchCharacters} })",
+    "methods": [
+      "startDataLoading()",
+      "getDataLoadingState()",
+      "completeDataRequest(completion)"
+    ],
+    "events": [
+      "search",
+      "loadMore",
+      "error",
+      "diagnostic",
+      "dataProjection",
+      "dataRequestCancel",
+      "dataLoadingConfigError",
+      "pageLoaded (negative)"
+    ],
+    "callbacks": [
+      "onError",
+      "onDataRequestCancel"
+    ],
+    "publicInput": "[part=\"input\"] value + input event; .load-more-button click (public fallback when no IntersectionObserver)",
+    "privateSeamsUsed": "NONE — harness-integrity grep confirms no _state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/*ForTest/as-any access in the spec"
+  },
+  "testCounts": {
+    "jsdom": 19,
+    "chromium": 0,
+    "total": 19
+  },
+  "renderingModel": "jsdom; deterministic settlement via vi.waitFor polling public getDataLoadingState() (projectionPending false + terminal status) and awaited public events. No arbitrary sleeps.",
+  "findingsResolved": {
+    "T2-F01": {
+      "severity": "Medium",
+      "contract": "EVENT-008",
+      "problem": "acknowledged load-more assertion compared detail.page against the current snapshot's active request with a `? :` self-fallback, degrading to expect(detail.page).toBe(detail.page) when the request was absent/non-page.",
+      "resolution": "Test now establishes the active request explicitly (not null; kind='loadMore'; position.mode='page'; page=2; requestId != initial search requestId) BEFORE asserting detail. detail.page=2, detail.request.position={mode:'page',page:2}, detail.request.requestId/queryGeneration pinned to the active request. No self-comparison. Fails if no page-mode load-more request exists.",
+      "test": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event carrying a fresh page-mode load-more request at page 2"
+    },
+    "T2-F02": {
+      "severity": "Medium",
+      "contract": "EVENT-012",
+      "problem": "Only 'one diagnostic for one completion' was asserted; the diagnostic payload was not checked, and boundedness was overstated (a replayed completion re-emits). The acknowledgedProjectionFailed diagnostic was not documented.",
+      "resolution": "Asserts the resource-limit diagnostic payload detail.{reason:'cursor-token-size',maxCursorTokenBytes:1024,actualCursorTokenBytes:50000,requestId} and the snapshot resourceLimit mirror. Proves boundedness is per-result not global (replayed completion -> 2 diagnostics). A healthy-success test asserts 0 diagnostics and documents that acknowledgedProjectionFailed is NOT characterized. EVENT-012 reclassified Existing -> Partial. No private failure injection introduced.",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a resource-limit diagnostic carrying source, name, bounded detail, and mirrors it in the snapshot",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits one diagnostic per resource-limit result — a replayed completion re-emits (boundedness is per-result, not global)",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits no diagnostic on a healthy acknowledged success (projection-failure diagnostic not exercised)"
+      ]
+    },
+    "T2-F03": {
+      "severity": "Low",
+      "contract": "EVENT-021",
+      "problem": "Test claimed the callback receives the 'same detail object' but asserted toEqual (structural, not reference). config-changed and disconnected omitted queryGeneration.",
+      "resolution": "Callback test now uses toBe (reference identity — probe-confirmed true) and asserts event-before-callback ordering. config-changed and disconnected now assert queryGeneration plus the exact key set {queryGeneration,reason,requestId} and cardinality 1.",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"config-changed\" when a threshold change invalidates an active request",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"disconnected\" when the element is removed while a request is active",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#invokes onDataRequestCancel with the same detail object (reference identity) and emits before the callback"
+      ]
+    },
+    "T2-F04": {
+      "severity": "Low (evidence)",
+      "contract": "EVENT-020",
+      "problem": "Ledger stated the failed projection is 'only reachable via _failNextAcknowledgedProjectionForTest'; production has a general projection-exception path calling _recordAcknowledgedProjectionFailure, so the absolute claim was overstated.",
+      "resolution": "Narrowed to: no deterministic PUBLIC trigger for the failed-projection variant was established in this increment; existing private-seam tests exercise it but do not qualify as public-surface evidence. EVENT-020 stays Partial.",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits one dataProjection \"complete\" whose detail matches the request id, generation, and attempt",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits exactly one dataProjection per accepted completion across successive requests"
+      ]
+    },
+    "T2-F05": {
+      "severity": "Low (evidence)",
+      "contract": "EVENT-005",
+      "problem": "Negative runtime tests could be read as proving the event can never be emitted; the source-inspection finding (declared, no dispatch site) was conflated with the runtime observation.",
+      "resolution": "Tests renamed to '(bounded runtime observation)' and an in-spec boundary note separates the runtime negative from the source inspection; neither over-claims. EVENT-005 stays Missing; DEVIATION-02 ADR candidate.",
+      "tests": [
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#does not emit pageLoaded at an acknowledged page completion (bounded runtime observation)",
+        "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#does not emit pageLoaded at a legacy load-more completion (bounded runtime observation)"
+      ]
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "EVENT-004": "Existing",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Existing",
+      "EVENT-012": "Existing",
+      "EVENT-020": "Partial",
+      "EVENT-021": "Existing",
+      "EVENT-022": "Existing"
+    },
+    "to": {
+      "EVENT-004": "Existing",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Existing",
+      "EVENT-012": "Partial",
+      "EVENT-020": "Partial",
+      "EVENT-021": "Existing",
+      "EVENT-022": "Existing"
+    },
+    "distributionBefore": {
+      "Existing": 63,
+      "Partial": 32,
+      "Diagnostic": 13,
+      "Missing": 4
+    },
+    "distributionAfter": {
+      "Existing": 62,
+      "Partial": 33,
+      "Diagnostic": 13,
+      "Missing": 4
+    },
+    "rationale": "Only EVENT-012 reclassifies (Existing -> Partial) because the acknowledgedProjectionFailed diagnostic path is not publicly characterizable in this increment; the resource-limit path is now fully pinned. All other contracts keep their submitted classifications (strengthened assertions only). This matches the Lead's expected conservative distribution (62/33/13/4); no IDs added or removed."
+  },
+  "testIdChanges": {
+    "EVENT-008": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event carrying a fresh page-mode load-more request at page 2",
+    "EVENT-012": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a resource-limit diagnostic carrying source, name, bounded detail, and mirrors it in the snapshot",
+    "EVENT-021": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"config-changed\" when a threshold change invalidates an active request"
+  },
+  "gates": {
+    "jsdom": "19/19 T2-R passed",
+    "chromium": "not required (event detail contracts observable in jsdom; no layout parity claimed)",
+    "coreRegression": "1006 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; testIds resolve to existing spec files; byCoverage 62/33/13/4)",
+    "eslint": "clean",
+    "harnessIntegrity": "no private seam access (_state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/*ForTest/as-any) in T2-R spec",
+    "productionIsolation": "0 files changed in packages/core/src (or engine/adapters) vs 3dff949",
+    "acceptedPriorTestsUnchanged": "0 files changed vs 3dff949 (phase-2e-*, phase-2f-*, data-loading/*, public-config-integration, w1-p1-5-t1-*)"
+  },
+  "boundaries": {
+    "noProductionChange": true,
+    "noPrivateSeamAssertions": true,
+    "publicSurfaceOnly": true,
+    "noFixedSleeps": true
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "EVENT-020 'failed' projection and its acknowledgedProjectionFailed diagnostic are not publicly triggerable in this increment; recorded as a public-unobservable gap per plan §7 risk 2 (analogous to ATTR-023). The absolute 'only reachable via private seam' claim is replaced with 'no deterministic public trigger established'.",
+    "EVENT-012 boundedness is per-result, not global: a replayed completion against the still-active request re-emits a resource-limit diagnostic (proven in-spec).",
+    "EVENT-005 runtime negative and the declared-only source inspection are recorded as separate, non-over-claiming evidence.",
+    "Acknowledged load-more is driven via the public .load-more-button (jsdom has no IntersectionObserver); legacy load-more requires infiniteScroll:false + searchable:false so the button (not the sentinel) renders."
+  ]
+}

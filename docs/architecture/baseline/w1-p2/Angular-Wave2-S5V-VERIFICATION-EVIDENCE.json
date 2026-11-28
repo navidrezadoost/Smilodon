@@ -1,0 +1,228 @@
+{
+  "artifactId": "Angular-Wave2-S5V-VERIFICATION-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S5-V — SSR/Hydration Test-Only Verification",
+  "acceptedBaselineCommit": "2a9bd9985315507cefc215d30dbebf0c286466c4",
+  "startingCommit": "ce86fcd",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S5-V directive: GO — test-only verification. Reproducible server-render and real-browser hydration tests using the BUILT Angular package via the public distribution entry; validate the smilodon-select host shadow-root collision in a real browser (not only jsdom); capture hydration errors explicitly. Distinguish import safety / SSR rendering / hydration correctness. WebKit/environmental failures classified as environmental limitations, NOT app defects. Developer-only deps/fixtures/test-config authorized where strictly necessary. Production behavior/selector/core/runtime-deps/contracts MUST NOT change.",
+  "verificationType": "test-only",
+  "productionChanges": false,
+  "testChanges": true,
+  "dependencyChanges": true,
+  "dependencyNotes": "@angular/platform-server@21.2.26 added as workspace devDependency of packages/angular to perform a real Angular SSR render. Developer-only; not added to the published package runtime deps (dist runtime deps unchanged: tslib only; peers unchanged).",
+  "testConfigChanges": "packages/angular/vitest.config.ts excludes packages/angular/tests/ssr/** (Playwright-run suite) so the jsdom vitest run stays green (6 files / 62 tests unchanged).",
+
+  "hypothesisVerdicts": {
+    "H1": {
+      "statement": "Foreign host shadow root (tag collision) causes no visible artifact / no Angular hydration mismatch",
+      "verdict": "CONFIRMED",
+      "engines": ["chromium", "firefox"],
+      "class": "verified-real-browser"
+    },
+    "H2": {
+      "statement": "Hydration does not re-run writeValue in a way that changes observable selection timing; hydration is not a user edit",
+      "verdict": "CONFIRMED",
+      "engines": ["chromium", "firefox"],
+      "class": "verified-real-browser",
+      "observed": "reactive initial value 'b' applied; control untouched AND pristine after hydration; no feedback (change) echo"
+    },
+    "H3": {
+      "statement": "SSR serialization shape matches the derived placeholder exactly",
+      "verdict": "CONFIRMED",
+      "class": "verified-server-render",
+      "observed": "each <smilodon-select> host contains exactly one empty <enhanced-select> child; no shadow/combobox/ARIA server-side"
+    }
+  },
+
+  "blockerResolution": {
+    "B-S5-1": {
+      "description": "No real SSR render + no hydration e2e",
+      "s5Class": "verification gap",
+      "status": "CLOSED",
+      "resolution": "Added real renderModule() server render (S5-V1) and real-browser hydration e2e (S5-V2)"
+    },
+    "B-S5-2": {
+      "description": "Tag-name collision <smilodon-select> benignity under real-browser hydration",
+      "s5Class": "highest technical risk, unverified in engines",
+      "status": "CLOSED for chromium+firefox; UNVERIFIED-ENVIRONMENTAL for webkit",
+      "resolution": "Collision characterized in-engine (host gains a foreign shadow root when core upgrades); no hydration mismatch and no visible artifact in Chromium + Firefox. Not fixed; selector unchanged; core registration not suppressed."
+    }
+  },
+
+  "serverRender": {
+    "id": "S5-V1",
+    "status": "PASS",
+    "method": "renderModule(SsrAppModule, ...) from @angular/platform-server against the BUILT package (public entry via workspace symlink)",
+    "reproduce": "cd packages/angular/tests/ssr && node --import ./register-loader.mjs render-server.mjs",
+    "checksPassed": 9,
+    "checksTotal": 9,
+    "htmlBytes": 644,
+    "smilodonHosts": 2,
+    "placeholderTags": 2,
+    "hydrationMarkers": true,
+    "coreEvaluatedServerSide": false,
+    "checks": [
+      "server produced non-empty HTML (644 bytes)",
+      "two <smilodon-select> hosts serialized (found 2)",
+      "each host serializes an <enhanced-select> placeholder (found 2)",
+      "NO shadow/combobox internals server-side (core not evaluated): no role=combobox / role=listbox",
+      "empty <enhanced-select></enhanced-select> placeholders (no children)",
+      "Angular SSR/hydration markers present (ng-version/ng-server-context/ngh)",
+      "provideServerRendering exported (platform-server active)",
+      "platformServer exported (platform-server active)",
+      "@smilodon/core NOT evaluated on the server"
+    ],
+    "serializedRegion": "<app-ssr-shell ng-version=\"21.2.26\" ng-server-context=\"other\">\n<app-ssr>\n<smilodon-select id=\"plain\" placeholder=\"Pick one\" _nghost-ng-c1503081821=\"\">\n<enhanced-select _ngcontent-ng-c1503081821=\"\">\n</enhanced-select>\n</smilodon-select>\n<smilodon-select id=\"reactive\" _nghost-ng-c1503081821=\"\" class=\"ng-untouched ng-pristine ng-valid\">\n<enhanced-select _ngcontent-ng-c1503081821=\"\">\n</enhanced-select>\n</smilodon-select>\n</app-ssr>\n</app-ssr-shell>"
+  },
+
+  "hydration": {
+    "id": "S5-V2",
+    "status": "PASS",
+    "method": "Server HTML from S5-V1 served with a module bundle of the BUILT package; client bootstraps with provideClientHydration(withEventReplay()) on the same app-ssr-shell selector; Playwright drives 4 specs across engine projects",
+    "reproduce": "cd packages/angular/tests/ssr && NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 npx playwright test --config=playwright.ssr.config.ts --project=ssr-hydration-chromium --project=ssr-hydration-firefox",
+    "testCount": 8,
+    "passed": 8,
+    "durationSeconds": 8.1,
+    "engines": {
+      "chromium": {
+        "status": "PASS",
+        "specs": 4,
+        "passed": 4
+      },
+      "firefox": {
+        "status": "PASS",
+        "specs": 4,
+        "passed": 4
+      },
+      "webkit": {
+        "status": "UNVERIFIED-ENVIRONMENTAL",
+        "class": "unverified-due-to-environmental-limitations",
+        "reason": "Host system missing dependencies to run WebKit browsers (libicu74, libxml2, libflite1, ...). Passwordless sudo unavailable in sandbox; launch fails before any test body runs. NOT an application defect.",
+        "notAppDefect": true
+      }
+    },
+    "specs": [
+      {
+        "name": "hydration completes with no mismatch errors and preserves server DOM shape (H1/H3)",
+        "asserts": ["window.__hydrateError === null", "window.__hydrated === true", "two hosts present", "real combobox lives inside <enhanced-select> shadow", "host <smilodon-select> carries a shadow root (collision characterized)", "no visible artifact / no mismatch"],
+        "chromium": "PASS",
+        "firefox": "PASS"
+      },
+      {
+        "name": "reactive form applies initial value without a programmatic feedback echo (H2)",
+        "asserts": ["reactive value 'b'", "control untouched AND pristine after hydration", "no spurious (change)"],
+        "chromium": "PASS",
+        "firefox": "PASS"
+      },
+      {
+        "name": "selection works after hydration and forwards change",
+        "asserts": ["option-container click opens popup", "selecting Alpha sets value 'a'", "forwarded core change reaches Angular for hostId 'plain'"],
+        "chromium": "PASS",
+        "firefox": "PASS"
+      },
+      {
+        "name": "focus/touched semantics correct after hydration",
+        "asserts": ["synthetic focusin + focusout(relatedTarget: document.body) marks ng-touched", "not touched on hydration"],
+        "chromium": "PASS",
+        "firefox": "PASS"
+      }
+    ]
+  },
+
+  "tagCollision": {
+    "tag": "smilodon-select",
+    "status": "CHARACTERIZED-BENIGN-UNDER-HYDRATION",
+    "engines": ["chromium", "firefox"],
+    "jsdomAlsoConfirmed": true,
+    "detail": "Angular component selector 'smilodon-select' collides with core NativeSelectElement defined as 'smilodon-select' (native-select.ts:562-563). When the deferred import('@smilodon/core') runs, the Angular host is upgraded (attachShadow) by NativeSelectElement; a foreign shadow root attaches to the host. The real combobox remains inside the <enhanced-select> shadow root. No hydration mismatch and no visible artifact observed.",
+    "fixed": false,
+    "selectorChanged": false,
+    "coreRegistrationSuppressed": false,
+    "note": "Per directive: preserve minimal reproduction; do NOT change selectors or suppress core registration."
+  },
+
+  "areas": {
+    "serverImportSafety": {
+      "status": "PASS",
+      "class": "unchanged-from-S5",
+      "note": "Not re-litigated; import safety already verified at S5. S5-V is about actual SSR render + hydration."
+    },
+    "ssrMarkup": {
+      "status": "PASS",
+      "class": "verified (real render)",
+      "observed": "Derived placeholder reproduced exactly via real renderModule(); core not evaluated; hydration markers present"
+    },
+    "hydrationCorrectness": {
+      "status": "PASS",
+      "class": "verified-real-browser (chromium+firefox); webkit unverified-environmental"
+    },
+    "tagCollision": {
+      "status": "CHARACTERIZED-BENIGN",
+      "class": "verified-real-browser (chromium+firefox)"
+    },
+    "compilerFacade": {
+      "status": "INFORMATIONAL",
+      "class": "test-tooling",
+      "note": "The partial-compiled @angular/* ESM workspace requires the @angular/compiler JIT publishFacade fallback for the client bundle; preserved via publish-facade.ts and esbuild ignoreAnnotations. Test-only."
+    }
+  },
+
+  "gateResults": {
+    "angularJsdom": { "command": "npx vitest run --config packages/angular/vitest.config.ts", "result": "6 files / 62 tests passed" },
+    "angularSsr": { "command": "npx vitest run --config packages/angular/vitest.ssr.config.ts", "result": "4 passed" },
+    "consumer": { "command": "cd packages/angular && node ./tests/consumer/run-consumer.mjs", "result": "PASSED" },
+    "buildAngular": { "command": "npm run build:angular", "result": "PASS" },
+    "angularTsc": { "command": "npx tsc -p packages/angular/tsconfig.json --noEmit", "result": "0 errors" },
+    "eslint": { "command": "npx eslint packages/angular/src packages/angular/tests", "result": "0 errors" },
+    "coreJsdom": { "command": "npx vitest run --config packages/core/vitest.config.ts", "result": "1071 passed | 1 skipped" },
+    "coreSsr": { "command": "npx vitest run --config packages/core/vitest.ssr.config.ts", "result": "10 passed" },
+    "coreTsc": { "command": "npx tsc -p packages/core/tsconfig.json --noEmit", "result": "44 errors (pre-existing, unchanged)" },
+    "traceability": { "command": "python3 docs/architecture/baseline/w1-p1/verify_traceability.py", "result": "129/129 PASS" }
+  },
+
+  "reproducibleArtifacts": {
+    "location": "packages/angular/tests/ssr/",
+    "files": [
+      "ssr-app.component.ts",
+      "ssr-server.module.ts",
+      "render-server.mjs",
+      "build-fixture.mjs",
+      "tsconfig.server.json",
+      "tsconfig.client.json",
+      "publish-facade.ts",
+      "hydrate-client.ts",
+      "hydrate-server.mjs",
+      "hydration.spec.ts",
+      "playwright.ssr.config.ts",
+      "global-setup.ts",
+      ".gitignore"
+    ],
+    "generatedNotCommitted": [".aot-out/", ".aot-client/", "node_modules/"]
+  },
+
+  "compliance": {
+    "productionChanges": false,
+    "testChanges": true,
+    "dependencyChanges": true,
+    "dependencyChangesScope": "devDependency only (@angular/platform-server); published runtime deps unchanged",
+    "productionSourceUnchangedVs": "2a9bd99",
+    "publicSelectorChanged": false,
+    "coreEngineChanged": false,
+    "coreRegistrationSuppressed": false,
+    "runtimeDepsChanged": false,
+    "existingContractBehaviorChanged": false,
+    "headWas": "ce86fcd",
+    "webkitClassification": "unverified-due-to-environmental-limitations (not app defect)"
+  },
+
+  "recommendation": {
+    "s5vDecision": "VERIFIED",
+    "summary": "Server rendering (H3) and real-browser hydration (H1/H2) confirmed on Chromium and Firefox using the built package. WebKit unverified due to missing host system libraries (environmental). The smilodon-select host shadow-root collision is real in-engine yet benign under hydration (no mismatch, no visible artifact); it is characterized, not fixed; selector and core registration unchanged. Production source identical to 2a9bd99.",
+    "s5ImplementationDecision": "Still separate gate. This slice verifies readiness; it does not authorize S5 production implementation.",
+    "openItems": [
+      "WebKit verification once host system libraries are installed (npx playwright install-deps); project already wired in playwright.ssr.config.ts",
+      "S4 async-provenance limitation remains documented and not silently resolved"
+    ]
+  }
+}
