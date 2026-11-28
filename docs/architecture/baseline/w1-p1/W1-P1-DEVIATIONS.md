@@ -280,3 +280,30 @@ Technical Lead review of Task 3 (accepted at `0236512`) fixed the disposition of
 - **P1.3-D06:** establishes DOM/navigation ordering for the tested configuration only, **not** every possible visual projection path.
 
 **Preserved limitations (unchanged):** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); Chromium AX tree is the sole accessibility basis (NVDA/JAWS/VoiceOver out of scope). Traceability record count (112) unchanged.
+
+---
+
+## W1-P1.4 closure — gap dispositions (Task 4)
+
+W1-P1.4 characterized the 21 wiring-completeness contracts. Three remain non-`Existing` and are recorded here as finalized gaps. **None authorizes a production change, removal, ADR, or remediation during W1-P1.** Closure detail: `W1-P1.4-CLOSURE-REPORT.md` §5, `W1-P1.4-CLOSURE-EVIDENCE.json` (`gaps`), ledger §19.2.
+
+| ID | Contract | Final class | Disposition | Future owner |
+| --- | --- | --- | --- | --- |
+| **P1.4-GAP-01** | PART-009 (chip parts) | `Partial` | Four stable chip tokens (`chip`, `chip-label`, `chip-remove`, `chip-remove-icon`) characterized through the public surface. The **`chip-exiting`** transient is not reachable through the public surface; preserved as an **unobserved transient, explicitly NOT a confirmed implementation defect**. Upgrade deferred. | Future chip-exit observation design. No ADR; no production change. |
+| **P1.4-GAP-02** | ATTR-023 (`data-virtual-spacer`) | `Diagnostic` | Public 2,000-item virtualizable list renders **zero** spacers at tested settled-render checkpoints. Guarded virtualizer/spacer is reachable only via private test seams; no public config/method establishes the window. **Characterization gap** — positive spacer behavior remains outstanding and is not forced with a private stub. | Future virtualization public-API design. No ADR; no production change. |
+| **P1.4-GAP-03** | CONFIG-023 (`expandable`) | `Missing` | `expandable` is **declared and defaulted in global config but not consumed by the component** in the examined baseline; enabling/toggling produces no expansion UI, no expand part token, byte-identical DOM. **Future Product Decision required:** (a) **implement** the declared capability in a separately authorized production increment, **or** (b) **deprecate/remove** the unsupported configuration via a separately authorized API-contract decision. | Future product / API-contract decision. **Neither option authorized now.** |
+
+### Lifecycle evidence scoping (W1-P1.4-T3-R — carried into closure)
+
+Per Lead review of Task 3 (findings T3-F01/T3-F02, resolved in `490cb77`), the LIFECYCLE-002/003/004 characterizations record **observable behavior only**:
+
+- LIFECYCLE-003 does **not** claim that a document listener was removed/aborted — post-disconnect the popup is already closed, so remaining closed after outside input is consistent with either removed listeners or an already-closed component.
+- LIFECYCLE-004 does **not** claim exactly one internal document listener exists — the public `close`-event count (one per open across cycles) strengthens the behavioral contract but does not establish listener cardinality.
+
+This is not a defect; it is an explicit evidence boundary. No production change.
+
+### Deferred residuals (out of upgrade scope)
+
+`EVENT-009`, `CONFIG-001` (`selection.mode`), `CONFIG-003` (`disabledOptionBehavior`), `CONFIG-004` (`maxSelections`), `CONFIG-026` (callbacks) remain `Partial` — deferred to a separate selection/config increment. Not upgraded by this closure.
+
+**Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); no comprehensive lifecycle resource-cleanup claim; no implementation-completeness claim. Traceability record count (112) unchanged.

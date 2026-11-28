@@ -760,3 +760,45 @@ No deviation authorizes a production change or an ADR during W1-P1.
 - **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); AX-tree-only accessibility findings (NVDA/JAWS/VoiceOver out of scope); Ctrl/Cmd+A callback-count and D06 configuration generality are explicit coverage boundaries.
 
 _End of W1-P1.3 (Task 4 closure). W1-P1.3 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom 45 (carried), Chromium 55/55, core 922+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
+
+---
+
+## 19. W1-P1.4 closure — contract-wiring characterization
+
+Task 4 closes W1-P1.4 by reconciling Tasks 1/1-R/2/2-R/3/3-R into one statement of the wiring-completeness contract for `EnhancedSelect`. **No production source changed; no accepted behavioral test was modified; no test added by this closure.** The authoritative closure is `W1-P1.4-CLOSURE-REPORT.md` + `W1-P1.4-CLOSURE-EVIDENCE.json`; this section is the ledger-side summary.
+
+- **Increments reconciled.** Task 1 `0cbb58b` · Task 1-R `c174876` · Task 2 `7ae3193` · Task 2-R `9b10f0b` · Task 3 `5b31f44` · Task 3-R `490cb77`. Lineage linear.
+- **Test inventory.** 52 P1.4 characterization tests: 40 jsdom (`w1-p1-4-t1-contract-wiring.spec.ts` 16, `w1-p1-4-t2-attribute-state.spec.ts` 9, `w1-p1-4-t3-api-event-lifecycle.spec.ts` 15) and 12 Chromium (`attribute-state.t2.spec.ts` 5, `contract-wiring.t2.spec.ts` 7). Public surface only.
+- **Bases.** jsdom (dispatched public-input events) + certified Chromium 156.0.8078.4 (genuine trusted input). ATTR-021 (motion) and ATTR-013 (override) are Chromium-confirmed; ATTR-023 spacer is Chromium-negative-only.
+
+### 19.1 The 21 targeted contracts — final classification
+
+| Group | Contracts | Final class |
+| --- | --- | --- |
+| Part tokens | PART-001/002/003/005/006/007/008/010/011 | Existing (9) |
+| Part tokens | PART-009 (chip) | **Partial** — 4 stable tokens characterized; `chip-exiting` unobserved |
+| Attributes | ATTR-012/013/021/022 | Existing (4) |
+| Attributes | ATTR-023 (virtual spacer) | **Diagnostic** — not publicly reachable |
+| API / Event | API-002, EVENT-011 | Existing (2) |
+| Lifecycle | LIFECYCLE-002/003/004 | Existing (3) — observable behavior |
+| Config | CONFIG-023 (`expandable`) | **Missing** — declared/defaulted, not consumed |
+
+**21-target disposition: Existing 18 · Partial 1 · Diagnostic 1 · Missing 1.**
+
+### 19.2 Gap dispositions (preserved)
+
+| Contract | Class | Disposition | Owner |
+| --- | --- | --- | --- |
+| **PART-009** | `Partial` | 4 stable chip tokens characterized; `chip-exiting` transient not publicly reachable — **unobserved transient, not a confirmed defect**. Upgrade deferred to a future increment that can observe the exit deterministically. | Future chip-exit observation design |
+| **ATTR-023** | `Diagnostic` | Public 2,000-item list renders 0 `data-virtual-spacer` at tested checkpoints; spacer reachable only via private seams. **Characterization gap** — positive behavior not forced with a private stub. | Future virtualization public-API design |
+| **CONFIG-023** | `Missing` | `expandable` declared/defaulted but not consumed; no public effect. **Future Product Decision required:** (a) implement in a separately authorized production increment, **or** (b) deprecate/remove via a separately authorized API-contract decision. | Future product/API-contract decision |
+
+None authorizes a production change, removal, or ADR during W1-P1.
+
+### 19.3 Traceability & limitations
+
+- **112 records.** Distribution **Existing 56 · Partial 30 · Diagnostic 22 · Missing 4**. `verify_traceability.py` PASS (112, unique, locators in bounds). All 21 P1.4-targeted `testId` references resolve to literal `it()` titles. 52 concrete-ref records all cite existing files; 15 pre-existing P1.2 label-style records are unchanged since before P1.4 and out of Task 4 scope (not rewritten).
+- **Deferred out of upgrade scope:** EVENT-009, CONFIG-001, CONFIG-003, CONFIG-004, CONFIG-026 remain `Partial`.
+- **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); LIFECYCLE results are observable-only (no internal listener-cardinality/cleanup claim); no implementation-completeness claim.
+
+_End of W1-P1.4 (Task 4 closure). W1-P1.4 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom P1.4 40 (carried), Chromium P1.4 12/12, core 962+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
