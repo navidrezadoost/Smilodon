@@ -1,0 +1,61 @@
+{
+  "artifactId": "Angular-Wave2-S1-SCAFFOLD-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S1 — package scaffold only",
+  "startingCommit": "8cf634d96c48e120014398efb78d79edfd748689",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead directive: GO S1 package scaffold only. No standalone wrapper, CVA, event bridge, demo, or SSR production remediation. @smilodon/core as existing dependency contract (peer), no second runtime copy.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "files": {
+    "package.json": "manifest (@smilodon/angular; peer @smilodon/core ^1.13.0 + @angular/core >=16; build = vite build + tsc emitDeclarationOnly + cleanup)",
+    "tsconfig.json": "extends root; declaration emit to dist/types",
+    "vite.config.ts": "lib build ESM+CJS; external @smilodon/core + @angular/core; alias core->src for type resolution",
+    "scripts/cleanup-types.js": "flatten tsc declarations to dist/types/index.d.ts (vanilla-style)",
+    "src/index.ts": "public export surface: type-only core re-exports + adapter-owned exports",
+    "src/types.ts": "adapter-owned types + frozen descriptor; no core/Angular runtime import",
+    "README.md": "scope + import-safety discipline"
+  },
+  "rootWiring": {
+    "package.json": "added build:angular script",
+    "tsconfig.json": "added @smilodon/angular path mapping",
+    "autoPickedUp": "root build uses --workspaces --if-present"
+  },
+  "publicExportSurface": {
+    "typeOnlyCoreReexports": ["GroupedItem", "SelectEventDetail", "ChangeEventDetail", "SearchEventDetail", "LoadMoreEventDetail", "ClearEventDetail", "OpenEventDetail", "CloseEventDetail", "RemoveEventDetail", "DiagnosticEventDetail", "EmptyStateContext", "SelectInstanceConfig"],
+    "adapterOwned": ["SmilodonSelectItem", "SmilodonAngularAdapterInfo", "SMILODON_ANGULAR_ADAPTER"]
+  },
+  "importSafety": {
+    "discipline": "All @smilodon/core re-exports are type-only (export type); erased at build; runtime bundle has NO require/import of @smilodon/core.",
+    "rule": "No value import of @smilodon/core in S1 sources.",
+    "rationale": "Lets S2 add browser-deferred dynamic import('@smilodon/core') without static top-level value import that would re-trigger API-075 no-DOM throw."
+  },
+  "peerDependencies": {
+    "@smilodon/core": "^1.13.0",
+    "@angular/core": ">=16.0.0"
+  },
+  "acceptanceGates": {
+    "A1_buildsFromClean": "PASS",
+    "A2_typeEntryPoints": "PASS",
+    "A3_noRuntimeCoreImport": "PASS (grep no match on dist/index.js + dist/index.cjs)",
+    "A4_noAngularRuntimeImport": "PASS (no @angular code import in src)",
+    "A5_angularTsc": "PASS (exit 0, 0 errors)",
+    "A6_coreTsc": "PASS (44 pre-existing errors unchanged; none reference angular)",
+    "A7_coreJsdom": "PASS (1071 passed | 1 skipped, 71 files)",
+    "A8_eslint": "PASS (exit 0)",
+    "A9_traceability": "PASS (129 IDs reconcile)",
+    "A10_lockUnchanged": "PASS (package-lock.json untouched)",
+    "A11_distIgnored": "PASS (dist gitignored)"
+  },
+  "buildArtifacts": {
+    "dist/index.js": "ESM 0.28kB; only SMILODON_ANGULAR_ADAPTER; no core import",
+    "dist/index.cjs": "CJS 0.39kB; only SMILODON_ANGULAR_ADAPTER; no core import",
+    "dist/types/index.d.ts": "flat declaration entry",
+    "dist/types/types.d.ts": "adapter-owned declarations",
+    "committed": false,
+    "note": "dist is gitignored"
+  },
+  "nonGoals": ["standalone wrapper", "ControlValueAccessor", "event bridge", "application demo", "SSR production remediation", "core changes"],
+  "disclosedLimitation": "Repository has 44 pre-existing @smilodon/core TypeScript errors; unchanged by S1 and none reference angular; pre-existing condition not attributable to S1.",
+  "nextSlice": "S2 — browser-deferred standalone component (requires separate authorization; Angular Wave 2 S2-S6 currently NO-GO)."
+}

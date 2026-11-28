@@ -14,6 +14,7 @@
     "build:react": "npm run build -w @smilodon/react",
     "build:react-native": "npm run build -w @smilodon/react-native",
     "build:solid": "npm run build -w @smilodon/solid",
+    "build:angular": "npm run build -w @smilodon/angular",
     "build:vue": "npm run build -w @smilodon/vue",
     "build:svelte": "npm run build -w @smilodon/svelte",
     "build:vanilla": "npm run build -w @smilodon/vanilla",
