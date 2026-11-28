@@ -26,9 +26,9 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 38,
+      "Existing": 48,
       "Partial": 29,
-      "Diagnostic": 41,
+      "Diagnostic": 31,
       "Missing": 4
     },
     "byTargetIncrement": {
@@ -1098,10 +1098,10 @@
       "id": "PART-001",
       "behavior": "part button (token: button)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-001: the input container carries part=\"button\" and lives in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1113,10 +1113,10 @@
       "id": "PART-002",
       "behavior": "part input (token: input)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-002: the text field carries part=\"input\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1128,10 +1128,10 @@
       "id": "PART-003",
       "behavior": "part listbox (token: listbox)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-003: the popup carries part=\"listbox\" and is distinct from the input",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1158,10 +1158,10 @@
       "id": "PART-005",
       "behavior": "part clear-button (token: clear-button)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1173,10 +1173,10 @@
       "id": "PART-006",
       "behavior": "part clear-icon (token: clear-icon)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1188,10 +1188,10 @@
       "id": "PART-007",
       "behavior": "part option (token: option)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-007: each rendered option carries part=\"option\" when the popup is open",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1211,10 +1211,10 @@
       "id": "PART-008",
       "behavior": "part group-header (token: group-header)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-008: grouped items render one part=\"group-header\" per group (flat list renders none — T1-03)",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1226,10 +1226,10 @@
       "id": "PART-009",
       "behavior": "chip parts (tokens: chip, chip-label, chip-remove, chip-remove-icon, chip-exiting)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-009: a selected multi value renders chip + chip-label + chip-remove + chip-remove-icon",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1265,10 +1265,10 @@
       "id": "PART-010",
       "behavior": "part no-results (token: no-results)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-010: an empty result set renders part=\"no-results\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1280,10 +1280,10 @@
       "id": "PART-011",
       "behavior": "loading parts (tokens: loading, loading-content, loading-icon, loading-message, loading-spinner)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-011: an active busy state renders loading + loading-icon/loading-message/loading-content/loading-spinner",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
