@@ -643,9 +643,11 @@ _End of W1-P1.3 Task 1._
 
 ## 16. W1-P1.3 Task 2 — real-browser keyboard and accessibility verification
 
-Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through **real trusted input in Chromium** (Playwright `locator.press`/`focus`, plus CDP `Accessibility.getFullAXTree`), rather than jsdom synthetic events. It characterizes browser behavior; it **does not repair** anything and **does not** change any coverage class (the record count stays **112**; only P1.3-D01/D02/D03 narrative is clarified and P1.3-D04 is added).
+Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through **real trusted input in Chromium** (Playwright `locator.press`/`focus`, plus CDP `Accessibility.getFullAXTree`), rather than jsdom synthetic events. It characterizes browser behavior; it **does not repair** anything and **does not** change any coverage class (the record count stays **112**).
 
-- **Harness.** `tests/e2e/w1-p1-3-t2/playwright.config.ts` (npm script `test:e2e:p13-t2`), spec `keyboard-accessibility.t2.spec.ts` (**31 tests**), helpers `harness.ts`. Deterministic single-project Chromium, workers=1, retries=0, headless. Browser: **Google Chrome for Testing 156.0.8078.4** (Playwright pinned Chromium-1248; the 1.59.1 default Chromium-1217 is geo-blocked on this environment's CDN — recorded in the config and evidence).
+> **W1-P1.3-T2-R note (correction).** Technical Lead review conditionally accepted Task 2 and directed a bounded correction (**T2-R**) that re-establishes three claims against the corrected evidence. (T2-F01, blocking) The original Tab test appended its reference button **before** the select, so the "no focus advance" result was merely end-of-document fallback and never asserted the destination — it was invalid. The corrected test mounts a genuinely-tabbable button **after** the select (plus a closed-combobox control case) and asserts the actual focus destination; in real Chromium **Tab advances focus normally** (closed → next tabbable; open → closes then advances). **P1.3-D04 is therefore WITHDRAWN** — the real behavior is standard and no deviation exists. (T2-F02) The "jsdom artifact" attribution for D03 is corrected to **withhold the cause**: the browser observation (first-option pre-activation on open) is preserved, but "why jsdom differed" is not asserted. (T2-F03) The D02 AX claim is now backed by an assertion on the Chromium AX tree (`listbox.busy`) — or the claim is narrowed to DOM. (Reproducibility) The suite enforces the recorded browser version for a certification run and distinguishes any override run. Final matrix: **32 tests, all PASS**.
+
+- **Harness.** `tests/e2e/w1-p1-3-t2/playwright.config.ts` (npm script `test:e2e:p13-t2`), spec `keyboard-accessibility.t2.spec.ts` (**32 tests**), helpers `harness.ts`. Deterministic single-project Chromium, workers=1, retries=0, headless. Browser: **Google Chrome for Testing 156.0.8078.4** (Playwright pinned Chromium-1248; the 1.59.1 default Chromium-1217 is geo-blocked on this environment's CDN — recorded in the config and evidence). The suite **enforces** this certified version for a certification run (`CERTIFIED_CHROMIUM`); any override executable is flagged as such in the results.
 - **System under test.** The vanilla demo (`http://localhost:5173/vanilla-demo.html`), demo's own static selects purged so the AX tree contains only the suite instances.
 - **Input model.** Genuine trusted keyboard events — **not** synthetic `KeyboardEvent` dispatch. Assertions read public-observable DOM (combobox `aria-*`, `aria-activedescendant` resolution, host `data-open`, DOM focus, `open`/`close` events) and the Chromium AX tree.
 - **Evidence.** `docs/architecture/baseline/w1-p1/W1-P1.3-T2-BROWSER-EVIDENCE.json`.
@@ -656,13 +658,13 @@ Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through
 | --- | --- | --- |
 | T2-01 browser harness | 2 | Version reported `156.0.8078.4`; initial mount closed, no active-descendant. |
 | T2-02 keyboard navigation | 6 | ArrowDown-open **pre-activates** first option; one-step move skips disabled; clamp (no wrap); Home/End first/last; PageDown/PageUp ±10; Enter/Space activate. |
-| T2-03 popup dismissal | 4 | Escape closes; **Tab closes but does not advance focus** (→BODY; **P1.3-D04**); Escape/Tab both `close:{}` (indistinguishable; **P1.3-D01**); closed-state no-op. |
+| T2-03 popup dismissal | 5 | Escape closes; **Tab from a closed combobox advances to the next tabbable** (control); **Tab from an open combobox closes it AND advances focus to the next tabbable** (normal browser behavior; **P1.3-D04 WITHDRAWN**); Escape/Tab both `close:{}` (indistinguishable; **P1.3-D01**); closed-state no-op. |
 | T2-04 DOM focus | 3 | DOM focus on host; shadow active = `input(part="input")`; stays on input across move/Escape; active option is not focus. |
 | T2-05 ARIA relationships | 3 | `aria-controls` == listbox id; `aria-expanded` reflects state; AX combobox `hasPopup=listbox` + `controls`. |
 | T2-06 disabled options | 2 | Disabled option never becomes active; `aria-disabled` + AX `disabled` state. |
 | T2-07 selection policies | 4 | Single Enter selects+closes; multi+allowDeselect toggles; `maxSelections` caps; listbox `aria-multiselectable=true`. |
 | T2-08 accessibility representation | 3 | Selected option AX `selected=true` (name suffixed `Remove option` — chip affordance); combobox name from host `aria-label`; `aria-activedescendant` reported as idref. |
-| T2-09 deviation reassessment | 3 | D01 confirmed; **D02 resolved**; **D03 reassessed (jsdom artifact)**. |
+| T2-09 deviation reassessment | 3 | D01 confirmed; **D02 resolved (DOM + AX)**; **D03 reassessed (observation accepted; cause withheld)**. |
 | T2-10 harness integrity | 1 | Full open→move→select cycle via keyboard on public surface only. |
 
 ### 16.2 Deviation reassessment (browser evidence)
@@ -670,12 +672,14 @@ Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through
 | ID | Task-1 status | Task-2 (browser) status | Meaning |
 | --- | --- | --- | --- |
 | P1.3-D01 | Observed public-contract limitation | **Confirmed** | `close` detail is `{}`; Escape and Tab indistinguishable in Chromium. Design decision still deferred. |
-| P1.3-D02 | Diagnostic (pending browser check) | **Resolved (not a defect)** | **Reflection target = the listbox**; it receives `aria-busy="true"` when genuinely busy (public load-more → `_setBusy(true)`). The legacy host `aria-busy` is intentionally inert. The jsdom "missing" was the inert legacy attribute, **not** a limitation. |
-| P1.3-D03 | Observation (pending browser check) | **Reassessed — jsdom artifact** | Real browser **pre-activates the first option on keyboard open**; the jsdom "no initial active" does not reproduce. Multi mode opens with no pre-active. Observation, not a defect; APG difference ≠ nonconformance. |
-| P1.3-D04 | — (new) | **Observation (new)** | Tab closes the popup but does **not** advance DOM focus (`document.activeElement` → BODY). Characterized, not repaired. |
+| P1.3-D02 | Diagnostic (pending browser check) | **Resolved (DOM + AX; not a defect)** | **Reflection target = the listbox**; it receives `aria-busy="true"` when genuinely busy (public load-more → `_setBusy(true)`), and the Chromium **AX** listbox node reports `busy=true` (T2-F03: DOM and AX both asserted). The legacy host `aria-busy` is intentionally inert. The jsdom "missing" was the inert legacy attribute, **not** a limitation. |
+| P1.3-D03 | Observation (pending browser check) | **Observation accepted; cause withheld** | Opening **pre-activates the first option** across all three browser paths (focus-open, closed-and-focused keyboard reopen, pointer-open). The behavior observation is preserved; *why* jsdom previously showed no initial active is **not** attributed (T2-F02). Observation, not a defect. |
+| P1.3-D04 | — (new) | **Withdrawn (T2-F01)** | The original "Tab closes but does not advance focus" was an **invalid test** (reference button mounted before the select → BODY was end-of-document fallback). With a correctly-ordered next tabbable, Tab **advances focus normally** (closed → next; open → closes then advances). No deviation exists. |
 
 **Scope note (screen readers).** These assessments rest on the **Chromium AX tree** only; they establish that the AX *representation* (roles/names/states/relationships) is correct and do **not** assert screen-reader (NVDA/JAWS/VoiceOver) compatibility, which remains out of scope for W1-P1.
 
-**Chrome-156 finding vs. jsdom.** The principal reconciliation is that the P1.3-D03 "opening assigns no initial `aria-activedescendant`" is a **jsdom artifact**: a real keyboard open pre-activates the first selectable option (single mode). This is a characterization-basis correction, not a behavior change.
+**Browser finding vs. jsdom (T2-F02).** A real keyboard open **pre-activates the first selectable option** (single mode) across all observed open paths. The earlier Task-2 wording that labeled this a "jsdom artifact" is **corrected**: the browser observation stands, but the *cause* of the differing jsdom reading is **not** attributed. This is a characterization-basis clarification, not a behavior change.
 
-End of W1-P1.3 Task 2. No production source was modified. P1.3-P2 are NO-GO until Task 2 is independently reviewed.
+**Tab focus correction (T2-F01).** The original P1.3-D04 Tab observation is **withdrawn**; with a correctly-ordered next tabbable, Tab advances focus normally in Chromium (see 16.2 and `W1-P1-DEVIATIONS.md`).
+
+_End of W1-P1.3 Task 2 (T2-R). No production source was modified. The 32-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. P1.3-P2 remain NO-GO until T2-R is independently reviewed._

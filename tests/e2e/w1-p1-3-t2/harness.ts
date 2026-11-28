@@ -16,6 +16,13 @@ import type { Page } from '@playwright/test';
 
 export const VANILLA_URL = 'http://localhost:5173/vanilla-demo.html';
 
+/**
+ * Certification browser version. A run whose engine version does NOT match this
+ * is treated as an override run and is flagged (not silently certified). This
+ * keeps re-certification reproducible against the recorded Chromium build.
+ */
+export const CERTIFIED_CHROMIUM = '156.0.8078.4';
+
 export type Item = {
   id: string;
   value: string;
@@ -28,6 +35,12 @@ export type MountOptions = {
   config?: Record<string, unknown>;
   hostAttrs?: Record<string, string>;
   id?: string;
+  /**
+   * Append a genuinely-tabbable `<button id="after-select">` AFTER the host so
+   * Tab-order assertions observe the real next-tabbable destination (T2-F01).
+   * The button is appended to the document body after the host element.
+   */
+  withNextButton?: boolean;
 };
 
 export const FOUR: Item[] = [
@@ -61,8 +74,9 @@ export async function mount(page: Page, opts: MountOptions = {}): Promise<string
   const items = opts.items ?? FOUR;
   const config = opts.config ?? {};
   const hostAttrs = opts.hostAttrs ?? {};
+  const withNextButton = opts.withNextButton ?? false;
   await page.evaluate(
-    ({ id, items, config, hostAttrs }) => {
+    ({ id, items, config, hostAttrs, withNextButton }) => {
       const prior = document.getElementById(id);
       if (prior) prior.remove();
       const el = document.createElement('enhanced-select') as any;
@@ -73,8 +87,17 @@ export async function mount(page: Page, opts: MountOptions = {}): Promise<string
         el.updateConfig(config);
       }
       el.setItems(items);
+      // Append a tabbable control strictly AFTER the host so Tab order is
+      // deterministic and the next destination is a real element (T2-F01).
+      if (withNextButton) {
+        document.getElementById('after-select')?.remove();
+        const btn = document.createElement('button');
+        btn.id = 'after-select';
+        btn.textContent = 'After';
+        document.body.appendChild(btn);
+      }
     },
-    { id, items, config, hostAttrs },
+    { id, items, config, hostAttrs, withNextButton },
   );
   return `#${id}`;
 }
@@ -171,6 +194,18 @@ export async function shadowInputFocused(page: Page, sel = `#${DEFAULT_ID}`): Pr
     const root = (el as HTMLElement).shadowRoot!;
     return root.activeElement === root.querySelector('[part="input"]');
   });
+}
+
+/**
+ * Actual document focus destination (tag + id). Used by Tab-order assertions to
+ * record where focus really lands (T2-F01) rather than asserting inequality
+ * with a guessed element.
+ */
+export async function focusDestination(page: Page): Promise<{ tag: string; id: string }> {
+  return page.evaluate(() => ({
+    tag: document.activeElement?.tagName ?? '',
+    id: (document.activeElement as HTMLElement | null)?.id ?? '',
+  }));
 }
 
 // ---------------------------------------------------------------------------
