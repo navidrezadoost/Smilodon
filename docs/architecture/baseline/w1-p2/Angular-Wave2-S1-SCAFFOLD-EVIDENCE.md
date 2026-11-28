@@ -61,7 +61,7 @@ Every `@smilodon/core` re-export is **type-only** (`export type`). Type imports 
 | A7 | Core automated regression unchanged | `vitest run --config packages/core/vitest.config.ts` | **PASS** — 1071 passed \| 1 skipped (71 files) |
 | A8 | ESLint clean on new sources | `eslint packages/angular/src …` | **PASS** — exit 0 |
 | A9 | Traceability unchanged | `python3 …/verify_traceability.py` | **PASS** — 129 IDs reconcile |
-| A10 | No unintended manifest/lock changes | `git status package-lock.json` | **PASS** — untouched |
+| A10 | No unintended manifest/lock changes | `git status package-lock.json` | **PASS at S1 commit (`b972cd7`)** — untouched; **CORRECTED in S1-R** (see §7: the lockfile *required* the angular workspace record that S1 omitted; S1-F01) |
 | A11 | Build output not committed | `git check-ignore packages/angular/dist` | **PASS** — dist ignored |
 
 ### Build artifacts (not committed; dist gitignored)
@@ -94,4 +94,51 @@ The repository's **44 pre-existing `@smilodon/core` TypeScript errors remain**. 
 
 ---
 
-_End of S1 evidence. Scaffold + public type surface only. No Angular behavior, no core change, no SSR remediation. Ready for S2 (browser-deferred standalone component) upon separate authorization._
+## 7. S1-R correction — lockfile workspace metadata (S1-F01)
+
+**Authorization:** Lead directive "GO — lockfile correction only." Scope: correct the lockfile metadata omitted from the S1 commit; no API-surface, no core-production, no prior-test, no package-architecture change.
+
+### Finding (S1-F01, Medium — build reproducibility)
+Root `workspaces: ["packages/*", "playground"]` makes `packages/angular` a workspace member, but the committed `package-lock.json` at `b972cd7` had **no** `packages/angular` record and **no** `node_modules/@smilodon/angular` link. A fresh `npm ci` from clean therefore could not reproduce the workspace (`npm query .workspace` listed 8 members, omitting `@smilodon/angular`; `npm ci --dry-run` failed with `Missing: @angular/core@21.2.26 from lock file`).
+
+### Correction
+`package-lock.json` now contains **only** the records required for the angular workspace, with **no unrelated dependency changes**:
+
+| Added / changed | Why |
+| --- | --- |
+| `node_modules/@smilodon/angular` (`link:true → packages/angular`) | workspace link |
+| `packages/angular` record (`@smilodon/angular@1.13.0`, devDeps `typescript`/`vite`, engines, peerDeps + meta) | workspace manifest record |
+| `node_modules/@angular/core@21.2.26` (`peer:true`) | concrete resolution for the `@angular/core >=16` **non-optional** peer; npm pins it even though it is never installed as a devDep |
+| `rxjs` / `tslib`: removed `"dev": true` | `@angular/core` depends on them at runtime; they must be non-dev so they install for production |
+
+**Preservation guarantees (verified by diffing every package's `version`+`resolved` against `b972cd7`):**
+- **ADDED:** exactly 3 angular nodes.
+- **REMOVED:** none — the earlier broad `npm install` regeneration pruned `lightningcss*`/`detect-libc` (optional peers of `vite`); those nodes are **restored** so nothing from the S1 commit is dropped.
+- **VERSION/RESOLVED CHANGED:** none (zero dependency-version changes; no broad upgrade).
+- **Only non-version delta:** `rxjs`/`tslib` `dev` flag (required for the angular peer, above).
+
+Net diff: **52 insertions, 2 deletions.**
+
+### S1-R verification gates
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| R1 clean-install reproducibility | `npm ci` in pristine copy of `b972cd7` + corrected lock | **PASS** — exit 0, 744 packages; `@smilodon/angular` symlinked; `@angular/core@21.2.26` installed; `rxjs 7.8.2`/`tslib 2.8.1` resolvable |
+| R2 lockfile validity | `python3 -c "json.load(...)"` | **PASS** |
+| R3 no version drift | full package `version`+`resolved` diff vs `b972cd7` | **PASS** — none |
+| R4 build from clean | `npm run build -w @smilodon/angular` in clean copy | **PASS** — vite ES+CJS + declarations |
+| R5 no eager core runtime import | `grep @smilodon/core dist/index.js dist/index.cjs` | **PASS** — no match (ESM/CJS contain only `SMILODON_ANGULAR_ADAPTER`) |
+| R6 Angular TSC | `tsc -p packages/angular/tsconfig.json --noEmit` | **PASS** — exit 0 |
+| R7 Core TSC regression | `tsc -p packages/core/tsconfig.json --noEmit` | **PASS** — 44 pre-existing, none angular |
+| R8 Core jsdom regression | `vitest run --config packages/core/vitest.config.ts` | **PASS** — 1071 passed \| 1 skipped (71 files) |
+| R9 ESLint | `eslint packages/angular/src packages/angular/scripts packages/angular/vite.config.ts` | **PASS** — exit 0 |
+| R10 Traceability | `verify_traceability.py` | **PASS** — 129 IDs reconcile |
+
+### Non-goals honored in S1-R
+No change to Angular API surface, `src/` sources, root `package.json`/`tsconfig.json` (already committed at `b972cd7`), core production code, or prior tests. The S1 commit's workspace scaffold artifacts are unchanged; only the lockfile metadata was corrected.
+
+**Effect on A10:** the S1 conclusion "lock untouched" is superseded for reproducibility reasons — the lock *must* carry the angular workspace record. The S1-F01 condition is resolved.
+
+---
+
+_End of S1 evidence (including S1-R correction). Scaffold + public type surface only. No Angular behavior, no core change, no SSR remediation. Ready for S2 (browser-deferred standalone component) upon separate authorization._
