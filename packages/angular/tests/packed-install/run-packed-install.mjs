@@ -32,6 +32,23 @@
  *       the gate is sensitive to losing the package's exports/declarations and
  *       is not a false positive.
  *
+ * S5-P1R2 raises the two remaining false-positive risks (Lead review of S5-P1R):
+ *
+ *   F03 (negative-control false positive) — the sabotage gate previously only
+ *       checked `status !== 0`, which also passes on a signal termination
+ *       (status === null), a missing compiler executable, or any unrelated
+ *       failure. FIX: require a NUMERIC non-zero exit (`typeof status ===
+ *       'number' && status > 0`) AND a diagnostic that implicates the sabotaged
+ *       package (TS2307 "Cannot find module '@smilodon/angular'"), matched after
+ *       stripping ngc's ANSI color codes.
+ *
+ *   F04 (over-broad JIT matcher) — the runtime predicate was
+ *       `/needs to be compiled using the JIT compiler|@angular\/compiler/i`, so
+ *       ANY error merely mentioning `@angular/compiler` passed. FIX: match ONLY
+ *       the specific Angular JIT-unavailable clause
+ *       ("needs to be compiled using the JIT compiler, but '@angular/compiler'
+ *       is not available").
+ *
  * Everything runs READ-ONLY against the source tree: the only writes are inside
  * an OS temp dir. No production/core/dependency/version change.
  *
@@ -267,12 +284,23 @@ try {
       esmResult.required.includes('node_modules/@smilodon/angular'),
     esmResult.required,
   );
-  // (P1R-04) Runtime loading: fully succeed, OR fail with ONLY the known JIT error.
-  const KNOWN_JIT = /needs to be compiled using the JIT compiler|@angular\/compiler/i;
+  // (P1R-04 / F04) Runtime loading: fully succeed, OR fail with ONLY the SPECIFIC
+  // Angular JIT-unavailable diagnostic. The predicate is narrowed to the exact
+  // condition sentence — it must NOT accept arbitrary errors that merely mention
+  // '@angular/compiler' (that was F04: too broad). The genuine message reads:
+  //   "The injectable '<T>' needs to be compiled using the JIT compiler, but
+  //    '@angular/compiler' is not available."
+  // We require BOTH salient clauses, anchored, and reject any THREW whose message
+  // does not carry that specific condition.
+  const KNOWN_JIT =
+    /needs to be compiled using the JIT compiler, but '@angular\/compiler' is not available/i;
   const runtimeOk = typeof esmResult.runtime === 'string' && esmResult.runtime.startsWith('IMPORTED_KEYS=');
-  const runtimeKnownJit = typeof esmResult.runtime === 'string' && esmResult.runtime.startsWith('THREW:') && KNOWN_JIT.test(esmResult.runtime);
+  const runtimeKnownJit =
+    typeof esmResult.runtime === 'string' &&
+    esmResult.runtime.startsWith('THREW:') &&
+    KNOWN_JIT.test(esmResult.runtime);
   check(
-    'ESM runtime load fully succeeded OR failed ONLY with the known Angular-JIT error (no broad swallow)',
+    'ESM runtime load fully succeeded OR failed ONLY with the specific Angular-JIT-unavailable diagnostic (no broad swallow, F04)',
     runtimeOk || runtimeKnownJit,
     esmResult.runtime,
   );
@@ -420,10 +448,28 @@ try {
     ),
   );
   const sabotage = run('node', [ngcBin, '-p', sabotageTsconfig], { cwd: sabotageDir });
+  const sabotageBlob = (sabotage.stdout || '') + '\n' + (sabotage.stderr || '');
+
+  // (F03) The negative control must fail for the RIGHT reason. A non-zero,
+  // NUMERIC exit is required — a signal termination (status === null), a missing
+  // compiler executable, or any process-spawn failure must NOT count. In
+  // addition, the compiler diagnostic must implicate the SABOTAGED package's
+  // missing exports/declarations (TS2307 for '@smilodon/angular'), not some
+  // unrelated dependency failure.
+  const sabotageExited =
+    typeof sabotage.status === 'number' && sabotage.status > 0; // numeric, non-zero (excludes null/signals)
   check(
-    'NEGATIVE CONTROL: AOT FAILS against an installed package that lost its exports/declarations (P1R-03)',
-    sabotage.status !== 0,
-    'expected ngc to fail, but it succeeded',
+    'NEGATIVE CONTROL: ngc exits with a NUMERIC non-zero code (not a signal/spawn failure) (F03)',
+    sabotageExited,
+    `status=${JSON.stringify(sabotage.status)} (expected a number > 0)`,
+  );
+  // ngc prints colorized diagnostics; strip ANSI so the literal TS2307 text matches.
+  const sabotageClean = stripAnsi(sabotageBlob);
+  const SABOTAGE_DIAG = /TS2307:\s*Cannot find module '@smilodon\/angular'/;
+  check(
+    "NEGATIVE CONTROL: diagnostic implicates the sabotaged '@smilodon/angular' exports/declarations (TS2307) (F03)",
+    sabotageExited && SABOTAGE_DIAG.test(sabotageClean),
+    sabotageBlob.slice(-600),
   );
 
   // ── 7. Repeatable pack (P1R-05): 2nd tarball is CONSUMABLE, not just present ────
@@ -482,6 +528,11 @@ function isSymlink(p) {
   } catch {
     return false;
   }
+}
+/** Remove ANSI SGR/escape sequences so compiler diagnostics can be matched literally. */
+function stripAnsi(str) {
+  // eslint-disable-next-line no-control-regex
+  return String(str).replace(/\u001b\[[0-9;]*m/g, '');
 }
 function copyDir(src, dst) {
   mkdirSync(dst, { recursive: true });
