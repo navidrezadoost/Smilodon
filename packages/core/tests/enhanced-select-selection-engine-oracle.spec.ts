@@ -9,12 +9,25 @@
  *
  * This spec closes that gap: for each characterized selection path it
  *   (1) drives the component through its public surface (DOM interaction or
- *       public API), and
+ *       public API),
  *   (2) computes the expected selection independently with the pure engine
  *       (`applySelectionRequest`) as an ORACLE — starting from the pre-action
  *       selected key set and applying the same request the component should
- *       issue,
- * then asserts the component's engine `selectedKeys` EXACTLY equals the oracle.
+ *       issue, and
+ *   (3) asserts the component's PUBLIC OBSERVABLE selection
+ *       (`getSelectedValues()` / `getSelectedItems()`) matches the result
+ *       implied by the oracle's selected keys.
+ *
+ * W1-P2-T1-R (finding T1-F01) tightened the result assertion: it no longer
+ * reads the component's private `_engine` field. The only component surface the
+ * result assertion touches is the public API. This keeps the evidence at the
+ * same level a framework wrapper or consumer would observe.
+ *
+ * KEY ≠ VALUE distinction (see W1-P2-T1-OWNERSHIP-MATRIX.md §4.2):
+ *   - selection keys are registry keys ('a','b','c','remote');
+ *   - display values are the item `value`s ('APL','BAN','CHR','REMOTE').
+ * The oracle operates on keys; the observable results are mapped to values and
+ * items. The fixtures are distinct enough that a key/value mix-up would fail.
  *
  * This is real component-vs-engine equivalence evidence, not an isolation test.
  * No browser-global behavior is assumed; the oracle is deterministic Set math.
@@ -47,11 +60,6 @@ const makeItems = (): TestItem[] => [
   { id: 'b', value: 'BAN', label: 'Banana' },
   { id: 'c', value: 'CHR', label: 'Cherry' },
 ];
-
-function engineSelectedKeys(select: EnhancedSelect): SelectKey[] {
-  return [...(select as unknown as { _engine: { state: { selectedKeys: ReadonlySet<SelectKey> } } })
-    ._engine.state.selectedKeys];
-}
 
 function clickOption(select: EnhancedSelect, index: number): void {
   const option = select.shadowRoot?.querySelector<HTMLElement>(`[data-index="${index}"]`);
@@ -102,8 +110,10 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
     clickOption(select, 1);
 
     const expected = oracle([], [{ type: 'select', key: 'b', reason: 'pointer' }], cfg());
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual(['b']);
+    // Public observable selection (key 'b' → value 'BAN').
+    expect(select.getSelectedValues()).toEqual(['BAN']);
+    expect(select.getSelectedItems()).toEqual([{ id: 'b', value: 'BAN', label: 'Banana' }]);
   });
 
   it('multi toggle: component matches oracle of two toggles', () => {
@@ -121,8 +131,12 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       ],
       cfg({ multiple: true, allowDeselect: true }),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual(['a', 'c']);
+    expect(select.getSelectedValues()).toEqual(['APL', 'CHR']);
+    expect(select.getSelectedItems()).toEqual([
+      { id: 'a', value: 'APL', label: 'Apple' },
+      { id: 'c', value: 'CHR', label: 'Cherry' },
+    ]);
   });
 
   it('multi toggle-off: component matches oracle toggle of the same key twice', () => {
@@ -140,8 +154,9 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       ],
       cfg({ multiple: true, allowDeselect: true }),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual([]);
+    expect(select.getSelectedValues()).toEqual([]);
+    expect(select.getSelectedItems()).toEqual([]);
   });
 
   it('maxSelections cap: component matches oracle that drops the over-cap key', () => {
@@ -161,8 +176,12 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       ],
       cfg({ multiple: true, allowDeselect: true, maxSelections: 2 }),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual(['a', 'b']);
+    expect(select.getSelectedValues()).toEqual(['APL', 'BAN']);
+    expect(select.getSelectedItems()).toEqual([
+      { id: 'a', value: 'APL', label: 'Apple' },
+      { id: 'b', value: 'BAN', label: 'Banana' },
+    ]);
   });
 
   it('allowDeselect single: component matches oracle toggle-off', () => {
@@ -181,8 +200,9 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       ],
       cfg({ multiple: false, allowDeselect: true }),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual([]);
+    expect(select.getSelectedValues()).toEqual([]);
+    expect(select.getSelectedItems()).toEqual([]);
   });
 
   it('required single: component matches oracle that refuses the last deselect', () => {
@@ -198,8 +218,9 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       [{ type: 'toggle', key: 'a', reason: 'pointer' }],
       cfg({ multiple: false, allowDeselect: true, required: true }),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual(['a']);
+    expect(select.getSelectedValues()).toEqual(['APL']);
+    expect(select.getSelectedItems()).toEqual([{ id: 'a', value: 'APL', label: 'Apple' }]);
   });
 
   it('replace that disables a selected key: component matches oracle (replace drops disabled)', () => {
@@ -223,7 +244,8 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       cfg({ multiple: false, allowDeselect: true, disabledKeys: new Set<SelectKey>(['a']) }),
     );
     expect(expected).toEqual([]);
-    expect(engineSelectedKeys(select)).toEqual(expected);
+    expect(select.getSelectedValues()).toEqual([]);
+    expect(select.getSelectedItems()).toEqual([]);
   });
 
   it('detached selection survives a programmatic replace (external-value-sync)', async () => {
@@ -243,7 +265,9 @@ describe('EnhancedSelect selection — pure-engine oracle parity', () => {
       [{ type: 'replace', keys: ['remote'], reason: 'external-value-sync' }],
       cfg(),
     );
-    expect(engineSelectedKeys(select)).toEqual(expected);
     expect(expected).toEqual(['remote']);
+    // Public observable: detached key 'remote' → value 'REMOTE' and its item.
+    expect(select.getSelectedValues()).toEqual(['REMOTE']);
+    expect(select.getSelectedItems()).toEqual([{ id: 'remote', value: 'REMOTE', label: 'Remote item' }]);
   });
 });

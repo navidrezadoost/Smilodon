@@ -160,19 +160,30 @@ independent oracle.
 `packages/core/tests/enhanced-select-selection-engine-oracle.spec.ts` — 8 tests.
 Each drives the component through its **public surface** (DOM click / public API)
 and computes the expected selection **independently** with the pure engine
-(`applySelectionRequest`) from the pre-action selected set, then asserts the
-component's `_engine.state.selectedKeys` equals the oracle.
+(`applySelectionRequest`) from the pre-action selected set.
 
-| # | Path | Component result | Oracle | Status |
-| --- | --- | --- | --- | --- |
-| 1 | single select (`select`) | `['b']` | `['b']` | PASS |
-| 2 | multi toggle ×2 | `['a','c']` | `['a','c']` | PASS |
-| 3 | multi toggle same key twice | `[]` | `[]` | PASS |
-| 4 | maxSelections=2, 3 clicks | `['a','b']` | `['a','b']` | PASS |
-| 5 | allowDeselect single, click-click | `[]` | `[]` | PASS |
-| 6 | required single, toggle last | `['a']` | `['a']` | PASS |
-| 7 | replace disables selected key | `[]` | `[]` (replace drops disabled) | PASS |
-| 8 | detached key via setSelectedValues | `['remote']` | `['remote']` | PASS |
+**W1-P2-T1-R (finding T1-F01) correction:** the result assertion no longer reads
+the component's private `_engine` field. It asserts the component's **public
+observable** selection — `getSelectedValues()` and `getSelectedItems()` — matches
+the result implied by the oracle's selected keys. The oracle still operates on
+**selection keys** (`'a'`,`'b'`,`'c'`,`'remote'`); the observable results are
+**display values** (`'APL'`,`'BAN'`,`'CHR'`,`'REMOTE'`) and **items**. Keys and
+values are deliberately distinct in the fixtures, so a key/value mix-up fails.
+
+| # | Path | Oracle keys | `getSelectedValues()` (observable) | `getSelectedItems()` | Status |
+| --- | --- | --- | --- | --- | --- |
+| 1 | single select (`select`) | `['b']` | `['BAN']` | `[b:Banana]` | PASS |
+| 2 | multi toggle ×2 | `['a','c']` | `['APL','CHR']` | `[a:Apple, c:Cherry]` | PASS |
+| 3 | multi toggle same key twice | `[]` | `[]` | `[]` | PASS |
+| 4 | maxSelections=2, 3 clicks | `['a','b']` | `['APL','BAN']` | `[a:Apple, b:Banana]` | PASS |
+| 5 | allowDeselect single, click-click | `[]` | `[]` | `[]` | PASS |
+| 6 | required single, toggle last | `['a']` | `['APL']` | `[a:Apple]` | PASS |
+| 7 | replace disables selected key | `[]` (replace drops disabled) | `[]` | `[]` | PASS |
+| 8 | detached key via setSelectedValues | `['remote']` | `['REMOTE']` | `[remote:Remote item]` | PASS |
+
+Ordering note (verified empirically): `getSelectedValues()`/`getSelectedItems()`
+iterate the engine's `selectedKeys` in insertion order (see `_getSelectedEntries`),
+matching the oracle's key array order, so exact-order array assertions are sound.
 
 Note (characterized): engine policy treats `replace` and `deselect` differently
 for disabled keys — `replace`/`normalizeKeys` **drops** disabled keys, while an

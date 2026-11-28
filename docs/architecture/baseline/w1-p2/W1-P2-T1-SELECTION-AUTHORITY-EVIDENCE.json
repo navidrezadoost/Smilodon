@@ -48,16 +48,23 @@
     "ssrConfigInclude": "packages/core/vitest.ssr.config.ts"
   },
   "oracleParity": {
-    "description": "Drives component via public surface; computes expected selection independently with applySelectionRequest (pure engine oracle); asserts component._engine.state.selectedKeys === oracle.",
+    "description": "Drives component via public surface; computes expected selection independently with applySelectionRequest (pure engine oracle). W1-P2-T1-R (T1-F01): assertion compares component PUBLIC OBSERVABLE selection (getSelectedValues()/getSelectedItems()) against the result implied by the oracle's selected KEYS; it no longer reads the private _engine field.",
+    "comparedMetrics": {
+      "oracle": "selection keys (registry keys: 'a','b','c','remote')",
+      "observable": "display values (getSelectedValues: 'APL','BAN','CHR','REMOTE') and items (getSelectedItems)",
+      "ordering": "getSelectedValues/getSelectedItems iterate engine selectedKeys in insertion order (see _getSelectedEntries), matching oracle key order; exact-order assertions are sound (verified empirically)",
+      "keyValueDistinct": true
+    },
+    "correctionFinding": "T1-F01 (closed by W1-P2-T1-R): result assertion previously read component private _engine.state.selectedKeys; now uses public observable getSelectedValues()/getSelectedItems().",
     "tests": [
-      {"id": 1, "path": "single select", "component": ["b"], "oracle": ["b"], "status": "PASS"},
-      {"id": 2, "path": "multi toggle x2", "component": ["a","c"], "oracle": ["a","c"], "status": "PASS"},
-      {"id": 3, "path": "multi toggle same key twice", "component": [], "oracle": [], "status": "PASS"},
-      {"id": 4, "path": "maxSelections=2 + 3 clips", "component": ["a","b"], "oracle": ["a","b"], "status": "PASS"},
-      {"id": 5, "path": "allowDeselect single toggle-off", "component": [], "oracle": [], "status": "PASS"},
-      {"id": 6, "path": "required single refuses last deselect", "component": ["a"], "oracle": ["a"], "status": "PASS"},
-      {"id": 7, "path": "replace disables selected key (replace drops disabled)", "component": [], "oracle": [], "status": "PASS"},
-      {"id": 8, "path": "detached key via setSelectedValues", "component": ["remote"], "oracle": ["remote"], "status": "PASS"}
+      {"id": 1, "path": "single select", "oracleKeys": ["b"], "observableValues": ["BAN"], "observableItems": ["b:Banana"], "status": "PASS"},
+      {"id": 2, "path": "multi toggle x2", "oracleKeys": ["a","c"], "observableValues": ["APL","CHR"], "observableItems": ["a:Apple","c:Cherry"], "status": "PASS"},
+      {"id": 3, "path": "multi toggle same key twice", "oracleKeys": [], "observableValues": [], "observableItems": [], "status": "PASS"},
+      {"id": 4, "path": "maxSelections=2 + 3 clicks", "oracleKeys": ["a","b"], "observableValues": ["APL","BAN"], "observableItems": ["a:Apple","b:Banana"], "status": "PASS"},
+      {"id": 5, "path": "allowDeselect single toggle-off", "oracleKeys": [], "observableValues": [], "observableItems": [], "status": "PASS"},
+      {"id": 6, "path": "required single refuses last deselect", "oracleKeys": ["a"], "observableValues": ["APL"], "observableItems": ["a:Apple"], "status": "PASS"},
+      {"id": 7, "path": "replace disables selected key (replace drops disabled)", "oracleKeys": [], "observableValues": [], "observableItems": [], "status": "PASS"},
+      {"id": 8, "path": "detached key via setSelectedValues", "oracleKeys": ["remote"], "observableValues": ["REMOTE"], "observableItems": ["remote:Remote item"], "status": "PASS"}
     ],
     "previouslyUncertifiedByOracleParity": ["maxSelections cap", "allowDeselect single toggle-off", "required guard", "replace-drops-disabled", "detached survives replace"],
     "characterizedNote": "Engine treats replace (normalizeKeys drops disabled keys) differently from deselect (refuses deselect of an already-disabled selected key). Test 7 pins the replace behavior."
