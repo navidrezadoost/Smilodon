@@ -12,7 +12,10 @@
  *     `FormControl`, `formControlName` (in a `FormGroup`), and `[(ngModel)]`:
  *     values applied by the form (via `writeValue`) reach the element WITHOUT
  *     echoing back into the model, and a genuine user edit updates the form
- *     model EXACTLY once (and marks it touched).
+ *     model EXACTLY once. (S4-R) Touched is the focus-loss boundary of the
+ *     whole control, NOT the selection change: a bare user edit does NOT mark
+ *     the control touched; moving focus out of the control marks it touched
+ *     exactly once.
  *
  * Flow:
  *   1. Compile `consumer-app.component.ts` with `ngc` (AOT, compilationMode: full)
@@ -78,6 +81,7 @@ globalThis.customElements = window.customElements;
 globalThis.Node = window.Node;
 globalThis.Event = window.Event;
 globalThis.CustomEvent = window.CustomEvent;
+globalThis.FocusEvent = window.FocusEvent;
 globalThis.MouseEvent = window.MouseEvent;
 globalThis.KeyboardEvent = window.KeyboardEvent;
 globalThis.PointerEvent = window.PointerEvent ?? window.MouseEvent;
@@ -160,6 +164,21 @@ function clickOption(selectEl, index) {
 
 const selected = (el) => el?.getSelectedValues?.() ?? [];
 
+/**
+ * Simulate the user moving focus OUT of a form control to elsewhere on the page
+ * (S4-R touched boundary). We build a fresh outside element as the focus
+ * destination and dispatch a bubbling `focusout` on the control's HOST (the
+ * `<smilodon-select>` element, which is where core listens for focus changes).
+ * The `relatedTarget` points OUTSIDE the control → the accessor treats this as a
+ * whole-control focus-loss and fires `onTouched` exactly once.
+ */
+function focusOut(selectEl) {
+  const outside = document.createElement('button');
+  document.body.appendChild(outside);
+  selectEl.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+  outside.remove();
+}
+
 // Initialize the app fixture (this runs `writeValue` for forms controls during
 // the first change detection; `ngAfterViewInit` installs listeners + probes).
 TestBed.runInInjectionContext(() => {});
@@ -233,7 +252,15 @@ check(
   cmp.singleValueChanges.length === 1 && cmp.singleValueChanges[0] === 'a',
 );
 check('[formControl] user click → element shows "a"', JSON.stringify(selected(reactiveEl)) === '["a"]');
-check('[formControl] user click → control marked TOUCHED', cmp.singleControl.touched === true);
+// S4-R: a selection alone does NOT mark the control touched.
+check('[formControl] user click alone does NOT mark touched (S4-R)', cmp.singleControl.touched === false);
+// Focus-loss of the whole control marks it touched exactly once.
+focusOut(reactiveEl);
+await fixture.whenStable();
+fixture.detectChanges();
+await fixture.whenStable();
+check('[formControl] focus-loss marks control TOUCHED (S4-R)', cmp.singleControl.touched === true);
+check('[formControl] focus-loss does NOT re-emit onChange', cmp.singleValueChanges.length === 1);
 
 // formControlName in FormGroup: multi click option 1 ("b") → model ['a','b'].
 const groupedBefore = JSON.stringify(cmp.group.get('multi').value);
@@ -251,7 +278,13 @@ check(
   '[formControlName] group.multi model changed from its initial value',
   groupedBefore === '["a"]',
 );
-check('[formControlName] control marked TOUCHED', cmp.group.get('multi').touched === true);
+// S4-R: selection alone does NOT touch; focus-loss of the whole control does.
+check('[formControlName] user click alone does NOT mark touched (S4-R)', cmp.group.get('multi').touched === false);
+focusOut(groupedEl);
+await fixture.whenStable();
+fixture.detectChanges();
+await fixture.whenStable();
+check('[formControlName] focus-loss marks control TOUCHED (S4-R)', cmp.group.get('multi').touched === true);
 
 // Template-driven ngModel: click option 0 ("a") → ngModelValue becomes "a".
 clickOption(templateEl, 0);
@@ -261,7 +294,13 @@ fixture.detectChanges();
 await fixture.whenStable();
 
 check('[ngModel] user click → ngModelValue becomes "a"', cmp.ngModelValue === 'a');
-check('[ngModel] user click → control marked TOUCHED', cmp.templateModel?.touched === true);
+// S4-R: selection alone does NOT touch; focus-loss of the whole control does.
+check('[ngModel] user click alone does NOT mark touched (S4-R)', cmp.templateModel?.touched === false);
+focusOut(templateEl);
+await fixture.whenStable();
+fixture.detectChanges();
+await fixture.whenStable();
+check('[ngModel] focus-loss marks control TOUCHED (S4-R)', cmp.templateModel?.touched === true);
 
 // ── E. S3 — typed (change) output on a NON-form controlled component ───────────
 // The `#evented` component is controlled via [value]="['b']" and forwards (change).
@@ -288,4 +327,6 @@ if (failures > 0) {
   console.error(`\n[consumer] FAILED — ${failures} assertion(s) failed`);
   process.exit(1);
 }
-console.log('\n[consumer] PASSED — AOT consumer verified the built package end-to-end (S2 inputs, S3 output, S4 forms)');
+console.log(
+  '\n[consumer] PASSED — AOT consumer verified the built package end-to-end (S2 inputs, S3 output, S4 forms + S4-R focus-loss touched)',
+);

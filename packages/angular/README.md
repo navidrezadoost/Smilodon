@@ -7,8 +7,11 @@ Angular adapter for [Smilodon Select](https://github.com/navidrezadoost/smilodon
 > browser-deferred core loading, imperative input binding, a **typed event
 > bridge** (S3 `@Output()`s forwarding the element's `CustomEvent`s), and
 > **Angular forms integration** via a `ControlValueAccessor` (S4: `ngModel`,
-> `formControl`, `formControlName`). The remaining slice is SSR
-> rendering/hydration qualification (S5). APIs may change before S5.
+> `formControl`, `formControlName`; **S4-R** correction — `onTouched` fires at
+> the control's focus-loss boundary, not on a selection change, and
+> server-backed programmatic completions are never echoed into the model). The
+> remaining slice is SSR rendering/hydration qualification (S5). APIs may change
+> before S5.
 
 ## Usage (S4)
 
@@ -158,7 +161,7 @@ readonly group = new FormGroup({ multi: new FormControl<Array<string | number>>(
 | **Forms value representation** | Identical to `[value]`: **single → scalar** (`string \| number \| null`); **multi → array** (`[]` when empty). |
 | **`writeValue`** | Applies the model value to the element. **Never** calls `onChange` (no echo). `undefined` is a no-op; `null`/`[]` clear. |
 | **`onChange`** | Fired **only** for genuine user selection edits, **exactly once** per edit — never for `writeValue`/init/reconcile. |
-| **`onTouched`** | Fired only at a user edit boundary — never on init render or `writeValue`. |
+| **`onTouched`** | Fired only at a **focus-loss** boundary of the whole control (focus leaving the control to anywhere outside it) — **not** on a selection change, and never on init render or `writeValue`. Internal focus moves inside the control (e.g. input → popup → chip) do not touch; a single focus session fires it at most once. |
 | **`setDisabledState`** | Reconciled with the `disabled` input in a single config write; disabled state changes never emit `onChange`. |
 | **Selection authority** | While form-controlled (`writeValue` received), the **form model is the single source of truth** and `[value]` is ignored for reconciliation. Standalone, `[value]` behaves as documented above. |
 
@@ -169,6 +172,22 @@ capture-phase DOM gestures (option click, chip-remove, clear, or `Enter`/`Space`
 while open) plus programmatic-application windows — see
 `packages/angular/src/provenance.ts`. A full keyboard-reason mapping would
 require exposing core's `SelectionReason` (a core change, out of scope).
+
+The programmatic window is tracked with an **in-flight application counter**:
+it is incremented before each `setSelectedValues()` call and decremented when
+that call's promise settles. Because a server-backed (`serverSide`) selection
+fetch is asynchronous, its completion `change` arrives after the call returns
+but before the promise settles — i.e. while the counter is still `> 0` — so it
+is classified as programmatic and **never echoed** into the form model, even if
+a stale user gesture was armed in the await gap.
+
+**Disclosed limitation.** A genuine user edit made *while* a server-backed
+programmatic selection fetch is in flight is (conservatively) treated as
+programmatic and therefore **not** reported to the form model. This is a
+deliberate, safer trade-off: never a false echo into the model, at the cost of
+potentially dropping a user edit that races an in-flight programmatic load. A
+value subsequently written by the form (or the element's own selection) remains
+authoritative.
 
 ### Lifecycle
 
@@ -190,10 +209,13 @@ The jsdom suite includes focused S3 event-bridge tests (`tests/events.spec.ts`):
 payload parity (output value === core `CustomEvent.detail`), ordering,
 programmatic-vs-interaction, single-listener/no-double-delivery, destruction
 cleanup, and the `error`→`coreError` alias. It also includes S4 forms tests:
-`tests/provenance.spec.ts` (the pure user-vs-programmatic model) and
+`tests/provenance.spec.ts` (the pure user-vs-programmatic model),
+`tests/touched-and-async-provenance.spec.ts` (S4-R: focus-loss touches — and
+selection alone does not; internal moves do not touch; a delayed server-backed
+programmatic completion is never echoed even across an armed gesture), and
 `tests/control-value-accessor.spec.ts` (writeValue never echoes, user edits fire
-`onChange` once with the correct single/multi representation, touched only on a
-user boundary, disabled reconciliation).
+`onChange` once with the correct single/multi representation, focus-loss touches
+once, disabled reconciliation).
 
 `test:consumer` is the packaging + forms qualification gate: it AOT-compiles a
 minimal application component (`ngc`, full compilation) that imports the **built**
@@ -201,7 +223,8 @@ minimal application component (`ngc`, full compilation) that imports the **built
 jsdom, and verifies that `[items]`, `[value]`, and config bindings reach the real
 `<enhanced-select>` element, that the S3 `(change)` output forwards, and that real
 `FormControl` / `formControlName` / `ngModel` values round-trip (init writeValue
-with no echo; a user click updates the model exactly once and marks it touched).
+with no echo; a user click updates the model exactly once but does **not** touch
+— a subsequent focus-loss marks it touched once, per S4-R).
 
 ## Design (adopted Wave 2 architecture)
 

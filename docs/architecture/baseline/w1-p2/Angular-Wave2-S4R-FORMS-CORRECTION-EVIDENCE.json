@@ -1,0 +1,140 @@
+{
+  "artifactId": "Angular-Wave2-S4R-FORMS-CORRECTION-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S4-R — correction to S4 forms integration (touched focus-loss + async provenance)",
+  "startingCommit": "b4444e445dbac1a27b40c9f87ee734cf56f869ec",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S4-R directive at b4444e4 (S4 CONDITIONALLY ACCEPTED): correct two defects in ONE bounded commit. S4-F01 (Medium): touched tied to selection instead of focus loss — track focus leaving the ENTIRE control (shadow DOM + popup aware), call onTouched ONCE at the focus-loss boundary, do NOT touch merely because onChange ran; internal focus moves must not prematurely touch. S4-F02 (Medium): gesture-based provenance cannot distinguish delayed programmatic changes — deterministic coverage of a writeValue-started server fetch completing after a user gesture; conservative rule that NEVER echoes known programmatic completions into forms; document limitation if exact provenance is not establishable. Must not duplicate core selection authority. No core changes, no new event payloads, no package restructuring, no dependency upgrades, no SSR remediation.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "defects": {
+    "S4-F01": {
+      "title": "Touched state tied to selection changes, not focus loss",
+      "symptom": "markTouched() fired onTouched inside handleChangeForValueAccessor on every user selection; selection without leaving focus marked touched early, focus-and-leave without selecting did not touch, internal moves were indistinguishable from real leaves.",
+      "fix": "Focus-in/out tracking on the component host; onTouched fires once only when focus truly leaves the whole control (relatedTarget/activeElement not within the control's composed shadow subtree); one-shot per focus session."
+    },
+    "S4-F02": {
+      "title": "Gesture-based provenance cannot distinguish delayed programmatic changes",
+      "symptom": "writeValue-started serverSide.fetchSelectedItems is async; the programmatic window closed before the fetch resolved; a user gesture armed in the await gap caused the late programmatic completion change to be classified as a user edit and echoed into the form model.",
+      "fix": "Conservative in-flight programmatic-application counter: incremented before setSelectedValues, decremented on settle; any change observed while > 0 is programmatic and never echoed. Sync changes caught by the programmatic origin branch."
+    }
+  },
+  "touchedSemantics": {
+    "boundary": "focus-loss of the whole control (host focusin/focusout)",
+    "listeners": "focusin + focusout on component host (bubbling, composed -> cross shadow boundary)",
+    "listenersRemovedOnDestroy": true,
+    "internalMoveTouches": false,
+    "selectionAloneTouches": false,
+    "internalMoveDetection": "relatedTarget within host composed subtree (host.contains + shadow-chain walk); activeElement fallback when relatedTarget is null",
+    "oneShotPerFocusSession": true,
+    "firedFrom": "handleFocusOut() -> fireTouched(); NOT from handleChangeForValueAccessor()",
+    "firesOnInitRender": false,
+    "firesOnWriteValue": false
+  },
+  "asyncProvenance": {
+    "model": "conservative in-flight programmatic-application counter",
+    "counter": "pendingProgrammaticApplications",
+    "incrementedBefore": "setSelectedValues() promise can settle",
+    "decrementedOn": "promise settle (resolve or reject), exactly once",
+    "syncPath": "change emitted inside call -> branch (B) origin==='programmatic' (before counter increment window)",
+    "asyncPath": "completion change arrives while counter > 0 -> branch (A) treated as programmatic",
+    "echoesDelayedProgrammaticCompletion": false,
+    "consumesArmedStaleGesture": true,
+    "disclosedLimitation": "A genuine user edit made WHILE a server-backed programmatic selection fetch is in flight is conservatively treated as programmatic and NOT reported to the form model. Safer trade-off (never a false echo) pending core exposing its private SelectionReason (out of scope)."
+  },
+  "onChangeRule": "unchanged from S4: only genuine user edits (provenance-classified), exactly once; branch (A)/(B) are structural no-ops for the form model",
+  "selectionAuthority": {
+    "duplicated": false,
+    "note": "S4-R adds no selection logic; only classification of when to report/touch. Core owns selection."
+  },
+  "s3BoundaryPreserved": {
+    "newChangeListeners": false,
+    "focusListenersAreNotChangeListeners": true,
+    "classificationLocation": "inside existing change listener before stopPropagation/emit (unchanged)",
+    "probesUnchanged": true
+  },
+  "regressionTests": {
+    "file": "packages/angular/tests/touched-and-async-provenance.spec.ts",
+    "s4f01": [
+      "focus enter+leave with NO value change marks touched",
+      "internal move (relatedTarget inside host) does NOT touch",
+      "selection alone does NOT touch",
+      "one-shot guard: two focusouts in one session -> one touch; re-focus re-arms",
+      "select + focus-loss touches exactly once"
+    ],
+    "s4f02": [
+      "writeValue(['b','c']) async fetch + keydown 'a' arm during flight + fetch resolve -> changes === [] (completion not echoed)"
+    ],
+    "cvaSpecRewritten": "control-value-accessor.spec.ts touched test now asserts selection alone does NOT touch and focus-loss touches once (old expectation was the S4-F01 defect)"
+  },
+  "changeSummary": {
+    "newFiles": [
+      "packages/angular/tests/touched-and-async-provenance.spec.ts",
+      "docs/architecture/baseline/w1-p2/Angular-Wave2-S4R-FORMS-CORRECTION-EVIDENCE.md",
+      "docs/architecture/baseline/w1-p2/Angular-Wave2-S4R-FORMS-CORRECTION-EVIDENCE.json"
+    ],
+    "modifiedFiles": [
+      "packages/angular/src/select.component.ts",
+      "packages/angular/tests/control-value-accessor.spec.ts",
+      "packages/angular/tests/consumer/run-consumer.mjs",
+      "packages/angular/README.md"
+    ],
+    "coreTouched": false,
+    "coreEventContractTouched": false,
+    "dependencyChanges": false,
+    "packageRestructuring": false,
+    "publicApiAdditiveOnly": true
+  },
+  "testCounts": {
+    "angularJsdomBefore": 56,
+    "angularJsdomAfter": 62,
+    "s4rTests": 6,
+    "consumerAssertionsBefore": 25,
+    "consumerAssertionsAfter": 30,
+    "angularSsrBefore": 4,
+    "angularSsrAfter": 4
+  },
+  "gates": {
+    "R1_angularJsdom": { "command": "vitest run --config packages/angular/vitest.config.ts", "result": "PASS", "count": "62 (22 component + 10 events + 4 loader + 6 provenance + 14 CVA + 6 S4-R)" },
+    "R2_angularSsr": { "command": "vitest run --config packages/angular/vitest.ssr.config.ts", "result": "PASS", "count": "4" },
+    "R3_aotConsumer": { "command": "node packages/angular/tests/consumer/run-consumer.mjs", "result": "PASS", "count": "30/30 assertions" },
+    "R4_ngPackagrBuild": { "command": "npm run build:angular", "result": "PASS", "detail": "exit 0; no static @smilodon/core import; @angular/forms external" },
+    "R5_angularTsc": { "command": "tsc -p packages/angular/tsconfig.json --noEmit", "result": "PASS", "detail": "exit 0" },
+    "R6_coreJsdom": { "command": "vitest run --config packages/core/vitest.config.ts", "result": "PASS", "count": "1071 passed | 1 skipped" },
+    "R7_coreSsr": { "command": "vitest run --config packages/core/vitest.ssr.config.ts", "result": "PASS", "count": "10" },
+    "R8_coreTsc": { "command": "tsc -p packages/core/tsconfig.json --noEmit", "result": "PASS", "detail": "44 pre-existing, none angular" },
+    "R9_eslint": { "command": "eslint packages/angular/src packages/angular/tests", "result": "PASS", "detail": "exit 0" },
+    "R10_traceability": { "command": "verify_traceability.py", "result": "PASS", "detail": "129/129 reconcile" }
+  },
+  "aotConsumerEvidence": {
+    "componentUsesRealForms": ["FormControl", "formControlName in a FormGroup", "ngModel", "[value]+(change) non-form"],
+    "initWriteValueReachesElement": true,
+    "initWriteValueEchoesToModel": false,
+    "userClickUpdatesFormControlOnce": true,
+    "userClickAloneMarksTouched": false,
+    "focusLossMarksTouched": true,
+    "focusLossReEmitsOnChange": false,
+    "singleIsScalar": true,
+    "multiIsArray": true,
+    "s3OutputStillForwards": true
+  },
+  "disclosedLimitations": [
+    "S4-F02 conservative rule: a genuine user edit during an in-flight server-backed programmatic selection fetch is conservatively treated as programmatic and NOT reported (never a false echo; safer choice pending exact provenance).",
+    "DOM-gesture provenance for keyboard paths outside the armed gesture set needs core's private SelectionReason to complete (core change, out of scope).",
+    "44 pre-existing @smilodon/core TSC errors (none angular); unchanged.",
+    "Peer range >=21 <22 unchanged.",
+    "Pre-existing unrelated contract-suite failures; unchanged."
+  ],
+  "nonGoals": [
+    "No SSR rendering/hydration certification (S5, NO-GO)",
+    "No core changes",
+    "No new event payloads",
+    "No dependency upgrades",
+    "No package restructuring"
+  ],
+  "relationshipToPriorIncrements": {
+    "buildsOn": "Angular-Wave2-S4-FORMS-CVA-EVIDENCE (b4444e4, CONDITIONALLY ACCEPTED)",
+    "authorizedBy": "Lead S4-R directive at b4444e4",
+    "effect": "Corrects two S4 Medium defects; on acceptance S4 CLOSES; next gate is S5 SSR/hydration (currently NO-GO)."
+  }
+}

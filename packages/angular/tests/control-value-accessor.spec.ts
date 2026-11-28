@@ -225,15 +225,23 @@ describe('SmilodonSelectComponent — ControlValueAccessor: user edits', () => {
     expect(h.el.getSelectedValues()).toEqual(['b']);
   });
 
-  it('marks the control touched on a user edit (focus-loss boundary)', async () => {
+  it('marks the control touched on focus-loss, NOT on a bare user edit', async () => {
     h = await createHarness({ items: ITEMS, multiple: true });
     h.el.open();
     await flush();
     clickOption(h, 0);
     await settle();
 
-    // Touched exactly once (the user edit boundary).
+    // S4-R: selecting a value does NOT mark the control touched — touched is
+    // the focus-loss boundary of the WHOLE control, not a selection change.
+    expect(h.touched()).toBe(0);
+
+    // Focus leaves the entire control → touched fires exactly once.
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    h.wrap.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
     expect(h.touched()).toBe(1);
+    outside.remove();
   });
 
   it('does NOT mark touched on init / writeValue', async () => {

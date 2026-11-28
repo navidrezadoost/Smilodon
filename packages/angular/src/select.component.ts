@@ -303,6 +303,39 @@ export class SmilodonSelectComponent
   private programmaticReason: 'init' | 'write' | null = null;
 
   /**
+   * S4-R (S4-F02): the number of programmatic `setSelectedValues()` applications
+   * that are IN FLIGHT — incremented before the call, decremented when its
+   * promise settles. For the SYNCHRONOUS path the `change` is emitted inside the
+   * call (before the decrement), so it is naturally inside this window. For the
+   * ASYNC (server-backed) path the call RETURNS before the fetch resolves, but
+   * this counter stays > 0 until the fetch settles — so the programmatic
+   * completion `change` still arrives while `pendingProgrammaticApplications > 0`.
+   * Any `change` observed while this is > 0 is treated as PROGRAMMATIC (the
+   * conservative rule: we never echo a programmatic completion into the form
+   * model, even if a stale user gesture was armed in the await gap). This does
+   * not affect a genuine user edit made when NO application is in flight.
+   */
+  private pendingProgrammaticApplications = 0;
+
+  // ── S4-R: touched state (focus-loss boundary) ───────────────────────────────
+
+  /**
+   * True once a user edit has been reported to the form model via `onChange`,
+   * OR the control has been focused. Angular forms marks a control touched when
+   * the user has "interacted and left" — we model that at the focus-loss
+   * boundary (see `handleFocusOut`), NOT on selection. This is the S4-F01 fix.
+   */
+  private focusWithin = false;
+  /**
+   * True once the current focus SESSION has already fired `onTouched`, so a
+   * single focus-loss fires it at most once. Re-armed on the next `focusin`.
+   */
+  private touchedThisSession = false;
+
+  /** The DOM host (`smilodon-select`) focus-in/out listener references. */
+  private focusBindings: Array<[string, EventListener]> = [];
+
+  /**
    * Deepest shadow roots the adapter has attached its capture-phase user-input
    * probes to. Cleared on destroy.
    */
@@ -326,6 +359,10 @@ export class SmilodonSelectComponent
     // of core's internal selection reason. Installed per shadow root; see
     // `installProvenanceProbes()`.
     this.installProvenanceProbes();
+    // S4-R: attach focus-in/out tracking on the component HOST element so that
+    // `onTouched` fires at a real focus-loss boundary of the whole control
+    // (shadow DOM + popup included) — not on a selection change.
+    this.installFocusTracking();
     this.initialize();
   }
 
@@ -353,6 +390,8 @@ export class SmilodonSelectComponent
     this.detachEventListeners();
     // S4: tear down the provenance probes.
     this.removeProvenanceProbes();
+    // S4-R: tear down the focus-tracking listeners.
+    this.removeFocusTracking();
   }
 
   /** Exposed for tests/inspection: true once the element is ready. */
@@ -636,16 +675,24 @@ export class SmilodonSelectComponent
       if (isCurrent()) {
         this.valueError = error;
       }
+      this.closeProgrammaticChange();
       return;
     }
 
+    // S4-R (S4-F02): mark this application in flight BEFORE its promise can
+    // settle, so an ASYNC (server-backed) completion is still covered by the
+    // conservative "programmatic while in flight" rule when its `change` arrives
+    // after the fetch resolves. Decremented exactly once on settle.
+    this.pendingProgrammaticApplications += 1;
     Promise.resolve(result).then(
       () => {
+        this.pendingProgrammaticApplications = Math.max(0, this.pendingProgrammaticApplications - 1);
         if (isCurrent()) {
           this.valueError = null;
         }
       },
       (error) => {
+        this.pendingProgrammaticApplications = Math.max(0, this.pendingProgrammaticApplications - 1);
         // Only the latest, live application reports its failure; stale or
         // post-destroy ones are ignored.
         if (isCurrent()) {
@@ -805,9 +852,10 @@ export class SmilodonSelectComponent
 
   /**
    * S4: classify one element `change` and, for a GENUINE user edit, notify the
-   * form model exactly once (and mirror the value onto `currentFormValue` +
-   * mark the control touched). Programmatic changes (writeValue / init /
+   * form model exactly once. Programmatic changes (writeValue / init /
    * reconcile / stale async) are structural no-ops: they update nothing here.
+   * (Touched is NOT fired here — see `handleFocusOut`, the S4-F01 focus-loss
+   * boundary.)
    *
    * Provenance (see `provenance.ts`): the element records the origin of every
    * selection sync via the capture-phase probes in `installProvenanceProbes`.
@@ -820,29 +868,38 @@ export class SmilodonSelectComponent
       return;
     }
 
-    // (A) A programmatic application is in progress. The FIRST change inside the
-    //     window adjudicates the whole application:
-    //       - if the application is still synchronous (init / the non-server
-    //         writeValue path — `programmaticReason !== null`), its change(s) are
-    //         fully synchronous, so we ADJUDICATE NOW: any pending user gesture
-    //         was stale (e.g. an earlier selecting gesture while the popup was
-    //         open that never produced a change) and is consumed here, and the
-    //         origin resets to programmatic. This is the key anti-phantom guard.
-    //       - if the application is asynchronous (server writeValue: the fetch
-    //         has already yielded, `programmaticReason === null`), a change can
-    //         only arrive once the fetch resolves — but the user may interact in
-    //         that gap. So we leave the origin alone; the change is classified by
-    //         the gesture model below (a real user gesture in the gap → user;
-    //         nothing new → still programmatic).
-    if (this.origin === 'programmatic') {
-      if (this.programmaticReason !== null) {
-        this.lastUserSeq = this.currentUserSeq;
-        this.origin = 'programmatic';
-      }
+    // (A) CONSERVATIVE RULE (S4-R / S4-F02): while ANY programmatic
+    //     `setSelectedValues()` application is in flight (its promise has not yet
+    //     settled), treat this `change` as programmatic. This covers BOTH:
+    //       - the SYNCHRONOUS path (change emitted inside the call, before the
+    //         promise settles), and
+    //       - the ASYNC / server-backed path (the call returned, but the fetch is
+    //         still pending, so its completion `change` arrives with the counter
+    //         still > 0 even if a stale user gesture was armed in the gap).
+    //     We consume any armed gesture here so it cannot leak into a later change,
+    //     and we never echo the completion into the form model. A genuine user
+    //     edit made during a server fetch is (conservatively) NOT reported — see
+    //     the documented limitation; this is strictly safer than a false echo.
+    if (this.pendingProgrammaticApplications > 0) {
+      this.lastUserSeq = this.currentUserSeq;
+      this.origin = 'programmatic';
+      void detail;
       return;
     }
 
-    // (B) The origin is 'user'. Only a gesture observed AFTER the last consumed
+    // (B) A programmatic application is in progress synchronously (init / the
+    //     non-server writeValue path — `programmaticReason !== null`). This is
+    //     also caught by (A) via the in-flight counter, but kept for the brief
+    //     window between `openProgrammaticChange()` and the counter increment (a
+    //     synchronous `change` emitted before `pendingProgrammaticApplications`
+    //     is bumped). Adjudicate it programmatically.
+    if (this.origin === 'programmatic') {
+      this.lastUserSeq = this.currentUserSeq;
+      this.programmaticReason = null;
+      return;
+    }
+
+    // (C) The origin is 'user'. Only a gesture observed AFTER the last consumed
     //     one is a genuine, unconsumed user edit; a stale gesture (already
     //     consumed by a prior change) is not.
     const origin = classifyChange({
@@ -860,8 +917,10 @@ export class SmilodonSelectComponent
     this.lastUserSeq = this.currentUserSeq;
     this.origin = 'programmatic';
 
-    // Exactly one user edit → exactly one onTouched + one onChange.
-    this.markTouched();
+    // Exactly one user edit → exactly one onChange. Touched is NOT fired here:
+    // per the S4-R directive, `onTouched` is a FOCUS-LOSS boundary, established
+    // in `handleFocusOut()` (a user can select and keep focus; or focus and leave
+    // without selecting — both must touch only at focus loss).
     const modelValue = this.buildModelValue(element);
     this.currentFormValue = modelValue;
     this.onChangeFn(modelValue);
@@ -870,12 +929,142 @@ export class SmilodonSelectComponent
     void detail;
   }
 
-  /** Fire the form-model touched callback exactly at a user boundary. */
-  private markTouched(): void {
+  /** Fire the form-model touched callback once (guarded by destroy). */
+  private fireTouched(): void {
     if (this.destroyed) {
       return;
     }
     this.onTouchedFn();
+  }
+
+  // ── S4-R: focus tracking (touched at a real focus-loss boundary) ────────────
+
+  /**
+   * Attach `focusin`/`focusout` listeners on the component's HOST element (the
+   * `smilodon-select` wrapper). Because the whole control — the combobox input,
+   * popup, chips, clear button — lives inside the host's shadow tree, a
+   * `focusout` whose `relatedTarget` is still inside the host is an INTERNAL
+   * move (must NOT touch), while a `focusout` to anything outside the host is a
+   * real focus-loss (must touch, once). Idempotent.
+   *
+   * `focusin`/`focusout` are used (not `focus`/`blur`) because they BUBBLE and
+   * are `composed`, so they cross shadow boundaries and are observable on the
+   * host regardless of which internal element held focus.
+   */
+  private installFocusTracking(): void {
+    if (!isBrowserEnvironment() || this.focusBindings.length > 0) {
+      return;
+    }
+    const host = this.getHostElement();
+    if (!host) {
+      return;
+    }
+    const onFocusIn: EventListener = () => {
+      if (this.destroyed) {
+        return;
+      }
+      this.focusWithin = true;
+      // A new focus session re-arms the one-shot touch guard.
+      this.touchedThisSession = false;
+    };
+    const onFocusOut: EventListener = (event) => {
+      if (this.destroyed) {
+        return;
+      }
+      this.handleFocusOut(event as FocusEvent);
+    };
+    host.addEventListener('focusin', onFocusIn);
+    host.addEventListener('focusout', onFocusOut);
+    this.focusBindings.push(['focusin', onFocusIn], ['focusout', onFocusOut]);
+  }
+
+  /** Remove the focus-tracking listeners. */
+  private removeFocusTracking(): void {
+    if (this.focusBindings.length === 0) {
+      return;
+    }
+    const host = this.getHostElement();
+    if (host) {
+      for (const [name, handler] of this.focusBindings) {
+        host.removeEventListener(name, handler);
+      }
+    }
+    this.focusBindings = [];
+  }
+
+  /**
+   * Handle a `focusout` on the host. Fire `onTouched` ONCE if focus truly left
+   * the control. "Left" means the new focus target (`relatedTarget`) is NOT
+   * within the host. When `relatedTarget` is null (focus moved to the document /
+   * body, or the browser did not report it), fall back to the document's
+   * `activeElement`: if it is still inside the host, the control still has focus;
+   * otherwise focus genuinely left.
+   */
+  private handleFocusOut(event: FocusEvent): void {
+    const host = this.getHostElement();
+    if (!host) {
+      return;
+    }
+    const related = event.relatedTarget as Node | null;
+    if (related) {
+      // Internal move (focus went to another element inside the control) → no
+      // touch. `contains` crosses shadow boundaries only via the host, so we also
+      // accept a related target that is (or is inside) a shadow descendant of the
+      // host through the composed path.
+      if (this.isWithinControl(host, related)) {
+        return;
+      }
+    } else {
+      // relatedTarget unknown (common for programmatic blur / body focus). Consult
+      // the document's active element as the authoritative "where did focus go".
+      const active = (this.getRootNodeFor(host)?.activeElement as Node | null) ?? null;
+      if (active && this.isWithinControl(host, active)) {
+        return;
+      }
+    }
+
+    // Focus left the whole control.
+    this.focusWithin = false;
+    if (this.touchedThisSession) {
+      return;
+    }
+    this.touchedThisSession = true;
+    this.fireTouched();
+  }
+
+  /**
+   * True if `node` is the host, contained by the host, or reachable from the host
+   * through the shadow-DOM chain (i.e. inside the control's composed subtree).
+   */
+  private isWithinControl(host: HTMLElement, node: Node): boolean {
+    if (node === host || host.contains(node)) {
+      return true;
+    }
+    // `node` may be inside a shadow root nested under the host; walk down the
+    // host's shadow chain and test containment in each root.
+    let current: Element | null = host;
+    while (current && current.shadowRoot) {
+      const root = current.shadowRoot;
+      if (node === root || root.contains(node)) {
+        return true;
+      }
+      current = findShadowRootHost(root);
+    }
+    return false;
+  }
+
+  /** The component host element (the `smilodon-select` wrapper). */
+  private getHostElement(): HTMLElement | null {
+    return this.element?.nativeElement ?? null;
+  }
+
+  /** The root node (document or shadow root) that hosts the given element. */
+  private getRootNodeFor(node: Node): Document | ShadowRoot | null {
+    const root = node.getRootNode?.();
+    if (root && (root.nodeType === 9 /* Document */ || (root as ShadowRoot).host)) {
+      return root as Document | ShadowRoot;
+    }
+    return typeof document !== 'undefined' ? document : null;
   }
 
   // ── S4: provenance (user-input probes on the element's shadow root) ─────────
