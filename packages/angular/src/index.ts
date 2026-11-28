@@ -32,6 +32,9 @@ export type {
   CloseEventDetail,
   RemoveEventDetail,
   DiagnosticEventDetail,
+  EmptyStateChangeDetail,
+  ErrorEventDetail,
+  PageLoadedEventDetail,
   // Terminal empty-state context (mirrored to a renderer/slot in S2+)
   EmptyStateContext,
   // Per-instance configuration passed through `updateConfig()` in S2
@@ -55,3 +58,15 @@ export {
   ensureEnhancedSelectDefined,
   isBrowserEnvironment,
 } from './core-loader.js';
+
+// ── S3: typed event-bridge contract ───────────────────────────────────────────
+// The wire-event name list (a plain runtime const — no core value import) and
+// the output payload map. `events.ts` references core only via `import type`,
+// so this re-export adds no runtime edge to core (SSR import-safety preserved).
+export {
+  SMILODON_SELECT_EVENT_NAMES,
+} from './events.js';
+export type {
+  SmilodonSelectEventName,
+  SmilodonSelectOutputs,
+} from './events.js';

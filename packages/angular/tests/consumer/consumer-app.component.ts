@@ -14,7 +14,7 @@
  */
 import { Component } from '@angular/core';
 import { SmilodonSelectComponent } from '@smilodon/angular';
-import type { SmilodonSelectItem } from '@smilodon/angular';
+import type { SmilodonSelectItem, ChangeEventDetail } from '@smilodon/angular';
 
 @Component({
   selector: 'app-consumer',
@@ -27,6 +27,7 @@ import type { SmilodonSelectItem } from '@smilodon/angular';
       [multiple]="false"
       [searchable]="true"
       placeholder="Pick one"
+      (change)="onChange($event)"
     ></smilodon-select>
   `,
 })
@@ -37,4 +38,11 @@ export class ConsumerAppComponent {
     { value: 'c', label: 'Charlie' },
   ];
   selected: Array<string | number> | null = ['b'];
+
+  /** S3: subscription target — records the last forwarded `change` payload. */
+  lastChange: ChangeEventDetail | null = null;
+
+  onChange(detail: ChangeEventDetail): void {
+    this.lastChange = detail;
+  }
 }

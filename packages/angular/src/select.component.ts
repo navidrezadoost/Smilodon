@@ -11,11 +11,13 @@
  *   3. applies items / selected values / configuration by calling the element's
  *      imperative API (NOT attributes — only `aria-*` are observed by the
  *      element, so attribute binding would silently no-op);
- *   4. reconciles later @Input() changes once the element is ready; and
- *   5. ignores any pending async init after destroy (safe async lifecycle).
+ *   4. reconciles later @Input() changes once the element is ready;
+ *   5. ignores any pending async init after destroy (safe async lifecycle); and
+ *   6. forwards the element's `CustomEvent`s to typed `@Output()`s via a single
+ *      listener set installed before init and removed on destroy (S3 bridge).
  *
- * Out of scope for S2 (later slices): @Output() event bridge (S3),
- * ControlValueAccessor (S4), SSR rendering/hydration qualification (S5).
+ * Out of scope (later slices): ControlValueAccessor (S4), SSR rendering/
+ * hydration qualification (S5).
  */
 
 import {
@@ -24,9 +26,11 @@ import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
+  EventEmitter,
   Input,
   OnChanges,
   OnDestroy,
+  Output,
   SimpleChanges,
   ViewChild,
   inject,
@@ -41,6 +45,8 @@ import {
   ensureEnhancedSelectDefined,
   isBrowserEnvironment,
 } from './core-loader.js';
+import { SMILODON_SELECT_EVENT_NAMES } from './events.js';
+import type { SmilodonSelectOutputs } from './events.js';
 
 /**
  * The structural subset of the `EnhancedSelect` element that this adapter uses.
@@ -122,6 +128,62 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
    */
   @Input() config: SelectInstanceConfig | null = null;
 
+  // ── S3: typed event bridge ──────────────────────────────────────────────────
+  // Every output forwards the element's own `CustomEvent` verbatim: the emitted
+  // value is `event.detail` (payload identity preserved) typed by the exact
+  // core detail shape. Output names are IDENTICAL to the element wire names —
+  // no aliasing — so a consumer's `(change)="…"` maps 1:1 to core's `change`.
+  // The adapter does NOT re-emit or reinterpret; it only forwards. In particular
+  // a `change` produced by a programmatic `setSelectedValues()` is forwarded
+  // as-is and is NEVER written back into the `value` input here (no feedback
+  // loop): controlled reconciliation stays parent-driven.
+  /** Fired when an option is selected (core `select`). */
+  @Output() readonly select: EventEmitter<SmilodonSelectOutputs['select']> = new EventEmitter();
+  /** Fired whenever the selection set changes (core `change`). */
+  @Output() readonly change: EventEmitter<SmilodonSelectOutputs['change']> = new EventEmitter();
+  /** Fired when the listbox opens (core `open`). */
+  @Output() readonly open: EventEmitter<SmilodonSelectOutputs['open']> = new EventEmitter();
+  /** Fired when the listbox closes (core `close`). */
+  @Output() readonly close: EventEmitter<SmilodonSelectOutputs['close']> = new EventEmitter();
+  /** Fired on search query change (core `search`). */
+  @Output() readonly search: EventEmitter<SmilodonSelectOutputs['search']> = new EventEmitter();
+  /** Fired when more data is requested (core `loadMore`). */
+  @Output() readonly loadMore: EventEmitter<SmilodonSelectOutputs['loadMore']> = new EventEmitter();
+  /** Fired when a selection badge is removed (core `remove`). */
+  @Output() readonly remove: EventEmitter<SmilodonSelectOutputs['remove']> = new EventEmitter();
+  /** Fired when the control is cleared (core `clear`). */
+  @Output() readonly clear: EventEmitter<SmilodonSelectOutputs['clear']> = new EventEmitter();
+  /** Fired when a page of items has loaded (core `pageLoaded`). */
+  @Output() readonly pageLoaded: EventEmitter<SmilodonSelectOutputs['pageLoaded']> = new EventEmitter();
+  /**
+   * Fired on an internal error (core `error` event).
+   *
+   * ALIAS (documented, justified): the output **property** is named
+   * `coreError`, but its **template binding / public output name** is the wire
+   * name `error` (`@Output('error')`). The property cannot literally be named
+   * `error` because the existing `@Input() error` (a validation message string)
+   * owns that identifier — a class member cannot be both a string input and an
+   * EventEmitter. The alias affects only the TypeScript member name; the emitted
+   * event name (`error`) and the payload (`ErrorEventDetail`) are the element's
+   * own, unchanged, so a consumer still writes `(error)="onError($event)"` and
+   * receives the untouched core detail. This is the only aliased output; every
+   * other output's property name equals its wire name.
+   */
+  @Output('error') readonly coreError: EventEmitter<SmilodonSelectOutputs['error']> = new EventEmitter();
+  /** Fired when the terminal empty-state transitions (core `emptyStateChange`). */
+  @Output() readonly emptyStateChange: EventEmitter<SmilodonSelectOutputs['emptyStateChange']> = new EventEmitter();
+  /** Fired for tracking diagnostics when core tracking emits them (core `diagnostic`). */
+  @Output() readonly diagnostic: EventEmitter<SmilodonSelectOutputs['diagnostic']> = new EventEmitter();
+
+  /**
+   * The currently-registered `[eventName, handler]` pairs on the element, so
+   * `ngOnDestroy()` can remove EXACTLY what `attachEventListeners()` added
+   * (identical function references). This is the single-listener authority: the
+   * element is (re)bound at most once per install, and every listener is removed
+   * on teardown — no duplicate delivery, no leak.
+   */
+  private eventBindings: Array<[string, EventListener]> = [];
+
   @ViewChild('host', { static: true })
   private hostRef?: ElementRef<HTMLElement>;
 
@@ -154,6 +216,12 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
       // Server / non-DOM: render the placeholder host only, never touch core.
       return;
     }
+    // Attach the event bridge BEFORE any initialization operation that may emit
+    // events. The target element exists as soon as the view is initialised
+    // (even before core upgrades it): events dispatched later bubble from it, and
+    // our listeners are registered on that exact element, so nothing emitted
+    // during initialization (e.g. the `change` from an initial `value`) is lost.
+    this.attachEventListeners();
     this.initialize();
   }
 
@@ -175,6 +243,10 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
     // makes every outstanding completion fail its `generation === valueGeneration`
     // check, so a late resolve/reject cannot mutate adapter state after teardown.
     this.valueGeneration += 1;
+    // Remove every event listener added by `attachEventListeners()`. Uses the
+    // captured function references so removal is exact; idempotent for the
+    // never-initialised / already-detached cases.
+    this.detachEventListeners();
   }
 
   /** Exposed for tests/inspection: true once the element is ready. */
@@ -245,6 +317,106 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
       return host as EnhancedSelectElement;
     }
     return (host.querySelector?.(ENHANCED_SELECT_TAG) as EnhancedSelectElement | null) ?? null;
+  }
+
+  /**
+   * Register exactly one listener per forwarded event on THIS component's own
+   * `<enhanced-select>` element (single-listener authority). Idempotent: a second
+   * call (or any post-destroy call) is a no-op when bindings already exist, and
+   * is skipped when the component is destroyed. Each handler forwards the
+   * element's `CustomEvent.detail` verbatim to the matching `@Output()`.
+   */
+  private attachEventListeners(): void {
+    if (this.destroyed || this.eventBindings.length > 0) {
+      return;
+    }
+    const element = this.getSelectElement();
+    if (!element) {
+      return;
+    }
+    for (const name of SMILODON_SELECT_EVENT_NAMES) {
+      const handler: EventListener = (event) => {
+        // Guard: never deliver to consumers after teardown, even if a listener
+        // somehow outlives detach (defensive; detach removes all bindings).
+        if (this.destroyed) {
+          return;
+        }
+        // Single-delivery guard: the element's events bubble (bubbles + composed)
+        // and several of their names (`change`, `select`, `open`, `close`, …)
+        // collide with the `@Output()` names on this component's host element.
+        // Angular binds `(change)` on the host to BOTH the `@Output()` AND a
+        // native DOM listener for a bubbling `change` of that name — which would
+        // deliver every event TWICE (once as `detail`, once as the raw event).
+        // Stop propagation at the element boundary so the ONLY delivery path is
+        // our own `@Output()` forwarding below.
+        event.stopPropagation();
+        this.emitEvent(name, (event as CustomEvent).detail);
+      };
+      element.addEventListener(name, handler);
+      this.eventBindings.push([name, handler]);
+    }
+  }
+
+  /** Remove every listener registered by {@link attachEventListeners}. */
+  private detachEventListeners(): void {
+    if (this.eventBindings.length === 0) {
+      return;
+    }
+    const element = this.getSelectElement();
+    if (element) {
+      for (const [name, handler] of this.eventBindings) {
+        element.removeEventListener(name, handler);
+      }
+    }
+    this.eventBindings = [];
+  }
+
+  /**
+   * Forward one element event detail to its `@Output()`. The detail is passed
+   * through unchanged (payload identity preserved). The switch is exhaustive over
+   * `SMILODON_SELECT_EVENT_NAMES`; the default is a defensive no-op.
+   */
+  private emitEvent(name: string, detail: unknown): void {
+    switch (name) {
+      case 'select':
+        this.select.emit(detail as SmilodonSelectOutputs['select']);
+        break;
+      case 'change':
+        this.change.emit(detail as SmilodonSelectOutputs['change']);
+        break;
+      case 'open':
+        this.open.emit(detail as SmilodonSelectOutputs['open']);
+        break;
+      case 'close':
+        this.close.emit(detail as SmilodonSelectOutputs['close']);
+        break;
+      case 'search':
+        this.search.emit(detail as SmilodonSelectOutputs['search']);
+        break;
+      case 'loadMore':
+        this.loadMore.emit(detail as SmilodonSelectOutputs['loadMore']);
+        break;
+      case 'remove':
+        this.remove.emit(detail as SmilodonSelectOutputs['remove']);
+        break;
+      case 'clear':
+        this.clear.emit(detail as SmilodonSelectOutputs['clear']);
+        break;
+      case 'pageLoaded':
+        this.pageLoaded.emit(detail as SmilodonSelectOutputs['pageLoaded']);
+        break;
+      case 'error':
+        this.coreError.emit(detail as SmilodonSelectOutputs['error']);
+        break;
+      case 'emptyStateChange':
+        this.emptyStateChange.emit(detail as SmilodonSelectOutputs['emptyStateChange']);
+        break;
+      case 'diagnostic':
+        this.diagnostic.emit(detail as SmilodonSelectOutputs['diagnostic']);
+        break;
+      default:
+        break;
+    }
   }
 
   /** Push the current input state into the element via its imperative API. */

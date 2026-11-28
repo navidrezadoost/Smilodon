@@ -49,6 +49,17 @@ describe('@smilodon/angular — SSR import safety (API-075)', () => {
     assertNoDom();
   });
 
+  it('the S3 event-bridge module is import-safe on the server (type-only core)', async () => {
+    assertNoDom();
+    // events.ts references core only via `import type`; the runtime const it
+    // exports must be available without a DOM and without evaluating core.
+    const mod = await import('../src/events.js');
+    expect(Array.isArray(mod.SMILODON_SELECT_EVENT_NAMES)).toBe(true);
+    expect(mod.SMILODON_SELECT_EVENT_NAMES).toContain('change');
+    expect(mod.SMILODON_SELECT_EVENT_NAMES).toContain('emptyStateChange');
+    assertNoDom();
+  });
+
   it('the core-loader reports a non-browser environment and refuses to load core', async () => {
     assertNoDom();
     const loader = await import('../src/core-loader.js');

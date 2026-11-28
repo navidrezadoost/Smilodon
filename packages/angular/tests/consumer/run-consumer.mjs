@@ -67,10 +67,14 @@ const { window } = dom;
 globalThis.window = window;
 globalThis.document = window.document;
 globalThis.HTMLElement = window.HTMLElement;
+globalThis.Element = window.Element;
 globalThis.customElements = window.customElements;
 globalThis.Node = window.Node;
 globalThis.Event = window.Event;
 globalThis.CustomEvent = window.CustomEvent;
+globalThis.MouseEvent = window.MouseEvent;
+globalThis.KeyboardEvent = window.KeyboardEvent;
+globalThis.PointerEvent = window.PointerEvent ?? window.MouseEvent;
 globalThis.MutationObserver = window.MutationObserver;
 globalThis.getComputedStyle = window.getComputedStyle.bind(window);
 globalThis.DocumentFragment = window.DocumentFragment;
@@ -153,6 +157,39 @@ if (selectEl && selectEl._config) {
   // Value: the [value]="['b']" binding selected "b".
   const selected = selectEl.getSelectedValues?.() ?? [];
   check('[value]=["b"] selected value "b"', Array.isArray(selected) && selected.length === 1 && selected[0] === 'b');
+
+  // S3: the (change) binding is wired. Applying the initial controlled value
+  // emitted a `change` during init, which the component forwarded to the
+  // consumer's handler — proving the output subscription works end-to-end AOT.
+  const initialChange = fixture.componentInstance.lastChange;
+  check(
+    '(change) output delivered initial change to the AOT consumer',
+    !!initialChange &&
+      Array.isArray(initialChange.selectedValues) &&
+      initialChange.selectedValues.length === 1 &&
+      initialChange.selectedValues[0] === 'b',
+  );
+
+  // S3: drive a real interaction (open + click option 0) and verify a NEW
+  // change is forwarded to the consumer handler.
+  fixture.componentInstance.lastChange = null;
+  if (typeof selectEl.open === 'function') {
+    selectEl.open();
+    const option = selectEl.shadowRoot?.querySelector('[data-index="0"]');
+    if (option) {
+      option.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      option.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }
+  }
+  await fixture.whenStable();
+  await new Promise((r) => setTimeout(r, 50));
+  const interactionChange = fixture.componentInstance.lastChange;
+  check(
+    '(change) output forwarded a real interaction to the AOT consumer',
+    !!interactionChange &&
+      Array.isArray(interactionChange.selectedValues) &&
+      interactionChange.selectedValues[0] === 'a',
+  );
 }
 
 fixture.destroy();
