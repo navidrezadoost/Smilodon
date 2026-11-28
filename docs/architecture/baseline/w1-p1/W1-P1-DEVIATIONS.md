@@ -259,3 +259,24 @@ Recorded during W1-P1.3 Task 3 keyboard *selection* characterization (Chromium 1
 | P1.3-D06 | Observation (candidate) | selected-first does not reorder DOM/navigation; intent to confirm | P1.3 recorded / future rendering-design |
 
 **Coverage.** Task 3 adds real-Chromium keyboard-selection characterization (T3-01..T3-10). No deviation is closed as "defective"; D05/D06 are new observations pending review. The traceability record count (112) is unchanged.
+
+---
+
+## W1-P1.3 closure — final dispositions of P1.3-D01..D06 (Task 4)
+
+Technical Lead review of Task 3 (accepted at `0236512`) fixed the disposition of all six W1-P1.3 deviation/observation candidates. This table is the authoritative final register for W1-P1.3; it does not authorize any production change or ADR during W1-P1. Closure detail: `W1-P1.3-CLOSURE-REPORT.md` §5, `W1-P1.3-CLOSURE-EVIDENCE.json` (`deviations`), ledger §18.2.
+
+| ID | Final status | Class | Future design owner | ADR/production |
+| --- | --- | --- | --- | --- |
+| P1.3-D01 | **Confirmed** public-contract limitation: `close` detail is `{}`; Escape/Tab indistinguishable | Observed limitation | Future public-contract (event-detail) design | No ADR; no production change |
+| P1.3-D02 | **Resolved** (DOM `aria-busy` + Chromium AX listbox `busy=true`); legacy host attr inert by design | Not a defect | Closed | — |
+| P1.3-D03 | **Accepted** browser observation (open pre-activates first option); jsdom cause **unassigned** | Observation (not a defect) | Future a11y conformance review | No ADR; no production change |
+| P1.3-D04 | **Withdrawn** — invalid comparison; Tab advances focus normally | Retracted | Closed | — |
+| P1.3-D05 | **Accepted** as observed, mode-specific: Shift+Home/End selects only the endpoint; design intent open | Observation (design intent open) | Future selection-semantics (range/boundary) design | No ADR; no production change |
+| P1.3-D06 | **Accepted** as a bounded observation for the tested configuration: selected-first does not reorder DOM/navigation; **do not generalize** to other rendering paths | Observation (bounded) | Future rendering/projection design | No ADR; no production change |
+
+**Coverage boundaries carried into closure (nonblocking, per Technical Lead):**
+- **Ctrl/Cmd+A (P1.3 Task 3):** characterized for `selectedValues`, `selectedIndices`, and the absence of a `select` event; it does **not** establish an exhaustive callback-count contract.
+- **P1.3-D06:** establishes DOM/navigation ordering for the tested configuration only, **not** every possible visual projection path.
+
+**Preserved limitations (unchanged):** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); Chromium AX tree is the sole accessibility basis (NVDA/JAWS/VoiceOver out of scope). Traceability record count (112) unchanged.

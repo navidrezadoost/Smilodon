@@ -1,0 +1,102 @@
+{
+  "artifactId": "W1-P1.3-CLOSURE-EVIDENCE",
+  "increment": "W1-P1.3 — Keyboard Navigation, Focus, and Accessibility Characterization",
+  "task": "Task 4 — Keyboard and Accessibility Characterization Closure and Evidence Reconciliation",
+  "startingCommit": "023651275aaf73027f0bf55621e49ad0905a76d7",
+  "baselineOfRecord": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "generatedAt": "2026-11-28T10:40:00.000Z",
+  "recordedOn": "2026-11-28",
+  "nature": "Reconciliation and certification-readiness closure. No production source changed. No accepted behavioral test modified. Adds documentation (closure report + this file + ledger section) and refreshes integrity checksums.",
+  "lineage": [
+    { "increment": "Addendum", "commit": "0859ea9", "focus": "KBD contract scope (before Task-1 tests)", "status": "Accepted" },
+    { "increment": "Task 1", "commit": "242a262", "focus": "jsdom keyboard navigation + focus/ARIA (45 tests)", "status": "Accepted" },
+    { "increment": "Task 1-R", "commit": "5ad506c", "focus": "narrow evidence reconciliation (T1-F01/F02 + deviations)", "status": "Accepted" },
+    { "increment": "Task 2", "commit": "a4c9e26", "focus": "real-browser keyboard + a11y verification (31 tests)", "status": "Accepted" },
+    { "increment": "Task 2-R", "commit": "b15b71f", "focus": "corrected Tab-focus + evidence reconciliation (T2-F01/F02/F03) (32 tests)", "status": "Accepted & closed" },
+    { "increment": "Task 3", "commit": "0236512", "focus": "real-browser keyboard selection edge cases (23 tests)", "status": "Accepted & closed" },
+    { "increment": "Task 4", "commit": "THIS_COMMIT", "focus": "closure + evidence reconciliation", "status": "Submitted" }
+  ],
+  "lineageLinear": true,
+  "testInventory": {
+    "w1-p1-3-t1-keyboard-navigation.spec.ts": { "runner": "jsdom (vitest)", "path": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts", "tests": 45 },
+    "keyboard-accessibility.t2.spec.ts": { "runner": "Chromium (Playwright)", "path": "tests/e2e/w1-p1-3-t2/keyboard-accessibility.t2.spec.ts", "tests": 32 },
+    "keyboard-selection.t3.spec.ts": { "runner": "Chromium (Playwright)", "path": "tests/e2e/w1-p1-3-t3/keyboard-selection.t3.spec.ts", "tests": 23 },
+    "total": 100
+  },
+  "consolidatedContract": {
+    "openClose": {
+      "keyboardOpen": "ArrowDown/Up/Enter on closed (Space when enabled & non-searchable) open; emits open:{} then onOpen (KBD-001; T2-02)",
+      "initialActiveOnOpen": "jsdom: no initial aria-activedescendant (empty selection); Chromium: first selectable option pre-activated across focus/keyboard-reopen/pointer paths (KBD-001; T2-02; T3-01; P1.3-D03)",
+      "escape": "closes, close:{} (no public reason) (KBD-006; T2-03; P1.3-D01)",
+      "tab": "closes; in Chromium focus advances to next tabbable (KBD-007; T2-03)",
+      "programmatic": "open()/close() idempotent (API-030/031)",
+      "detail": "open/close detail = {} (no reason)"
+    },
+    "navigation": "Arrow moves by one selectable step, skips disabled, clamps (no wrap); Home/End first/last; PageDown/PageUp +/-10; type-ahead on unmodified printable; Ctrl/Cmd+A only multi && !searchable (KBD-002..010; T2-02; T3-04)",
+    "range": {
+      "shiftArrow": "first Shift+ArrowDown from empty selects landing (anchor=landing); extends contiguous range; ascending registry order; plain Arrow does not change selection (T3-01)",
+      "shiftHomeEnd": "endpoint-only selection, NOT contiguous extension (P1.3-D05; T3-02)",
+      "ctrlCmdShift": "additive (preserves); plain Shift replaces prior selection (T3-03)",
+      "disabled": "excluded from range fill by default; included when disabledOptionBehavior.selectable=true (T3-06)",
+      "maxSelections": "range clamps at cap (T3-07)"
+    },
+    "payloads": {
+      "ctrlCmdA": "change-only (no select); values in registry order + matching indices; coverage boundary: values/indices/absence-of-select only, NOT exhaustive callback count (T3-04)",
+      "shiftRangeChronology": "select(endpoint, selected=true, multi=true) -> change -> onChange -> onSelect; no open/close (T3-09)"
+    },
+    "focusAndAria": {
+      "focusModel": "DOM focus on host/combobox input; options not focus targets; active via aria-activedescendant (KBD-011; T2-04)",
+      "ariaRelationships": "aria-expanded reflects state; aria-activedescendant set on move/cleared on close; aria-controls -> listbox id (KBD-012; T2-05; T3-08)",
+      "ariaBusy": "listbox is the reflection target; genuinely busy => DOM aria-busy=true AND Chromium AX listbox busy=true; legacy host attr inert (ATTR-003; T2-09; P1.3-D02 resolved)",
+      "selectedFirst": "placement='selected-first' does not reorder DOM/navigation at tested configuration; bounded observation, not generalized (P1.3-D06; T3-05)"
+    }
+  },
+  "jsdomVsChromium": {
+    "input": { "jsdom": "dispatched KeyboardEvent on [part=input]", "chromium": "genuine trusted Playwright keyboard/pointer" },
+    "initialActiveOnOpen": { "jsdom": "none (empty selection)", "chromium": "first selectable option pre-activated" },
+    "ariaBusy": { "jsdom": "legacy host attr inert on listbox", "chromium": "listbox reflects true + AX busy=true when genuinely busy" },
+    "tabFocus": { "jsdom": "closes", "chromium": "closes + advances focus to next tabbable" },
+    "axTree": { "jsdom": "not available", "chromium": "CDP Accessibility.getFullAXTree" },
+    "causeWithheld": "P1.3-D03: browser observation preserved per open path; jsdom discrepancy NOT attributed to a single cause"
+  },
+  "deviations": {
+    "P1.3-D01": { "title": "public close detail {}; no reason (Escape/Tab indistinguishable)", "status": "Confirmed", "futureDesignOwner": "Future public-contract (event detail) design", "productionAuthorized": false },
+    "P1.3-D02": { "title": "aria-busy reflected on listbox (DOM + AX) when genuinely busy", "status": "Resolved (not a defect)", "futureDesignOwner": "Closed", "productionAuthorized": false },
+    "P1.3-D03": { "title": "open pre-activates first option in browser; jsdom differs", "status": "Browser observation accepted; cause unassigned", "futureDesignOwner": "Future a11y conformance review", "productionAuthorized": false },
+    "P1.3-D04": { "title": "Tab closes but does not advance focus", "status": "Withdrawn (invalid comparison)", "futureDesignOwner": "Closed", "productionAuthorized": false },
+    "P1.3-D05": { "title": "Shift+Home/End selects only the boundary endpoint", "status": "Accepted observed, mode-specific; design intent open", "futureDesignOwner": "Future selection-semantics (range/boundary) design", "productionAuthorized": false },
+    "P1.3-D06": { "title": "selected-first does not reorder DOM/navigation (tested configuration)", "status": "Accepted bounded observation (do not generalize)", "futureDesignOwner": "Future rendering/projection design", "productionAuthorized": false }
+  },
+  "traceabilityAudit": {
+    "totalRecords": 112,
+    "coverage": { "Existing": 38, "Partial": 29, "Diagnostic": 41, "Missing": 4 },
+    "missingIds": 0,
+    "orphanedJsonIds": 0,
+    "duplicateIds": 0,
+    "changedByThisIncrement": false,
+    "kbdContracts": "KBD-001..012 remain Partial (keyboard paths characterized; real-browser conformance + pointer parity + cross-browser outstanding; NOT upgraded to Existing)",
+    "deferredExistingP13": ["API-040", "API-041"],
+    "coverageOverstated": false
+  },
+  "limitationsPreserved": {
+    "crossBrowser": "Chromium (Chrome-for-Testing 156.0.8078.4) only; Firefox/WebKit/mobile NOT characterized; no parity claimed",
+    "screenReaders": "Chromium AX tree only; NVDA/JAWS/VoiceOver out of scope for W1-P1",
+    "apg": "Behaviors characterized as-is; deviations recorded, not normalized",
+    "coverageBoundaries": [
+      "Ctrl/Cmd+A: values/indices/absence-of-select asserted; NOT exhaustive callback count",
+      "P1.3-D06: tested configuration only; not every visual projection path"
+    ]
+  },
+  "integrityGates": {
+    "jsdomTask1": "45 passing (carried; unchanged)",
+    "focusedChromium": "32 (T2) + 23 (T3) = 55/55 passing (Chrome-for-Testing 156.0.8078.4)",
+    "fullCoreSuite": "922 passed + 1 skipped",
+    "traceability": "PASS (112 IDs, unique, locators in bounds)",
+    "productionIsolation": "empty (no packages/core/src|engine|adapters change vs 0236512)",
+    "acceptedBehavioralTestsChanged": "none",
+    "sha256sums": "refreshed; all files verify",
+    "runtimeBasis": "local execution on certification harness; reported, not independent"
+  },
+  "closureStatement": "W1-P1.3 keyboard navigation, focus, range selection, and accessibility are characterized across a jsdom and a certified Chromium basis; deviations P1.3-D01..D06 dispositioned with future design owners. No production change; no accepted behavioral test modified; traceability (112) unchanged and not overstated. W1-P1.3 remains OPEN until Task 4 is independently accepted. P1.4-P1.6, W1-P2, Angular Wave 2 remain NO-GO."
+}

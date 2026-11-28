@@ -720,3 +720,43 @@ Task 3 extends the accepted real-Chromium harness (Task 2) to keyboard **selecti
 **Scope note (screen readers).** These assessments rest on the DOM + public events only; they do **not** assert screen-reader compatibility, which is out of scope for W1-P1.
 
 _End of W1-P1.3 Task 3. No production source was modified. The 23-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. Follow-on P1.3 tasks and P1.4+ remain NO-GO until Task 3 is independently reviewed._
+
+---
+
+## 18. W1-P1.3 closure — keyboard, focus, and accessibility characterization
+
+Task 4 closes W1-P1.3 by reconciling Tasks 1/1-R/2/2-R/3 into one statement of the keyboard/focus/accessibility contract for `EnhancedSelect`. **No production source changed; no accepted behavioral test was modified.** The authoritative closure is `W1-P1.3-CLOSURE-REPORT.md` + `W1-P1.3-CLOSURE-EVIDENCE.json`; this section is the ledger-side summary.
+
+- **Increments reconciled.** Addendum `0859ea9` · Task 1 `242a262` (jsdom, 45 tests) · Task 1-R `5ad506c` · Task 2 `a4c9e26` (Chromium, 31→32) · Task 2-R `b15b71f` · Task 3 `0236512` (Chromium, 23). Lineage linear.
+- **Test inventory.** 100 P1.3 characterization tests: 45 jsdom (`w1-p1-3-t1-keyboard-navigation.spec.ts`), 32 Chromium (`keyboard-accessibility.t2.spec.ts`), 23 Chromium (`keyboard-selection.t3.spec.ts`). Public surface only.
+- **Bases.** jsdom (dispatched `keydown`) vs certified Chromium 156.0.8078.4 (genuine trusted input + CDP AX tree). The initial-active-on-open and `aria-busy` differences between the two bases are documented; the jsdom/Chromium cause is withheld (P1.3-D03).
+
+### 18.1 Consolidated behavior (observed; not normative)
+
+| Area | Observed contract | Evidence |
+| --- | --- | --- |
+| Open/close | Keyboard opens; `open:{}`/`onOpen`; Escape/Tab close; Chromium Tab advances focus; `close:{}` (no reason). | KBD-001/006/007; T2-02/03 |
+| Navigation | One selectable step; disabled skipped; clamp (no wrap); Home/End; Page ±10; type-ahead; Ctrl/Cmd+A guarded. | KBD-002..010; T2-02; T3-04 |
+| Range | Shift+Arrow contiguous (anchor=landing); Shift+Home/End **endpoint-only** (D05); Ctrl/Cmd+Shift additive, plain Shift replaces; disabled excluded unless selectable; maxSelections clamps. | T3-01/02/03/06/07 |
+| Payloads | Ctrl/Cmd+A `change`-only; Shift range `select→change→onChange→onSelect`, no open/close. | T3-04/09 |
+| Focus/ARIA | Focus stays on input; active via `aria-activedescendant`; `aria-expanded` reflects state; `aria-busy` reflects on listbox (DOM+AX); selected-first does not reorder (D06). | KBD-011/012; T2-04/05/09; T3-05/08 |
+
+### 18.2 Deviation finalization (P1.3-D01..D06)
+
+| ID | Final status | Future design owner |
+| --- | --- | --- |
+| P1.3-D01 | Confirmed public-contract limitation (no close reason) | Future public-contract (event-detail) design |
+| P1.3-D02 | Resolved (DOM + AX; not a defect) | Closed |
+| P1.3-D03 | Browser observation accepted; cause unassigned | Future a11y conformance review |
+| P1.3-D04 | Withdrawn (invalid comparison) | Closed |
+| P1.3-D05 | Accepted observed, mode-specific; intent open | Future selection-semantics design |
+| P1.3-D06 | Accepted bounded observation (tested configuration) | Future rendering/projection design |
+
+No deviation authorizes a production change or an ADR during W1-P1.
+
+### 18.3 Traceability & limitations
+
+- **112 records unchanged**; coverage **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4**. KBD-001..012 remain **`Partial`** (real-browser conformance, pointer parity, and cross-browser outstanding) — **not** upgraded to `Existing`. API-040/041 remain deferred to P1.2-T3-R evidence.
+- **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); AX-tree-only accessibility findings (NVDA/JAWS/VoiceOver out of scope); Ctrl/Cmd+A callback-count and D06 configuration generality are explicit coverage boundaries.
+
+_End of W1-P1.3 (Task 4 closure). W1-P1.3 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom 45 (carried), Chromium 55/55, core 922+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
