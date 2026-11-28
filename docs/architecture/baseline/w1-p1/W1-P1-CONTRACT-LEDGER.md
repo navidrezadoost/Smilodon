@@ -146,23 +146,23 @@ All component events are dispatched via `_emit` (`6278`) as `new CustomEvent(nam
 | EVENT-001 | `select` | `SelectEventDetail` (40) `{ item, index, value, label, selected, multi? }` | 5296, 5504, 5633 | `onSelect(detail)` | Observed | Yes (payload + order vs `change`) |
 | EVENT-002 | `open` | `OpenEventDetail` (49) `{}` | 4399 | `onOpen()` | Observed | Yes |
 | EVENT-003 | `close` | `CloseEventDetail` (50) `{}` | 4424 | `onClose()` | Observed | Yes (reasons) |
-| EVENT-004 | `search` | `SearchEventDetail` (51) `{ query, results?, count? }` | 5043 (local); 7715 (acknowledged) | - | Observed | Yes (both paths; DEVIATION-03) |
-| EVENT-005 | `pageLoaded` | `PageLoadedEventDetail` (56) `{ page, count }` | **none** | - | **Unknown** | Yes (DEVIATION-02) |
-| EVENT-006 | `error` | `ErrorEventDetail` (57) `{ message, cause? }` | 6274 | `onError(error)` | Observed | Yes |
+| EVENT-004 | `search` | `SearchEventDetail` (51) `{ query, results?, count? }` | 5043 (local); 7715 (acknowledged) | - | Observed | **Existing** (both paths + normalizedQuery pinned; P1.5-T2) |
+| EVENT-005 | `pageLoaded` | `PageLoadedEventDetail` (56) `{ page, count }` | **none** | - | **Unknown** | **Missing** (negative confirmed: not emitted on either completion path; DEVIATION-02) |
+| EVENT-006 | `error` | `ErrorEventDetail` (57) `{ message, cause? }` | 6274 | `onError(error)` | Observed | **Partial** (async server-failure shape + error-before-onError; broader error sources outstanding) |
 | EVENT-007 | `change` | `ChangeEventDetail` (58) `{ selectedItems, selectedValues, selectedIndices }` | 6494 | `onChange(items, values)` | Observed | Yes (all emit paths) |
-| EVENT-008 | `loadMore` | `LoadMoreEventDetail` (63) `{ page, items }` | 6251 | - | Observed | Yes |
+| EVENT-008 | `loadMore` | `LoadMoreEventDetail` (63) `{ page, items }` | 6251 | - | Observed | **Existing** (legacy + acknowledged via public button; P1.5-T2) |
 | EVENT-009 | `remove` | `RemoveEventDetail` (64) `{ item, index }` | 5704 | - | Observed | Yes |
 | EVENT-010 | `clear` | `ClearEventDetail` (65) `{ clearedSelection, clearedSearch }` | 7244 | - | Observed | Yes |
 | EVENT-011 | `emptyStateChange` | `EmptyStateChangeDetail` (77) `{ context }` | 6468 | - | Observed | Yes |
-| EVENT-012 | `diagnostic` | `DiagnosticEventDetail` (132) `{ timestamp, source, name, detail? }` | 7092, 7960 | - | Observed | Yes |
+| EVENT-012 | `diagnostic` | `DiagnosticEventDetail` (132) `{ timestamp, source, name, detail? }` | 7092, 7960 | - | Observed | **Existing** (single bounded emission via cursor resource-limit; P1.5-T2) |
 
 ### 3.2 Acknowledged events (NOT in `SelectEventsDetailMap`)
 
 | Contract ID | Event | Detail | Source (`enhanced-select.ts`) | Status | New test |
 | --- | --- | --- | --- | --- | --- |
-| EVENT-020 | `dataProjection` | `DataProjectionEventDetail` (`complete` / `failed`) | 7978 | Observed | Yes |
-| EVENT-021 | `dataRequestCancel` | `DataRequestCancelNotification { requestId, queryGeneration, reason }` | 7679 | Observed | Yes |
-| EVENT-022 | `dataLoadingConfigError` | `{ issues }` | 6950, 7130 | Observed | Yes |
+| EVENT-020 | `dataProjection` | `DataProjectionEventDetail` (`complete` / `failed`) | 7978 | Observed | **Partial** (`complete` + request/generation/attempt pinned; `failed` only reachable via private seam) |
+| EVENT-021 | `dataRequestCancel` | `DataRequestCancelNotification { requestId, queryGeneration, reason }` | 7679 | Observed | **Existing** (all three reasons + callback detail; P1.5-T2) |
+| EVENT-022 | `dataLoadingConfigError` | `{ issues }` | 6950, 7130 | Observed | **Existing** (issues array shape + dedup; P1.5-T2) |
 
 > `pageLoaded` is declared in the event map but neither `getCapabilities().events.emitted` (`6433`) nor runtime source emits it. Characterize (DEVIATION-02); do not silently fix.
 
@@ -300,8 +300,8 @@ Full detail in `W1-P1-DEVIATIONS.md`. Summary (**all ten** — 01-10 — reconci
 | ID | Finding (short) | Class | Owner | Status at P1.2 closure |
 | --- | --- | --- | --- | --- |
 | DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.6 | Closed-for-P1.1; archival note in provenance (section 1, 12). |
-| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Open — characterize; ADR candidate. (matrix `EVENT-005`/`API-054` = Missing.) |
-| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Open — pin both payloads. (matrix `EVENT-004` = Diagnostic.) |
+| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | **Characterized (W1-P1.5-T2)** — negative confirmed: not emitted on acknowledged or legacy load-more completion; completion signalled via `dataProjection`/`loadMore`. ADR candidate; matrix `EVENT-005` remains `Missing` (declared-only). |
+| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | **Characterized (W1-P1.5-T2)** — local (`{query,results,count}`) and acknowledged (`{query,results:[],count:0,request}`) payloads pinned via public surface; matrix `EVENT-004` = `Existing`. |
 | DEVIATION-04 | `setSelectedValues` async ordering not asserted by prior tests. | Unknown | P1.2 | **Characterized** — local + server-fetch success/failure/superseded/disconnected ordering locked by black-box tests (`w1-p1-2-set-selected-values-ordering`, T1-R chronology). Not a defect. |
 | DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | **Characterized** (W1-P1.4-T2) — host inline `display:block` forced on connect *and* re-connect re-asserts it (black-box, jsdom + Chromium). Characterized, not endorsed; ADR still open. (matrix `ATTR-013` = Existing.) |
 | DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | **Guidance-only, honored** — all P1.2 tests drive public API only; no legacy projection is manipulated. Not a behavioral finding to repair. |
@@ -802,3 +802,38 @@ None authorizes a production change, removal, or ADR during W1-P1.
 - **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); LIFECYCLE results are observable-only (no internal listener-cardinality/cleanup claim); no implementation-completeness claim.
 
 _End of W1-P1.4 (Task 4 closure). W1-P1.4 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom P1.4 40 (carried), Chromium P1.4 12/12, core 962+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
+
+---
+
+## 20. W1-P1.5 Task 2 — async data-loading public event characterization
+
+Task 2 characterizes the eight **P1.5 event contracts** (EVENT-004/005/006/008/012/020/021/022) through the **public surface only** — public `dataLoading` config, public methods, public `search` event / `[part="input"]` input, the `callbacks` map, and rendered shadow DOM. No private seam (`_state`, `_dataRequestCoordinator`, `_handleSearch`, `_loadMoreItems`, `*ForTest`) is touched (harness-integrity verified by grep). No production source changed; no accepted prior test was modified.
+
+- **Spec:** `packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts` (**17 tests**), jsdom, public surface only.
+- **Public load-more trigger:** without an `IntersectionObserver` (jsdom) the acknowledged/legacy `.load-more-button` is the public fallback trigger; acknowledged load-more is exercised by completing a `succeeded` first page then clicking the button; legacy load-more requires `infiniteScroll:false` + `searchable:false` so the button (not the sentinel) renders.
+- **Determinism:** all assertions synchronize on the public `getDataLoadingState()` predicate and awaited public promises/events via `vi.waitFor`; no fixed sleeps.
+
+### 20.1 Per-contract outcome
+
+| ID | Characterized (public surface) | Coverage move |
+| --- | --- | --- |
+| EVENT-004 | Acknowledged `{query,results:[],count:0,request}`; acknowledged typed `{normalizedQuery}`; local `{query,results,count}` filtered count | Diagnostic → **Existing** |
+| EVENT-005 | Negative: not emitted on acknowledged page completion nor legacy load-more; completion via `dataProjection`/`loadMore` | Missing → **Missing** (confirmed declared-only; DEVIATION-02) |
+| EVENT-006 | Async server-failure `error` `{message,cause}` emitted before `onError` | Partial → **Partial** (broader error sources outstanding) |
+| EVENT-008 | Acknowledged `{page,items:[],request.kind:'loadMore'}`; legacy `{page:2,items:[]}` (no request envelope) | Diagnostic → **Existing** |
+| EVENT-012 | Single bounded `diagnostic` `{source:'event',name:'acknowledgedDataLoadingResourceLimit',timestamp}` | Diagnostic → **Existing** |
+| EVENT-020 | `dataProjection` `{status:'complete',requestId,queryGeneration,attempt}`; one per accepted completion | Diagnostic → **Partial** (`failed` projection only via private seam; outstanding) |
+| EVENT-021 | `dataRequestCancel` `{requestId,queryGeneration,reason}` for `query-changed`/`config-changed`/`disconnected`; callback detail parity | Diagnostic → **Existing** |
+| EVENT-022 | `dataLoadingConfigError` `{issues:[{path,code,message}]}`; no-emit-on-valid; dedup | Diagnostic → **Existing** |
+
+### 20.2 Outstanding (not forced)
+
+- **EVENT-020 `failed` projection** — the `dataProjection` `'failed'` variant (and its `acknowledgedProjectionFailed` diagnostic) is only reachable via `_failNextAcknowledgedProjectionForTest`; no public trigger exists. Recorded as **public-unobservable** (plan §7 risk 2); EVENT-020 conservatively **Partial**.
+- **EVENT-005** stays **Missing** — `pageLoaded` is declared-only; the negative is now proven (DEVIATION-02 ADR candidate).
+
+### 20.3 Distribution & integrity
+
+- **112 records.** Distribution **Existing 63 · Partial 32 · Diagnostic 13 · Missing 4 = 112** (from 58/31/19/4 after T1-R; six event rows upgraded, none silently). `verify_traceability.py` **PASS** (112 unique, locators in bounds, all 6 new `testId` literals resolved).
+- Production isolation: **0** files changed in `packages/core/src` (or engine/adapters) vs the corrective base; accepted prior tests unchanged; no probe files remain.
+
+_End of W1-P1.5 Task 2. Tasks 3–4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until Task 2 is independently accepted._

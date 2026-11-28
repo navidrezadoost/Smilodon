@@ -26,9 +26,9 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 58,
-      "Partial": 31,
-      "Diagnostic": 19,
+      "Existing": 63,
+      "Partial": 32,
+      "Diagnostic": 13,
       "Missing": 4
     },
     "byTargetIncrement": {
@@ -619,8 +619,8 @@
       "id": "EVENT-004",
       "behavior": "search local + acknowledged",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged search event whose request reflects the typed query and normalizedQuery",
       "status": "Observed",
       "evidence": "DEVIATION-03",
       "sourceLocators": [
@@ -709,8 +709,8 @@
       "id": "EVENT-008",
       "behavior": "loadMore legacy + acknowledged",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an acknowledged loadMore event with the request kind after a page is available",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -787,8 +787,8 @@
       "id": "EVENT-012",
       "behavior": "diagnostic boundedness",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits a single bounded diagnostic (source \"event\") for a cursor resource-limit and not more",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -810,8 +810,8 @@
       "id": "EVENT-020",
       "behavior": "dataProjection",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits one dataProjection \"complete\" whose detail matches the request id, generation, and attempt",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -829,8 +829,8 @@
       "id": "EVENT-021",
       "behavior": "dataRequestCancel",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataRequestCancel with reason \"query-changed\" when the query supersedes an active request",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
@@ -848,8 +848,8 @@
       "id": "EVENT-022",
       "behavior": "dataLoadingConfigError",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits dataLoadingConfigError whose detail is an issues array describing the rejected field",
       "status": "Observed",
       "evidence": "-",
       "sourceLocators": [
