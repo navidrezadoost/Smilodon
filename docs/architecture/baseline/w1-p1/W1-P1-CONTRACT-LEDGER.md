@@ -1009,3 +1009,64 @@ W1-P1.6 Task 3 characterizes the core package's behavior in a **genuine Node pro
 **Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
 
 _End of W1-P1.6 Task 3. W1-P1.6-T3 characterizes SSR import-time safety (API-075, Partial — package-entry limitation recorded) and deferred DOM access (API-076, Existing). Coverage 76/35/13/3 → 77/36/13/3 = 129. W1-P1.6-T3-R corrects the coverage summary (T3-F01: 77/36/13/3, not 77/36/13/1), adds no-DOM guards before every import in the API-076 tests (T3-F02), and corrects the verifier-evidence claim (T3-F03). Task 4 (closure) and P1.6 closure remain NO-GO pending independent T3-R acceptance._
+
+---
+
+## 27. W1-P1.6 Task 4 — Closure (reconciliation & closure evidence, documentation only)
+
+W1-P1.6 Task 4 consolidates the accepted P1.6 increments (Tasks 1, 1-R, 1-R1, 2, 2-R, 2-R1, 3, 3-R) into the final closure package. **Documentation only:** no production source changed, no behavioral test added or modified, no reclassification beyond what Tasks 1–3 committed, no verifier change. This section adds no contract ID and preserves the **129-record** inventory; it records the final P1.6 coverage, the reconciliation, and the outstanding limitations. Machine-readable detail is in `W1-P1.6-CLOSURE-EVIDENCE.json`; narrative in `W1-P1.6-CLOSURE-REPORT.md`. **This section does not claim W1-P1.6 is formally closed** — that is gated on independent Task 4 acceptance.
+
+**Lineage (linear):** `116707f` (T1) → `7183165` (T1-R) → `e598e5c` (T1-R1) → `dc1131f` (T2) → `61ebba0` (T2-R) → `44dc148` (T2-R1) → `98935ca` (T3) → `e6b89fa` (T3-R) → this Task 4 closure.
+
+### 27.1 P1.6 test inventory
+
+| Harness | Spec | Tests | Contracts |
+| --- | --- | --- | --- |
+| jsdom | `w1-p1-6-t1-security-utilities.spec.ts` | 26 | API-063..069, CONFIG-027..028 |
+| jsdom | `w1-p1-6-t2-csp-styles.spec.ts` | 25 | API-070..074, CONFIG-029 |
+| Node | `w1-p1-6-t3-ssr-import-safety.spec.ts` | 6 | API-075, API-076 |
+| **Total** | | **57** | 17 P1.6 contracts |
+
+### 27.2 Final P1.6 coverage (17 contracts)
+
+**Existing 15 · Partial 2 (API-065, API-075) · Diagnostic 0 · Missing 0 = 17.** All 17 `testId`s resolve to real `it()` titles; all source locators within bounds.
+
+| Contract | Coverage | Note |
+| --- | --- | --- |
+| API-063, API-064, API-066, API-067, API-068, API-069 | Existing | security utilities (sanitizer, construction, escaping, detection) |
+| **API-065** | **Partial** | `createElement` blocks `on*`/`style` **case-sensitively** (mixed-case bypass) — open production security limitation |
+| CONFIG-027, CONFIG-028 | Existing | `CSPFeatures`, `detectEnvironment` |
+| API-070, API-071, API-072, API-073, API-074 | Existing | csp-styles (classes, custom-props w/ prefix asymmetry, shadow inject, overflow ancestor, CSP warn) |
+| CONFIG-029 | Existing | `defaultTheme`/`applyDefaultTheme`/`shadowDOMStyles` |
+| **API-075** | **Partial** | SSR import-time safety: utils import-safe, **package entry throws** (`HTMLElement` undefined) — open production compatibility limitation |
+| API-076 | Existing | Deferred DOM access — certified **only for the tested utility functions** |
+
+### 27.3 Matrix reconciliation (whole matrix)
+
+| Stage | Existing | Partial | Diagnostic | Missing | Total |
+| --- | --- | --- | --- | --- | --- |
+| P1.5 closure | 62 | 34 | 13 | 3 | 112 |
+| after T1-R1 | 70 | 35 | 13 | 3 | 121 |
+| after T2-R1 | 76 | 35 | 13 | 3 | 127 |
+| **final (T3-R)** | **77** | **36** | **13** | **3** | **129** |
+
+P1.6 added 17 contracts (API +14, CONFIG +3); Existing +15, Partial +2 (API-065 reclassified in T1-R; API-075 new). **The three pre-existing Missing records — API-054 (P1.2), EVENT-005 (P1.5), CONFIG-023 (P1.4) — are unchanged.**
+
+### 27.4 Outstanding limitations (disclosed, not remediated)
+
+- **API-065** — case-sensitive `on*`/`style` filtering: **open production security limitation.**
+- **API-075** — package-entry SSR import failure: **open production compatibility limitation.**
+- **API-076** — deferred DOM access: **certified only for the tested utility functions.**
+- **Traceability verifier summary-validation gap** — `verify_traceability.py` does not recompute `reconciliation.byCoverage`: **open tooling improvement** (summary reconciled manually; verifier change not authorized).
+- **Browser CSP enforcement** — **not certified** (source-conditioned behavior only).
+- **Framework hydration / adapters** — **not certified** (out of W1-P1 scope).
+
+### 27.5 Findings resolved (all CLOSED)
+
+T1-F01, T1-F02, T1-R-F01, T2-F01, T2-F02, T2-F03, T2-F04, T2-R-F01, T3-F01, T3-F02, T3-F03. The API-065 and API-075 deficiencies remain **open production limitations** (recorded, not remediated).
+
+### 27.6 Disposition / non-absorption
+
+No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; the three Missing records and all residuals retain their original owners. **DEVIATION-09** ("P1.6 / forms") is a forms/validation decision, **excluded** from the security/SSR scope.
+
+_End of W1-P1.6 Task 4 (closure preparation). Documentation only; 129-record inventory preserved; P1.6 coverage 15 Existing / 2 Partial = 17; whole-matrix 77/36/13/3 = 129. W1-P1.6 overall closure and W1-P2/Angular remain NO-GO pending independent Task 4 acceptance. No production source, behavioral test, verifier, adapter, or previously-accepted artifact changed._

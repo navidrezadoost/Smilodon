@@ -1,0 +1,167 @@
+{
+  "artifactId": "W1-P1.6-CLOSURE-EVIDENCE",
+  "increment": "W1-P1.6 — SSR / Security & CSP Utility Contract Characterization",
+  "task": "Task 4 — Closure, reconciliation, and closure evidence (documentation only)",
+  "startingCommit": "e6b89facd3edb6170eca9838bbff314d2ebd38be",
+  "baselineOfRecord": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "recordedOn": "2026-11-28",
+  "nature": "Reconciliation and closure. Documentation only. No production source changed. No behavioral test added or modified. No reclassification beyond what Tasks 1-3 already committed. This closure adds this evidence file, a closure report (W1-P1.6-CLOSURE-REPORT.md), and a ledger closure section; it refreshes integrity checksums.",
+  "lineageNote": "Ancestry-verified linear parent chain: 116707f -> 7183165 -> e598e5c -> dc1131f -> 61ebba0 -> 44dc148 -> 98935ca -> e6b89fa (this Task 4 closure is the next commit).",
+  "lineage": [
+    {"increment": "Task 1", "commit": "116707f", "focus": "security utilities public surface (API-063..069, CONFIG-027..028)", "status": "Accepted (conditional; corrected by T1-R/T1-R1)"},
+    {"increment": "Task 1-R", "commit": "7183165", "focus": "characterize mixed-case createElement attrs; API-065 Existing -> Partial (T1-F01)", "status": "Accepted (conditional; finalized by T1-R1)"},
+    {"increment": "Task 1-R1", "commit": "e598e5c", "focus": "explicitly restore+verify identity sanitizer end-state (T1-R-F01)", "status": "Accepted & closed (final)"},
+    {"increment": "Task 2", "commit": "dc1131f", "focus": "csp-styles public surface (API-070..074, CONFIG-029)", "status": "Accepted (conditional; corrected by T2-R/T2-R1)"},
+    {"increment": "Task 2-R", "commit": "61ebba0", "focus": "strengthen csp-styles characterization (T2-F01..F04)", "status": "Accepted (conditional; reconciled by T2-R1)"},
+    {"increment": "Task 2-R1", "commit": "44dc148", "focus": "correct API-073 exclusivity wording (T2-R-F01)", "status": "Accepted & closed (final)"},
+    {"increment": "Task 3", "commit": "98935ca", "focus": "SSR import-time safety + deferred DOM access (API-075 Partial, API-076 Existing)", "status": "Accepted (conditional; corrected by T3-R)"},
+    {"increment": "Task 3-R", "commit": "e6b89fa", "focus": "correct coverage summary 77/36/13/3, no-DOM guards, verifier evidence (T3-F01..F03)", "status": "Accepted & closed (final)"},
+    {"increment": "Task 4", "commit": "(this closure commit)", "focus": "closure + reconciliation + checksums", "status": "Submitted for independent acceptance"}
+  ],
+  "lineageLinear": true,
+  "scopeContracts": [
+    "API-063", "API-064", "API-065", "API-066", "API-067", "API-068", "API-069",
+    "API-070", "API-071", "API-072", "API-073", "API-074",
+    "API-075", "API-076",
+    "CONFIG-027", "CONFIG-028", "CONFIG-029"
+  ],
+  "scopeContractCount": 17,
+  "testInventory": {
+    "jsdom": {
+      "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts": {"tests": 26, "contracts": ["API-063", "API-064", "API-065", "API-066", "API-067", "API-068", "API-069", "CONFIG-027", "CONFIG-028"]},
+      "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts": {"tests": 25, "contracts": ["API-070", "API-071", "API-072", "API-073", "API-074", "CONFIG-029"]}
+    },
+    "node": {
+      "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts": {"tests": 6, "contracts": ["API-075", "API-076"]}
+    },
+    "jsdomSubtotal": 51,
+    "nodeSubtotal": 6,
+    "totalTests": 57,
+    "note": "T1=26 (jsdom), T2=25 (jsdom), T3=6 (real Node). P1.6 cumulative = 57. T3 runs under packages/core/vitest.ssr.config.ts (environment=node, no shared jsdom setup) and is EXCLUDED from packages/core/vitest.config.ts so the jsdom suite never picks it up."
+  },
+  "publicSurfaceOnly": true,
+  "privateSeamsUsed": "NONE across all P1.6 specs. T1/T2 import from '../src/index.js' (public package entry); T3 imports '../src/index.js' (package entry, mandatory target) and '../src/utils/security.js' / '../src/utils/csp-styles.js' (public re-export paths) to characterize which modules are import-safe. No `as any` in executable code, no underscore-private access, no _state, no ForTest helper.",
+  "finalCoverage": {
+    "API-063": "Existing",
+    "API-064": "Existing",
+    "API-065": "Partial",
+    "API-066": "Existing",
+    "API-067": "Existing",
+    "API-068": "Existing",
+    "API-069": "Existing",
+    "API-070": "Existing",
+    "API-071": "Existing",
+    "API-072": "Existing",
+    "API-073": "Existing",
+    "API-074": "Existing",
+    "API-075": "Partial",
+    "API-076": "Existing",
+    "CONFIG-027": "Existing",
+    "CONFIG-028": "Existing",
+    "CONFIG-029": "Existing"
+  },
+  "finalCoverageTally": {
+    "Existing": 15,
+    "Partial": 2,
+    "Diagnostic": 0,
+    "Missing": 0,
+    "total": 17
+  },
+  "coverageTransitions": {
+    "baselineAtP16Start": {"note": "At P1.5 closure the P1.6 surface had ZERO registered contract IDs (documented-only per ledger §10/§12). P1.6 defined and registered 17 P1.6-targeted contracts."},
+    "final": {"Existing": 15, "Partial": 2, "Diagnostic": 0, "Missing": 0, "total": 17},
+    "reclassifications": [
+      {"id": "API-065", "from": "Existing", "to": "Partial", "task": "T1-R", "finding": "T1-F01", "reason": "createElement blocks key.startsWith('on') || key === 'style' CASE-SENSITIVELY; mixed-case ONCLICK/OnLoad/Style bypass to live handler/inline style. Production fix out of scope; classified Partial."},
+      {"id": "API-075", "from": "Missing", "to": "Partial", "task": "T3", "finding": "observed", "reason": "New record. Utility modules import-safe in no-DOM Node, but the public package ENTRY throws ReferenceError (HTMLElement is not defined) at import because exported web components extend HTMLElement at class-declaration time. Import-safety only partially satisfied; limitation recorded."}
+    ],
+    "note": "The two Partial contracts are the only classifications below Existing in P1.6. API-076 is Existing for the SPECIFICALLY TESTED utility-module functions only (not every DOM-dependent export in the package)."
+  },
+  "matrixDistribution": {
+    "p16Start": {"Existing": 62, "Partial": 34, "Diagnostic": 13, "Missing": 3, "total": 112},
+    "afterT1R1": {"Existing": 70, "Partial": 35, "Diagnostic": 13, "Missing": 3, "total": 121},
+    "afterT2R1": {"Existing": 76, "Partial": 35, "Diagnostic": 13, "Missing": 3, "total": 127},
+    "final": {"Existing": 77, "Partial": 36, "Diagnostic": 13, "Missing": 3, "total": 129},
+    "byFamilyFinal": {"API": 41, "EVENT": 15, "ATTR": 11, "PART": 11, "SLOT": 4, "LIFECYCLE": 6, "CONFIG": 29, "KBD": 12},
+    "note": "P1.6 added 17 contracts (112 -> 129): API 27 -> 41 (+14: API-063..076), CONFIG 26 -> 29 (+3: CONFIG-027..029). byCoverage moved from 62/34/13/3 to 77/36/13/3: Existing +15 (all new except API-065 Partial), Partial +2 (API-065 reclassified Existing->Partial in T1-R, and API-075 new Partial). The three pre-existing Missing records (API-054/P1.2, EVENT-005/P1.5, CONFIG-023/P1.4) are UNCHANGED."
+  },
+  "missingContractsPreserved": [
+    {"id": "API-054", "owner": "P1.2"},
+    {"id": "EVENT-005", "owner": "P1.5"},
+    {"id": "CONFIG-023", "owner": "P1.4"}
+  ],
+  "findingsResolved": [
+    {"id": "T1-F01", "contract": "API-065", "severity": "Medium", "status": "CLOSED", "resolution": "Case-sensitive on*/style block characterized; mixed-case bypass recorded; API-065 Existing -> Partial. (Production remediation NOT authorized.)"},
+    {"id": "T1-F02", "contract": "API-063", "severity": "Low", "status": "CLOSED", "resolution": "Process-global sanitizer state; final test restores+verifies identity sanitizer."},
+    {"id": "T1-R-F01", "contract": "API-063", "severity": "Low", "status": "CLOSED", "resolution": "Explicit reference (toBe) + behaviour + no pristine-default-warning verification in T1-R1."},
+    {"id": "T2-F01", "contract": "API-073", "severity": "Medium", "status": "CLOSED", "resolution": "Parent-chain semantics (not isConnected); detached subtree may be true, parentless false."},
+    {"id": "T2-F02", "contract": "API-071", "severity": "Medium", "status": "CLOSED", "resolution": "Prefix asymmetry: setter enforces '--', getter/remover do not (ordinary CSS props acted on)."},
+    {"id": "T2-F03", "contract": "CONFIG-029", "severity": "Low", "status": "CLOSED", "resolution": "Full 13-entry expected map pinned independently; no immutability claim."},
+    {"id": "T2-F04", "contract": "evidence", "severity": "Low", "status": "CLOSED", "resolution": "Precise wording: production-conditioned source behavior; no compiled-artifact/CSP-enforcement claim."},
+    {"id": "T2-R-F01", "contract": "API-073", "severity": "Low", "status": "CLOSED", "resolution": "Replaced 'only a parentless element returns false' exclusive claim with canonical parent-chain wording."},
+    {"id": "T3-F01", "contract": "traceability", "severity": "High", "status": "CLOSED", "resolution": "Corrected coverage summary 77/36/13/3 (was 77/36/13/1); Missing records unchanged."},
+    {"id": "T3-F02", "contract": "harness", "severity": "Low", "status": "CLOSED", "resolution": "assertNoDom() called immediately before every dynamic import (both API-076 tests)."},
+    {"id": "T3-F03", "contract": "verification", "severity": "Medium", "status": "CLOSED", "resolution": "Exact verifier command/output reported; verifier does NOT validate reconciliation.byCoverage (gap identified, not fixed)."}
+  ],
+  "outstandingLimitations": [
+    {"item": "API-065 — case-sensitive on*/style attribute filtering", "disposition": "Open production security limitation", "detail": "createElement blocks key.startsWith('on') || key === 'style' case-sensitively; ONCLICK/OnLoad/Style/STYLE bypass to live handler/inline style. Characterized only; remediation requires separate production authorization."},
+    {"item": "API-075 — package-entry SSR import failure", "disposition": "Open production compatibility limitation", "detail": "packages/core/src/index.ts import THROWS ReferenceError (HTMLElement is not defined) in a no-DOM Node process because exported web components extend HTMLElement at class-declaration time. The utility modules import safely. Remediation requires separate production authorization."},
+    {"item": "API-076 — deferred DOM access", "disposition": "Certified only for tested utility functions", "detail": "Existing applies to the specifically tested utility-module functions (escapeHTML, createElement defer DOM access to call time; escapeAttribute/containsSuspiciousPatterns/defaultTheme/shadowDOMStyles/applyClasses/hasOverflowHiddenAncestor operate without a global DOM). NOT a claim that every DOM-dependent export defers safely."},
+    {"item": "Traceability verifier summary-validation gap", "disposition": "Open tooling improvement", "detail": "verify_traceability.py checks ID-set equality, uniqueness, target validity, coverage-label validity, testId file existence, and locator bounds, but does NOT recompute reconciliation.byCoverage. A passing run is not proof the summary reconciles. Summary was reconciled manually. Verifier change NOT authorized in this increment."},
+    {"item": "Browser CSP enforcement", "disposition": "Not certified", "detail": "Production-conditioned source behavior under NODE_ENV=production is exercised; compatibility with an enforced browser Content Security Policy is NOT certified."},
+    {"item": "Framework hydration and adapters", "disposition": "Not certified", "detail": "React/Vue/Svelte/Solid/React-Native adapter SSR/hydration is out of W1-P1 scope."}
+  ],
+  "deferredResidualsNotAbsorbed": {
+    "p13": ["KBD-001..012 (as owned by P1.3)", "P1.3-D01", "EVENT-009"],
+    "p14": ["PART-009", "ATTR-023", "CONFIG-023", "EVENT-009"],
+    "p15": ["API-062 (cursor-depth)", "EVENT-005 (pageLoaded declared-only)", "EVENT-006 (broader error sources)", "EVENT-012 (projection-failure diagnostic)", "EVENT-020 (failed-projection variant)", "LIFECYCLE-005 (concurrency interleavings)"],
+    "deviation09": "DEVIATION-09 ('P1.6 / forms') is a forms/validation design decision, NOT a security/SSR contract; the 'forms' half is deferred past W1-P1. EXCLUDED from this increment.",
+    "note": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 is absorbed. All retain their original owners."
+  },
+  "gates": {
+    "nodeSsrSuite": "6 passed (npx vitest run --config packages/core/vitest.ssr.config.ts, environment=node)",
+    "coreJsdomRegression": "1063 passed | 1 skipped (npx vitest run --config packages/core/vitest.config.ts; SSR spec excluded)",
+    "p16CumulativeTests": 57,
+    "eslint": "clean (exit 0) on the three P1.6 specs + P1.6 configs",
+    "verify_traceability": {
+      "command": "python3 docs/architecture/baseline/w1-p1/verify_traceability.py",
+      "exactOutput": "ledger IDs=129 json records=129 unique json=129\\nPASS: ledger/matrix reconcile; IDs unique; targets valid; locators in bounds",
+      "exitCode": 0,
+      "caveat": "Does NOT validate reconciliation.byCoverage totals (see verifier gap limitation)."
+    },
+    "independentArithmeticReconciliation": {
+      "command": "python3 - (Counter of record.coverage vs reconciliation.byCoverage)",
+      "result": "actual records {Existing:77, Partial:36, Diagnostic:13, Missing:3} total 129 == declared byCoverage/totalRecords 129. MATCH.",
+      "note": "P1.6 testIds verified to resolve to real it() titles (unescaped); all source locators within bounds."
+    },
+    "checksums": "SHA256SUMS verify OK (entry count includes this closure's two new artifacts; see report)."
+  },
+  "boundaries": {
+    "documentationOnly": true,
+    "noProductionChange": "0 files changed under packages/core/src, packages/core/engine, packages/core/adapters.",
+    "noTestAddedOrModified": "No behavioral test added or modified in this closure; the three P1.6 specs and the frozen csp.spec.ts are unchanged since e6b89fa.",
+    "noReclassificationBeyondTasks1to3": "Final coverage equals the coverage committed by Tasks 1-3; this closure re-verifies it and changes nothing.",
+    "noBrowserCspEnforcement": "Not certified.",
+    "noImplementationCompletenessClaim": "API-075 package-entry import failure and API-065 case-sensitive filter remain open production limitations; W1-P1.6 closure does not claim production readiness."
+  },
+  "observedVsSourceInspectedVsUntested": {
+    "observedFacts": [
+      "Utility modules (security.ts, csp-styles.ts) import in no-DOM Node.",
+      "Package entry (index.ts) import throws ReferenceError (HTMLElement is not defined) in no-DOM Node.",
+      "escapeHTML/createElement throw ReferenceError (document is not defined) at call time in no-DOM Node.",
+      "All 17 P1.6 contracts driven via public import; deterministic dummy-throw CLI outputs recorded above."
+    ],
+    "sourceInspectedBehavior": [
+      "NativeSelectElement (native-select.ts:17) extends HTMLElement at class-declaration time (source of the package-entry import failure).",
+      "createElement blocks on*/style case-sensitively (security.ts) — API-065 limitation.",
+      "getCustomProperty/removeCustomProperty do not enforce '--' (csp-styles.ts) — API-071 asymmetry.",
+      "hasOverflowHiddenAncestor walks parentElement chain excluding document.body (csp-styles.ts) — API-073."
+    ],
+    "untestedExpectations": [
+      "Browser CSP enforcement compatibility (not exercised).",
+      "Adapter SSR/hydration behavior (out of scope).",
+      "Compiled production artifact behavior (source-conditioned only)."
+    ]
+  },
+  "closureStatement": "W1-P1.6 characterized all 17 targeted contracts on a public-surface basis: Existing 15, Partial 2 (API-065 case-sensitive filter, API-075 package-entry SSR import failure), Diagnostic 0, Missing 0. Coverage 77/36/13/3 = 129 total (the three pre-existing Missing records API-054/EVENT-005/CONFIG-023 remain untouched). Gates: Node SSR 6 passed, core jsdom 1063 passed | 1 skipped, ESLint clean, verifier PASS + independent arithmetic reconciliation, SHA256SUMS OK. Outstanding production limitations (API-065 case-sensitive filter, API-075 entry import failure) are recorded, NOT remediated. Browser CSP and adapter hydration are not certified. This submission does NOT claim W1-P1.6 is formally closed; that decision is gated on independent Task 4 acceptance."
+}
