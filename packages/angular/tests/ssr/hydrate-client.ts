@@ -5,8 +5,8 @@
  * `.aot-out/client-bundle.js`. Loaded in the browser AFTER the server-rendered
  * HTML (from `render-server.mjs`) is present in the document, it bootstraps the
  * SAME `SsrAppComponent` with client hydration enabled so we can verify ACTUAL
- * browser hydration of `SmilodonSelectComponent` — including the
- * `smilodon-select` host custom-element (tag-collision) upgrade.
+ * browser hydration of `SmilodonSelectComponent` on its `smilodon-angular-select`
+ * host (F02-R: distinct from core's `smilodon-select` tag, so no upgrade collision).
  *
  * The browser bootstrap uses `platformBrowser().bootstrapModule(...)` because
  * `bootstrapApplication` is not re-exported by this build's partially-compiled

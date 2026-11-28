@@ -37,40 +37,40 @@ export const CONSUMER_ITEMS: SmilodonSelectItem[] = [
   standalone: true,
   imports: [SmilodonSelectComponent, ReactiveFormsModule, FormsModule],
   template: `
-    <smilodon-select
+    <smilodon-angular-select
       id="reactive"
       [items]="items"
       [formControl]="singleControl"
       [searchable]="true"
       placeholder="Pick one"
-    ></smilodon-select>
+    ></smilodon-angular-select>
 
     <form [formGroup]="group">
-      <smilodon-select
+      <smilodon-angular-select
         id="grouped"
         [items]="items"
         [multiple]="true"
         formControlName="multi"
         placeholder="Pick many"
-      ></smilodon-select>
+      ></smilodon-angular-select>
     </form>
 
-    <smilodon-select
+    <smilodon-angular-select
       id="template"
       [items]="items"
       [(ngModel)]="ngModelValue"
       [ngModelOptions]="{ standalone: true }"
       placeholder="Template driven"
       #templateModel="ngModel"
-    ></smilodon-select>
+    ></smilodon-angular-select>
 
-    <smilodon-select
+    <smilodon-angular-select
       id="evented"
       [items]="items"
       [value]="eventedValue"
       [multiple]="true"
       (change)="onChange($event)"
-    ></smilodon-select>
+    ></smilodon-angular-select>
   `,
 })
 export class ConsumerAppComponent {

@@ -28,7 +28,7 @@ import {
   standalone: true,
   imports: [SmilodonSelectComponent],
   template: `
-    <smilodon-select
+    <smilodon-angular-select
       [items]="items"
       [multiple]="true"
       [searchable]="true"
@@ -36,7 +36,7 @@ import {
       (change)="onChange($event)"
       (select)="onSelect($event)"
       (search)="onSearch($event)">
-    </smilodon-select>
+    </smilodon-angular-select>
   `,
 })
 export class DemoComponent {
@@ -146,14 +146,14 @@ readonly group = new FormGroup({ multi: new FormControl<Array<string | number>>(
 ```
 ```html
 <!-- Reactive -->
-<smilodon-select [items]="items" [formControl]="single"></smilodon-select>
+<smilodon-angular-select [items]="items" [formControl]="single"></smilodon-angular-select>
 
 <form [formGroup]="group">
-  <smilodon-select [items]="items" [multiple]="true" formControlName="multi"></smilodon-select>
+  <smilodon-angular-select [items]="items" [multiple]="true" formControlName="multi"></smilodon-angular-select>
 </form>
 
 <!-- Template-driven -->
-<smilodon-select [items]="items" [(ngModel)]="value" [ngModelOptions]="{ standalone: true }"></smilodon-select>
+<smilodon-angular-select [items]="items" [(ngModel)]="value" [ngModelOptions]="{ standalone: true }"></smilodon-angular-select>
 ```
 
 | Aspect | Behavior |

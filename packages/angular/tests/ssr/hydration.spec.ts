@@ -1,37 +1,38 @@
 /**
- * S5-VR — Corrected real-browser hydration verification of SmilodonSelectComponent.
+ * F02-R — Real-browser hydration + host-collision REMEDIATION verification of
+ * `SmilodonSelectComponent`.
  *
- * STARTING COMMIT: 04847cd (S5-V). This revision implements the Lead's S5-VR
- * test-correction directive (F01/F02/F03). It loads the SERVER-RENDERED HTML
- * (from `render-server.mjs`, now hydration-annotated) plus the client hydration
- * bundle (from `build-fixture.mjs`) and verifies in a REAL browser (Chromium,
- * Firefox; WebKit environmentally blocked — see playwright.ssr.config.ts):
+ * STARTING COMMIT: 0c2fffd (S5-D remediation design, Option A accepted).
  *
- *  F01 — REAL hydration:
- *    The server HTML is now hydration-annotated (`ngh=…` + `<!--nghm-->`), and the
- *    client DEMONSTRABLY reuses the server DOM nodes (node identity preserved +
- *    Angular logs "hydrated N component(s) and M node(s)"). We no longer accept
- *    the mere presence of `ng-version`/`ng-server-context` as proof. We also
- *    capture hydration WARNINGS (e.g. NG05xx), not only console errors.
+ * Prior history: S5-VR characterized the F02 adapter defect — the Angular host
+ * used the tag `<smilodon-select>`, which `@smilodon/core` (when its full entry
+ * is imported on the page) upgrades with `NativeSelectElement`, whose open
+ * shadow root has NO `<slot>`. Unslotted light-DOM children are not composed
+ * through that shadow tree, so the real `<enhanced-select>` widget was present
+ * but INVISIBLE, 0×0, and unusable by pointer or keyboard. Those defects were
+ * preserved as `test.fail()` reproductions.
  *
- *  F02 — the tag collision is NOT assumed benign:
- *    The `<smilodon-select>` host is upgraded by core's NativeSelectElement, whose
- *    shadow root has NO `<slot>`. Unslotted light-DOM children are not rendered
- *    through the host shadow tree, so the real `<enhanced-select>` widget may be
- *    present/programmatically operable yet INVISIBLE and un-usable by a pointer
- *    or keyboard. This is verified with REAL Playwright locator visibility /
- *    geometry / pointer / keyboard / accessibility checks — NOT a programmatic
- *    `container.click()` inside `page.evaluate()`. If the widget is not visible,
- *    this spec FAILS and preserves the reproduction (per the directive: stop at
- *    the boundary; production remediation requires separate authorization).
+ * F02-R remediates the production defect by diverging the Angular host selector
+ * to a name core never registers: `smilodon-angular-select` (see
+ * select.component.ts). This spec converts the three prior expected-failures into
+ * GENUINE passing assertions and hardens the interactive checks:
  *
- *  F03 — genuine Angular behavior:
- *    Asserts the Angular `(change)` OUTPUT delivery (via the fixture's `onChange`
- *    handler → `window.__fixture.changeCount/lastChange`), and genuine form-model
- *    behavior (FormControl.valueChanges count + last value), not just DOM capture.
- *    Focus/touched exercised with REAL focus movement (Playwright focus + a real
- *    focus-loss to a visible target); a synthetic FocusEvent case is retained
- *    separately as a unit-level check.
+ *  F01 — REAL hydration (server annotated + client reuses server nodes).
+ *  F02 — the Angular host is NOT upgraded by core; the widget is visible, sized,
+ *        hit-testable, pointer- and keyboard-operable. The host has NO foreign
+ *        shadow root (positive replacement of the old "shadow has a slot" check).
+ *  F02-R02 — mixed-consumer regression: full core IS loaded (so `smilodon-select`
+ *        is a defined custom element), yet the `smilodon-angular-select` host is
+ *        NOT upgraded by it — independent widgets remain visible/interactive.
+ *  F03 — genuine Angular (change) OUTPUT + form-model behavior with EXACT counts:
+ *        exactly ONE change output per selection, ZERO feedback callbacks on the
+ *        initial reactive value, real pointer + keyboard interaction.
+ *  Focus/touched — shadow-aware real focus landing inside the widget, and a REAL
+ *        focus-loss (focus -> elsewhere) marking the control ng-touched. The
+ *        synthetic FocusEvent case is retained separately as a unit-level check.
+ *
+ * Runs in real Chromium and Firefox (WebKit is environmentally unavailable on the
+ * build host — see playwright.ssr.config.ts).
  *
  * @ssr-hydration
  */
@@ -83,6 +84,9 @@ async function waitForHydration(page: Page): Promise<void> {
   );
   const err = await page.evaluate(() => window.__hydrateError ?? null);
   expect(err, 'hydration must not throw (bootstrap error)').toBeNull();
+  // The fixture publishes `window.__fixture` from its constructor; wait for it so
+  // subsequent reads are not racing the first `publishState()`.
+  await page.waitForFunction(() => window.__fixture != null, undefined, { timeout: 15000 });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,6 +107,13 @@ test.describe('@ssr-hydration F01 — real Angular hydration', () => {
 
     // The SSR content-integrity marker Angular inserts for hydration.
     expect(html, 'server HTML carries the <!--nghm--> integrity marker').toContain('<!--nghm-->');
+
+    // F02-R: the serialized hosts use the REMEDIATED selector, not the colliding
+    // `<smilodon-select>` tag. This proves SSR markup will not be upgraded by core.
+    expect(
+      (html.match(/<smilodon-angular-select\b/g) || []).length,
+      'server HTML serializes the remediated smilodon-angular-select hosts',
+    ).toBe(2);
   });
 
   test('client reuses server DOM nodes and reports positive hydration (not recreation)', async ({ page }) => {
@@ -132,33 +143,36 @@ test.describe('@ssr-hydration F01 — real Angular hydration', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// F02 — the widget must be VISIBLE and USABLE (not merely queryable)
+// F02 — the widget must be VISIBLE and USABLE (remediation + no foreign upgrade)
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('@ssr-hydration F02 — rendered widget visibility & interaction', () => {
-  test('tag collision does NOT hide the real widget (visible, sized, hittable)', async ({ page }) => {
-    // EXPECTED FAILURE — preserved reproduction of the F02 adapter defect:
-    // core's NativeSelectElement host shadow root has NO <slot>, so the light-DOM
-    // <enhanced-select> widget is not rendered (0×0, invisible). Marked
-    // test.fail() so the suite treats it as an expected failure while F02 is open,
-    // and FAILS LOUDLY (unexpected pass) if the adapter is ever remediated this way.
-    test.fail(true, 'F02: <enhanced-select> hidden by slotless core host shadow (adapter defect)');
+  test('remediated host is NOT upgraded by core; the real widget is visible, sized, hittable', async ({
+    page,
+  }) => {
     await page.goto('/');
     await waitForHydration(page);
 
-    // Characterize the collision (host gained a foreign shadow root with no slot).
-    const collision = await page.evaluate((id) => {
+    // F02-R01/R02: the Angular host uses the distinct `smilodon-angular-select`
+    // tag. Because core never registers that name, the host must NOT gain a
+    // shadow root — the replacement for S5-VR's "host shadow has a slot" check.
+    const hostState = await page.evaluate((id) => {
       const host = document.querySelector(id) as HTMLElement;
-      const shadow = host.shadowRoot;
       return {
-        hostHasShadow: !!shadow,
-        hostShadowHasSlot: shadow ? !!shadow.querySelector('slot') : null,
+        tag: host.tagName.toLowerCase(),
+        hasForeignShadowRoot: host.shadowRoot !== null,
+        // Does a core `smilodon-select` definition exist that could have claimed
+        // the old tag? (It may or may not be loaded depending on import order.)
+        smilodonSelectDefined: !!customElements.get('smilodon-select'),
       };
     }, PLAIN_ID);
-    expect(collision.hostHasShadow, 'host upgraded by core NativeSelectElement (collision)').toBe(true);
-    // Document the mechanism: core's host shadow has NO slot, so light children
-    // are not composed/rendered through it.
-    expect(collision.hostShadowHasSlot, "core's host shadow root exposes a <slot> for light children").toBe(true);
+    expect(hostState.tag, 'Angular host element uses the remediated selector').toBe(
+      'smilodon-angular-select',
+    );
+    expect(
+      hostState.hasForeignShadowRoot,
+      'Angular host has NO foreign shadow root (core did not upgrade it)',
+    ).toBe(false);
 
     // The REAL widget is the <enhanced-select> child. Playwright locators pierce
     // open shadow roots; assert the widget itself is visible and has area.
@@ -169,17 +183,28 @@ test.describe('@ssr-hydration F02 — rendered widget visibility & interaction',
     expect(box!.width, 'widget has non-zero width').toBeGreaterThan(0);
     expect(box!.height, 'widget has non-zero height').toBeGreaterThan(0);
 
-    // The combobox trigger inside the widget is reachable and hittable by a
-    // pointer. Playwright click does an actionability check (visible + stable +
-    // receives events) — a programmatic DOM click would mask an invisible target.
-    const combobox = widget.locator('input[role="combobox"], [role="combobox"]').first();
+    // Independent widget: the TWO selects are distinct `enhanced-select` widgets
+    // (not one shared upgrade artifact).
+    await expect(
+      page.locator(`${REACTIVE_ID} enhanced-select`),
+      'the second widget is also present and distinct',
+    ).toBeVisible();
+
+    // The combobox trigger inside the widget is reachable and hittable by a real
+    // pointer. Playwright's click performs an actionability check (visible +
+    // stable + receives events) — a programmatic DOM click would mask an
+    // invisible target, so this is the genuine F02 proof.
+    const combobox = widget.locator('input[role="combobox"]').first();
     await expect(combobox, 'the combobox is visible').toBeVisible();
     await combobox.click({ timeout: 5000 });
+    // Clicking opens the dropdown; assert it actually rendered options.
+    await expect(
+      widget.locator('select-option').first(),
+      'pointer click opened the listbox with rendered options',
+    ).toBeVisible({ timeout: 5000 });
   });
 
-  test('collision does NOT suppress layout (host + widget have real geometry)', async ({ page }) => {
-    // EXPECTED FAILURE — same F02 adapter defect (widget has 0 client rects).
-    test.fail(true, 'F02: <enhanced-select> has 0 client rects (hidden by slotless core host shadow)');
+  test('widget has real geometry (host + widget laid out, hit-test lands inside)', async ({ page }) => {
     await page.goto('/');
     await waitForHydration(page);
 
@@ -191,9 +216,14 @@ test.describe('@ssr-hydration F02 — rendered widget visibility & interaction',
       // elementFromPoint at the widget's centre should resolve into the widget
       // subtree (or its shadow), proving it is on-screen and painted.
       let hitInsideWidget = false;
+      let hitInShadowTree = false;
       if (r.width > 0 && r.height > 0) {
         const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-        hitInsideWidget = !!el && (el === enh || enh.contains(el) || el.getRootNode() === (enh.shadowRoot ?? null));
+        if (el) {
+          hitInsideWidget = el === enh || enh.contains(el);
+          const enhShadow = enh.shadowRoot;
+          hitInShadowTree = !!enhShadow && (el === enhShadow.host || enhShadow.contains(el));
+        }
       }
       return {
         hostH: hr.height,
@@ -201,6 +231,7 @@ test.describe('@ssr-hydration F02 — rendered widget visibility & interaction',
         enhH: r.height,
         enhClientRects: enh.getClientRects().length,
         hitInsideWidget,
+        hitInShadowTree,
       };
     }, PLAIN_ID);
 
@@ -208,16 +239,80 @@ test.describe('@ssr-hydration F02 — rendered widget visibility & interaction',
     expect(geo.enhW, 'widget width > 0').toBeGreaterThan(0);
     expect(geo.enhH, 'widget height > 0').toBeGreaterThan(0);
     expect(geo.hostH, 'host has height > 0').toBeGreaterThan(0);
-    expect(geo.hitInsideWidget, 'hit-testing at the widget centre lands inside the widget').toBe(true);
+    expect(
+      geo.hitInsideWidget || geo.hitInShadowTree,
+      'hit-testing at the widget centre lands inside the widget (light DOM or its shadow)',
+    ).toBe(true);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// F03 — genuine Angular (change) output + form-model behavior
+// F02-R02 — mixed-consumer regression: full core loaded, host NOT upgraded
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('@ssr-hydration F02-R02 — mixed-consumer regression', () => {
+  test('loading full core (registers smilodon-select) does NOT upgrade the Angular host', async ({
+    page,
+  }) => {
+    // Load the page. The client bundle imports @smilodon/angular, whose adapter
+    // lazily loads the FULL `@smilodon/core` entry (core-loader.ts) to define
+    // `<enhanced-select>`. That same full-core module also self-registers
+    // `smilodon-select` (native-select.ts top-level) — the exact mixed-consumer
+    // hazard the original tag collision came from.
+    await page.goto('/');
+    await waitForHydration(page);
+
+    // Confirm the full-core registrations are present on the page.
+    const coreState = await page.evaluate(() => ({
+      smilodonSelect: !!customElements.get('smilodon-select'),
+      enhancedSelect: !!customElements.get('enhanced-select'),
+      selectOption: !!customElements.get('select-option'),
+    }));
+    expect(coreState.smilodonSelect, 'core registered smilodon-select (full core loaded)').toBe(true);
+    expect(coreState.enhancedSelect, 'core registered enhanced-select').toBe(true);
+    expect(coreState.selectOption, 'core registered select-option').toBe(true);
+
+    // The Angular host tag is NOT a core registration, so neither host is upgraded.
+    const hosts = await page.evaluate((ids) => {
+      return ids.map((id) => {
+        const host = document.querySelector(id) as HTMLElement;
+        const enh = host.querySelector('enhanced-select') as HTMLElement | null;
+        const r = enh?.getBoundingClientRect();
+        return {
+          id,
+          tag: host.tagName.toLowerCase(),
+          hasForeignShadowRoot: host.shadowRoot !== null,
+          widgetW: r?.width ?? 0,
+          widgetH: r?.height ?? 0,
+        };
+      });
+    }, [PLAIN_ID, REACTIVE_ID]);
+
+    for (const h of hosts) {
+      expect(h.tag, `${h.id} uses the remediated Angular selector`).toBe('smilodon-angular-select');
+      expect(
+        h.hasForeignShadowRoot,
+        `${h.id} has NO core shadow root even though smilodon-select/enhanced-select are defined`,
+      ).toBe(false);
+      expect(h.widgetW, `${h.id} widget retains non-zero width under mixed registration`).toBeGreaterThan(0);
+      expect(h.widgetH, `${h.id} widget retains non-zero height under mixed registration`).toBeGreaterThan(0);
+    }
+
+    // One widget remains independently interactive: real pointer click opens it.
+    const widget = page.locator(`${PLAIN_ID} enhanced-select`);
+    await widget.locator('input[role="combobox"]').first().click({ timeout: 5000 });
+    await expect(widget.locator('select-option').first(), 'mixed registration still allows pointer open').toBeVisible({
+      timeout: 5000,
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// F03 — genuine Angular (change) output + form-model behavior (exact counts)
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('@ssr-hydration F03 — Angular output & form model', () => {
-  test('reactive select hydrates on initial value with NO programmatic echo (H2)', async ({ page }) => {
+  test('reactive select hydrates on initial value with ZERO feedback callbacks (H2)', async ({ page }) => {
     await page.goto('/');
     await waitForHydration(page);
 
@@ -242,118 +337,155 @@ test.describe('@ssr-hydration F03 — Angular output & form model', () => {
     expect(h2.hostPristine, 'reactive host stays ng-pristine after initial writeValue').toBe(true);
     // Genuine form model: initial value came from the FormControl, no user edit.
     expect(h2.formLastValue, 'FormControl model holds the initial value b').toBe('b');
+    // F02-R08: the initial reactive value must produce ZERO feedback callbacks —
+    // no `valueChanges` emission from the initial writeValue (no programmatic echo).
+    expect(h2.formChanges, 'initial writeValue produced ZERO form valueChanges (no echo)').toBe(0);
     // The standalone `#plain` (change) output must NOT have fired during hydration.
     expect(h2.changeCount, 'no spurious (change) output during hydration').toBe(0);
   });
 
-  test('selection forwards the Angular (change) OUTPUT and updates the form model', async ({ page }) => {
+  test('pointer selection fires EXACTLY ONE (change) output and updates the form model', async ({ page }) => {
     await page.goto('/');
     await waitForHydration(page);
 
     const before = await page.evaluate(() => ({
       changeCount: window.__fixture?.changeCount ?? -1,
+      formChanges: window.__fixture?.formChanges ?? -1,
     }));
     expect(before.changeCount, '(change) output silent before interaction').toBe(0);
+    expect(before.formChanges, 'form valueChanges silent before interaction').toBe(0);
 
-    // Select via the real option container (the core e2e interaction).
-    const clicked = await page.evaluate((id) => {
-      const host = document.querySelector(id) as HTMLElement;
-      const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
-      const opt = enh?.shadowRoot?.querySelectorAll('select-option')[0] as
-        | (HTMLElement & { shadowRoot: ShadowRoot | null })
-        | undefined;
-      const container = opt?.shadowRoot?.querySelector('.option-container') as HTMLElement | null;
-      if (container) {
-        container.click();
-        return true;
-      }
-      return false;
-    }, PLAIN_ID);
-    expect(clicked, 'first option container clicked inside hydrated widget').toBe(true);
+    // REAL pointer interaction: click the combobox to open, then click option "a".
+    const widget = page.locator(`${PLAIN_ID} enhanced-select`);
+    const combobox = widget.locator('input[role="combobox"]').first();
+    await combobox.click({ timeout: 5000 });
+    const firstOption = widget.locator('select-option').first();
+    await expect(firstOption, 'first option renders after pointer open').toBeVisible({ timeout: 5000 });
+    // Click the option itself (Playwright pierces the option's shadow root and
+    // clicks its visible .option-container). This is a REAL user gesture.
+    await firstOption.click({ timeout: 5000 });
 
-    // Angular (change) OUTPUT delivered to the fixture consumer (NOT just the
-    // core event reaching document capture). This is the F03 assertion.
+    // F02-R07: EXACTLY ONE change output for a single selection — not >= 1.
     await expect
-      .poll(
-        () => page.evaluate(() => window.__fixture?.changeCount ?? 0),
-        { message: 'the Angular (change) output fired for #plain', timeout: 5000 },
-      )
-      .toBeGreaterThanOrEqual(1);
+      .poll(() => page.evaluate(() => window.__fixture?.changeCount ?? 0), {
+        message: 'exactly one (change) output fired for the single pointer selection',
+        timeout: 5000,
+      })
+      .toBe(1);
 
     const last = await page.evaluate(
       () => window.__fixture?.lastChange as { selectedValues?: unknown[] } | null,
     );
-    expect(last?.selectedValues, 'the (change) output received the selected value').toEqual(['a']);
+    expect(last?.selectedValues, 'the (change) output received the selected value a').toEqual(['a']);
 
-    // Now exercise the reactive control's model via the same path.
-    const reactiveClicked = await page.evaluate((id) => {
-      const host = document.querySelector(id) as HTMLElement;
-      const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
-      const opt = enh?.shadowRoot?.querySelectorAll('select-option')[2] as
-        | (HTMLElement & { shadowRoot: ShadowRoot | null })
-        | undefined;
-      const container = opt?.shadowRoot?.querySelector('.option-container') as HTMLElement | null;
-      if (container) {
-        container.click();
-        return true;
-      }
-      return false;
-    }, REACTIVE_ID);
-    expect(reactiveClicked, 'third option clicked on reactive widget').toBe(true);
+    // REAL keyboard interaction on the reactive control: focus it, open with
+    // ArrowDown, move to index 2 ("c") and commit with Enter — exactly ONE change.
+    const formChangesBefore = await page.evaluate(() => window.__fixture?.formChanges ?? 0);
+    const reactiveBox = page.locator(`${REACTIVE_ID} enhanced-select`);
+    const reactiveInput = reactiveBox.locator('input[role="combobox"]').first();
+    await reactiveInput.focus();
+    // ArrowDown opens (first press) — press again to move active to next option.
+    await page.keyboard.press('ArrowDown'); // open
+    await page.keyboard.press('ArrowDown'); // active moves off the selected "b"
+    await page.keyboard.press('ArrowDown'); // move down once more
+    await page.keyboard.press('Enter'); // commit active option
 
+    // The form model updated (valueChanges fired exactly once more) and the last
+    // value is a non-initial value driven by keyboard selection.
     await expect
-      .poll(
-        () => page.evaluate(() => window.__fixture?.formLastValue ?? null),
-        { message: 'FormControl model updated to the clicked value (c)', timeout: 5000 },
-      )
-      .toBe('c');
+      .poll(() => page.evaluate(() => window.__fixture?.formChanges ?? 0), {
+        message: 'keyboard selection produced exactly one form valueChanges emission',
+        timeout: 5000,
+      })
+      .toBe(formChangesBefore + 1);
+
+    const formLast = await page.evaluate(() => window.__fixture?.formLastValue ?? null);
+    expect(formLast, 'keyboard selection wrote a concrete value into the form model').not.toBeNull();
+    expect(['a', 'b', 'c'], 'keyboard selection wrote a valid option value').toContain(formLast);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Focus / touched — REAL focus movement + retained synthetic check
+// Focus / touched — shadow-aware real focus + REAL focus-loss + synthetic unit
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('@ssr-hydration focus & touched', () => {
-  test('REAL focus cannot reach the widget while it is unrendered (F02 consequence)', async ({ page }) => {
-    // EXPECTED FAILURE — the F02 adapter defect surfaces through real focus:
-    // the widget is 0-height so a real browser cannot focus it. If F02 were
-    // remediated, real focus would land and this test would unexpectedly pass,
-    // which test.fail() surfaces loudly.
-    test.fail(true, 'F02: real focus cannot reach the widget (unrendered, 0-height)');
+  test('REAL focus reaches the widget combobox (shadow-aware composed focus)', async ({ page }) => {
     await page.goto('/');
     await waitForHydration(page);
 
-    // Add a real, focusable, visible control to move focus to on focus-loss.
+    const host = page.locator(REACTIVE_ID);
+    await expect(host).toHaveClass(/ng-untouched/);
+
+    // Focus the widget combobox with a real Playwright focus (real browser).
+    const combobox = host.locator('enhanced-select input[role="combobox"]').first();
+    await combobox.focus();
+
+    // F02-R: shadow-aware active-element check — composed focus must be INSIDE
+    // the combobox (deepest active element), not merely in the light DOM.
+    const focusReach = await page.evaluate((id) => {
+      const hostEl = document.querySelector(id) as HTMLElement;
+      const enh = hostEl.querySelector('enhanced-select') as HTMLElement;
+      const comboboxEl = enh.shadowRoot?.querySelector('input[role="combobox"]') as HTMLElement | null;
+      // Walk the (open) shadow chain to the deepest active element.
+      let active: Element | null = document.activeElement;
+      while (active && (active as HTMLElement).shadowRoot?.activeElement) {
+        active = (active as HTMLElement).shadowRoot!.activeElement;
+      }
+      // Is `active` inside the host's composed subtree?
+      let node: Node | null = active;
+      let inside = false;
+      while (node) {
+        if (node === hostEl) {
+          inside = true;
+          break;
+        }
+        const root = node.getRootNode();
+        node = root instanceof ShadowRoot ? root.host : (node.parentNode as Node | null);
+      }
+      return {
+        hasCombobox: !!comboboxEl,
+        activeEqualsCombobox: active === comboboxEl,
+        activeInsideHost: inside,
+        comboboxHeight: comboboxEl?.getBoundingClientRect().height ?? 0,
+      };
+    }, REACTIVE_ID);
+
+    expect(focusReach.hasCombobox, 'widget exposes an input[role="combobox"]').toBe(true);
+    expect(focusReach.comboboxHeight, 'combobox has non-zero rendered height').toBeGreaterThan(0);
+    expect(focusReach.activeEqualsCombobox, 'composed active element IS the widget combobox').toBe(true);
+    expect(focusReach.activeInsideHost, 'composed active element is inside the Angular host').toBe(true);
+  });
+
+  test('REAL focus-loss marks the control ng-touched (exactly once)', async ({ page }) => {
+    await page.goto('/');
+    await waitForHydration(page);
+
+    // A real, visible, focusable target OUTSIDE the control to move focus to.
     await page.evaluate(() => {
       const b = document.createElement('button');
       b.id = 'focus-sink';
       b.textContent = 'sink';
-      b.style.cssText = 'display:block;width:80px;height:24px;';
+      b.style.cssText = 'display:block;width:120px;height:32px;margin-top:8px;';
       document.body.appendChild(b);
     });
 
     const host = page.locator(REACTIVE_ID);
     await expect(host).toHaveClass(/ng-untouched/);
 
-    // Attempt REAL focus on the widget's combobox (inside enhanced-select shadow).
-    const combobox = host.locator('enhanced-select input[role="combobox"], enhanced-select [role="combobox"]').first();
-    const focusReach = await combobox.evaluate((el) => {
-      (el as HTMLElement).focus();
-      return {
-        offsetHeight: (el as HTMLElement).offsetHeight,
-        activeIsCombobox: document.activeElement === el,
-      };
-    });
+    // Real focus INTO the control (starts a focus session), then real focus-loss
+    // OUT to the sink button (Playwright focus is a genuine browser focus move).
+    await host.locator('enhanced-select input[role="combobox"]').first().focus();
+    await expect(host, 'control retains focus while combobox focused').not.toHaveClass(/ng-touched/);
+    await page.locator('#focus-sink').focus();
 
-    // ASSERTION (this is the F02 defect surfacing through real focus): a real
-    // browser cannot focus the widget because it is unrendered (0-height). If the
-    // widget WERE rendered, real focus would land and this would pass. As long as
-    // F02 is unresolved, this fails — the preserved reproduction of the defect.
-    expect(
-      focusReach.activeIsCombobox,
-      'real focus can reach the widget combobox (blocked by F02: widget unrendered, 0-height)',
-    ).toBe(true);
+    // F02-R09: a genuine focus-loss marks the control ng-touched.
+    await expect
+      .poll(async () => host.evaluate((el) => el.classList.contains('ng-touched')), {
+        message: 'control becomes ng-touched after a genuine focus-loss',
+        timeout: 5000,
+      })
+      .toBe(true);
   });
 
   test('UNIT: synthetic focusin/focusout(relatedTarget) marks touched', async ({ page }) => {

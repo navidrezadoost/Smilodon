@@ -56,8 +56,8 @@ writeFileSync(join(__dirname, '.aot-out', 'server-render.html'), html, 'utf8');
 // ── 2. Assertions on the serialized HTML ───────────────────────────────────────
 check('server produced non-empty HTML', html.length > 0, `${html.length} bytes`);
 
-const smilodonHosts = (html.match(/<smilodon-select\b/g) || []).length;
-check('two <smilodon-select> hosts serialized', smilodonHosts === 2, `found ${smilodonHosts}`);
+const smilodonHosts = (html.match(/<smilodon-angular-select\b/g) || []).length;
+check('two <smilodon-angular-select> hosts serialized', smilodonHosts === 2, `found ${smilodonHosts}`);
 
 const placeholderTags = (html.match(/<enhanced-select\b/g) || []).length;
 check(

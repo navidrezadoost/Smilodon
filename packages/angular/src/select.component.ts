@@ -94,16 +94,22 @@ function findShadowRootHost(root: ShadowRoot): Element | null {
  *
  * @example
  * ```html
- * <smilodon-select
+ * <smilodon-angular-select
  *   [items]="items"
  *   [value]="selectedValues"
  *   [multiple]="true"
  *   (change)="onChange($event)">
- * </smilodon-select>
+ * </smilodon-angular-select>
  * ```
  */
 @Component({
-  selector: 'smilodon-select',
+  // S5-D / F02-R: distinct host tag so the component never collides with core's
+  // `smilodon-select` custom element (NativeSelectElement). The old tag collided
+  // because full-core import upgraded the Angular host (attachShadow, no <slot>)
+  // and suppressed the light-DOM <enhanced-select> widget. The component still
+  // renders the real <enhanced-select> in its template (as every sibling adapter
+  // does); only the host name diverges.
+  selector: 'smilodon-angular-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<enhanced-select #host></enhanced-select>',
@@ -332,7 +338,7 @@ export class SmilodonSelectComponent
    */
   private touchedThisSession = false;
 
-  /** The DOM host (`smilodon-select`) focus-in/out listener references. */
+  /** The DOM host (`smilodon-angular-select`) focus-in/out listener references. */
   private focusBindings: Array<[string, EventListener]> = [];
 
   /**
@@ -941,7 +947,7 @@ export class SmilodonSelectComponent
 
   /**
    * Attach `focusin`/`focusout` listeners on the component's HOST element (the
-   * `smilodon-select` wrapper). Because the whole control — the combobox input,
+   * `smilodon-angular-select` wrapper). Because the whole control — the combobox input,
    * popup, chips, clear button — lives inside the host's shadow tree, a
    * `focusout` whose `relatedTarget` is still inside the host is an INTERNAL
    * move (must NOT touch), while a `focusout` to anything outside the host is a
@@ -1053,7 +1059,7 @@ export class SmilodonSelectComponent
     return false;
   }
 
-  /** The component host element (the `smilodon-select` wrapper). */
+  /** The component host element (the `smilodon-angular-select` wrapper). */
   private getHostElement(): HTMLElement | null {
     return this.element?.nativeElement ?? null;
   }

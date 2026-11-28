@@ -168,7 +168,7 @@ const selected = (el) => el?.getSelectedValues?.() ?? [];
  * Simulate the user moving focus OUT of a form control to elsewhere on the page
  * (S4-R touched boundary). We build a fresh outside element as the focus
  * destination and dispatch a bubbling `focusout` on the control's HOST (the
- * `<smilodon-select>` element, which is where core listens for focus changes).
+ * `<smilodon-angular-select>` element, where the adapter listens for focus changes).
  * The `relatedTarget` points OUTSIDE the control → the accessor treats this as a
  * whole-control focus-loss and fires `onTouched` exactly once.
  */

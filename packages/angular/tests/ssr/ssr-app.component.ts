@@ -60,18 +60,18 @@ declare global {
   standalone: true,
   imports: [SmilodonSelectComponent, ReactiveFormsModule],
   template: `
-    <smilodon-select
+    <smilodon-angular-select
       id="plain"
       [items]="items"
       placeholder="Pick one"
       (change)="onChange($event)"
-    ></smilodon-select>
+    ></smilodon-angular-select>
 
-    <smilodon-select
+    <smilodon-angular-select
       id="reactive"
       [items]="items"
       [formControl]="ctrl"
-    ></smilodon-select>
+    ></smilodon-angular-select>
   `,
 })
 export class SsrAppComponent {
