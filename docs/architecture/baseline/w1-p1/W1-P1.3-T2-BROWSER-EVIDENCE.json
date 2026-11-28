@@ -1,0 +1,205 @@
+{
+  "artifactId": "W1-P1.3-T2-BROWSER-EVIDENCE",
+  "increment": "W1-P1.3",
+  "task": "Task 2 — Real-Browser Keyboard and Accessibility Verification",
+  "startingCommit": "5ad506cba83b1162ec4b68230d9d5d0c38bbc866",
+  "generatedAt": "2026-11-28T06:03:35.133Z",
+  "recordedOn": "2026-11-28",
+  "scope": "Characterization only. No production change. Genuine trusted keyboard input via Playwright; assertions read public-observable DOM + the Chromium accessibility tree (CDP Accessibility.getFullAXTree). Discrepancies are characterized, never repaired.",
+  "harness": {
+    "runner": "@playwright/test",
+    "config": "tests/e2e/w1-p1-3-t2/playwright.config.ts",
+    "npmScript": "test:e2e:p13-t2",
+    "spec": "tests/e2e/w1-p1-3-t2/keyboard-accessibility.t2.spec.ts",
+    "helpers": "tests/e2e/w1-p1-3-t2/harness.ts",
+    "browser": {
+      "engine": "Chromium",
+      "product": "Google Chrome for Testing 156.0.8078.4",
+      "reportedVersionInTest": "156.0.8078.4",
+      "executablePath": "~/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "overrideEnv": "SMILODON_T2_CHROMIUM",
+      "determinism": "single project (chromium), workers=1, fullyParallel=false, retries=0, headless=true"
+    },
+    "nodeVersion": "v24.13.1",
+    "systemUnderTest": "vanilla-demo (http://localhost:5173/vanilla-demo.html) with enhanced-select / select-option custom elements; demo's own static selects purged so the AX tree contains only suite-mounted instances",
+    "inputModel": "Playwright locator.press / focus deliver genuine trusted keyboard events (NOT synthetic KeyboardEvent dispatch)",
+    "proxyNote": "NO_PROXY for localhost/127.0.0.1/::1 is enforced in-config so webServer probes do not traverse the developer outbound proxy",
+    "whyChrome1248": "The repo pins @playwright/test 1.59.1 whose default Chromium (revision 1217) is geo-blocked on this environment's CDN (HTTP 403). The cache already carries a full Chrome-for-Testing build (chromium-1248) which supports CDP AX tree + ariaSnapshot; Playwright is pointed at it explicitly for reproducibility."
+  },
+  "result": {
+    "total": 31,
+    "passed": 31,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "durationMs": 7807,
+    "resultsJson": "tests/e2e/w1-p1-3-t2/test-results/w1-p1-3-t2/results.json"
+  },
+  "matrix": {
+    "T2-01": {
+      "title": "Browser harness (deterministic Chromium, version recorded)",
+      "tests": 2,
+      "status": "PASS",
+      "findings": [
+        "Chromium engine version is reported at 156.0.8078.4 (matches /^\\d+\\.\\d+\\.\\d+\\.\\d+$/).",
+        "Mounted combobox renders with role=combobox and aria-expanded=false initially.",
+        "Initial mount is closed (no data-open) with no aria-activedescendant."
+      ]
+    },
+    "T2-02": {
+      "title": "Keyboard navigation (Arrow/Home/End/Page/Enter/Space)",
+      "tests": 6,
+      "status": "PASS",
+      "findings": [
+        "ArrowDown on a closed+focused combobox opens it AND pre-activates the first option (aria-activedescendant -> 'a').",
+        "ArrowDown/ArrowUp move one selectable step and skip a disabled option (a -> c -> a).",
+        "ArrowDown/ArrowUp clamp at the first/last selectable option (no wrap-around).",
+        "Home jumps to first selectable (a); End jumps to last selectable (d).",
+        "PageDown/PageUp move by 10 selectable options (v0 -> v10; v24 -> v14).",
+        "Enter activates the active option and closes; Space activates the pre-active option in the non-searchable default."
+      ]
+    },
+    "T2-03": {
+      "title": "Popup dismissal (Escape/Tab/focus transfer/close chronology)",
+      "tests": 4,
+      "status": "PASS",
+      "findings": [
+        "Escape closes an open popup and sets aria-expanded=false.",
+        "Tab closes an open popup but does NOT advance DOM focus to the next tabbable; document.activeElement falls back to BODY (recorded as P1.3-D04; not repaired).",
+        "Escape and Tab both emit close with empty detail ({}); indistinguishable — confirms P1.3-D01 in a real browser.",
+        "Escape/Tab while already closed emit no close event."
+      ]
+    },
+    "T2-04": {
+      "title": "DOM focus (document.activeElement + shadow root)",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "DOM focus is on the ENHANCED-SELECT host; the shadow active element is the combobox input (part=input).",
+        "Focus stays on the input across open + arrow movement; the active option is expressed via aria-activedescendant, never via DOM focus.",
+        "Escape leaves DOM focus on the combobox input."
+      ]
+    },
+    "T2-05": {
+      "title": "ARIA relationships (combobox/listbox/option/aria-controls/expanded/activedescendant)",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "combobox aria-controls equals the listbox id (aria-owns also present).",
+        "aria-expanded reflects open/closed; aria-activedescendant resolves to an option.",
+        "AX tree exposes a combobox with hasPopup=listbox and controls, plus >=1 listbox role."
+      ]
+    },
+    "T2-06": {
+      "title": "Disabled options (keyboard exclusion + a11y state)",
+      "tests": 2,
+      "status": "PASS",
+      "findings": [
+        "A disabled option is never activated by keyboard traversal (ArrowUp/Down sweep never lands on 'b').",
+        "Disabled option exposes aria-disabled=true in the DOM and disabled=true state in the AX tree ('Bravo')."
+      ]
+    },
+    "T2-07": {
+      "title": "Selection policies (single/multi/allowDeselect/maxSelections, keyboard-only)",
+      "tests": 4,
+      "status": "PASS",
+      "findings": [
+        "Single mode: Enter selects the active option and closes.",
+        "Multi + allowDeselect: Enter toggles a selection off; multi opens with NO pre-active option.",
+        "maxSelections caps keyboard selections (second Enter rejected).",
+        "Multi-select listbox exposes aria-multiselectable=true."
+      ]
+    },
+    "T2-08": {
+      "title": "Accessibility representation (Chromium AX tree)",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "Selected option in multi mode is exposed with AX property selected=true. NOTE: a selected option carries a chip remove affordance so its accessible name is '<label> Remove option' (e.g. 'Alpha Remove option'), not the bare label. This is correct behavior (select-option.ts:427 aria-label='Remove option'); the assertion matches by label prefix.",
+        "Combobox accessible name derives from a host aria-label ('Favorite color').",
+        "aria-activedescendant is reported as a related-node idref on the combobox AX node."
+      ]
+    },
+    "T2-09": {
+      "title": "Reassessment of P1.3-D01/D02/D03 with browser evidence",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "D01: public close detail is {} in the browser; Escape and Tab indistinguishable — CONFIRMED.",
+        "D02: legacy host aria-busy is inert on the listbox (null) BY DESIGN; genuine busy (public load-more click -> _setBusy(true)) DOES reflect aria-busy='true' onto the listbox — RESOLVED (reflection target = listbox; works when actually busy; the jsdom 'missing' was the inert legacy attribute, not a defect).",
+        "D03: keyboard-open pre-activates the first option in the browser (jsdom Task-1 'no initial active' was a jsdom artifact) — REASSESSED."
+      ]
+    },
+    "T2-10": {
+      "title": "Regression / harness integrity (browser path uses public surface only)",
+      "tests": 1,
+      "status": "PASS",
+      "findings": [
+        "A complete open -> move -> select cycle is driven entirely through real keyboard input on the public surface; no private-method assertion helpers."
+      ]
+    }
+  },
+  "deviationReassessment": {
+    "P1.3-D01": {
+      "priorClass": "Observed public-contract limitation",
+      "browserStatus": "CONFIRMED",
+      "detail": "CloseEventDetail is empty {}; Escape and Tab both emit close:{} in Chromium. No close reason surfaced. Disposition unchanged: characterized, design decision deferred; no production change; no ADR.",
+      "evidence": "T2-03 close-detail tests + T2-09 D01 test"
+    },
+    "P1.3-D02": {
+      "priorClass": "Diagnostic (pending browser a11y confirmation)",
+      "browserStatus": "RESOLVED (not a defect)",
+      "detail": "The listbox IS the aria-busy reflection target and it receives aria-busy='true' when the component is genuinely busy (public load-more click -> _setBusy(true)). The legacy host aria-busy attribute is intentionally inert for listbox semantics (in-code comment in _syncListboxAccessibility). The Task-1 jsdom observation tested the inert legacy attribute, which is NOT a limitation: real busy state is correctly exposed on the listbox. Chromium exposes the busy state on the listbox node when active.",
+      "sourceReferences": [
+        "packages/core/src/platform/web/accessibility-effects.ts (applyListbox sets aria-busy on listbox when effect.busy)",
+        "packages/core/src/components/enhanced-select.ts _syncListboxAccessibility (~4294) — sets busy only when isBusy || (protocol==='acknowledged' && host aria-busy==='true')",
+        "packages/core/src/components/enhanced-select.ts _setBusy (~6263); .load-more-button click -> _loadMoreItems('manual') -> _setBusy(true)"
+      ],
+      "recommendation": "Downgrade D02 from 'Diagnostic / pending' to 'Resolved — reflection target is the listbox; verified when genuinely busy'. No production change.",
+      "evidence": "T2-09 D02 test (legacy inert + genuine busy reflects)"
+    },
+    "P1.3-D03": {
+      "priorClass": "Observation (not a defect)",
+      "browserStatus": "REASSESSED — jsdom artifact",
+      "detail": "In Chromium, keyboard-open pre-activates the first selectable option (aria-activedescendant -> first). The Task-1 jsdom 'opening assigns no initial aria-activedescendant' result does not reproduce in a real browser, so it is a jsdom artifact rather than a genuine conformance gap. Real-browser behavior aligns with the APG default-ish pattern (first option pre-active). Multi mode, by contrast, opens with NO pre-active option (also observed).",
+      "apgNote": "Difference from an APG example is not, by itself, nonconformance. Recorded as observation; no defect asserted.",
+      "evidence": "T2-02 ArrowDown-open test + T2-09 D03 test"
+    }
+  },
+  "newObservations": {
+    "P1.3-D04": {
+      "class": "Observation",
+      "summary": "Tab closes the popup but does NOT advance DOM focus to the next tabbable control.",
+      "detail": "When the combobox is open and Tab is pressed, the popup closes (close event, aria-expanded=false) but DOM focus does not move to the next focusable element; document.activeElement falls back to BODY rather than the following button. Recorded as an observation, not repaired. Whether Tab should transfer focus onward (default Tab navigation) is a design decision for future a11y work.",
+      "risk": "Keyboard users pressing Tab to leave an open combobox may not land on the expected next control and could lose their place.",
+      "disposition": "Characterized, not repaired. No production change; no ADR during W1-P1.",
+      "evidence": "T2-03 'Tab closes an open popup (observed: focus does NOT advance...)'"
+    },
+    "AX-selected-option-name": {
+      "class": "Observation (test-accuracy note, not a deviation)",
+      "summary": "A selected option in multi mode has an accessible name suffixed with 'Remove option'.",
+      "detail": "select-option.ts:427 gives the chip remove button aria-label='Remove option'; the composed option AX name becomes '<label> Remove option'. Selection is exposed via the AX 'selected' property (true). This is correct; the T2-08 assertion matches by label prefix.",
+      "evidence": "T2-08 selected-option test"
+    }
+  },
+  "coverageImplications": {
+    "note": "Browser evidence justifies the following status clarifications in the W1-P1.3 traceability/ledger narrative. The traceability record count (112: Existing 38 / Partial 29 / Diagnostic 41 / Missing 4) is NOT changed by Task 2; only per-record notes for D01/D02/D03 are updated where justified.",
+    "P1.3-D02": "Diagnostic -> effectively resolved (listbox is the reflection target and receives aria-busy when genuinely busy). The Diagnostic guard test remains in the jsdom suite (Task 1) and the browser evidence now confirms the behavior.",
+    "P1.3-D03": "Observation -> browser confirms first-option pre-activation on keyboard open; the jsdom 'no initial active' is an artifact. No behavior change.",
+    "P1.3-D01": "Confirmed in browser; remains a documented public-contract limitation.",
+    "P1.3-D04": "New observation added (Tab does not advance focus)."
+  },
+  "productionIsolation": {
+    "statement": "No files under packages/core/src, packages/core/engine, or packages/core/adapters were modified.",
+    "changedFiles": [
+      "tests/e2e/w1-p1-3-t2/playwright.config.ts (new)",
+      "tests/e2e/w1-p1-3-t2/harness.ts (new)",
+      "tests/e2e/w1-p1-3-t2/keyboard-accessibility.t2.spec.ts (new)",
+      "package.json (add test:e2e:p13-t2 script)",
+      "docs/architecture/baseline/w1-p1/W1-P1.3-T2-BROWSER-EVIDENCE.json (new)",
+      "docs/architecture/baseline/w1-p1/W1-P1-DEVIATIONS.md (D02/D03 updated, D04 added)",
+      "docs/architecture/baseline/w1-p1/W1-P1-CONTRACT-LEDGER.md (browser-evidence note)",
+      "docs/architecture/baseline/w1-p1/SHA256SUMS (refreshed)"
+    ]
+  }
+}

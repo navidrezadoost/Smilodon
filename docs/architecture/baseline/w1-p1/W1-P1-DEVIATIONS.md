@@ -180,22 +180,49 @@ Recorded during W1-P1.3 Task 1 keyboard/focus characterization (evidence: `packa
 - **Risk.** Consumers cannot distinguish keyboard-close from selection-close (or any other close path) from the event alone; `EVENT-003` was historically described as carrying "close reasons" but reasons are not publicly observable.
 - **Disposition.** **Characterized; design decision deferred.** Promotion to this file records the limitation as an accepted observation of the public contract. Whether to surface a close reason in `detail` is a deliberate design decision **deferred** past W1-P1; characterization/tests must not assume a reason is present. **No production change; no ADR.**
 
-### P1.3-D02 — `aria-busy` host resync has no confirmed observable effect on the listbox (retained as `Diagnostic`)
+### P1.3-D02 — `aria-busy` reflection: listbox is the target and receives busy when genuinely busy (browser-verified)
 
-- **Observation.** `attributeChangedCallback('aria-busy', …)` routes to `_syncListboxAccessibility` (637-646), but the jsdom probe observed **no** `aria-busy` written to the listbox element and no change when toggling `aria-busy="true"`→`"false"`. The resync is wired; the observable effect is unconfirmed at baseline.
-- **Evidence.** Task 1 ATTR-003 case (asserts the observed non-effect); `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`.
-- **Class:** Diagnostic (jsdom-observed; pending browser a11y confirmation).
-- **Disposition.** **Retained as `Diagnostic`, not a defect.** A real-browser accessibility check may confirm or refute the effect; the Task-1 assertion pins the observed baseline (non-)effect so a future change is caught. **No production change; no ADR.**
+- **Observation (Task 1, jsdom).** `attributeChangedCallback('aria-busy', …)` routes to `_syncListboxAccessibility` (637-646), but the jsdom probe observed **no** `aria-busy` written to the listbox when toggling a *legacy host* `aria-busy="true"`→`"false"`.
+- **Observation (Task 2, real browser — Chromium 156).** The **listbox is the aria-busy reflection target** and it **does receive `aria-busy="true"` when the component is genuinely busy** (public `.load-more-button` click → `_loadMoreItems('manual')` → `_setBusy(true)`). The **legacy host `aria-busy` attribute is intentionally inert** for listbox semantics (in-code comment in `_syncListboxAccessibility`: legacy host attributes remain inert for listbox semantics; busy is set only when `isBusy || (protocol==='acknowledged' && host aria-busy==='true')`). The Task-1 jsdom observation tested the *inert legacy attribute*, not the genuine busy path.
+- **Evidence.** Task 1 ATTR-003 case (jsdom non-effect of legacy attr); Task 2 `keyboard-accessibility.t2.spec.ts` — T2-09 "P1.3-D02: legacy host aria-busy is inert on the listbox; genuine busy reflects to the listbox"; `W1-P1.3-T2-BROWSER-EVIDENCE.json`.
+- **Class:** Now **resolved** — reflection target is the listbox; verified when genuinely busy (not a defect, not a wrong-reflection-target limitation).
+- **Disposition.** **Resolved.** Whether to *also* honor the legacy host attribute for listbox semantics is a deliberate design choice (documented inert), not a defect. The Task-1 Diagnostic guard remains as a regression pin. **No production change; no ADR.**
 
-### P1.3-D03 — opening with no selection assigns no initial `aria-activedescendant` (observation, not a defect)
+### P1.3-D03 — keyboard-open pre-activates the first option in a real browser (observation; jsdom "no initial active" is an artifact)
 
-- **Observation.** `open` assigns no initial `aria-activedescendant` when there is no selection (by design, per `_setInitialActiveOption` 5536-5540); the first ArrowDown then materializes the first selectable option. This differs from some APG examples that pre-activate the first option on open.
-- **Evidence.** Task 1 KBD-001 open-without-initial-active case; `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`.
-- **Class:** Observation (intentional, per source comment).
-- **Disposition.** **Accepted as an observation, not a defect**, pending a real-browser/APG assessment. Task 1 locks the *observed* behavior without asserting any APG default. **No production change; no ADR.**
+- **Observation (Task 1, jsdom).** `open` was observed to assign no initial `aria-activedescendant` when there is no selection; the first ArrowDown then materialized the first selectable option.
+- **Observation (Task 2, real browser — Chromium 156).** Opening **by keyboard** (ArrowDown on a closed+focused combobox) **pre-activates the first selectable option** (`aria-activedescendant` → first). Focusing a never-focused single-mode combobox also pre-activates the first option. **Multi mode opens with NO pre-active option** (also observed). The jsdom "no initial active" result does not reproduce in a real browser and is a jsdom artifact.
+- **Evidence.** Task 1 KBD-001 open-without-initial-active case; Task 2 `keyboard-accessibility.t2.spec.ts` — T2-02 "ArrowDown on a closed+focused combobox opens it and activates the first option" and T2-09 "P1.3-D03"; `W1-P1.3-T2-BROWSER-EVIDENCE.json`.
+- **Class:** Observation (browser behavior aligns with a first-option pre-active pattern; a difference from any particular APG example is not, by itself, nonconformance).
+- **Disposition.** **Accepted as an observation, not a defect.** Real-browser behavior is now the authoritative record; the Task-1 jsdom assertion is understood as a jsdom artifact. **No production change; no ADR.**
+
+### P1.3-D04 — Tab closes the popup but does not advance DOM focus (new, Task 2)
+
+- **Observation (real browser — Chromium 156).** With the combobox open, pressing **Tab closes the popup** (`close` event, `aria-expanded=false`) but does **not** move DOM focus to the next tabbable control; `document.activeElement` falls back to `BODY` rather than the following button. Escape, by contrast, leaves focus on the combobox input.
+- **Evidence.** Task 2 `keyboard-accessibility.t2.spec.ts` — T2-03 "Tab closes an open popup (observed: focus does NOT advance to the next tabbable)"; `W1-P1.3-T2-BROWSER-EVIDENCE.json` (`newObservations.P1.3-D04`).
+- **Class:** Observation (focus-transfer behavior).
+- **Risk.** Keyboard users pressing Tab to leave an open combobox may not land on the expected next control and could lose their place; conversely, this pair with D01 (indistinguishable close reason) means the close is not attributable to a Tab-driven focus exit.
+- **Disposition.** **Characterized, not repaired.** Whether Tab should transfer focus onward (default Tab navigation) is a deliberate design decision deferred out of W1-P1. **No production change; no ADR.**
 
 | ID | Class | Disposition (T1-R) | Owner of the eventual decision |
 | --- | --- | --- | --- |
 | P1.3-D01 | Observed public-contract limitation | Characterized; design decision deferred | P1.3 recorded / future public-contract design |
 | P1.3-D02 | Diagnostic | Retained as Diagnostic pending browser a11y check | P1.3 / P1.4+ a11y verification |
 | P1.3-D03 | Observation (not a defect) | Accepted as observation pending real-browser/APG assessment | P1.3 / future a11y conformance |
+
+---
+
+## W1-P1.3 Task 2 — real-browser reassessment of P1.3-D01/D02/D03 (+ new D04)
+
+Recorded during W1-P1.3 Task 2 real-browser keyboard + accessibility verification (Chromium 156.0.8078.4; evidence: `tests/e2e/w1-p1-3-t2/keyboard-accessibility.t2.spec.ts`, `W1-P1.3-T2-BROWSER-EVIDENCE.json`). **No behavior was repaired; no production code changed.** The Task-1 deviation bodies above now carry the reconciled wording; this table records the final status.
+
+| ID | Task-1 status | Task-2 (browser) status | Meaning |
+| --- | --- | --- | --- |
+| P1.3-D01 | Observed public-contract limitation | **Confirmed** | Close detail is `{}`; Escape and Tab are indistinguishable in Chromium. Design decision still deferred. |
+| P1.3-D02 | Diagnostic (pending browser check) | **Resolved (not a defect)** | The listbox is the aria-busy target and receives `aria-busy="true"` when genuinely busy; the legacy host attribute is intentionally inert. The jsdom "missing" was the inert attribute, not a limitation. |
+| P1.3-D03 | Observation (pending browser check) | **Reassessed — jsdom artifact** | Real browser pre-activates the first option on keyboard open; the jsdom "no initial active" does not reproduce. Observation, not a defect; APG difference ≠ nonconformance. |
+| P1.3-D04 | — (new) | **Observation (new)** | Tab closes the popup but does not advance DOM focus (`document.activeElement` → BODY). Characterized, not repaired. |
+
+**Screen-reader note.** The accessibility assessments here are based on the **Chromium accessibility (AX) tree** only (roles, names, states, `aria-*` relationships). They establish that the AX *representation* is correct; they do **not** assert screen-reader compatibility (NVDA/JAWS/VoiceOver), which is out of scope for W1-P1.
+
+**Coverage.** No deviation is closed as "defective". D02 is resolved (browser-verified); D03 is downgraded to a jsdom artifact; D01 is confirmed; D04 is newly recorded. The traceability record count (112) is unchanged; only D01/D02/D03 narrative notes are clarified.
