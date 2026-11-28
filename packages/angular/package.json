@@ -7,12 +7,25 @@
     "dist",
     "README.md"
   ],
+  "module": "./dist/fesm2022/smilodon-angular.mjs",
+  "types": "./dist/types/smilodon-angular.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/smilodon-angular.d.ts",
+      "import": "./dist/fesm2022/smilodon-angular.mjs",
+      "default": "./dist/fesm2022/smilodon-angular.mjs"
+    },
+    "./package.json": {
+      "default": "./package.json"
+    }
+  },
   "scripts": {
     "build": "ng-packagr -p ng-package.json",
     "test": "vitest run --config vitest.config.ts",
     "test:ssr": "vitest run --config vitest.ssr.config.ts",
     "test:consumer": "node ./tests/consumer/run-consumer.mjs",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:packed-install": "node ./tests/packed-install/run-packed-install.mjs"
   },
   "peerDependencies": {
     "@angular/core": ">=21.0.0 <22.0.0",
@@ -76,7 +89,7 @@
   "license": "MIT",
   "sideEffects": false,
   "engines": {
-    "node": ">=18",
+    "node": "^20.19.0 || ^22.12.0 || ^24.0.0",
     "npm": ">=9"
   },
   "publishConfig": {

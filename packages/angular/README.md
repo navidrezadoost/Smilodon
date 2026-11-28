@@ -265,8 +265,30 @@ The package is built by **ng-packagr** in **partial (Ivy) compilation mode**
 dist/
   fesm2022/smilodon-angular.mjs   # partial-compiled ESM (FESM) bundle
   types/smilodon-angular.d.ts     # flattened declarations
-  package.json                    # generated manifest (exports/types/main)
+  package.json                    # generated manifest (exports/types/module)
 ```
+
+The **published** `package.json` (the source manifest, published from the package
+root) declares ESM-only entry points into `dist/`:
+
+```jsonc
+{
+  "type": "module",
+  "module": "./dist/fesm2022/smilodon-angular.mjs",
+  "types": "./dist/types/smilodon-angular.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/smilodon-angular.d.ts",
+      "import": "./dist/fesm2022/smilodon-angular.mjs",
+      "default": "./dist/fesm2022/smilodon-angular.mjs"
+    },
+    "./package.json": { "default": "./package.json" }
+  }
+}
+```
+
+This package is **ESM-only** (no CommonJS runtime entry is advertised — the
+ng-packagr output is a single partial-compiled FESM ESM bundle).
 
 `@angular/core` and `@smilodon/core` are externalized (peer dependencies), so a
 consuming application links the partial artifact with its own Angular version
@@ -281,6 +303,42 @@ component uses only APIs available since Angular 14 (standalone components,
 **Angular 21.2.26** only; the peer range is therefore narrowed to
 `>=21.0.0 <22.0.0` until additional versions are verified in CI. Widening the
 range requires multi-version AOT-consumer evidence.
+
+The package declares `engines.node` = `^20.19.0 || ^22.12.0 || ^24.0.0`, matching
+Angular 21's supported Node.js range.
+
+## Known limitations
+
+These are disclosed, accepted limitations of the current release. They are
+informational for consumers; none are silent failures.
+
+- **L-01 — Browser coverage (WebKit unverified).** The adapter is qualified
+  (real-browser CSR + SSR/hydration) on **Chromium** and **Firefox** only. WebKit
+  is **not verified** on the release build host because the host lacks the
+  WebKit runtime dependencies (`libicu74`, `libxml2`, `libflite1`); Playwright's
+  `webkit` project fails at browser launch, before any test runs. This is an
+  environmental coverage gap, **not** a known defect — but WebKit must not be
+  treated as certified until it is provisioned and run in CI.
+
+- **L-02 — Async provenance (pending server-backed selection fetches).** When a
+  server-backed (`serverSide`) programmatic selection fetch is in flight, any
+  `change` observed during that window is classified as programmatic. A
+  **genuine user edit made while such a fetch is pending is conservatively NOT
+  reported to the form model** — a deliberate, safer trade-off (never a false
+  echo into the model) that may drop a user edit that races an in-flight
+  programmatic load. A value subsequently written by the form (or the element's
+  own selection) remains authoritative. See "Provenance" above for the full
+  mechanism. This behavior is **accepted and disclosed, not resolved.**
+
+- **L-03 — Initial empty `change` on a multi-select.** On initialization, a
+  **multi-select** (`[multiple]="true"`) may emit one **initial empty `change`**
+  event. This originates in **`@smilodon/core`** (an `updateConfig()` →
+  `clear()` mitigation when switching to multi mode at init), not the adapter.
+  The adapter correctly classifies this event as **programmatic** (it is not
+  written back into the form model and does not fire `onChange`), so it does not
+  produce a spurious form update — but a raw `(change)` listener on the element
+  will observe the initial empty event. **Single-select** instances emit **no**
+  boot change.
 
 ## License
 

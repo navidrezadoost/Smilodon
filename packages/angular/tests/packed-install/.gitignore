@@ -1,0 +1,4 @@
+# Temp work is created outside the repo (os.tmpdir()); guard against strays.
+node_modules/
+*.tgz
+.aot-out/
