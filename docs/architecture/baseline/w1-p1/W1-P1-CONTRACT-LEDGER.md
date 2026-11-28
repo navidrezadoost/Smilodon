@@ -955,3 +955,30 @@ W1-P1.6 is the SSR/security increment named in §10 (line 353, "SSR/security …
 **Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 is absorbed; those remain with their owners.
 
 _End of W1-P1.6 Task 1 (original, `116707f`). W1-P1.6-T1-R (`7183165`) reclassified API-065 Existing→Partial (T1-F01) and bounded sanitizer isolation (T1-F02). W1-P1.6-T1-R1 fixes the sanitizer end-state test to explicitly restore+verify identity behaviour (T1-R-F01). Tasks 2–4 remain NO-GO pending independent acceptance; P1.6 closure not yet claimed._
+
+---
+
+## 25. W1-P1.6 Task 2 — CSP-compliant styling utilities (public surface) characterization
+
+W1-P1.6 Task 2 certifies the `packages/core/src/utils/csp-styles.ts` public surface through the **public package import only** (`packages/core/src/index.ts`), continuing the §24 approach. These six contracts were previously documented-only (plan §1.1: zero contract IDs; the frozen `csp.spec.ts` imports the utils modules directly and pins no W1-P1 contract). Family mapping follows the Task 2 workstreams: class/style/theme/shadow/overflow/warning helpers as `API-0xx` (package API); the theme/config-shaped surface (`defaultTheme`/`applyDefaultTheme`/`shadowDOMStyles`) as `CONFIG-0xx` (per plan §2.2 CONF-z).
+
+**Environment note (conservative jsdom):** the runner sets `NODE_ENV=test`, so the development-only warning branches execute. Their PRODUCTION-suppressed behaviour is verified by `vi.stubEnv('NODE_ENV','production')` — proving the shipped branch, not a dev-only path. jsdom reflects **inline** custom properties and **inline** `overflow` in `getComputedStyle`, so `getCustomProperty` and `hasOverflowHiddenAncestor` are characterised via inline-set values only; layout-derived computed styles are NOT claimed.
+
+| Contract ID | Behavior | Source (`csp-styles.ts`) | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-070 | `applyClasses` joins non-empty (truthy) names into `className` (REPLACES, not additive); `toggleClass` toggles with optional force (true=add/false=remove), idempotent under force | 10-19 | Existing | `w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries` |
+| API-071 | Custom-property family: `setCustomProperties` sets only `--` keys (dev warn+skip others, silent+skip under production); `getCustomProperty` reads trimmed computed value (`''` when unset); `removeCustomProperty` removes | 31-61 | Existing | `...#API-071: setCustomProperties applies --prefixed custom properties` |
+| CONFIG-029 | `defaultTheme` stable `--ns-*` map; `applyDefaultTheme` applies every entry; `shadowDOMStyles` static string with `:host`/`.ns-*`/`var(--ns-*)`, no `<script>` | 66-201 | Existing | `...#CONFIG-029: defaultTheme is a stable map of --ns-* custom properties` |
+| API-072 | `injectShadowStyles` appends a single `<style>` (text = static `shadowDOMStyles`) to a ShadowRoot; additive on repeat (no dedupe) | 205-209 | Existing | `...#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles` |
+| API-073 | `hasOverflowHiddenAncestor` walks parentElement for computed overflow `hidden`/`clip`, **excluding `document.body`**; false when none/detached | 214-226 | Existing | `...#API-073: detects an overflow:hidden ancestor` |
+| API-074 | `warnCSPViolation` warns ONLY in non-production naming feature+fallback; silent under `NODE_ENV=production` | 231-238 | Existing | `...#API-074: warns in development naming both the feature and the fallback` |
+
+**Totals:** 6 new P1.6 contracts, all **Existing** (public-import, deterministic, positive+negative paths; production branch stubbed). Distribution after T2: **Existing 76 · Partial 35 · Diagnostic 13 · Missing 3 = 127** (was 70/35/13/3 = 121 after T1-R1). API 34→39; CONFIG 28→29; P1.6 9→15.
+
+**Characterized limitations (documented, not defects):** `getCustomProperty` and `hasOverflowHiddenAncestor` rest on jsdom's reflection of inline styles; stylesheet-/layout-derived computed values are out of scope. `injectShadowStyles` does not dedupe (callers must guard — mirrored by the frozen `csp.spec.ts` observation).
+
+**Out of scope for T2:** SSR / import-time / deferred-DOM safety (`security.ts`/`csp-styles.ts` import in a no-DOM Node env) — that is Task 3.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
+
+_End of W1-P1.6 Task 2. Tasks 3–4 remain NO-GO pending independent T2 acceptance; P1.6 closure not yet claimed._

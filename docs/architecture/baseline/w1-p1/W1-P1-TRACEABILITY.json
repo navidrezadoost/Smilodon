@@ -14,19 +14,19 @@
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
-    "totalRecords": 121,
+    "totalRecords": 127,
     "byFamily": {
-      "API": 34,
+      "API": 39,
       "EVENT": 15,
       "ATTR": 11,
       "PART": 11,
       "SLOT": 4,
       "LIFECYCLE": 6,
-      "CONFIG": 28,
+      "CONFIG": 29,
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 70,
+      "Existing": 76,
       "Partial": 35,
       "Diagnostic": 13,
       "Missing": 3
@@ -37,7 +37,7 @@
       "P1.3": 25,
       "P1.4": 56,
       "P1.5": 13,
-      "P1.6": 9
+      "P1.6": 15
     },
     "p16Task1Note": "W1-P1.6 Task 1 (Path A) added 9 P1.6 contracts for the security/CSP utility public surface. Total 112 -> 121; API 27 -> 34; CONFIG 26 -> 28; P1.6 = 9. Under W1-P1.6-T1-R (T1-F01) API-065 was reclassified Existing -> Partial (case-sensitive attribute block; mixed-case bypass), so byCoverage is Existing 70 / Partial 35 / Diagnostic 13 / Missing 3 = 121 (was 71/34/13/3). All 9 characterized by packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts (public import only).",
     "apiIds": 27,
@@ -76,7 +76,8 @@
       "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
       "w1-p1-2-t4-interaction-events.spec.ts": 34,
       "total": 116
-    }
+    },
+    "p16Task2Note": "W1-P1.6 Task 2 (Path A) added 6 P1.6 contracts for the csp-styles.ts public surface: API-070 (classes), API-071 (custom-property family), CONFIG-029 (theme/defaultTheme/applyDefaultTheme/shadowDOMStyles), API-072 (injectShadowStyles), API-073 (hasOverflowHiddenAncestor), API-074 (warnCSPViolation). All 6 characterised to Existing via packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts (public import only; NODE_ENV=test dev branch + NODE_ENV=production stub). Total 121 -> 127; P1.6 9 -> 15; API 34 -> 39; CONFIG 28 -> 29. byCoverage Existing 70 -> 76 (76/35/13/3 = 127)."
   },
   "duplicateIds": 0,
   "missingIds": 0,
@@ -2267,6 +2268,124 @@
           "file": "packages/core/src/utils/security.ts",
           "lines": "233-242"
         }
+      ]
+    },
+    {
+      "id": "API-070",
+      "behavior": "applyClasses joins non-empty (truthy) class names into element.className (replacing any existing class list); toggleClass toggles a class with optional force (true=add, false=remove), idempotent under force. Note: applyClasses assigns className (not additive).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "10-19"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses REPLACES existing classes (assigns className, not additive)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: toggleClass honors forced state (true adds, false removes) idempotently"
+      ]
+    },
+    {
+      "id": "API-071",
+      "behavior": "Custom-property family: setCustomProperties sets only '--' keys and (in non-production) warns+skips non-'--' keys; getCustomProperty reads the trimmed computed value ('' when unset); removeCustomProperty removes a set property. Production branch verified via NODE_ENV=production stub (no warn, still skips).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties applies --prefixed custom properties",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "31-61"
+        }
+      ],
+      "coverageNote": "getCustomProperty characterised via jsdom getComputedStyle of INLINE custom properties (layout-derived computed styles out of scope).",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties warns and skips non-custom keys in development (NODE_ENV=test)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties does NOT warn for non-custom keys under NODE_ENV=production (still skips)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: getCustomProperty returns the trimmed computed value, or \"\" when unset",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: removeCustomProperty removes a previously set custom property"
+      ]
+    },
+    {
+      "id": "CONFIG-029",
+      "behavior": "Theme surface: defaultTheme is a stable map of '--ns-*' custom-property values; applyDefaultTheme applies every defaultTheme entry via setCustomProperties; shadowDOMStyles is a STATIC string containing ':host' and '.ns-*' selectors and var(--ns-*) references, with no <script>.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: defaultTheme is a stable map of --ns-* custom properties",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "66-201"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: applyDefaultTheme writes every defaultTheme entry onto the element",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: shadowDOMStyles is a static string with :host and .ns-* selectors and NO <script>"
+      ]
+    },
+    {
+      "id": "API-072",
+      "behavior": "injectShadowStyles appends a single <style> element (textContent = static shadowDOMStyles) to a ShadowRoot; it is additive on repeated calls (no dedupe).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "205-209"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles is additive (no dedupe) on repeated calls"
+      ]
+    },
+    {
+      "id": "API-073",
+      "behavior": "hasOverflowHiddenAncestor walks parentElement chain for computed overflow 'hidden' or 'clip', EXCLUDING document.body; returns false when none found or when detached. Characterised via inline-set overflow (jsdom reflects inline overflow in getComputedStyle; real layout out of scope).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects an overflow:hidden ancestor",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "214-226"
+        }
+      ],
+      "coverageNote": "Ancestor walk characterised via inline-set overflow only; layout-derived computed overflow (e.g. inherited/stylesheet rules) is not claimed in jsdom.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects overflow:clip and a non-immediate (grandparent) ancestor",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: returns false when no ancestor sets overflow hidden/clip",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: EXCLUDES document.body (a direct body child with body overflow:hidden reports false)",
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: a detached element (no parent) reports false"
+      ]
+    },
+    {
+      "id": "API-074",
+      "behavior": "warnCSPViolation emits a console.warn ONLY in non-production; the message names both the feature and the fallback. Under NODE_ENV=production it is silent.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: warns in development naming both the feature and the fallback",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T2-CSP-STYLES-EVIDENCE (jsdom; public import; dev+prod branches)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/csp-styles.ts",
+          "lines": "231-238"
+        }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: is SILENT under NODE_ENV=production"
       ]
     }
   ]

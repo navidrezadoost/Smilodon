@@ -1,0 +1,127 @@
+{
+  "artifactId": "W1-P1.6-T2-CSP-STYLES-EVIDENCE",
+  "increment": "W1-P1.6",
+  "task": "Task 2 — CSP-compliant styling utilities (public surface) characterization",
+  "startingCommit": "e598e5cdf05f004e42e543c9006364aa1c799c2f",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.6 Task 2 GO from Lead final acceptance review of T1-R1 (e598e5c). Scope: public-package-surface characterization of packages/core/src/utils/csp-styles.ts ONLY. T3 (SSR) and everything downstream remain NO-GO.",
+  "scopeContracts": [
+    "API-070",
+    "API-071",
+    "CONFIG-029",
+    "API-072",
+    "API-073",
+    "API-074"
+  ],
+  "surfaces": {
+    "import": "import { ... } from '../src/index.js' (public package entry re-export of utils/csp-styles.ts)",
+    "exportsCharacterized": [
+      "applyClasses",
+      "toggleClass",
+      "setCustomProperties",
+      "getCustomProperty",
+      "removeCustomProperty",
+      "defaultTheme",
+      "applyDefaultTheme",
+      "shadowDOMStyles",
+      "injectShadowStyles",
+      "hasOverflowHiddenAncestor",
+      "warnCSPViolation"
+    ],
+    "privateSeamsUsed": "NONE — grep confirms no as-any/underscore-private/_state/ForTest access; import is the public entry, not ../src/utils/*"
+  },
+  "testCounts": {
+    "jsdom": 22,
+    "chromium": 0,
+    "total": 22
+  },
+  "renderingModel": "jsdom. Pure package-API function contracts exercised on detached document.createElement('div') fixtures and attachShadow roots. console.warn captured via vi.spyOn with per-test restore; NODE_ENV branches driven via vi.stubEnv. No fixed sleeps.",
+  "environmentNotes": [
+    "Runner NODE_ENV=test => development-only warning branches execute; verified they warn+skip (setCustomProperties) and warn (warnCSPViolation).",
+    "Production-suppressed branch verified via vi.stubEnv('NODE_ENV','production'): setCustomProperties still skips non-'--' keys with NO warn; warnCSPViolation emits NOTHING.",
+    "jsdom reflects INLINE custom properties and INLINE overflow in getComputedStyle; getCustomProperty and hasOverflowHiddenAncestor characterised via inline-set values only. Layout-/stylesheet-derived computed styles are out of scope (jsdom performs no layout)."
+  ],
+  "limitations": [
+    {
+      "contract": "API-071",
+      "note": "getCustomProperty characterised against inline custom properties (jsdom computed-style reflection). Stylesheet-derived values not claimed."
+    },
+    {
+      "contract": "API-073",
+      "note": "Ancestor walk characterised via inline-set overflow hidden/clip only; inherited/stylesheet overflow not claimed in jsdom."
+    },
+    {
+      "contract": "API-072",
+      "note": "injectShadowStyles is additive (no dedupe); repeated calls append multiple <style> elements — observed, matching the frozen csp.spec.ts observation."
+    }
+  ],
+  "contractEvidence": [
+    {
+      "id": "API-070",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-070: applyClasses joins non-empty class names in order, dropping falsy entries",
+      "asserts": "applyClasses joins truthy names in order; REPLACES existing className (not additive); all-empty -> ''; toggleClass toggles with/without force; force idempotent",
+      "negativePath": "empty/falsy entries dropped; existing class removed on re-apply; forced toggle idempotent"
+    },
+    {
+      "id": "API-071",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-071: setCustomProperties applies --prefixed custom properties",
+      "asserts": "sets '--' keys; dev warn+skip of non-'--' key (1 warn naming key); production: NO warn but still skips; getCustomProperty trimmed value and '' when unset; removeCustomProperty removes",
+      "negativePath": "non-'--' key not applied; non-'--' key produces no warn in production; unset property -> ''"
+    },
+    {
+      "id": "CONFIG-029",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#CONFIG-029: defaultTheme is a stable map of --ns-* custom properties",
+      "asserts": "defaultTheme keys all --ns-*; applyDefaultTheme writes every entry; shadowDOMStyles static string contains :host/.ns-item/var(--ns-); no <script>",
+      "negativePath": "shadowDOMStyles contains no <script>"
+    },
+    {
+      "id": "API-072",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-072: injectShadowStyles appends one <style> whose text is the static shadowDOMStyles",
+      "asserts": "single <style> appended with textContent === shadowDOMStyles; repeated call appends a second (additive, no dedupe)",
+      "negativePath": "n/a (additive behaviour characterised)"
+    },
+    {
+      "id": "API-073",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-073: detects an overflow:hidden ancestor",
+      "asserts": "detects overflow:hidden ancestor; detects overflow:clip grandparent; false when none; EXCLUDES document.body; false when detached",
+      "negativePath": "body excluded (child of body with body overflow:hidden -> false); visible ancestor -> false; detached -> false"
+    },
+    {
+      "id": "API-074",
+      "testId": "packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts#API-074: warns in development naming both the feature and the fallback",
+      "asserts": "dev warn once naming feature+fallback+CSP; SILENT under NODE_ENV=production",
+      "negativePath": "no warn under NODE_ENV=production"
+    }
+  ],
+  "coverageChanges": {
+    "before": {
+      "Existing": 70,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 121
+    },
+    "after": {
+      "Existing": 76,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 127
+    },
+    "note": "6 new P1.6 contracts added (Path A), all Existing. No prior contract reclassified. API 34->39; CONFIG 28->29; P1.6 9->15."
+  },
+  "gates": {
+    "verify_traceability": "PASS (127 unique IDs; ledger/matrix reconcile; locators in bounds)",
+    "coreRegression": "1060 passed | 1 skipped (was 1038 + 22 new = 1060; no regressions)",
+    "t2Spec": "22 passed",
+    "ac1PublicImportOnly": "PASS — import is ../src/index.js; grep confirms no as-any/underscore-private/_state/ForTest access"
+  },
+  "boundaries": {
+    "productionIsolation": "0 files changed under packages/core/src vs e598e5c",
+    "acceptedPriorTestsUnchanged": "csp.spec.ts and all w1-p1-1..6-T1-R1 specs untouched",
+    "deferredNotAbsorbed": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; SSR (T3) not touched."
+  },
+  "deviationsRaised": [],
+  "notes": "T2 covers utils/csp-styles.ts only. T3 (SSR import-time/deferred-DOM safety) and T4 (closure) remain NO-GO. P1.6 closure not claimed."
+}
