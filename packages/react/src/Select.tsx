@@ -10,7 +10,7 @@ import React, {
   useMemo,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import type {
   SelectEventDetail,
   SearchEventDetail,
@@ -1437,7 +1437,7 @@ export const Select = forwardRef<SelectHandle, SelectProps>((props, ref) => {
     const observed = new Set<ShadowRoot>();
     let currentTargets: HTMLElement[] = [];
     let disposed = false;
-    const observer = new MutationObserver(() => refresh());
+    const observer = new MutationObserver(() => flushSync(refresh));
 
     const refresh = () => {
       if (disposed) return;

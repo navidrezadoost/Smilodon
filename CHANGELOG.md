@@ -17,13 +17,25 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+## [1.22.0] - Unpublished candidate
+
+Core `1.22.0` adds the truncated search-query tooltip and isolated icon-root capability required by the React remove-icon correction. Qualification and publication evidence will be recorded in [the release candidate record](docs/releases/WEB-1.22.0-RELEASE.md).
+
+### Added
+
+- **Truncated search-query tooltip ([#129](https://github.com/navidrezadoost/Smilodon/issues/129)):** Core shows the full current query in the existing tooltip when the visible query is clipped. Pending acknowledged queries are handled without treating search text as a selected value; edits and clearing update the tooltip and accessibility description.
+
 ### Fixed
 
-- **React remove-icon configuration precedence ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** React now preserves the Core `configureSelect()` icon default when no instance override is supplied and restores that effective fallback after string or React-node icon transitions.
+- **Core icon-root ownership ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** Core updates only its fallback icon subtree and provides isolated portal roots so framework renderers can own icon children without Core clearing them.
+
+## [1.14.0] - Unpublished candidate
+
+React `1.14.0` requires Core `^1.22.0` for the isolated remove-icon portal capability. React Native is not part of this release.
 
 ### Fixed
 
-- **React remove-icon portal ownership ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** Core now updates only its fallback icon subtree while React portals render into isolated roots for selected chips and dropdown options. Stable per-target portal identities preserve custom icons across selection updates, removals, and Core option refreshes.
+- **React remove-icon configuration precedence and portal lifecycle ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** preserve global and instance icon fallback precedence, mount React-node icons in isolated Core roots, and retain stable portal ownership through selection changes and Core option refreshes.
 
 ## [1.21.0] - 2026-11-27
 

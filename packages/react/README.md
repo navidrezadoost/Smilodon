@@ -2,7 +2,7 @@
 
 Select component for React applications. The shared core has scoped automated Phase 4 browser coverage; complete React integration parity and manual assistive-technology certification remain unverified.
 
-> **Published package versions:** React `1.13.0` and Core `1.20.0` expose selected-option ordering and open positioning. React `1.12.2`'s renderer-root fix and Core `1.19.0`'s styling/search fixes are included. See the [1.20.0 release record](../../docs/releases/WEB-1.20.0-RELEASE.md).
+> **Published package versions (verified 2026-11-28):** React `1.13.0` and Core `1.21.0` are current. React Native remains unqualified for Android/iOS runtime. The next candidate is React `1.14.0` paired with Core `1.22.0`; it has not been published. See the [candidate release record](../../docs/releases/WEB-1.22.0-RELEASE.md).
 
 > Large-list status: the public `virtualized` prop enables legacy chunked rendering for large flat lists; it does not window rows to the viewport, and all results may eventually be mounted. True viewport virtualization remains guarded by a private test seam and is not a supported production mode. The shared core passed its scoped Phase 4 automated browser matrix in Chromium, Firefox, and WebKit; this does not certify every React integration, minimum browser versions, or WCAG conformance. Manual assistive-technology assessment remains pending. See the [current limitation record](../../docs/KNOWN-LIMITATIONS.md#viewport-virtualization-status).
 
@@ -1692,10 +1692,9 @@ portal children. Switching to a string or the default icon releases the portal
 and restores Core's fallback. This ownership contract requires a Core build
 that exposes isolated React icon portal roots. Older Core builds are not a
 supported pairing for React-node icons: the adapter reports the missing
-capability and does not portal into Core-owned DOM. Before publishing this
-adapter change, publish the compatible Core release and set the React package's
-minimum Core peer version to that release. String and markup icons remain
-Core-owned.
+capability and does not portal into Core-owned DOM. The release candidate pairs
+React `1.14.0` with Core `1.22.0` and declares `@smilodon/core: ^1.22.0`.
+String and markup icons remain Core-owned.
 
 To style the icon separately from the round remove button, use the host `style` prop with these tokens:
 

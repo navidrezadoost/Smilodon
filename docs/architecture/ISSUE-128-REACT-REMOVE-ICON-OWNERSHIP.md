@@ -18,9 +18,10 @@ leave React's virtual tree inconsistent with the DOM.
   clears the outer target or React portal root.
 - React marks the outer icon target as React-presented while a React-node icon
   portal is active. Core's fallback is hidden during that interval.
-- When a portal target is replaced (as `SelectOption` rebuilds its content),
-  the adapter observes the new root and unmounts the portal from the detached
-  old root. Portal keys are stable per root identity, not array position.
+- When a portal target is replaced during a Core option refresh, the adapter
+  observes the new root and synchronously reconciles the portal so the new
+  target does not remain empty for a render. Portal keys are stable per root
+  identity, not array position.
 - A string/default icon transition unmounts the portal and reveals or updates
   Core's fallback. Selection, remove handlers, and ARIA labels remain Core
   owned.
@@ -30,9 +31,10 @@ leave React's virtual tree inconsistent with the DOM.
 React-node `removeButtonIcon` requires Core's isolated-root capability. The
 adapter checks Core's internal portal-capability marker and emits a clear error rather
 than mounting into an older Core-owned target. Existing older Core versions
-remain compatible with Core-owned string/markup icons. The paired package
-release must set React's minimum Core peer version to the first Core release
-that includes this capability; that release version is not assigned here.
+remain compatible with Core-owned string/markup icons. This release candidate
+assigns the capability to Core `1.22.0` and sets React `1.14.0`'s minimum Core
+peer to `^1.22.0`; consumers of the updated React adapter must install the
+paired Core version.
 
 ## Regression evidence
 
@@ -42,8 +44,10 @@ identity remains attached to its original target without browser errors. It
 also exercises React-node/string/default transitions, selected-option refresh
 and removal, StrictMode, and unmount cleanup.
 
-Local qualification details belong with the uncommitted Issue #128 patch and
-must be reviewed before a package version or peer range is chosen.
+Combined local qualification and release-version decisions are recorded in
+[`WEB-1.22.0-RELEASE.md`](../releases/WEB-1.22.0-RELEASE.md). That record keeps
+the candidate unpublished until the PR is merged and the final package
+artifacts are verified.
 
 ## Review follow-up — configuration precedence and Chrome 133 comparison
 
@@ -98,13 +102,16 @@ from the review base. The old Core has no isolated-root capability marker. The
 adapter emitted its compatibility error once, did not mount the React node,
 and left the Core-owned `×` icon usable. Switching to the string prop displayed
 `!`; removing it restored `×`. The browser recorded no page exception. This is
-local pairing evidence for the guard; the eventual published React peer minimum
-still needs to be raised to the first released Core version with isolated roots.
+local pairing evidence for the guard. The release candidate sets React's peer
+minimum to Core `^1.22.0`; that peer-range change remains unpublished until the
+candidate is merged and released.
 
 ## Remaining limits
 
 Pinned Chromium, Firefox, and WebKit are not covered by this local comparison.
 The 4/8 Chrome 133 Issue #125 animation result is explained as baseline versus
 candidate parity, but its browser-specific cause remains open. No package version
-or peer range is changed here. The candidate remains uncommitted and requires a
-fresh source review before commit authorization.
+or peer range was changed in the original Issue #128 implementation commit.
+The release candidate now assigns Core `1.22.0` and React `1.14.0` with peer
+`@smilodon/core: ^1.22.0`; combined-release qualification is recorded in
+[`WEB-1.22.0-RELEASE.md`](../releases/WEB-1.22.0-RELEASE.md).
