@@ -26,9 +26,9 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 51,
+      "Existing": 56,
       "Partial": 30,
-      "Diagnostic": 27,
+      "Diagnostic": 22,
       "Missing": 4
     },
     "byTargetIncrement": {
@@ -99,10 +99,10 @@
       "id": "API-002",
       "behavior": "groupHeaderRenderer get/set",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#API-002: default is undefined; setting a renderer is returned by the getter and drives group headers",
       "status": "Observed",
-      "evidence": "styling-contract",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -768,10 +768,10 @@
       "id": "EVENT-011",
       "behavior": "emptyStateChange",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#EVENT-011: searching to no results emits {context:{query,reason:no-results}} and exposes it via getEmptyStateContext",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1398,10 +1398,10 @@
       "id": "LIFECYCLE-002",
       "behavior": "connected resource attach",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-002: after connect the element owns document listeners — outside pointerdown closes an open popup",
       "status": "Observed",
-      "evidence": "lifecycle; memory-lifecycle",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1413,10 +1413,10 @@
       "id": "LIFECYCLE-003",
       "behavior": "disconnected resource release",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-003: disconnecting closes an open popup and releases rendered options from the shadow tree",
       "status": "Observed",
-      "evidence": "memory-lifecycle; phase-4 lifecycle",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1428,10 +1428,10 @@
       "id": "LIFECYCLE-004",
       "behavior": "reconnect invariant",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-004: reconnecting re-renders each item exactly once (no duplicated render effects)",
       "status": "Observed",
-      "evidence": "phase-4 lifecycle (W1-P0.2B invariant)",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1830,9 +1830,9 @@
       "behavior": "expandable",
       "targetIncrement": "P1.4",
       "coverage": "Missing",
-      "testId": "unassigned",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#CONFIG-023: expandable.enabled=true renders no expand/collapse UI and exposes no public expand control",
       "status": "Documented",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (unwired — gap; negative characterization only)",
       "sourceLocators": [
         {
           "file": "packages/core/src/config/global-config.ts",
