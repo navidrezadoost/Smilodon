@@ -34,6 +34,27 @@ export const SSR_ITEMS: SmilodonSelectItem[] = [
   { value: 'c', label: 'Charlie' },
 ];
 
+/**
+ * S5-VR-F03: fixture-observable state, exposed on `window.__fixture` so the
+ * Playwright test can assert genuine Angular behavior (not just DOM capture):
+ *   - `lastChange`   : the detail received by the `(change)` OUTPUT handler.
+ *   - `changeCount`  : how many times the `(change)` output fired.
+ *   - `formChanges`  : reactive FormControl.valueChanges emissions (model writes).
+ *   - `formLastValue`: the last value the FormControl model observed.
+ */
+export interface SsrFixtureState {
+  lastChange: ChangeEventDetail | null;
+  changeCount: number;
+  formChanges: number;
+  formLastValue: string | number | null;
+}
+
+declare global {
+  interface Window {
+    __fixture?: SsrFixtureState;
+  }
+}
+
 @Component({
   selector: 'app-ssr',
   standalone: true,
@@ -59,8 +80,37 @@ export class SsrAppComponent {
   readonly ctrl = new FormControl<string | number | null>('b');
   /** Last forwarded (change) detail from `#plain`. */
   lastChange: ChangeEventDetail | null = null;
+  /** Number of times the Angular (change) OUTPUT fired. */
+  changeCount = 0;
+  /** Number of reactive model changes (valueChanges emissions). */
+  formChanges = 0;
+  /** Last value observed by the FormControl model. */
+  formLastValue: string | number | null = this.ctrl.value;
+
+  constructor() {
+    this.ctrl.valueChanges.subscribe((value) => {
+      this.formChanges += 1;
+      this.formLastValue = value;
+      this.publishState();
+    });
+    this.publishState();
+  }
 
   onChange(detail: ChangeEventDetail): void {
     this.lastChange = detail;
+    this.changeCount += 1;
+    this.publishState();
+  }
+
+  /** Mirror observable state onto `window.__fixture` for the browser test. */
+  private publishState(): void {
+    if (typeof window !== 'undefined') {
+      window.__fixture = {
+        lastChange: this.lastChange,
+        changeCount: this.changeCount,
+        formChanges: this.formChanges,
+        formLastValue: this.formLastValue,
+      };
+    }
   }
 }

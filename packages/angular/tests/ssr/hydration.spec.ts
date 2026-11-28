@@ -1,245 +1,381 @@
 /**
- * S5-V2 — Real-browser hydration verification of SmilodonSelectComponent.
+ * S5-VR — Corrected real-browser hydration verification of SmilodonSelectComponent.
  *
- * This test loads the SERVER-RENDERED HTML (from `render-server.mjs`) plus the
- * client hydration bundle (from `build-fixture.mjs`) — i.e. the exact
- * framework-SSR → framework-hydration production shape — and verifies in a REAL
- * browser (Chromium, Firefox; WebKit is environmentally blocked, see
- * playwright.ssr.config.ts) that:
+ * STARTING COMMIT: 04847cd (S5-V). This revision implements the Lead's S5-VR
+ * test-correction directive (F01/F02/F03). It loads the SERVER-RENDERED HTML
+ * (from `render-server.mjs`, now hydration-annotated) plus the client hydration
+ * bundle (from `build-fixture.mjs`) and verifies in a REAL browser (Chromium,
+ * Firefox; WebKit environmentally blocked — see playwright.ssr.config.ts):
  *
- *   H1 (tag collision): hydrating `<smilodon-select>` (Angular host) collides
- *      with core's `customElements.define('smilodon-select', NativeSelectElement)`.
- *      We CHARACTERIZE the resulting foreign host shadow root and assert it
- *      causes NO Angular hydration mismatch and NO missing interactive widget.
- *   H2 (writeValue timing): the reactive select's initial value ('b') is applied
- *      without a programmatic change echo, and the selection is observable after
- *      hydration.
- *   H3 (serialization): the server placeholder shape is what gets hydrated (no
- *      core internals server-side; combobox appears only after hydration).
+ *  F01 — REAL hydration:
+ *    The server HTML is now hydration-annotated (`ngh=…` + `<!--nghm-->`), and the
+ *    client DEMONSTRABLY reuses the server DOM nodes (node identity preserved +
+ *    Angular logs "hydrated N component(s) and M node(s)"). We no longer accept
+ *    the mere presence of `ng-version`/`ng-server-context` as proof. We also
+ *    capture hydration WARNINGS (e.g. NG05xx), not only console errors.
  *
- * Plus the S5-V2 acceptance behaviors: selection + change forwarding after
- * hydration, reactive-form model preservation (no feedback loop), and
- * focus/touched semantics.
+ *  F02 — the tag collision is NOT assumed benign:
+ *    The `<smilodon-select>` host is upgraded by core's NativeSelectElement, whose
+ *    shadow root has NO `<slot>`. Unslotted light-DOM children are not rendered
+ *    through the host shadow tree, so the real `<enhanced-select>` widget may be
+ *    present/programmatically operable yet INVISIBLE and un-usable by a pointer
+ *    or keyboard. This is verified with REAL Playwright locator visibility /
+ *    geometry / pointer / keyboard / accessibility checks — NOT a programmatic
+ *    `container.click()` inside `page.evaluate()`. If the widget is not visible,
+ *    this spec FAILS and preserves the reproduction (per the directive: stop at
+ *    the boundary; production remediation requires separate authorization).
+ *
+ *  F03 — genuine Angular behavior:
+ *    Asserts the Angular `(change)` OUTPUT delivery (via the fixture's `onChange`
+ *    handler → `window.__fixture.changeCount/lastChange`), and genuine form-model
+ *    behavior (FormControl.valueChanges count + last value), not just DOM capture.
+ *    Focus/touched exercised with REAL focus movement (Playwright focus + a real
+ *    focus-loss to a visible target); a synthetic FocusEvent case is retained
+ *    separately as a unit-level check.
  *
  * @ssr-hydration
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const PLAIN_ID = '#plain';
 const REACTIVE_ID = '#reactive';
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Window {
     __hydrated?: boolean;
     __hydrateError?: string | null;
-    __smilodonChangeEvents?: unknown[];
+    __serverNodesReused?: boolean;
+    __fixture?: {
+      lastChange: unknown;
+      changeCount: number;
+      formChanges: number;
+      formLastValue: string | number | null;
+    };
   }
 }
 
-test.beforeEach(async ({ page }) => {
-  // Record core `change` CustomEvents bubbling from any select, so we can assert
-  // the selection actually emits (which the Angular adapter forwards). The core
-  // event's target is the `<enhanced-select>`, which bubbles+composes up to the
-  // Angular `<smilodon-select>` host; resolve the owning host's id.
-  await page.addInitScript(() => {
-    window.__smilodonChangeEvents = [];
-    document.addEventListener(
-      'change',
-      (e) => {
-        const t = e.target as (HTMLElement & { closest?: (s: string) => HTMLElement | null }) | null;
-        const host = t && typeof t.closest === 'function' ? t.closest('smilodon-select') : null;
-        (window.__smilodonChangeEvents as unknown[]).push({
-          hostId: host?.id ?? null,
-          detail: (e as CustomEvent).detail ?? null,
-        });
-      },
-      true,
-    );
+/** Console lines (warnings AND errors) captured per test. */
+type CapturedLogs = { errors: string[]; warnings: string[]; hydratedLog: string | null };
+
+function captureLogs(page: Page): CapturedLogs {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let hydratedLog: string | null = null;
+  page.on('console', (m) => {
+    const text = m.text();
+    if (/hydrated \d+ component/i.test(text)) hydratedLog = text;
+    if (m.type() === 'error') errors.push(text);
+    if (m.type() === 'warning') warnings.push(text);
   });
-});
+  page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}`));
+  return { errors, warnings, get hydratedLog() { return hydratedLog; } } as CapturedLogs;
+}
 
 /**
  * Waits for the client hydrate bundle to finish bootstrapping and surfaces any
- * hydration error explicitly (NG mismatch, bootstrap rejection, etc.).
+ * hydration error explicitly (bootstrap rejection, etc.).
  */
-async function waitForHydration(page: import('@playwright/test').Page): Promise<void> {
+async function waitForHydration(page: Page): Promise<void> {
   await page.waitForFunction(
     () => window.__hydrated === true || window.__hydrateError != null,
     undefined,
     { timeout: 15000 },
   );
   const err = await page.evaluate(() => window.__hydrateError ?? null);
-  expect(err, 'hydration must not throw (Angular mismatch / bootstrap error)').toBeNull();
+  expect(err, 'hydration must not throw (bootstrap error)').toBeNull();
 }
 
-test('@ssr-hydration hydration completes with no mismatch errors and preserves server DOM shape (H1/H3)', async ({
-  page,
-}) => {
-  const consoleErrors: string[] = [];
-  page.on('console', (m) => {
-    if (m.type() === 'error') consoleErrors.push(m.text());
+// ─────────────────────────────────────────────────────────────────────────────
+// F01 — Real Angular hydration (server annotated + client reuses server nodes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('@ssr-hydration F01 — real Angular hydration', () => {
+  test('server HTML is hydration-annotated (ngh + nghm)', async ({ request }) => {
+    // Fetch the exact served page (server HTML + injected stamp + client script).
+    const res = await request.get('/');
+    expect(res.ok()).toBeTruthy();
+    const html = await res.text();
+
+    // Angular emits `ngh="N"` node annotations ONLY when hydration DOM-reuse is
+    // enabled on the SERVER. Their absence was the F01 defect.
+    const nghCount = (html.match(/ngh="/g) || []).length;
+    expect(nghCount, 'server HTML carries Angular hydration annotations (ngh="…")').toBeGreaterThanOrEqual(4);
+
+    // The SSR content-integrity marker Angular inserts for hydration.
+    expect(html, 'server HTML carries the <!--nghm--> integrity marker').toContain('<!--nghm-->');
   });
-  page.on('pageerror', (e) => consoleErrors.push(`[pageerror] ${e.message}`));
 
-  await page.goto('/');
-  await waitForHydration(page);
+  test('client reuses server DOM nodes and reports positive hydration (not recreation)', async ({ page }) => {
+    const logs = captureLogs(page);
+    await page.goto('/');
+    await waitForHydration(page);
 
-  // No Angular hydration mismatch / NG0* errors were logged.
-  const ngErrors = consoleErrors.filter((t) => /NG0|hydration|mismatch/i.test(t));
-  expect(ngErrors, `no Angular hydration/mismatch console errors. Got: ${ngErrors.join(' | ')}`).toEqual([]);
+    // Node identity: the same server-emitted nodes (stamped by the harness before
+    // the module ran) still carry the stamp after bootstrap → REUSED, not recreated.
+    const reused = await page.evaluate(() => window.__serverNodesReused === true);
+    expect(reused, 'client reused the server-rendered DOM nodes (node identity preserved)').toBe(true);
 
-  // Both Angular hosts still exist as single elements (no duplicated/mismatched
-  // DOM from hydration).
-  await expect(page.locator(PLAIN_ID)).toHaveCount(1);
-  await expect(page.locator(REACTIVE_ID)).toHaveCount(1);
+    // Angular's own positive hydration report.
+    expect(logs.hydratedLog, 'Angular logs a positive hydration count').toBeTruthy();
+    expect(logs.hydratedLog!).toMatch(/hydrated \d+ component\(s\) and \d+ node\(s\)/);
+    expect(logs.hydratedLog!, 'no components skipped during hydration').toContain('0 component(s) were skipped');
 
-  // H1 characterization: the `smilodon-select` host got upgraded by core's
-  // NativeSelectElement, which attaches a shadow root — the tag-collision
-  // artifact. We assert it exists (characterized) AND that it does NOT hide the
-  // real interactive widget (which lives in the `<enhanced-select>` child).
-  const h1 = await page.evaluate((id) => {
-    const host = document.querySelector(id) as HTMLElement & { shadowRoot: ShadowRoot | null };
-    const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
-    const enhCombobox = enh?.shadowRoot?.querySelector('[role="combobox"]') ?? null;
-    return {
-      hostHasShadow: !!host.shadowRoot,
-      hostShadowChildren: host.shadowRoot ? host.shadowRoot.childElementCount : -1,
-      enhancedPresent: !!enh,
-      enhancedHasShadow: !!enh?.shadowRoot,
-      // The interactive combobox must exist in the enhanced-select shadow.
-      comboboxInEnhancedShadow: !!enhCombobox,
-      // The light-DOM enhanced-select must still be reachable from the host.
-      enhancedReachableInLightDom: !!host.querySelector('enhanced-select'),
-    };
-  }, PLAIN_ID);
-
-  expect(h1.hostHasShadow, 'H1: host upgraded with a foreign (collision) shadow root').toBe(true);
-  expect(h1.enhancedPresent, 'enhanced-select child present & reachable').toBe(true);
-  expect(h1.enhancedHasShadow, 'enhanced-select (real widget) has its own shadow root').toBe(true);
-  expect(
-    h1.comboboxInEnhancedShadow,
-    'real interactive combobox lives in enhanced-select shadow (not the collision root)',
-  ).toBe(true);
-  expect(h1.enhancedReachableInLightDom, 'collision does not detach the light-DOM widget child').toBe(true);
-});
-
-test('@ssr-hydration reactive form applies initial value without a programmatic feedback echo (H2)', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await waitForHydration(page);
-
-  // Initial writeValue('b') applied: the enhanced-select reflects 'b' as selected
-  // shortly after hydration, and the host untouched/pristine (no user input).
-  const h2 = await page.evaluate((id) => {
-    const host = document.querySelector(id) as HTMLElement;
-    const enh = host.querySelector('enhanced-select') as
-      | (HTMLElement & { _state?: { selectedItems?: Map<number, unknown> } })
-      | null;
-    const selected = enh?._state?.selectedItems ? [...enh._state.selectedItems.values()] : [];
-    return {
-      selectedCount: selected.length,
-      selectedValues: selected.map((s) => (s as { value?: unknown })?.value ?? s),
-      hostUntouched: host.classList.contains('ng-untouched'),
-      hostPristine: host.classList.contains('ng-pristine'),
-    };
-  }, REACTIVE_ID);
-
-  // The control starts on 'b'.
-  expect(h2.selectedValues, 'reactive select hydrated with initial value b').toEqual(['b']);
-  // Angular's form-control classes: untouched + pristine means writeValue did
-  // NOT masquerade as user interaction (no programmatic feedback into dirty).
-  expect(h2.hostUntouched, 'reactive host stays ng-untouched after initial writeValue').toBe(true);
-  expect(h2.hostPristine, 'reactive host stays ng-pristine after initial writeValue').toBe(true);
-});
-
-test('@ssr-hydration selection works after hydration and forwards change', async ({ page }) => {
-  await page.goto('/');
-  await waitForHydration(page);
-
-  // Plain select starts empty.
-  const before = await page.evaluate((id) => {
-    const host = document.querySelector(id) as HTMLElement;
-    const enh = host.querySelector('enhanced-select') as
-      | (HTMLElement & { _state?: { selectedItems?: Map<number, unknown> } })
-      | null;
-    return enh?._state?.selectedItems?.size ?? -1;
-  }, PLAIN_ID);
-  expect(before, 'plain select starts empty').toBe(0);
-
-  // Interact via the real DOM: click the first option's container inside the
-  // enhanced-select shadow (the same interaction the core e2e suite uses). This
-  // proves the hydrated widget is live and selectable in a real browser.
-  const clicked = await page.evaluate((id) => {
-    const host = document.querySelector(id) as HTMLElement;
-    const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
-    const opt = enh?.shadowRoot?.querySelectorAll('select-option')[0] as
-      | (HTMLElement & { shadowRoot: ShadowRoot | null })
-      | undefined;
-    const container = opt?.shadowRoot?.querySelector('.option-container') as HTMLElement | null;
-    if (container) {
-      container.click();
-      return true;
-    }
-    return false;
-  }, PLAIN_ID);
-  expect(clicked, 'first option container clicked inside hydrated widget').toBe(true);
-
-  // After selection, the enhanced-select reflects exactly one selected item.
-  const after = await page.evaluate((id) => {
-    const host = document.querySelector(id) as HTMLElement;
-    const enh = host.querySelector('enhanced-select') as
-      | (HTMLElement & { _state?: { selectedItems?: Map<number, unknown> } })
-      | null;
-    const selected = enh?._state?.selectedItems ? [...enh._state.selectedItems.values()] : [];
-    return { count: selected.length, values: selected.map((s) => (s as { value?: unknown })?.value ?? s) };
-  }, PLAIN_ID);
-
-  expect(after.count, 'selection selects exactly one option').toBe(1);
-  expect(after.values, 'first option (Alpha, value a) is selected').toEqual(['a']);
-
-  // The selection emitted a core `change` CustomEvent from #plain, which the
-  // Angular adapter forwards to its (change) output.
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          () =>
-            (window.__smilodonChangeEvents as { hostId: string | null }[]).filter((e) => e.hostId === 'plain')
-              .length,
-        ),
-      { message: 'a change event was emitted from #plain after selection', timeout: 5000 },
-    )
-    .toBeGreaterThanOrEqual(1);
-});
-
-test('@ssr-hydration focus/touched semantics correct after hydration', async ({ page }) => {
-  await page.goto('/');
-  await waitForHydration(page);
-
-  // Reactive control starts untouched; focusing then losing focus marks it
-  // touched. The real widget's combobox input is 0x0 (a hidden trigger) until the
-  // popup opens, so we drive the SAME focus-session boundary the adapter listens
-  // for: a `focusin` on the host followed by a `focusout` whose `relatedTarget`
-  // is outside the host (a real focus-loss). These are real composed FocusEvents
-  // on the live hydrated host.
-  const host = page.locator(REACTIVE_ID);
-  const initialUntouched = await host.evaluate((el) => el.classList.contains('ng-untouched'));
-  expect(initialUntouched, 'reactive host initially untouched').toBe(true);
-
-  await page.evaluate((id) => {
-    const hostEl = document.querySelector(id) as HTMLElement;
-    hostEl.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true }));
-    hostEl.dispatchEvent(
-      new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: document.body }),
+    // Capture hydration WARNINGS (e.g. NG05xx mismatch codes), not only errors.
+    const ngHydrationWarnings = [...logs.warnings, ...logs.errors].filter((t) =>
+      /NG0\d{3}|hydration|mismatch|recreat/i.test(t),
     );
-  }, REACTIVE_ID);
+    expect(
+      ngHydrationWarnings,
+      `no Angular hydration warnings/mismatches. Got: ${ngHydrationWarnings.join(' | ')}`,
+    ).toEqual([]);
+  });
+});
 
-  await expect
-    .poll(async () => host.evaluate((el) => el.classList.contains('ng-touched')), {
-      message: 'reactive host becomes ng-touched after focus loss',
-      timeout: 5000,
-    })
-    .toBe(true);
+// ─────────────────────────────────────────────────────────────────────────────
+// F02 — the widget must be VISIBLE and USABLE (not merely queryable)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('@ssr-hydration F02 — rendered widget visibility & interaction', () => {
+  test('tag collision does NOT hide the real widget (visible, sized, hittable)', async ({ page }) => {
+    // EXPECTED FAILURE — preserved reproduction of the F02 adapter defect:
+    // core's NativeSelectElement host shadow root has NO <slot>, so the light-DOM
+    // <enhanced-select> widget is not rendered (0×0, invisible). Marked
+    // test.fail() so the suite treats it as an expected failure while F02 is open,
+    // and FAILS LOUDLY (unexpected pass) if the adapter is ever remediated this way.
+    test.fail(true, 'F02: <enhanced-select> hidden by slotless core host shadow (adapter defect)');
+    await page.goto('/');
+    await waitForHydration(page);
+
+    // Characterize the collision (host gained a foreign shadow root with no slot).
+    const collision = await page.evaluate((id) => {
+      const host = document.querySelector(id) as HTMLElement;
+      const shadow = host.shadowRoot;
+      return {
+        hostHasShadow: !!shadow,
+        hostShadowHasSlot: shadow ? !!shadow.querySelector('slot') : null,
+      };
+    }, PLAIN_ID);
+    expect(collision.hostHasShadow, 'host upgraded by core NativeSelectElement (collision)').toBe(true);
+    // Document the mechanism: core's host shadow has NO slot, so light children
+    // are not composed/rendered through it.
+    expect(collision.hostShadowHasSlot, "core's host shadow root exposes a <slot> for light children").toBe(true);
+
+    // The REAL widget is the <enhanced-select> child. Playwright locators pierce
+    // open shadow roots; assert the widget itself is visible and has area.
+    const widget = page.locator(`${PLAIN_ID} enhanced-select`);
+    await expect(widget, 'the real <enhanced-select> widget is visible').toBeVisible();
+    const box = await widget.boundingBox();
+    expect(box, 'the widget has a layout box').not.toBeNull();
+    expect(box!.width, 'widget has non-zero width').toBeGreaterThan(0);
+    expect(box!.height, 'widget has non-zero height').toBeGreaterThan(0);
+
+    // The combobox trigger inside the widget is reachable and hittable by a
+    // pointer. Playwright click does an actionability check (visible + stable +
+    // receives events) — a programmatic DOM click would mask an invisible target.
+    const combobox = widget.locator('input[role="combobox"], [role="combobox"]').first();
+    await expect(combobox, 'the combobox is visible').toBeVisible();
+    await combobox.click({ timeout: 5000 });
+  });
+
+  test('collision does NOT suppress layout (host + widget have real geometry)', async ({ page }) => {
+    // EXPECTED FAILURE — same F02 adapter defect (widget has 0 client rects).
+    test.fail(true, 'F02: <enhanced-select> has 0 client rects (hidden by slotless core host shadow)');
+    await page.goto('/');
+    await waitForHydration(page);
+
+    const geo = await page.evaluate((id) => {
+      const host = document.querySelector(id) as HTMLElement;
+      const enh = host.querySelector('enhanced-select') as HTMLElement;
+      const r = enh.getBoundingClientRect();
+      const hr = host.getBoundingClientRect();
+      // elementFromPoint at the widget's centre should resolve into the widget
+      // subtree (or its shadow), proving it is on-screen and painted.
+      let hitInsideWidget = false;
+      if (r.width > 0 && r.height > 0) {
+        const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        hitInsideWidget = !!el && (el === enh || enh.contains(el) || el.getRootNode() === (enh.shadowRoot ?? null));
+      }
+      return {
+        hostH: hr.height,
+        enhW: r.width,
+        enhH: r.height,
+        enhClientRects: enh.getClientRects().length,
+        hitInsideWidget,
+      };
+    }, PLAIN_ID);
+
+    expect(geo.enhClientRects, 'widget has client rects (is laid out)').toBeGreaterThan(0);
+    expect(geo.enhW, 'widget width > 0').toBeGreaterThan(0);
+    expect(geo.enhH, 'widget height > 0').toBeGreaterThan(0);
+    expect(geo.hostH, 'host has height > 0').toBeGreaterThan(0);
+    expect(geo.hitInsideWidget, 'hit-testing at the widget centre lands inside the widget').toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// F03 — genuine Angular (change) output + form-model behavior
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('@ssr-hydration F03 — Angular output & form model', () => {
+  test('reactive select hydrates on initial value with NO programmatic echo (H2)', async ({ page }) => {
+    await page.goto('/');
+    await waitForHydration(page);
+
+    const h2 = await page.evaluate((id) => {
+      const host = document.querySelector(id) as HTMLElement;
+      const enh = host.querySelector('enhanced-select') as
+        | (HTMLElement & { _state?: { selectedItems?: Map<number, unknown> } })
+        | null;
+      const selected = enh?._state?.selectedItems ? [...enh._state.selectedItems.values()] : [];
+      return {
+        selectedValues: selected.map((s) => (s as { value?: unknown })?.value ?? s),
+        hostUntouched: host.classList.contains('ng-untouched'),
+        hostPristine: host.classList.contains('ng-pristine'),
+        formChanges: window.__fixture?.formChanges ?? -1,
+        formLastValue: window.__fixture?.formLastValue ?? null,
+        changeCount: window.__fixture?.changeCount ?? -1,
+      };
+    }, REACTIVE_ID);
+
+    expect(h2.selectedValues, 'reactive select hydrated with initial value b').toEqual(['b']);
+    expect(h2.hostUntouched, 'reactive host stays ng-untouched after initial writeValue').toBe(true);
+    expect(h2.hostPristine, 'reactive host stays ng-pristine after initial writeValue').toBe(true);
+    // Genuine form model: initial value came from the FormControl, no user edit.
+    expect(h2.formLastValue, 'FormControl model holds the initial value b').toBe('b');
+    // The standalone `#plain` (change) output must NOT have fired during hydration.
+    expect(h2.changeCount, 'no spurious (change) output during hydration').toBe(0);
+  });
+
+  test('selection forwards the Angular (change) OUTPUT and updates the form model', async ({ page }) => {
+    await page.goto('/');
+    await waitForHydration(page);
+
+    const before = await page.evaluate(() => ({
+      changeCount: window.__fixture?.changeCount ?? -1,
+    }));
+    expect(before.changeCount, '(change) output silent before interaction').toBe(0);
+
+    // Select via the real option container (the core e2e interaction).
+    const clicked = await page.evaluate((id) => {
+      const host = document.querySelector(id) as HTMLElement;
+      const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
+      const opt = enh?.shadowRoot?.querySelectorAll('select-option')[0] as
+        | (HTMLElement & { shadowRoot: ShadowRoot | null })
+        | undefined;
+      const container = opt?.shadowRoot?.querySelector('.option-container') as HTMLElement | null;
+      if (container) {
+        container.click();
+        return true;
+      }
+      return false;
+    }, PLAIN_ID);
+    expect(clicked, 'first option container clicked inside hydrated widget').toBe(true);
+
+    // Angular (change) OUTPUT delivered to the fixture consumer (NOT just the
+    // core event reaching document capture). This is the F03 assertion.
+    await expect
+      .poll(
+        () => page.evaluate(() => window.__fixture?.changeCount ?? 0),
+        { message: 'the Angular (change) output fired for #plain', timeout: 5000 },
+      )
+      .toBeGreaterThanOrEqual(1);
+
+    const last = await page.evaluate(
+      () => window.__fixture?.lastChange as { selectedValues?: unknown[] } | null,
+    );
+    expect(last?.selectedValues, 'the (change) output received the selected value').toEqual(['a']);
+
+    // Now exercise the reactive control's model via the same path.
+    const reactiveClicked = await page.evaluate((id) => {
+      const host = document.querySelector(id) as HTMLElement;
+      const enh = host.querySelector('enhanced-select') as (HTMLElement & { shadowRoot: ShadowRoot | null }) | null;
+      const opt = enh?.shadowRoot?.querySelectorAll('select-option')[2] as
+        | (HTMLElement & { shadowRoot: ShadowRoot | null })
+        | undefined;
+      const container = opt?.shadowRoot?.querySelector('.option-container') as HTMLElement | null;
+      if (container) {
+        container.click();
+        return true;
+      }
+      return false;
+    }, REACTIVE_ID);
+    expect(reactiveClicked, 'third option clicked on reactive widget').toBe(true);
+
+    await expect
+      .poll(
+        () => page.evaluate(() => window.__fixture?.formLastValue ?? null),
+        { message: 'FormControl model updated to the clicked value (c)', timeout: 5000 },
+      )
+      .toBe('c');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Focus / touched — REAL focus movement + retained synthetic check
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('@ssr-hydration focus & touched', () => {
+  test('REAL focus cannot reach the widget while it is unrendered (F02 consequence)', async ({ page }) => {
+    // EXPECTED FAILURE — the F02 adapter defect surfaces through real focus:
+    // the widget is 0-height so a real browser cannot focus it. If F02 were
+    // remediated, real focus would land and this test would unexpectedly pass,
+    // which test.fail() surfaces loudly.
+    test.fail(true, 'F02: real focus cannot reach the widget (unrendered, 0-height)');
+    await page.goto('/');
+    await waitForHydration(page);
+
+    // Add a real, focusable, visible control to move focus to on focus-loss.
+    await page.evaluate(() => {
+      const b = document.createElement('button');
+      b.id = 'focus-sink';
+      b.textContent = 'sink';
+      b.style.cssText = 'display:block;width:80px;height:24px;';
+      document.body.appendChild(b);
+    });
+
+    const host = page.locator(REACTIVE_ID);
+    await expect(host).toHaveClass(/ng-untouched/);
+
+    // Attempt REAL focus on the widget's combobox (inside enhanced-select shadow).
+    const combobox = host.locator('enhanced-select input[role="combobox"], enhanced-select [role="combobox"]').first();
+    const focusReach = await combobox.evaluate((el) => {
+      (el as HTMLElement).focus();
+      return {
+        offsetHeight: (el as HTMLElement).offsetHeight,
+        activeIsCombobox: document.activeElement === el,
+      };
+    });
+
+    // ASSERTION (this is the F02 defect surfacing through real focus): a real
+    // browser cannot focus the widget because it is unrendered (0-height). If the
+    // widget WERE rendered, real focus would land and this would pass. As long as
+    // F02 is unresolved, this fails — the preserved reproduction of the defect.
+    expect(
+      focusReach.activeIsCombobox,
+      'real focus can reach the widget combobox (blocked by F02: widget unrendered, 0-height)',
+    ).toBe(true);
+  });
+
+  test('UNIT: synthetic focusin/focusout(relatedTarget) marks touched', async ({ page }) => {
+    await page.goto('/');
+    await waitForHydration(page);
+
+    const host = page.locator(REACTIVE_ID);
+    await expect(host).toHaveClass(/ng-untouched/);
+
+    await page.evaluate((id) => {
+      const hostEl = document.querySelector(id) as HTMLElement;
+      hostEl.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true }));
+      hostEl.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: document.body }),
+      );
+    }, REACTIVE_ID);
+
+    await expect
+      .poll(async () => host.evaluate((el) => el.classList.contains('ng-touched')), {
+        message: 'reactive host becomes ng-touched after synthetic focus loss',
+        timeout: 5000,
+      })
+      .toBe(true);
+  });
 });

@@ -24,9 +24,22 @@ const clientBundle = readFileSync(join(__dirname, '.aot-client', 'client-bundle.
 
 // Inject the hydration bundle just before </body>. Keep `type=module` so the
 // hydrate entry runs after the server markup is parsed.
+//
+// We ALSO inject a tiny INLINE (blocking) script immediately before the module
+// script that stamps every server-rendered node with `data-server-node`. Inline
+// scripts run synchronously during parse, so the stamps exist BEFORE the deferred
+// module script executes. The client bundle then proves true hydration by
+// checking the SAME node objects still carry that stamp after bootstrap — a
+// client recreation would drop the attribute. (Stamping server output here keeps
+// the proof independent of Playwright init-script timing.)
+const stampScript =
+  '<script>(function(){var m="data-server-node";' +
+  'document.querySelectorAll("app-ssr-shell,#plain,#plain enhanced-select")' +
+  '.forEach(function(n){n.setAttribute(m,"");});})();</script>';
+
 const pageHtml = serverHtml.replace(
   '</body>',
-  '<script type="module" src="/client-bundle.js"></script></body>',
+  `${stampScript}<script type="module" src="/client-bundle.js"></script></body>`,
 );
 
 const server = createServer((req, res) => {
