@@ -44,3 +44,14 @@ export type {
   SmilodonAngularAdapterInfo,
 } from './types.js';
 export { SMILODON_ANGULAR_ADAPTER } from './types.js';
+
+// ── S2: browser-deferred standalone component (CSR) ───────────────────────────
+// The component itself has NO static value import of `@smilodon/core`; core is
+// loaded on demand in the browser via `core-loader.ts`. Importing this entry on
+// the server is therefore side-effect-free (API-075 safe).
+export { SmilodonSelectComponent } from './select.component.js';
+export {
+  ENHANCED_SELECT_TAG,
+  ensureEnhancedSelectDefined,
+  isBrowserEnvironment,
+} from './core-loader.js';

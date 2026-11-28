@@ -2,11 +2,74 @@
 
 Angular adapter for [Smilodon Select](https://github.com/navidrezadoost/smilodon).
 
-> **Status: S1 scaffold (Wave 2).** This package currently provides only the
-> package foundation and public **type** surface. The Angular standalone
-> component, event bridge, forms integration, and browser-deferred runtime
-> loading arrive in subsequent, separately reviewed slices (S2–S6). Do not
-> depend on runtime behavior yet.
+> **Status: S2 (Wave 2).** This package now ships a **minimal standalone
+> component** (`SmilodonSelectComponent`) that hosts `<enhanced-select>` with
+> browser-deferred core loading and imperative input binding. The remaining
+> slices are still pending: event bridge (`@Output()`, S3), `ControlValueAccessor`
+> (S4), and SSR rendering/hydration qualification (S5). APIs may change before
+> S5.
+
+## Usage (S2)
+
+```ts
+import { Component } from '@angular/core';
+import { SmilodonSelectComponent, type SmilodonSelectItem } from '@smilodon/angular';
+
+@Component({
+  selector: 'app-demo',
+  standalone: true,
+  imports: [SmilodonSelectComponent],
+  template: `
+    <smilodon-select
+      [items]="items"
+      [value]="selected"
+      [multiple]="true"
+      [searchable]="true"
+      placeholder="Pick one or more">
+    </smilodon-select>
+  `,
+})
+export class DemoComponent {
+  items: SmilodonSelectItem[] = [
+    { value: 'a', label: 'Apple' },
+    { value: 'b', label: 'Banana' },
+  ];
+  selected: Array<string | number> = [];
+}
+```
+
+### Inputs
+
+| Input | Maps to |
+| --- | --- |
+| `items` | `setItems()` |
+| `groupedItems` | `setGroupedItems()` (takes precedence over `items`) |
+| `value` | `setSelectedValues()` (async) |
+| `multiple` | `updateConfig({ selection: { mode } })` |
+| `searchable` | `updateConfig({ searchable })` |
+| `disabled` | `updateConfig({ enabled: !disabled })` |
+| `required` | `setRequired()` |
+| `error` | `setError()` / `clearError()` |
+| `placeholder` | `updateConfig({ placeholder })` |
+| `config` | layered into the single `updateConfig()` call |
+
+Inputs are applied through the element's **imperative API**, never as HTML
+attributes — only `aria-*` are observed by the element, so attribute binding
+would silently no-op.
+
+### Lifecycle
+
+`ngAfterViewInit` (browser only) → `ensureEnhancedSelectDefined()` (dynamic
+`import('@smilodon/core')`) → `customElements.whenDefined('enhanced-select')` →
+apply inputs. Later input changes reconcile via `ngOnChanges` once ready. A
+pending init is ignored after `ngOnDestroy`.
+
+### Tests
+
+```bash
+npm test -w @smilodon/angular        # jsdom integration (component + loader)
+npm run test:ssr -w @smilodon/angular # no-DOM Node: entry import-safety (API-075)
+```
 
 ## Design (adopted Wave 2 architecture)
 
