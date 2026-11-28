@@ -1,5 +1,7 @@
 import { test, expect, Locator } from '@playwright/test';
 
+const fixtureUrl = process.env.SMILODON_VANILLA_FIXTURE_URL ?? 'http://localhost:5173/vanilla-demo.html';
+
 /**
  * Search/Filter E2E Test
  * 
@@ -58,7 +60,7 @@ async function getVisibleOptionsCount(select: Locator): Promise<number> {
 
 test.describe('Search/Filter', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/vanilla-demo.html');
+    await page.goto(fixtureUrl);
     await page.waitForLoadState('networkidle');
   });
   

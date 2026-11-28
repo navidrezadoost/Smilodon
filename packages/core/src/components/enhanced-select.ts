@@ -104,6 +104,11 @@ interface LegacySelectedEntry {
   item: unknown;
 }
 
+type SelectedLabelTooltipContent = {
+  kind: 'selected-label' | 'search-query';
+  text: string;
+};
+
 interface EnhancedSelectRenderPlan {
   mode: 'legacy-full' | 'virtual-window';
   /** Source indices in displayed order; values remain source identities. */
@@ -242,6 +247,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _inputContent: HTMLElement;
   private _input: HTMLInputElement;
   private _selectedLabelTooltip: HTMLDivElement;
+  private _selectedLabelTooltipTextMeasure: HTMLSpanElement;
   private _selectedLabelTooltipTrigger: HTMLElement | null = null;
   private _selectedLabelTooltipPointerTrigger: HTMLElement | null = null;
   private _selectedLabelTooltipFocusTrigger: HTMLElement | null = null;
@@ -550,6 +556,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._inputContent = this._createInputContent();
     this._input = this._createInput();
     this._selectedLabelTooltip = this._createSelectedLabelTooltip();
+    this._selectedLabelTooltipTextMeasure = this._createSelectedLabelTooltipTextMeasure();
     this._arrowContainer = this._createArrowContainer();
     this._clearControl = this._createClearControl();
     this._dropdown = this._createDropdown();
@@ -2006,6 +2013,28 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     return tooltip;
   }
 
+  private _createSelectedLabelTooltipTextMeasure(): HTMLSpanElement {
+    const measure = document.createElement('span');
+    measure.setAttribute('aria-hidden', 'true');
+    measure.dataset.selectInternal = 'tooltip-measure';
+    measure.style.cssText = [
+      'all: initial',
+      'position: fixed',
+      'left: -100000px',
+      'top: 0',
+      'display: inline-block',
+      'width: max-content',
+      'height: auto',
+      'padding: 0',
+      'margin: 0',
+      'border: 0',
+      'white-space: pre',
+      'visibility: hidden',
+      'pointer-events: none',
+    ].join(';');
+    return measure;
+  }
+
   private _createDropdown(): HTMLElement {
     const dropdown = document.createElement('div');
     dropdown.className = 'select-dropdown';
@@ -2119,6 +2148,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._shadow.appendChild(this._errorDescription);
     }
     this._shadow.appendChild(this._selectedLabelTooltip);
+    this._shadow.appendChild(this._selectedLabelTooltipTextMeasure);
     
     
     // Set ARIA relationships
@@ -3860,9 +3890,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._input.addEventListener('input', (e) => {
       if (!this._config.searchable) return;
       const query = (e.target as HTMLInputElement).value;
-      if (this._selectedLabelTooltipTrigger === this._input
-        && this._getSelectedLabelForTrigger(this._input) === null) {
-        this._hideSelectedLabelTooltip();
+      if (this._selectedLabelTooltipDismissedTrigger === this._input) {
+        this._selectedLabelTooltipDismissedTrigger = null;
       }
       this._handleSearch(query);
     });
@@ -4053,7 +4082,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _getSelectedLabelForTrigger(trigger: HTMLElement): string | null {
     const entries = this._getSelectedEntries();
     if (trigger === this._input) {
-      if (this._config.selection.mode !== 'single' || this._state.searchQuery.length > 0) return null;
+      if (this._config.selection.mode !== 'single') return null;
       const item = entries[0]?.item;
       if (item === undefined) return null;
       const label = this._getItemLabel(item);
@@ -4072,6 +4101,62 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   private _isSelectedLabelTruncated(trigger: HTMLElement): boolean {
     if (!trigger.isConnected) return false;
     return trigger.clientWidth > 0 && trigger.scrollWidth > trigger.clientWidth + 1;
+  }
+
+  private _getSelectedLabelTooltipContent(trigger: HTMLElement): SelectedLabelTooltipContent | null {
+    if (trigger === this._input && this._config.searchable) {
+      const visibleText = this._input.value;
+      const pendingQuery = this._acknowledgedPendingSearchQuery;
+      const committedQuery = this._state.searchQuery;
+      const isPendingQuery = pendingQuery !== null && pendingQuery.length > 0 && visibleText === pendingQuery;
+      const isCommittedQuery = committedQuery.length > 0 && visibleText === committedQuery;
+      if (visibleText.length > 0 && (isPendingQuery || isCommittedQuery)) {
+        return { kind: 'search-query', text: visibleText };
+      }
+    }
+
+    const selectedLabel = this._getSelectedLabelForTrigger(trigger);
+    return selectedLabel === null ? null : { kind: 'selected-label', text: selectedLabel };
+  }
+
+  private _isSelectedLabelTooltipContentTruncated(
+    trigger: HTMLElement,
+    content: SelectedLabelTooltipContent,
+  ): boolean {
+    if (trigger !== this._input) return this._isSelectedLabelTruncated(trigger);
+    if (!trigger.isConnected || !content.text) return false;
+
+    const style = getComputedStyle(this._input);
+    const measure = this._selectedLabelTooltipTextMeasure;
+    measure.textContent = content.text;
+    const mirroredProperties = [
+      'font',
+      'font-family',
+      'font-size',
+      'font-style',
+      'font-weight',
+      'font-stretch',
+      'font-variant',
+      'font-kerning',
+      'font-feature-settings',
+      'font-variation-settings',
+      'letter-spacing',
+      'word-spacing',
+      'text-transform',
+      'direction',
+      'unicode-bidi',
+    ];
+    for (const property of mirroredProperties) {
+      const value = style.getPropertyValue(property);
+      if (value) measure.style.setProperty(property, value);
+    }
+
+    const contentWidth = measure.getBoundingClientRect().width;
+    const inputStyle = style;
+    const horizontalPadding = Number.parseFloat(inputStyle.paddingLeft) + Number.parseFloat(inputStyle.paddingRight);
+    const textIndent = Number.parseFloat(inputStyle.textIndent) || 0;
+    const availableWidth = this._input.clientWidth - (Number.isFinite(horizontalPadding) ? horizontalPadding : 0) - textIndent;
+    return availableWidth > 0 && contentWidth > availableWidth + 1;
   }
 
   private _handleSelectedLabelPointerOver(event: PointerEvent): void {
@@ -4136,8 +4221,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
       return;
     }
-    const label = this._getSelectedLabelForTrigger(trigger);
-    if (label === null || !this._isSelectedLabelTruncated(trigger)) {
+    const content = this._getSelectedLabelTooltipContent(trigger);
+    if (content === null || !this._isSelectedLabelTooltipContentTruncated(trigger, content)) {
       if (trigger.classList.contains('selection-badge-label')) trigger.tabIndex = -1;
       if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
       return;
@@ -4148,7 +4233,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._removeSelectedLabelTooltipDescription(this._selectedLabelTooltipTrigger);
       this._selectedLabelTooltipTrigger = trigger;
     }
-    this._selectedLabelTooltip.textContent = label;
+    this._selectedLabelTooltip.textContent = content.text;
     this._selectedLabelTooltip.hidden = false;
     this._positionSelectedLabelTooltip(trigger);
     this._syncSelectedLabelTooltipDescription();
@@ -4203,6 +4288,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     this._removeSelectedLabelTooltipDescription(this._selectedLabelTooltipTrigger);
     this._selectedLabelTooltipTrigger = null;
     this._selectedLabelTooltip.hidden = true;
+    this._selectedLabelTooltipTextMeasure.textContent = '';
     if (clearInteractionState) {
       this._selectedLabelTooltipPointerTrigger = null;
       this._selectedLabelTooltipFocusTrigger = null;
@@ -4258,10 +4344,12 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     if (typeof ResizeObserver === 'undefined') return;
     const hasSingleSelection = this._config.selection.mode === 'single'
       && this._getSelectedEntries().length > 0;
+    const inputContent = this._getSelectedLabelTooltipContent(this._input);
+    const shouldObserveInput = hasSingleSelection || inputContent?.kind === 'search-query';
     const chipLabels = this._getActiveChipBadges()
       .map((badge) => badge.querySelector<HTMLElement>('.selection-badge-label'))
       .filter((label): label is HTMLElement => label !== null);
-    if (!hasSingleSelection && chipLabels.length === 0) {
+    if (!shouldObserveInput && chipLabels.length === 0) {
       this._selectedLabelTooltipResizeObserver?.disconnect();
       this._selectedLabelTooltipResizeObserver = null;
       return;
@@ -4270,7 +4358,7 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._selectedLabelTooltipResizeObserver = new ResizeObserver(() => this._scheduleSelectedLabelTooltipMeasure());
     }
     this._selectedLabelTooltipResizeObserver.disconnect();
-    if (hasSingleSelection) this._selectedLabelTooltipResizeObserver.observe(this._input);
+    if (shouldObserveInput) this._selectedLabelTooltipResizeObserver.observe(this._input);
     chipLabels.forEach((label) => {
       this._selectedLabelTooltipResizeObserver?.observe(label);
     });
@@ -4309,8 +4397,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
       return;
     }
-    const label = this._getSelectedLabelForTrigger(trigger);
-    if (label === null || !this._isSelectedLabelTruncated(trigger)) {
+    const content = this._getSelectedLabelTooltipContent(trigger);
+    if (content === null || !this._isSelectedLabelTooltipContentTruncated(trigger, content)) {
       if (this._selectedLabelTooltipTrigger === trigger) this._hideSelectedLabelTooltip();
       return;
     }
@@ -4957,10 +5045,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
   }
 
   private _handleSearch(query: string): void {
-    if (this._selectedLabelTooltipTrigger === this._input
-      && (query.length > 0 || this._getSelectedLabelForTrigger(this._input) === null)) {
-      this._hideSelectedLabelTooltip();
-    }
+    const previousQuery = this._acknowledgedPendingSearchQuery ?? this._state.searchQuery;
+    const queryPresenceChanged = Boolean(previousQuery) !== Boolean(query);
     if (
       this._dataRequestCoordinator
       && (this._acknowledgedProjectionPending || this._acknowledgedProjectionSettling)
@@ -4971,6 +5057,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       this._acknowledgedPendingSearchQuery = query;
       this._input.value = query;
       this._syncClearControlState();
+      if (queryPresenceChanged) this._observeSelectedLabelTooltipTargets();
+      this._refreshSelectedLabelTooltipMeasurements();
       return;
     }
 
@@ -4984,6 +5072,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
       if (wasEligible && !isEligible) this._cancelBusyPresentation();
       this._state.searchQuery = query;
       this._syncClearControlState();
+      if (queryPresenceChanged) this._observeSelectedLabelTooltipTargets();
+      this._refreshSelectedLabelTooltipMeasurements();
       this._state.lastNotifiedQuery = query;
       this._state.lastNotifiedResultCount = 0;
       if (this._dataRequestCoordinator) {
@@ -5018,6 +5108,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
     this._state.searchQuery = query;
     this._syncClearControlState();
+    if (queryPresenceChanged) this._observeSelectedLabelTooltipTargets();
+    this._refreshSelectedLabelTooltipMeasurements();
 
     if (this._dataLoadingConfig.protocol === 'acknowledged' && this._dataRequestCoordinator) {
       // Local acknowledged search has no remote request, but pagination still
@@ -6751,6 +6843,8 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
     }
     this._renderOptions();
     this._syncClearControlState();
+    this._observeSelectedLabelTooltipTargets();
+    this._refreshSelectedLabelTooltipMeasurements();
   }
 
   /**
@@ -6971,6 +7065,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         }
       }
     }
+
+    this._observeSelectedLabelTooltipTargets();
+    this._refreshSelectedLabelTooltipMeasurements();
 
     if (configErrorDetail) {
       this._emit('dataLoadingConfigError', configErrorDetail);

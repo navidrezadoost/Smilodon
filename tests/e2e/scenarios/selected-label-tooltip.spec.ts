@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-const fixtureUrl = 'http://localhost:5173/vanilla-demo.html';
+const fixtureUrl = process.env.SMILODON_VANILLA_FIXTURE_URL ?? 'http://localhost:5173/vanilla-demo.html';
 const longLabel = 'International Pharmaceutical Distribution Company — Central Branch';
 
 async function addSelect(page: Page, id: string, mode: 'single' | 'multi' = 'single', width = 220) {
@@ -30,7 +30,7 @@ function tooltip(host: Locator): Locator {
   return host.locator('[role="tooltip"]');
 }
 
-test.describe('Selected label tooltip #121 @all', () => {
+test.describe('Selected label and search query tooltip #121 #129 @all', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(fixtureUrl);
   });
@@ -62,15 +62,104 @@ test.describe('Selected label tooltip #121 @all', () => {
     await expect(input).toBeFocused();
   });
 
-  test('does not show the selected label while the input contains a search query', async ({ page }) => {
-    const host = await addSelect(page, 'issue121-search-query');
+  test('shows the full truncated query rather than the selected label', async ({ page }) => {
+    const host = await addSelect(page, 'issue129-search-query');
     const input = host.locator('[part="input"]');
     const popup = tooltip(host);
     await input.hover();
     await expect(popup).toBeVisible();
-    await input.fill('query for another value');
+    const query = 'A very long live search query that is clipped inside the narrow input field';
+    await input.fill(query);
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText(query);
+    await expect(popup).not.toHaveText(longLabel);
+    await expect(input).toHaveAttribute('aria-describedby', new RegExp(await popup.getAttribute('id') ?? '$^'));
+  });
+
+  test('shows a truncated query in multi-select and hides it when the query fits', async ({ page }) => {
+    const host = await addSelect(page, 'issue129-multi-query', 'multi', 250);
+    const input = host.locator('[part="input"]');
+    const popup = tooltip(host);
+    const query = 'A long multi-select query that cannot fit in its search input';
+    await input.focus();
+    await input.fill(query);
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText(query);
+
+    await host.evaluate((element) => {
+      const input = (element as HTMLElement).shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!;
+      input.style.width = '240px';
+    });
+    await input.fill('Short');
     await expect(popup).toBeHidden();
     await expect(input).not.toHaveAttribute('aria-describedby', new RegExp(await popup.getAttribute('id') ?? '$^'));
+  });
+
+  test('updates the current query tooltip through edits, resize, RTL, Escape, and clear', async ({ page }) => {
+    const host = await addSelect(page, 'issue129-query-lifecycle', 'single', 190);
+    const input = host.locator('[part="input"]');
+    const popup = tooltip(host);
+    const firstQuery = 'A long search query that is clipped by the narrow input';
+    const updatedQuery = 'The newer query must replace the tooltip content immediately';
+
+    await input.focus();
+    await input.fill(firstQuery);
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText(firstQuery);
+    await input.fill(updatedQuery);
+    await expect(popup).toHaveText(updatedQuery);
+
+    await host.evaluate((element) => { (element as HTMLElement).style.width = '900px'; });
+    await expect(popup).toBeHidden();
+    await host.evaluate((element) => { (element as HTMLElement).style.width = '190px'; });
+    await expect(popup).toBeVisible();
+
+    await host.evaluate((element) => { (element as any).updateConfig({ direction: 'rtl' }); });
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveCSS('direction', 'rtl');
+    const bounds = await popup.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual((await page.evaluate(() => innerWidth)) + 1);
+
+    await page.keyboard.press('Escape');
+    await expect(popup).toBeHidden();
+    await expect(input).toBeFocused();
+    await input.fill(firstQuery);
+    await expect(popup).toBeVisible();
+
+    await input.fill('');
+    await expect(popup).toBeHidden();
+    await expect(input).not.toHaveAttribute('aria-describedby', new RegExp(await popup.getAttribute('id') ?? '$^'));
+    await expect(input).toHaveValue('');
+
+    await input.fill(firstQuery);
+    await expect(popup).toHaveText(firstQuery);
+    await host.evaluate(async (element) => { await (element as any).setSelectedValues(['long-b']); });
+    await expect(input).toHaveValue('Northern Regional Distribution Company — West District');
+    await expect(popup).toHaveText('Northern Regional Distribution Company — West District');
+  });
+
+  test('disconnect and reconnect removes the query tooltip and restores selected-label behavior', async ({ page }) => {
+    const host = await addSelect(page, 'issue129-query-reconnect', 'single', 190);
+    const input = host.locator('[part="input"]');
+    const popup = tooltip(host);
+    const query = 'A long pending query that is clipped by the input field';
+    await input.focus();
+    await input.fill(query);
+    await expect(popup).toHaveText(query);
+
+    await host.evaluate((element) => {
+      element.remove();
+      document.body.append(element);
+    });
+    await expect(popup).toBeHidden();
+    await expect(input).not.toHaveAttribute('aria-describedby', new RegExp(await popup.getAttribute('id') ?? '$^'));
+
+    await page.mouse.move(1, 1);
+    await input.hover();
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveText(longLabel);
   });
 
   test('updates truncation availability when the host width changes', async ({ page }) => {
