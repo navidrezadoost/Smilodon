@@ -1,0 +1,149 @@
+{
+  "artifact": "Angular-Wave2-S5P0-PUBLICATION-PREFLIGHT",
+  "increment": "Angular Wave 2 - Publication Preflight (read-only, no publish)",
+  "startingCommit": "8ba05ada2d22ffb9f4bbc1edd4c3641192256878",
+  "startingCommitDescription": "S5-Q final qualification, accepted/closed",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "scope": "read-only prepublication assessment; no production change; no registry action",
+  "published": false,
+  "releaseDecision": "NO-GO",
+  "releaseBlockingFindings": ["P0-01", "P0-02", "P0-03"],
+  "environment": {
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "ngPackagr": "21.2.7",
+    "angular": "21.2.26"
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "P0-01",
+      "requirement": "Built npm package contains all required runtime and declaration files",
+      "verdict": "FAIL",
+      "severity": "release-blocking",
+      "finding": "Packed tarball root package.json has no main/module/types/exports. The generated dist/package.json (which has them) is excluded by dist/.npmignore (**/package.json). FESM + .d.ts are physically present but unreachable without entry points.",
+      "tarballContents": [
+        "README.md",
+        "dist/types/smilodon-angular.d.ts",
+        "dist/README.md",
+        "dist/fesm2022/smilodon-angular.mjs",
+        "dist/fesm2022/smilodon-angular.mjs.map",
+        "package.json"
+      ],
+      "tarballRootEntryPoints": { "main": null, "module": null, "types": null, "exports": null }
+    },
+    {
+      "id": "P0-02",
+      "requirement": "Export paths resolve from the packed distribution",
+      "verdict": "FAIL",
+      "severity": "release-blocking",
+      "finding": "Clean install of packed tarball -> require.resolve('@smilodon/angular') = MODULE_NOT_FOUND. The AOT consumer test masks this by symlinking tests/consumer/node_modules/@smilodon/angular -> dist, bypassing real package resolution.",
+      "evidence": {
+        "cleanInstall": "npm install ./smilodon-angular-1.13.0.tgz into empty temp project",
+        "installedPackageEntryPoints": { "main": null, "module": null, "types": null, "exports": null },
+        "requireResolve": "MODULE_NOT_FOUND: Cannot find module '@smilodon/angular'"
+      }
+    },
+    {
+      "id": "P0-03",
+      "requirement": "Angular peer and Node.js engine ranges accurately represent supported configurations",
+      "verdict": "FAIL",
+      "alias": "P01",
+      "severity": "release-blocking",
+      "finding": "Angular peer >=21.0.0 <22.0.0 is correct, but engines.node = '>=18' advertises unsupported Node. Angular 21 requires ^20.19.0 || ^22.12.0 || ^24.0.0.",
+      "currentEngines": { "node": ">=18", "npm": ">=9" },
+      "requiredAngular21NodeMatrix": "^20.19.0 || ^22.12.0 || ^24.0.0"
+    },
+    {
+      "id": "P0-04",
+      "requirement": "@smilodon/core version availability and compatibility confirmed",
+      "verdict": "PASS",
+      "finding": "Registry has @smilodon/core@1.22.0; local v1.21.0. Peer ^1.13.0 satisfies both 1.21.0 and 1.22.0 (semver.satisfies = true).",
+      "evidence": {
+        "registryLatest": "1.22.0",
+        "localVersion": "1.21.0",
+        "angularPeer": "^1.13.0",
+        "satisfies_1_22_0": true,
+        "satisfies_1_21_0": true
+      }
+    },
+    {
+      "id": "P0-05",
+      "requirement": "smilodon-angular-select documented as the public selector",
+      "verdict": "PASS",
+      "finding": "Component selector is 'smilodon-angular-select' (select.component.ts:112); documented in README usage (lines 31-39, 149-156)."
+    },
+    {
+      "id": "P0-06",
+      "requirement": "L-01, L-02, and L-03 limitations visible to consumers",
+      "verdict": "PARTIAL",
+      "severity": "documentation",
+      "finding": "L-02 (async provenance) documented in README (168-184, 'Disclosed limitation'). L-01 (WebKit unverified) and L-03 (initial empty multi-select change) are absent from the consumer README.",
+      "limitations": {
+        "L-01": { "documented": false, "topic": "WebKit not verified on release build host" },
+        "L-02": { "documented": true, "topic": "async provenance / pending-fetch suppression" },
+        "L-03": { "documented": false, "topic": "initial empty change on multi-select init" }
+      }
+    },
+    {
+      "id": "P0-07",
+      "requirement": "Release version and registry destination explicitly identified",
+      "verdict": "PASS",
+      "finding": "@smilodon/angular@1.13.0, publishConfig.registry = https://registry.npmjs.org/, access: public. @smilodon/angular returns 404 on the registry (first public release). Version 1.13.0 is out-of-step with the family (core 1.22.0, siblings 1.12.0) - confirm intended version at release decision.",
+      "release": {
+        "name": "@smilodon/angular",
+        "version": "1.13.0",
+        "registry": "https://registry.npmjs.org/",
+        "access": "public",
+        "currentlyOnRegistry": false,
+        "firstPublicRelease": true,
+        "familyVersionsComparison": { "core": "1.22.0", "vanilla": "1.12.0", "vue": "1.12.0", "svelte": "2.2.0", "solid": "1.12.0", "reactNative": "1.10.0", "angular": "1.13.0" }
+      }
+    },
+    {
+      "id": "P0-08",
+      "requirement": "Final GO/NO-GO record produced without publishing",
+      "verdict": "PASS",
+      "finding": "This record. NO-GO. No registry action taken."
+    }
+  ],
+  "rootCauseP0_01_P0_02": {
+    "summary": "ng-packagr emits a complete manifest at dist/package.json (module, typings, exports) and code under dist/. Source package.json declares only files:['dist','README.md'] with no entry-point fields. On publish from package root, npm includes the source package.json (no entry points) and excludes dist/package.json via dist/.npmignore (**/package.json). Result: published manifest has no main/module/types/exports; present FESM/d.ts are unreachable.",
+    "siblingConvention": "Every other @smilodon/* package declares entry points in the source package.json pointing into ./dist/... and does not rely on a nested dist/package.json.",
+    "outlier": "angular is the sole package without source entry points and with a nested dist/package.json.",
+    "consumerTestMaskingFactor": "tests/consumer/run-consumer.mjs symlinks tests/consumer/node_modules/@smilodon/angular -> dist, importing dist/package.json directly, so it never exercises real package resolution.",
+    "remediationOptions": [
+      {
+        "option": "A (preferred)",
+        "action": "Add main/module/typings/types/exports to source packages/angular/package.json pointing into ./dist/...; update consumer test to resolve via a real packed install; add packed-install smoke gate to CI."
+      },
+      {
+        "option": "B (ng-packagr-idiomatic)",
+        "action": "Set publishConfig.directory = 'dist' and publish via npm publish -w @smilodon/angular; adjust files to avoid double-nesting dist/."
+      }
+    ]
+  },
+  "remediationDeferred": {
+    "note": "All fixes are production metadata/doc edits and are deferred to a separate, explicitly-authorized correction increment. S5-P0 is read-only and made no production change.",
+    "items": [
+      "P0-01/P0-02: package.json entry points + CI packed-install gate",
+      "P0-03 (P01): engines.node -> '^20.19.0 || ^22.12.0 || ^24.0.0'",
+      "P0-06: add L-01 and L-03 (and keep L-02) to consumer README 'Known limitations'"
+    ]
+  },
+  "preservedLimitations": {
+    "L-01": "WebKit coverage gap, not certified",
+    "L-02": "Async provenance accepted known limitation; edits during pending fetches may be suppressed",
+    "L-03": "Multi-select initial empty change, documented behavior",
+    "L-04": "Core tsc 44 pre-existing, S6 NO-GO scope",
+    "L-05": "Developer-reported execution, disclosure retained"
+  },
+  "notDoneHere": [
+    "npm publish",
+    "production source change",
+    "package.json edit",
+    "registry action",
+    "selector redesign",
+    "unrelated dependency changes"
+  ],
+  "recommendation": "NO-GO for publication. Resolve P0-01/P0-02 (packaging entry points), P0-03 (engine range = P01), and P0-06 (L-01/L-03 disclosure) in a separate bounded authorized correction increment, then re-run S5-P0 preflight. Publication remains a distinct, explicitly-gated decision."
+}
