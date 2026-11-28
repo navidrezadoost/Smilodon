@@ -24,7 +24,15 @@ export default defineConfig({
     globals: true,
     setupFiles: [resolve(__dirname, './tests/setup.ts')],
     include: ['packages/angular/tests/**/*.spec.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', 'packages/angular/tests/**/*.ssr.spec.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'packages/angular/tests/**/*.ssr.spec.ts',
+      // S5-V: Playwright real-browser hydration suite lives under tests/ssr and is
+      // driven by playwright.ssr.config.ts, not vitest. It uses Playwright's `test`
+      // runner, so it must not be collected here.
+      'packages/angular/tests/ssr/**',
+    ],
   },
   resolve: {
     alias: {
