@@ -26,9 +26,9 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 47,
+      "Existing": 51,
       "Partial": 30,
-      "Diagnostic": 31,
+      "Diagnostic": 27,
       "Missing": 4
     },
     "byTargetIncrement": {
@@ -985,10 +985,10 @@
       "id": "ATTR-012",
       "behavior": "data-custom-arrow",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-012: assigning a custom arrow element sets data-custom-arrow=\"true\" on the host",
       "status": "Observed",
-      "evidence": "custom-arrow-slot",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; custom-arrow-slot",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1008,10 +1008,10 @@
       "id": "ATTR-013",
       "behavior": "style.display forced",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-013: connecting forces inline style.display=\"block\" on the host",
       "status": "Observed",
-      "evidence": "DEVIATION-05",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; DEVIATION-05",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1045,10 +1045,10 @@
       "id": "ATTR-021",
       "behavior": "data-motion closing",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts#ATTR-021: close() sets data-motion=\"closing\" during exit then removes it",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1064,10 +1064,10 @@
       "id": "ATTR-022",
       "behavior": "data-multi-scroll-mode/data-drag-scroll",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-022: multi-select defaults to data-multi-scroll-mode=\"wrap\" and data-drag-scroll=\"false\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1084,9 +1084,9 @@
       "behavior": "data-virtual-spacer",
       "targetIncrement": "P1.4",
       "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "testId": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts#ATTR-023: no data-virtual-spacer renders on the public surface for a large list (gap)",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; gap:public-unobservable",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",

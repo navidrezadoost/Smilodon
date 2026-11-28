@@ -108,3 +108,66 @@ export async function hasShadowRoot(page: Page, sel = `#${DEFAULT_ID}`): Promise
     return !!sr && sr.childElementCount > 0;
   });
 }
+
+// --- Task 2 attribute/state-marker helpers ----------------------------------
+
+/** Close the popup via the public method. */
+export async function close(page: Page, sel = `#${DEFAULT_ID}`): Promise<void> {
+  await page.locator(sel).evaluate((el: any) => el.close());
+}
+
+/** Read `data-motion` from the popup (`part="listbox"`) in the open shadow root. */
+export async function dropdownMotion(page: Page, sel = `#${DEFAULT_ID}`): Promise<string | null> {
+  return page.locator(sel).evaluate(
+    (el) => el.shadowRoot?.querySelector('[part="listbox"]')?.getAttribute('data-motion') ?? null,
+  );
+}
+
+/** Read the inline `display` of the popup (`part="listbox"`) in the open shadow root. */
+export async function dropdownDisplay(page: Page, sel = `#${DEFAULT_ID}`): Promise<string> {
+  return page.locator(sel).evaluate((el) => {
+    const dropdown = el.shadowRoot?.querySelector('[part="listbox"]') as HTMLElement | null;
+    return dropdown?.style.display ?? '';
+  });
+}
+
+/** Count of `[data-virtual-spacer]` elements inside the open shadow root. */
+export async function countVirtualSpacers(page: Page, sel = `#${DEFAULT_ID}`): Promise<number> {
+  return page.locator(sel).evaluate(
+    (el) => el.shadowRoot?.querySelectorAll('[data-virtual-spacer]').length ?? 0,
+  );
+}
+
+/** Assign (or clear) a light-DOM custom arrow slot element on the host. */
+export async function assignCustomArrow(page: Page, assign: boolean, sel = `#${DEFAULT_ID}`): Promise<void> {
+  await page.locator(sel).evaluate((el, shouldAssign) => {
+    const existing = el.querySelector(':scope > [slot="arrow"]');
+    if (shouldAssign && !existing) {
+      const custom = document.createElement('span');
+      custom.setAttribute('slot', 'arrow');
+      custom.textContent = 'CUSTOM';
+      el.appendChild(custom);
+    } else if (!shouldAssign && existing) {
+      existing.remove();
+    }
+  }, assign);
+}
+
+/** Read the host `data-custom-arrow` attribute. */
+export async function hostCustomArrow(page: Page, sel = `#${DEFAULT_ID}`): Promise<string | null> {
+  return page.locator(sel).evaluate((el) => el.getAttribute('data-custom-arrow'));
+}
+
+/** Read the host inline `style.display`. */
+export async function hostDisplay(page: Page, sel = `#${DEFAULT_ID}`): Promise<string> {
+  return page.locator(sel).evaluate((el: any) => el.style.display as string);
+}
+
+/** Remove the host from the DOM and re-append it to force a re-connection. */
+export async function reconnect(page: Page, sel = `#${DEFAULT_ID}`): Promise<void> {
+  await page.locator(sel).evaluate((el) => {
+    const parent = el.parentElement;
+    el.remove();
+    parent?.appendChild(el);
+  });
+}
