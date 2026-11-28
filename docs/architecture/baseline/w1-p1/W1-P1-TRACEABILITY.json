@@ -26,8 +26,8 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 59,
-      "Partial": 30,
+      "Existing": 58,
+      "Partial": 31,
       "Diagnostic": 19,
       "Missing": 4
     },
@@ -524,7 +524,7 @@
       "id": "API-062",
       "behavior": "completeDataRequest matrix",
       "targetIncrement": "P1.5",
-      "coverage": "Existing",
+      "coverage": "Partial",
       "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#accepts a matching completion synchronously while projecting the result asynchronously",
       "status": "Observed",
       "evidence": "phase-2e-acknowledged-data-loading; w1-p1-5-t1-acknowledged-data-loading-api",
