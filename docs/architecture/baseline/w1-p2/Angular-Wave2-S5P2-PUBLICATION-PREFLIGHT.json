@@ -1,0 +1,144 @@
+{
+  "artifact": "Angular-Wave2-S5P2-PUBLICATION-PREFLIGHT",
+  "increment": "Angular Wave 2 - S5-P2 Post-Correction Publication Preflight (read-only; NO publish)",
+  "startingCommit": "88000697faa8dc393e19441fa946e87803024a2a",
+  "startingCommitDescription": "S5-P1 / S5-P1R / S5-P1R2 fully accepted and closed",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "scope": "read-only release-candidate assessment: pack + clean-install + AOT + provenance + registry + peer + docs + regression; NO package metadata edit, NO version bump, NO runtime change, NO registry mutation, NO publish",
+  "published": false,
+  "releaseDecision": "GO (conditional) - release candidate passes; package publication-ready; actual npm publish remains a SEPARATE explicit decision (not performed)",
+  "environment": {
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "ngPackagr": "21.2.7",
+    "angularCertified": "21.2.26"
+  },
+  "tarball": {
+    "file": "smilodon-angular-1.13.0.tgz",
+    "sizeBytes": 63592,
+    "sha256": "cb1a0c5a410466cde691faef799eed7f8bfaed0b9dcc898599ceee59f92ee512",
+    "files": [
+      "package/package.json",
+      "package/README.md",
+      "package/dist/README.md",
+      "package/dist/fesm2022/smilodon-angular.mjs",
+      "package/dist/fesm2022/smilodon-angular.mjs.map",
+      "package/dist/types/smilodon-angular.d.ts"
+    ],
+    "mjsSha256": "c70e0656fd2ce67f22b7431d6da1cf5d1e888a44348223ee4f4171e2cab3716e",
+    "dtsSha256": "a80d0d6f7ce02a6789ae3c7c4b7fd9a3c617dd9065d36b4c68dfdd770509a52f"
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "S5P2-01",
+      "requirement": "Packed tarball resolves and compiles in a clean consumer environment",
+      "verdict": "PASS",
+      "evidence": "clean npm install EXIT 0 (angular 1.13.0 not symlinked; core 1.22.0 from registry); import.meta.resolve points at installed tarball; AOT full-compile EXIT 0; traceResolution resolved-from-installed=true, references-installed-dts=true, references-repo-dist=false; jsdom boot rendered+configured <enhanced-select> OK"
+    },
+    {
+      "id": "S5P2-02",
+      "requirement": "Package metadata, exports, declarations, and supported Node.js versions are correct",
+      "verdict": "PASS",
+      "evidence": "module/types/exports present with existing targets + ESM-only (no require); flattened .d.ts (636 lines) exports all public symbols; peers >=21.0.0 <22.0.0; engines.node ^20.19.0 || ^22.12.0 || ^24.0.0 (host v24.13.1 satisfies); license/sideEffects/publishConfig correct"
+    },
+    {
+      "id": "S5P2-03",
+      "requirement": "Final release version explicitly evaluated (is 1.13.0 appropriate for first public Angular release)",
+      "verdict": "PASS (1.13.0 ACCEPTABLE)",
+      "evidence": "@smilodon/angular unpublished (404) => first release; adapter versions independent of core in family (vanilla/vue/solid 1.12.0, svelte 2.2.0, react 1.13.0); 1.13.0 matches repo and family model; valid unused semver; NO version bump made"
+    },
+    {
+      "id": "S5P2-04",
+      "requirement": "npm registry state and @smilodon/core peer compatibility verified",
+      "verdict": "PASS",
+      "evidence": "core registry latest=1.22.0; peer ^1.13.0 satisfies 1.22.0 (semver true) and repo 1.21.0; angular 404 confirms no collision; sibling adapters present"
+    },
+    {
+      "id": "S5P2-05",
+      "requirement": "Consumer documentation includes accepted limitations",
+      "verdict": "PASS",
+      "evidence": "README Known limitations documents L-01 (WebKit), L-02 (async provenance), L-03 (multi init empty change); ESM-only entry points, dist layout, supported Angular versions, engines.node documented"
+    },
+    {
+      "id": "S5P2-06",
+      "requirement": "Final publication-readiness decision records any remaining release blockers",
+      "verdict": "PASS",
+      "evidence": "Decision: GO (conditional); NO blockers originating in package artifact; 3 non-blocking record-only follow-ups listed"
+    }
+  ],
+  "registryState": {
+    "@smilodon/core": { "latest": "1.22.0", "distTagsLatest": "1.22.0" },
+    "@smilodon/angular": { "state": "404 Not Found", "meaning": "unpublished; first public release; no collision" },
+    "@smilodon/vanilla": "1.12.0",
+    "@smilodon/vue": "1.12.0",
+    "@smilodon/svelte": "2.2.0",
+    "@smilodon/solid": "1.12.0",
+    "@smilodon/react": "1.14.0",
+    "@smilodon/react-native": "1.10.0"
+  },
+  "peerCompatibility": {
+    "peerRange": "@smilodon/core ^1.13.0 (=> >=1.13.0 <2.0.0)",
+    "satisfiesRegistry1220": true,
+    "satisfiesRepo1210": true,
+    "resolutionConflict": false
+  },
+  "versionEvaluation": {
+    "proposed": "1.13.0",
+    "firstPublicAngularRelease": true,
+    "registryCollision": false,
+    "familyVersioningModel": "adapters independent of core; do not track core version",
+    "matchesRepoCommittedVersion": true,
+    "coreTrackingRequired": false,
+    "versionBumpMade": false,
+    "verdict": "ACCEPTABLE for first public Angular release"
+  },
+  "engineObservation": {
+    "adapter": "^20.19.0 || ^22.12.0 || ^24.0.0",
+    "angular21": "^20.19.0 || ^22.12.0 || >=24.0.0",
+    "note": "adapter is stricter at upper bound (<25). Non-blocking for Angular 21 release; widening requires re-qualification."
+  },
+  "regressionSuite": {
+    "packedInstallHardened": "PASSED",
+    "aotConsumerExisting": "PASSED",
+    "angularUnit": "62 passed",
+    "angularSSR": "4 passed",
+    "angularTsc": "0 errors",
+    "eslint": "0 errors",
+    "coreUnit": "1071 passed / 1 skipped",
+    "coreSSR": "10 passed",
+    "coreTsc": "44 (pre-existing, unchanged)",
+    "traceability": "129/129 PASS"
+  },
+  "nonBlockingObservations": [
+    {
+      "id": "OBS-1",
+      "item": "Stale README status banner",
+      "detail": "README header still says 'Status: S4 (Wave 2) ... remaining slice is SSR/hydration (S5)'; S5 is now complete. Documentation drift only; does not affect artifact. Recommended tiny docs-only follow-up; NOT a blocker."
+    },
+    {
+      "id": "OBS-2",
+      "item": "No LICENSE file inside packages/angular",
+      "detail": "Root LICENSE exists, but files=['dist','README.md'] ships without a bundled LICENSE file; SPDX 'license': 'MIT' field is present and correct. Common, non-blocking; optional polish."
+    },
+    {
+      "id": "OBS-3",
+      "item": "Core version skew advisement",
+      "detail": "Qualified against repo core 1.21.0; registry latest 1.22.0. Peer ^1.13.0 accepts 1.22.0. Same-major additive; recommend a one-off cross-version smoke against 1.22.0 before publish (advisement, not a blocker)."
+    }
+  ],
+  "notDoneHere": {
+    "packageMetadataEdit": false,
+    "versionBump": false,
+    "runtimeChange": false,
+    "registryMutation": false,
+    "published": false
+  },
+  "preservedLimitations": {
+    "L-01": "WebKit unverified on build host; disclosed in README",
+    "L-02": "Async provenance accepted limitation; disclosed in README",
+    "L-03": "Multi init empty change (core behavior); disclosed in README",
+    "L-04": "Core tsc 44 pre-existing, S6 NO-GO scope",
+    "L-05": "Developer-reported gates, disclosure retained"
+  },
+  "recommendation": "GO - release candidate passes the post-correction publication preflight. @smilodon/angular at 8800069 is a valid, consumable, correctly-metadata'd release candidate; 1.13.0 is acceptable for the first public Angular release. No blockers originate in the package artifact. Actual npm publish remains a separate explicitly-authorized decision (NO-GO until then) and was not performed. No metadata/version/runtime/registry change made."
+}
