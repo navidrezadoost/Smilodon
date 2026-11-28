@@ -1,0 +1,91 @@
+{
+  "increment": "W1-P1.3 Addendum (Task 1 scope)",
+  "title": "Keyboard Navigation and Focus/ARIA Chronology — addendum and baseline observations",
+  "documentationOnly": true,
+  "precedesCharacterizationTests": true,
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "ledgerSection": "15",
+  "newContractIds": {
+    "family": "KBD",
+    "ids": ["KBD-001", "KBD-002", "KBD-003", "KBD-004", "KBD-005", "KBD-006", "KBD-007", "KBD-008", "KBD-009", "KBD-010", "KBD-011", "KBD-012"],
+    "targetIncrement": "P1.3",
+    "coverage": "Diagnostic",
+    "testId": "unassigned",
+    "status": "Observed"
+  },
+  "existingP13ContractsExercisedByTask1": [
+    "API-030", "API-031", "API-040", "API-041",
+    "EVENT-002", "EVENT-003",
+    "ATTR-001", "ATTR-002", "ATTR-003", "ATTR-010", "ATTR-011", "ATTR-020",
+    "LIFECYCLE-006"
+  ],
+  "publicInterfaceOnly": true,
+  "drivingSurface": {
+    "keyboard": "KeyboardEvent('keydown', {key, bubbles:true, cancelable:true}) dispatched on [part=\"input\"]",
+    "programmatic": "public open() / close()",
+    "attributes": "setAttribute('aria-label'|'aria-description'|'aria-busy', ...) on host"
+  },
+  "observationSurface": {
+    "roles": "role=\"combobox\" on input, role=\"listbox\", role=\"option\", role=\"status\", role=\"tooltip\"",
+    "aria": "aria-expanded and aria-activedescendant read from the combobox element; active option resolved by id",
+    "events": "open / close CustomEvent.detail (observed {}) and onOpen/onClose callbacks",
+    "dom": "data-open on host, data-placement on dropdown/listbox, dir on host, shadowRoot.activeElement"
+  },
+  "forbidden": [
+    "_handleKeydown",
+    "_moveActive",
+    "_handleOpen",
+    "_handleClose",
+    "_setInitialActiveOption",
+    "engine dispatch",
+    "private _state/_engine access",
+    "arbitrary sleeps"
+  ],
+  "baselineObservations": {
+    "roles_present": "combobox:input, listbox:listbox, option:option, status:DIV, tooltip:DIV",
+    "arrowdown_on_closed": "opens; data-open=true; aria-expanded=true; aria-activedescendant=null; emits open:{} then onOpen",
+    "arrowdown_move_sequence_items_a_b_disabled_c_d": "a -> c -> d -> d -> d (first move lands on first selectable a; skips disabled b; clamps at d)",
+    "arrowup_move_sequence": "c -> a -> a -> a (clamps at a)",
+    "home_end": "from active c: End -> d (last selectable); Home -> a (first selectable)",
+    "enter_closed": "opens; no active-descendant; no selection",
+    "enter_open_on_active_a": "selects a (getSelectedValues()=['a']); closes",
+    "escape_open": "emits close:{}; data-open removed; aria-expanded=false; detail carries no reason",
+    "tab_open": "emits close:{}; popup closed",
+    "searchable_space_on_input": "no selection (0 select events)",
+    "aria_label_description": "aria-label applied to combobox + listbox; aria-description applied to combobox",
+    "aria_busy_resync": "aria-busy attribute written to host routes to _syncListboxAccessibility; no aria-busy observed on the listbox element in jsdom (P1.3-D02)",
+    "dir": "dir=\"ltr\" on host after connect",
+    "data_open": "data-open=\"true\" while open; attribute absent when closed",
+    "data_placement": "bottom on the dropdown/listbox",
+    "open_close_idempotency": "open();open();close();close() emits open then close exactly once each"
+  },
+  "deviationCandidates": [
+    {
+      "id": "P1.3-D01",
+      "summary": "Public close event detail is {} (CloseEventDetail empty); engine CloseReason not surfaced on the public event; keyboard Escape vs Tab emit indistinguishable close:{}",
+      "sourceLocators": [
+        {"file": "packages/core/src/types.ts", "lines": "50"},
+        {"file": "packages/core/src/engine/contracts.ts", "lines": "3"}
+      ]
+    },
+    {
+      "id": "P1.3-D02",
+      "summary": "aria-busy attributeChangedCallback routes to _syncListboxAccessibility, but no aria-busy attribute observed on the listbox element and no change on toggle at baseline (observable effect unconfirmed)",
+      "sourceLocators": [
+        {"file": "packages/core/src/components/enhanced-select.ts", "lines": "637-646"}
+      ]
+    },
+    {
+      "id": "P1.3-D03",
+      "summary": "Open assigns no initial aria-activedescendant when no selection (intentional per code comment); first ArrowDown materializes first selectable option. Differs from some APG examples; recorded, not fixed.",
+      "sourceLocators": [
+        {"file": "packages/core/src/components/enhanced-select.ts", "lines": "5524-5552"}
+      ]
+    }
+  ],
+  "productionSourceUnchanged": true,
+  "carriedForwardEvidence": {
+    "note": "No executable code changed in this addendum; the full core suite is not rerun for a documentation-only commit.",
+    "priorFullCoreSuite": "877 passed + 1 skipped (W1-P1.2 closure)"
+  }
+}

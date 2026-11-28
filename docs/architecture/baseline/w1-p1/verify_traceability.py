@@ -20,7 +20,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 LEDGER = os.path.join(HERE, "W1-P1-CONTRACT-LEDGER.md")
 MATRIX = os.path.join(HERE, "W1-P1-TRACEABILITY.json")
 VALID_TARGETS = {"P1.1", "P1.2", "P1.3", "P1.4", "P1.5", "P1.6"}
-ID_RE = re.compile(r"^\| ((?:API|EVENT|ATTR|PART|SLOT|LIFECYCLE|CONFIG)-\d{3}) \|", re.M)
+ID_RE = re.compile(r"^\| ((?:API|EVENT|ATTR|PART|SLOT|LIFECYCLE|CONFIG|KBD)-\d{3}) \|", re.M)
 NUM_RE = re.compile(r"\d+")
 
 

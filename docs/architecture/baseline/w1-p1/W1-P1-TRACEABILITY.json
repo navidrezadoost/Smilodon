@@ -1,7 +1,7 @@
 {
   "$schema": "w1-p1-traceability/v2",
   "increment": "W1-P1.2-R",
-  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes). W1-P1.2-T5-R added documentary notes only (T5-F01/F02/F03); no contract record, coverage class, source locator, or testId changed.",
+  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes). W1-P1.2-T5-R added documentary notes only (T5-F01/F02/F03); no contract record, coverage class, source locator, or testId changed. W1-P1.3 Addendum (documentation-only, committed before any P1.3 test): introduced KBD-001..012 keyboard/focus/ARIA contracts (target P1.3, coverage Diagnostic, unassigned) and split P1.3 into Task 1 (keyboard navigation + focus/ARIA chronology). Total records 100 -> 112; KBD family = 12; P1.3 target 13 -> 25; Diagnostic 41 -> 53. No existing record, coverage class, or production source changed.",
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "branch": "codex/w1-p1-characterization-7e3adf7",
   "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
@@ -14,7 +14,7 @@
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
-    "totalRecords": 100,
+    "totalRecords": 112,
     "byFamily": {
       "API": 27,
       "EVENT": 15,
@@ -22,18 +22,19 @@
       "PART": 11,
       "SLOT": 4,
       "LIFECYCLE": 6,
-      "CONFIG": 26
+      "CONFIG": 26,
+      "KBD": 12
     },
     "byCoverage": {
       "Existing": 38,
       "Partial": 17,
-      "Diagnostic": 41,
+      "Diagnostic": 53,
       "Missing": 4
     },
     "byTargetIncrement": {
       "P1.1": 4,
       "P1.2": 14,
-      "P1.3": 13,
+      "P1.3": 25,
       "P1.4": 56,
       "P1.5": 13
     },
@@ -1851,6 +1852,234 @@
         }
       ],
       "coverageNote": "onSelect (receives select.detail incl. multi), onChange (items, values) and onClear (clearedSelection/clearedSearch) characterized for interaction + programmatic paths. Remaining callbacks: onOpen, onClose, onSearch, onLoadMore, onError."
+    },
+    {
+      "id": "KBD-001",
+      "behavior": "Keyboard-open triggers (ArrowDown/ArrowUp/Enter) open popup; no initial active-descendant from keyboard alone when no selection",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5059-5074"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5121-5136"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4359-4404"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5524-5552"
+        }
+      ]
+    },
+    {
+      "id": "KBD-002",
+      "behavior": "ArrowDown/ArrowUp move active option by one selectable step; clamps at first/last; skips disabled",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5059-5074"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5163-5221"
+        }
+      ]
+    },
+    {
+      "id": "KBD-003",
+      "behavior": "Home/End move active option to first/last selectable option",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5075-5119"
+        }
+      ]
+    },
+    {
+      "id": "KBD-004",
+      "behavior": "PageDown/PageUp move active option by +/-10 selectable steps (clamped)",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5119-5140"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5163-5221"
+        }
+      ]
+    },
+    {
+      "id": "KBD-005",
+      "behavior": "Enter/Space activate: open when closed, else select active; Space skipped when searchable and target is input",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5121-5136"
+        }
+      ]
+    },
+    {
+      "id": "KBD-006",
+      "behavior": "Escape dismisses tooltip first, else closes open popup with engine reason escape",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5050-5057"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5137-5139"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4406-4427"
+        }
+      ]
+    },
+    {
+      "id": "KBD-007",
+      "behavior": "Tab closes popup when open (no selection change)",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5141-5144"
+        }
+      ]
+    },
+    {
+      "id": "KBD-008",
+      "behavior": "Ctrl/Cmd+A select-all only when multi and not searchable",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5145-5152"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5466-5500"
+        }
+      ]
+    },
+    {
+      "id": "KBD-009",
+      "behavior": "Disabled options skipped by active movement and cannot become active via keyboard",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5403-5430"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5182-5209"
+        }
+      ]
+    },
+    {
+      "id": "KBD-010",
+      "behavior": "Printable single char with no modifiers delegates to type-ahead search",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5154-5158"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5433-5460"
+        }
+      ]
+    },
+    {
+      "id": "KBD-011",
+      "behavior": "Focus model: DOM focus stays on combobox input; active option expressed via aria-activedescendant",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1908-1910"
+        },
+        {
+          "file": "packages/core/src/platform/web/accessibility-effects.ts",
+          "lines": "41-62"
+        }
+      ]
+    },
+    {
+      "id": "KBD-012",
+      "behavior": "Combobox ARIA chronology: aria-expanded + aria-activedescendant transition across open/move/close",
+      "targetIncrement": "P1.3",
+      "coverage": "Diagnostic",
+      "testId": "unassigned",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/platform/web/accessibility-effects.ts",
+          "lines": "41-62"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4359-4427"
+        }
+      ]
     }
   ]
 }

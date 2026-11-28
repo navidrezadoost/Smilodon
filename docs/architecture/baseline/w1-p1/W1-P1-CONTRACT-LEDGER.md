@@ -13,6 +13,8 @@
 
 > **W1-P1.2-T5-R note (documentation-only).** The final closure review required three corrections. (T5-F03) The programmatic-vs-interaction statements in §13.1 and §13.4 are now **scoped to the characterized `setSelectedValues()` and `clear()` paths and the characterized interaction surfaces**; they are no longer phrased as a universal guarantee. (T5-F02) DEVIATION-08's value-based reattachment claim is marked superseded in `W1-P1-DEVIATIONS.md`; key-based reattachment is authoritative. (T5-F01) The closure report's increment-to-commit table now carries complete, ancestry-verified SHAs. Follow-up review amendments (T5-R-F01/F02) further bound the §13.1 consolidated rules to the characterized operations and synchronize the evidence JSON lineage with the closure report. No executable code, test, or contract ID changed.
 
+> **W1-P1.3 Addendum note (documentation-only; addendum precedes characterization tests).** W1-P1.3 is split into two tasks. **Task 1** is *keyboard navigation and focus/ARIA chronology*; it is scoped to the thirteen existing **P1.3-owned** contract IDs (API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006) **plus** the new **KBD-001..012** contract IDs introduced in §15. Per the Technical Lead's directive this Addendum is committed **before** any W1-P1.3 characterization test is written, so the ledger matches the planned test surface. This increment **does not** modify production source, does **not** repair any observed behavior, and does **not** upgrade any coverage class (all new KBD IDs enter as `Diagnostic`). §15 records the Task-1 scope, the KBD contract table, the empirically observed baseline behavior captured during authoring, and the resulting deviation candidates (P1.3-D01..D03).
+
 ## 0. Purpose and reading rules
 
 This ledger is a source-grounded inventory of every externally observable contract of the `EnhancedSelect` custom element and the public surfaces that surround it. It lets W1-P1.2-P1.6 write black-box characterization tests against a known list instead of re-discovering the surface each time.
@@ -316,7 +318,7 @@ The machine-readable matrix is `W1-P1-TRACEABILITY.json`. Coverage classes: `Exi
 | --- | --- |
 | P1.1 | API-050..053 |
 | P1.2 | API-001, 004, 010, 011, 012, 013, 014, 020, 042, 043, 054; EVENT-001, 007, 010 |
-| P1.3 | API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006 |
+| P1.3 | API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006; **KBD-001..012** (§15) |
 | P1.4 | API-002, 003, 021, 055; EVENT-009, 011; ATTR-012, 013, 021, 022, 023; PART-001..011; SLOT-001..004; LIFECYCLE-001..004; CONFIG-001..026 |
 | P1.5 | API-032, 060, 061, 062; EVENT-004, 005, 006, 008, 012, 020, 021, 022; LIFECYCLE-005 |
 
@@ -540,3 +542,75 @@ The single most important P1.2 boundary, **scoped to the characterized paths**: 
 | Errata | T4-F01 (full-suite count 876→**877**) and T4-F02 (`onSelect` title now "including `multi`") corrected; no accepted assertions changed. |
 
 _End of W1-P1.2. Next: P1.2 final closure review._
+
+---
+
+## 15. W1-P1.3 Addendum — Keyboard Navigation and Focus/ARIA Chronology (Task 1 scope)
+
+This addendum, committed **before** any W1-P1.3 characterization test, defines Task 1 of W1-P1.3. It (a) fixes the Task-1 scope, (b) enumerates the thirteen existing **P1.3-owned** contract IDs Task 1 must characterize, (c) introduces the new **KBD-001..012** contract IDs for keyboard/APG behavior together with their source locators and their empirically observed baseline behavior, and (d) records the deviation candidates the authoring probe surfaced. All behavior below is **`Observed`** at baseline `7e3adf7`; nothing here is approved, repaired, or locked as normative. Every KBD ID enters the matrix at coverage **`Diagnostic`** and target **`P1.3`** (test `unassigned`) until the Task-1 specs are written and accepted.
+
+> **Provenance of the "observed behavior" column.** Recorded during authoring from a throwaway jsdom probe (deleted before this commit) that drove the component through public surface only — dispatching `keydown` on the `[part="input"]` element, reading rendered shadow DOM (`role="combobox"`, `role="listbox"`, `aria-expanded`, `aria-activedescendant`), and listening for `open`/`close` `CustomEvent`s. No production code was touched. These observations seed the Task-1 assertions; they are **characterization targets, not certifications**.
+
+### 15.1 Task-1 scope
+
+- **In scope (Task 1).** Keyboard-driven open/close and active-option movement; Enter/Space/Escape/Tab/Home/End/PageDown/PageUp/Ctrl-Cmd-A/type-ahead; the resulting **focus model** (where DOM focus stays, how `aria-activedescendant` tracks the active option); the **ARIA chronology** of `aria-expanded` and `aria-activedescendant` across open→move→close; `open`/`close` event chronology and their empty `detail`; the observed interaction and effect of `ARIA-*` attribute resync, `dir`, `data-open`, and `data-placement` **as they pertain to the keyboard flow**; and the `attributeChangedCallback` equal-value early-return. Disabled-option skipping and selection-policy interaction (single/multi) are exercised **only** to the extent the keyboard path reaches them.
+- **Out of scope (deferred to a later W1-P1.3 task or increment).** Real-browser (Chromium) WAI-ARIA combobox conformance; pointer-driven movement parity; full APG verbatim conformance where it diverges from observed behavior; `maxSelections`/`allowDeselect` policy matrices beyond the minimal keyboard-path checks; acknowledged/`dataProjection` keyboard interactions (P1.5).
+- **Constraints.** No production change; no speculative remediation; preserve all P1.2 tests; any observed inconsistency is recorded as a deviation (see §15.4), not fixed.
+
+### 15.2 Existing P1.3-owned contracts exercised by Task 1
+
+These thirteen IDs already exist in the matrix (§9). Task 1 characterizes them **through the keyboard path**; they remain `Diagnostic`/`Partial` as recorded until the Task-1 specs are accepted (no silent upgrade).
+
+| ID | Behavior (ledger §) | Task-1 keyboard relevance |
+| --- | --- | --- |
+| API-030 | `open()` idempotency + emit (§2.4) | Programmatic-open parity for KBD-001; double-`open()` emits once (observed). |
+| API-031 | `close()` (§2.4) | Programmatic-close parity for KBD-006/007; double-`close()` emits once (observed). |
+| API-040 | `setError()` (§2.5) | Error announcement is combobox-level; verified not to disrupt focus (Task-1 boundary only). |
+| API-041 | `clearError()` (§2.5) | As above; idempotence. |
+| EVENT-002 | `open` event + `{}` detail (§3.1) | Emitted **before** `onOpen`, detail empty (observed: `open:{}`). |
+| EVENT-003 | `close` event + `{}` detail (§3.1) | Emitted **before** `onClose`, detail empty — **no reason** in public detail (observed: `close:{}`); see P1.3-D01. |
+| ATTR-001 | `aria-label` resync (§4.1) | Observed applied to combobox + listbox. |
+| ATTR-002 | `aria-description` resync (§4.1) | Observed applied to combobox. |
+| ATTR-003 | `aria-busy` resync (§4.1) | Observed on host → `_syncListboxAccessibility`; **`aria-busy` not observed on the listbox element** in the probe — see P1.3-D02. |
+| ATTR-010 | `dir` reflection (§4.2) | Observed `dir="ltr"` on host after connect. |
+| ATTR-011 | `data-open"true"` reflection (§4.3) | `true` while open, absent when closed (observed). |
+| ATTR-020 | `data-placement` on dropdown (§4.3) | Observed `bottom` on the listbox/dropdown. |
+| LIFECYCLE-006 | `attributeChangedCallback` equal-value early-return (§6) | Equal `aria-*` set is a no-op (not re-synced). |
+
+### 15.3 New KBD contracts (KBD-001..012)
+
+All KBD contracts target **P1.3**, coverage **`Diagnostic`**, status **`Observed`**, test **`unassigned`**. `sourceLocators` are pinned to baseline `7e3adf7`; `_handleKeydown` is `enhanced-select.ts:5049-5159`.
+
+| ID | Behavior | Primary source locator(s) | Observed baseline behavior (probe) |
+| --- | --- | --- | --- |
+| KBD-001 | Keyboard-open triggers: ArrowDown/ArrowUp/Enter (and Space when enabled & not searchable-input) open the popup when closed; opening assigns **no** active-descendant from keyboard alone when there is no existing selection. | `_handleKeydown` 5059-5074, 5121-5136; `_handleOpen` 4359-4404; `_setInitialActiveOption` 5524-5552 | ArrowDown-on-closed → `data-open="true"`, `aria-expanded="true"`, `aria-activedescendant=null`; `open:{}` then `onOpen`. Enter-on-closed → opens, no selection, no active-descendant. |
+| KBD-002 | ArrowDown/ArrowUp move the active option by one **selectable** step; movement clamps at the first/last selectable option (no wrap). | `_handleKeydown` 5059-5074; `_moveActive` 5163-5221 | Items `a,b(disabled),c,d`: down sequence `a→c→d→d→d` (from null first move lands on `a`, skips `b`); up sequence `c→a→a→a`. No wrap. |
+| KBD-003 | Home/End move the active option to the first/last **selectable** option (selected-first projection deferred to visual-boundary path). | `_handleKeydown` 5075-5119 (Home 5075, End 5092) | From active `c`: End→`d`, Home→`a`. |
+| KBD-004 | PageDown/PageUp move the active option by ±10 selectable steps (clamped). | `_handleKeydown` `PageDown`/`PageUp` (between 5119 and 5140); `_moveActive` 5163-5221 | Delegates to `_moveActive(±10)`; clamps like KBD-002 (not separately re-probed beyond ±1). |
+| KBD-005 | Enter/Space activate: when closed they open (KBD-001); when open they select the active option; **Space is ignored when `searchable` and the event target is the input**. | `_handleKeydown` 5121-5136; `_selectOption` via engine | Open + Enter on active `a` → selects `a` (`getSelectedValues()=['a']`), closes. Searchable + Space on input → **no selection** (0 `select` events). |
+| KBD-006 | Escape: first dismisses the selected-label tooltip if visible; otherwise closes an open popup with engine reason `'escape'`. | `_handleKeydown` 5050-5057 (tooltip), 5137-5139 (close); `_handleClose` 4406-4427 | Escape-on-open → `close:{}`, `data-open` removed, `aria-expanded="false"`. Public `close` detail carries **no reason** (P1.3-D01). |
+| KBD-007 | Tab: closes the popup when open (does not otherwise change selection). | `_handleKeydown` 5141-5144 | Tab-on-open → `close:{}`, popup closed. |
+| KBD-008 | Ctrl/Cmd+A selects all **only** when `selection.mode==='multi'` and **not** `searchable`; otherwise ignored. | `_handleKeydown` 5145-5152; `_selectAll` 5466 | Guarded by mode + `!searchable`; default suppress; delegate to `_selectAll`. |
+| KBD-009 | Disabled options are skipped by active movement (KBD-002..004) and cannot become active via keyboard. | `_getSelectableOptionIndices` 5403-5430; `_moveActive` 5182-5209 | Confirmed: disabled `b` never becomes active in either direction. |
+| KBD-010 | A printable single character (no Ctrl/Alt/Meta) with no earlier match delegates to type-ahead search. | `_handleKeydown` default case 5154-5158; `_handleTypeAhead` 5433 | Single-char no-modifier keys route to `_handleTypeAhead(char)`. |
+| KBD-011 | Focus model: DOM focus stays on the combobox `<input>`; option elements are not focus targets; the active option is expressed via `aria-activedescendant` referencing the active option element id. | input `part="input"` (1908); `activeKey` derived in `_handleKeydown`; `web/accessibility-effects.ts` 60 | After open+move, `shadowRoot.activeElement` is the input; the active element is the option with `id === aria-activedescendant`. |
+| KBD-012 | Combobox ARIA chronology: `aria-expanded` and `aria-activedescendant` transition consistently across open→move→close (`expanded=true` + activedescendant on move; `expanded=false` + activedescendant cleared on close). | `web/accessibility-effects.ts` 45, 60 (`setBooleanAttribute` expanded, `setOptionalAttribute` activedescendant); `_handleOpen`/`_handleClose` | Open: `expanded=true`, `ad=null`; move: `ad=<option id>`; close: `expanded=false`, `ad=null`. |
+
+### 15.4 Deviation candidates surfaced while authoring the addendum (not repaired)
+
+These are **recorded for the Technical Lead**, not fixed. If accepted they will be promoted to `W1-P1-DEVIATIONS.md` in the corresponding Task-1 characterization increment; if not, they remain observations only.
+
+| Candidate | Observation | Risk |
+| --- | --- | --- |
+| **P1.3-D01** | The public `close` event detail is `{}` (`CloseEventDetail` is an empty interface, `types.ts:50`). The engine carries a `CloseReason` (`engine/contracts.ts:3`, values `escape`/`outside-pointer`/`selection`/`blur`/`programmatic`/`disabled`/`disconnect`) but it is **not** surfaced on the public event. Keyboard Escape and Tab therefore emit an indistinguishable `close:{}`. | Consumers cannot distinguish keyboard-close vs selection-close from the event alone; `EVENT-003` was described as "close reasons" but reasons are not publicly observable. Characterization must not assume a reason is present in `detail`. |
+| **P1.3-D02** | `attributeChangedCallback('aria-busy', …)` routes to `_syncListboxAccessibility` (637-646), but the authoring probe observed **no** `aria-busy` attribute written to the listbox element and no change when toggling `aria-busy="true"`→`"false"`. The resync is wired but the observable effect is unconfirmed at baseline. | `ATTR-003` may be a no-op in jsdom; Task 1 must characterize the **actual** observable effect rather than the wiring intent. |
+| **P1.3-D03** | `open` assigns no initial `aria-activedescendant` when there is no selection (by design, per `_setInitialActiveOption` 5536-5540); the first ArrowDown then materializes the first selectable option. This differs from some APG examples that pre-activate the first option on open. | It is intentional (code comment) but a conformance nuance; recorded so Task 1 locks the **observed** behavior without asserting the APG default. |
+
+### 15.5 Task-1 acceptance gate (planned)
+
+1. Addendum committed **before** any Task-1 test (this commit).
+2. Task-1 specs drive the public surface only (keydown on `[part="input"]`, shadow-DOM reads, event listeners) and cover KBD-001..012 plus the keyboard path of the thirteen existing P1.3 IDs.
+3. KBD IDs remain `Diagnostic` until their spec is accepted; on acceptance each moves to `Partial` (keyboard paths only) — never `Existing` without real-browser coverage.
+4. Production source stays byte-identical to `7e3adf7`; the full core suite stays green (carried forward: 877 passed + 1 skipped).
+
+_End of W1-P1.3 Addendum. Task-1 characterization tests are written only after this addendum is accepted._
