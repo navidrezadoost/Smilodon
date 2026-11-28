@@ -18,11 +18,23 @@
  * RECORDS the failure as a limitation — it does not claim safety. Coverage
  * classification for these contracts reflects the OBSERVED behavior.
  *
- * Environment guard: every test asserts `typeof document === 'undefined'` and
- * `typeof window === 'undefined'` BEFORE dynamically importing the target, so
- * the no-DOM precondition is proven, not assumed.
+ * Environment guard: every test calls `assertNoDom()` immediately BEFORE each
+ * dynamic import, asserting `typeof document === 'undefined'`,
+ * `typeof window === 'undefined'`, and `typeof HTMLElement === 'undefined'`, so
+ * the no-DOM precondition is proven (not assumed) at each import site. No DOM
+ * globals are fabricated or deleted to make assertions pass.
  */
 import { describe, expect, it } from 'vitest';
+
+/**
+ * Assert the genuine no-DOM precondition. Called immediately before every
+ * dynamic import so each import is guarded at its own call site.
+ */
+function assertNoDom(): void {
+  expect(typeof document).toBe('undefined');
+  expect(typeof window).toBe('undefined');
+  expect(typeof HTMLElement).toBe('undefined');
+}
 
 /** Dynamically import a module, capturing success or the thrown error. */
 type ImportResult = {
@@ -74,14 +86,11 @@ async function importModule(specifier: string): Promise<ImportResult> {
 describe('API-075: import-time safety (no-DOM Node)', () => {
   it('API-075: runs without document/window before any import (precondition)', () => {
     // Proven, not assumed: no DOM is present in this project.
-    expect(typeof document).toBe('undefined');
-    expect(typeof window).toBe('undefined');
-    expect(typeof HTMLElement).toBe('undefined');
+    assertNoDom();
   });
 
   it('API-075: the security utility module imports without a DOM (no top-level browser access)', async () => {
-    expect(typeof document).toBe('undefined');
-    expect(typeof window).toBe('undefined');
+    assertNoDom();
     const result = await importModule('../src/utils/security.js');
     expect(result.ok).toBe(true);
     expect(result.error).toBeUndefined();
@@ -92,8 +101,7 @@ describe('API-075: import-time safety (no-DOM Node)', () => {
   });
 
   it('API-075: the csp-styles utility module imports without a DOM (no top-level browser access)', async () => {
-    expect(typeof document).toBe('undefined');
-    expect(typeof window).toBe('undefined');
+    assertNoDom();
     const result = await importModule('../src/utils/csp-styles.js');
     expect(result.ok).toBe(true);
     expect(result.error).toBeUndefined();
@@ -105,8 +113,7 @@ describe('API-075: import-time safety (no-DOM Node)', () => {
   });
 
   it('API-075: the package ENTRY import THROWS in no-DOM Node (limitation recorded, not claimed safe)', async () => {
-    expect(typeof document).toBe('undefined');
-    expect(typeof window).toBe('undefined');
+    assertNoDom();
     const result = await importModule('../src/index.js');
     // The entry re-exports web components that `extend HTMLElement` at
     // class-declaration time; without a DOM the import fails observably.
@@ -131,6 +138,7 @@ describe('API-075: import-time safety (no-DOM Node)', () => {
 describe('API-076: DOM access is deferred to call time (not import time)', () => {
   it('API-076: DOM-dependent helpers throw ReferenceError at CALL time (deferred, not import)', async () => {
     // Import succeeds (deferred) — proven by .ok === true ...
+    assertNoDom();
     const security = await importModule('../src/utils/security.js');
     expect(security.ok).toBe(true);
     const sec = security.module as SecurityModule;
@@ -140,7 +148,9 @@ describe('API-076: DOM access is deferred to call time (not import time)', () =>
   });
 
   it('API-076: non-DOM helpers operate normally in a no-DOM process (facilities they need are present)', async () => {
+    assertNoDom();
     const security = await importModule('../src/utils/security.js');
+    assertNoDom();
     const csp = await importModule('../src/utils/csp-styles.js');
     expect(security.ok && csp.ok).toBe(true);
     const sec = security.module as SecurityModule;

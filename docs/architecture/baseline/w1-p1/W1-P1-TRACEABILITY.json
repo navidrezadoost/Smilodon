@@ -29,7 +29,7 @@
       "Existing": 77,
       "Partial": 36,
       "Diagnostic": 13,
-      "Missing": 1
+      "Missing": 3
     },
     "byTargetIncrement": {
       "P1.1": 4,
@@ -78,7 +78,7 @@
       "total": 116
     },
     "p16Task2Note": "W1-P1.6 Task 2 (Path A) added 6 P1.6 contracts for the csp-styles.ts public surface: API-070 (classes), API-071 (custom-property family), CONFIG-029 (theme/defaultTheme/applyDefaultTheme/shadowDOMStyles), API-072 (injectShadowStyles), API-073 (hasOverflowHiddenAncestor), API-074 (warnCSPViolation). All 6 characterised to Existing via packages/core/tests/w1-p1-6-t2-csp-styles.spec.ts (public import only; NODE_ENV=test dev branch + NODE_ENV=production stub). Total 121 -> 127; P1.6 9 -> 15; API 34 -> 39; CONFIG 28 -> 29. byCoverage Existing 70 -> 76 (76/35/13/3 = 127). W1-P1.6-T2-R (T2-F01..F04) strengthened characterization without changing coverage: API-071 (getter/remover do NOT enforce '--'; ordinary properties readable/removable), API-073 (parent-chain: true iff a traversed ancestor has overflow hidden/clip, excluding body; detached subtree may be true, parentless false), CONFIG-029 (full 13-entry map pinned), plus evidence precision (NODE_ENV=production conditioned source). Counts unchanged: 127 total; 76/35/13/3.",
-    "p16Task3Note": "W1-P1.6 Task 3 (Path A) characterized the two planned Missing SSR contracts as new P1.6 API contracts: API-075 (import-time safety) and API-076 (deferred DOM access) via packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts run in a REAL Node process (vitest.ssr.config.ts, environment=node; excluded from the jsdom config). OBSERVED: the utility modules (security.ts, csp-styles.ts) import without a DOM and defer document access to CALL time (API-076 Existing); the package ENTRY (index.ts) import THROWS ReferenceError (HTMLElement is not defined) because exported components extend HTMLElement at class-declaration time, so import-time safety is only partially satisfied (API-075 Partial, entry limitation recorded — NOT claimed safe). Total 127 -> 129; P1.6 15 -> 17; API 39 -> 41. byCoverage 76/35/13/3 -> 77/36/13/1 (Missing 3 -> 1). No prior contract reclassified."
+    "p16Task3Note": "W1-P1.6 Task 3 (Path A) characterized the two planned Missing SSR contracts as new P1.6 API contracts: API-075 (import-time safety) and API-076 (deferred DOM access) via packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts run in a REAL Node process (vitest.ssr.config.ts, environment=node; excluded from the jsdom config). OBSERVED: the utility modules (security.ts, csp-styles.ts) import without a DOM and defer document access to CALL time (API-076 Existing); the package ENTRY (index.ts) import THROWS ReferenceError (HTMLElement is not defined) because exported components extend HTMLElement at class-declaration time, so import-time safety is only partially satisfied (API-075 Partial, entry limitation recorded — NOT claimed safe). Total 127 -> 129; P1.6 15 -> 17; API 39 -> 41. byCoverage 76/35/13/3 -> 77/36/13/3 (Existing 76->77, Partial 35->36; the three pre-existing Missing records API-054/EVENT-005/CONFIG-023 are unchanged — API-075 and API-076 are NEW records, not reclassifications of Missing ones). No prior contract reclassified."
   },
   "duplicateIds": 0,
   "missingIds": 0,

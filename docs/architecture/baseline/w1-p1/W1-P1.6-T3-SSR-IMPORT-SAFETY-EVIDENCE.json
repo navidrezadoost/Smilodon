@@ -79,16 +79,24 @@
       "Existing": 77,
       "Partial": 36,
       "Diagnostic": 13,
-      "Missing": 1,
+      "Missing": 3,
       "total": 129
     },
-    "note": "2 new P1.6 contracts (Path A) added from the two planned Missing SSR contracts (SEC/API-m, SEC/API-n). API-075 (import-time safety) is classified Partial: the utility modules import safely, but the mandatory package ENTRY does NOT — import-time safety is only partially satisfied and the entry limitation is recorded. API-076 (deferred DOM access) is classified Existing: import succeeds and DOM access is deferred to call time (observed). No prior contract reclassified. API 39->41; P1.6 15->17. Missing 3->1 (the two planned Missing SSR contracts are now characterized)."
+    "note": "2 new P1.6 contracts (Path A) added from the two planned Missing SSR contracts (SEC/API-m, SEC/API-n). API-075 (import-time safety) is classified Partial: the utility modules import safely, but the mandatory package ENTRY does NOT — import-time safety is only partially satisfied and the entry limitation is recorded. API-076 (deferred DOM access) is classified Existing: import succeeds and DOM access is deferred to call time (observed). No prior contract reclassified. API 39->41; P1.6 15->17. Coverage 76/35/13/3 -> 77/36/13/3 (Existing 76->77, Partial 35->36). The three pre-existing Missing records (API-054/P1.2, EVENT-005/P1.5, CONFIG-023/P1.4) are UNCHANGED: API-075 and API-076 are NEW records, NOT reclassifications of any Missing record. The two SSR contracts were previously PLANNED (plan §2.3) but not registered; registering them as Partial/Existing does not reduce the Missing count. Prior (pre-T3-R) text claiming 'Missing 3->1' was INCORRECT and is corrected here (T3-F01)."
   },
   "gates": {
     "ssrSpec": "6 passed (vitest.ssr.config.ts, environment=node)",
     "coreRegression": "1063 passed | 1 skipped (unchanged; the SSR spec is EXCLUDED from vitest.config.ts and run separately under node)",
     "ac1PublicImportOnly": "PASS — imports ../src/index.js and ../src/utils/*.js (public re-export paths); no `as any` in executable code, no private access, no ForTest; typed via PublicShape casts.",
-    "isolation": "PASS — the shared jsdom setup.ts is NOT run for the SSR spec (would throw on component import); the no-DOM precondition is asserted before each import."
+    "isolation": "PASS — the shared jsdom setup.ts is NOT run for the SSR spec (would throw on component import); assertNoDom() (typeof document/window/HTMLElement === 'undefined') is called immediately before EACH dynamic import in EVERY test.",
+    "verify_traceability": {
+      "command": "python3 docs/architecture/baseline/w1-p1/verify_traceability.py",
+      "exactOutput": "ledger IDs=129 json records=129 unique json=129\\nPASS: ledger/matrix reconcile; IDs unique; targets valid; locators in bounds",
+      "exitCode": 0,
+      "whatItChecks": "Set equality of ledger IDs vs matrix IDs; ID uniqueness; targetIncrement in {P1.1..P1.6}; each record.coverage is one of the four valid class labels; testId resolves to an existing .spec file; source locators exist and are in bounds.",
+      "whatItDoesNOTCheck": "It does NOT recompute or validate reconciliation.byCoverage / totalRecords / byFamily / byTargetIncrement summary totals. A passing run therefore does NOT prove the coverage summary reconciles to the actual records (T3-F03). The summary was reconciled manually in this corrective increment; the verifier gap is identified for a separate decision and NOT fixed here.",
+      "note": "The pre-T3-R claim that a PASS verified the coverage summary was incorrect. The verifier's documented checks do not cover reconciliation.byCoverage."
+    }
   },
   "boundaries": {
     "productionIsolation": "0 files changed under packages/core/src / packages/core/engine / packages/core/adapters vs 44dc148",
@@ -97,5 +105,32 @@
   },
   "deviationsRaised": [],
   "notes": "Two contract families align with plan §2.3 (SEC/API-m -> API-075, SEC/API-n -> API-076). Testing only the utils would be insufficient (boundary #3); the package entry is the mandatory target and its import FAILURE is recorded (boundary #7). Fixing the entry import failure is a production change and OUT OF SCOPE. T4 (closure) and P1.6 closure are NOT claimed.",
-  "corrections": []
+  "corrections": [
+    {
+      "increment": "W1-P1.6-T3-R",
+      "startingCommit": "98935ca3260a2dfdbc1b0fccf92d014a30386b25",
+      "authorizedBy": "Lead T3 review: CONDITIONAL; T3-R GO (three findings T3-F01..F03 + verifier evidence).",
+      "findings": [
+        {
+          "id": "T3-F01",
+          "severity": "High",
+          "area": "traceability reconciliation",
+          "disposition": "Corrected coverage summary to 77 Existing / 36 Partial / 13 Diagnostic / 3 Missing = 129 in the traceability JSON and this evidence. Removed the incorrect 'Missing 3->1' claim: API-054/EVENT-005/CONFIG-023 remain Missing; API-075/API-076 are new records, not reclassifications."
+        },
+        {
+          "id": "T3-F02",
+          "severity": "Low",
+          "area": "harness precision",
+          "disposition": "Added a shared assertNoDom() helper (document/window/HTMLElement undefined) called immediately before EVERY dynamic import in BOTH API-076 tests (and applied consistently in API-075 tests). Genuine Node config preserved; no globals fabricated or deleted."
+        },
+        {
+          "id": "T3-F03",
+          "severity": "Medium",
+          "area": "verification evidence",
+          "disposition": "Evidence now reports the verifier's exact command and output, and states precisely what the verifier checks and does NOT check (it does not validate reconciliation.byCoverage). The summary was reconciled manually; the verifier validation gap is identified for a separate decision and NOT fixed in this increment."
+        }
+      ],
+      "productionSourceTouched": false
+    }
+  ]
 }
