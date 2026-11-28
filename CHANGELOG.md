@@ -19,7 +19,7 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [1.22.0] - Unpublished candidate
 
-Core `1.22.0` adds the truncated search-query tooltip and isolated icon-root capability required by the React remove-icon correction. Qualification and publication evidence will be recorded in [the release candidate record](docs/releases/WEB-1.22.0-RELEASE.md).
+Core `1.22.0` adds the truncated search-query tooltip and isolated icon-root capability required by the React remove-icon correction. Local qualification is recorded in [the release candidate record](docs/releases/WEB-1.22.0-RELEASE.md); the package remains unpublished pending PR integration.
 
 ### Added
 

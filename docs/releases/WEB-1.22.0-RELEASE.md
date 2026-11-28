@@ -1,6 +1,6 @@
 # Web release candidate — Core 1.22.0 and React 1.14.0
 
-Status: **Locally qualified candidate; PR and merge pending; unpublished**
+Status: **Locally qualified candidate; PR #132 open; merge and publication pending**
 
 Baseline: `origin/main` at `995a4fc1a21e40cf821f0a57e977d093b457816e`
 
@@ -63,7 +63,7 @@ The release candidate contains both changes on top of the later main baseline. T
 | Diff and generated artifacts | `git diff --check` passed; no generated React Native bundle or build output is in the Git diff |
 | npm version availability | `1.22.0` Core and `1.14.0` React returned no matching published version on 2026-11-28; recheck before publish |
 | npm identity | Authenticated maintainer identity available locally; do not publish before merge and final artifact verification |
-| GitHub PR | Not created yet |
+| GitHub PR | [#132](https://github.com/navidrezadoost/Smilodon/pull/132) open at head `0d5337a33b6fa1044c454953b5a1e39ec0688fc7`; no hosted status checks were reported at record time |
 | npm publication / registry install | Not performed |
 
 The combined local command was run with Node `20.20.2` and npm `10.8.2`. The React context-aware remove-icon contract that initially exposed a portal refresh regression passed after the synchronous observer reconciliation was added; it is included in the passing 72-contract result. No test was suppressed or reclassified. The local Chrome run used the candidate server on port 5174; the query-tooltip fixture was explicitly pointed to that server.
