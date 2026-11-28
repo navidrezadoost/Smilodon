@@ -666,9 +666,9 @@
       "behavior": "error async shape",
       "targetIncrement": "P1.5",
       "coverage": "Partial",
-      "testId": "packages/core/tests/w1-p1-2-set-selected-values-ordering.spec.ts#server-fetch failure: error before onError; error.detail.cause; onError-throw rejects",
+      "testId": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts#emits an error whose detail carries message and cause on an async server failure, before onError",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "P1.2 server-fetch error shape (w1-p1-2-set-selected-values-ordering); P1.5 async error-before-onError (w1-p1-5-t2)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -679,7 +679,7 @@
           "lines": "57"
         }
       ],
-      "coverageNote": "Single server-fetch failure path only; broader error contract owned by P1.5."
+      "coverageNote": "Async server-failure error shape + error-before-onError characterized (P1.5 T2); broader error contract/tests remain outstanding."
     },
     {
       "id": "EVENT-007",
