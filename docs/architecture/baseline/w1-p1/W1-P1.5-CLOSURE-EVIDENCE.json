@@ -1,0 +1,233 @@
+{
+  "artifactId": "W1-P1.5-CLOSURE-EVIDENCE",
+  "increment": "W1-P1.5 — Acknowledged / Asynchronous Data-Loading Contract Characterization",
+  "task": "Task 4 — Closure, reconciliation, and closure evidence",
+  "startingCommit": "693aacaf17ef9b179396869d08b4e4dd38d4b5a1",
+  "baselineOfRecord": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "recordedOn": "2026-11-28",
+  "nature": "Reconciliation and closure. Documentation only. No production source changed. No behavioral test added or modified. Adds closure report + this file + ledger section 23; refreshes integrity checksums.",
+  "lineage": [
+    {
+      "increment": "Task 1",
+      "commit": "73cd954",
+      "focus": "public acknowledged API (API-032/060/061/062)",
+      "status": "Accepted"
+    },
+    {
+      "increment": "Task 1-R",
+      "commit": "84b760a",
+      "focus": "complete API-062 matrix, rejection non-mutation, deterministic sync; API-062 -> Partial",
+      "status": "Accepted"
+    },
+    {
+      "increment": "Task 2",
+      "commit": "3dff949",
+      "focus": "public async events (EVENT-004/005/006/008/012/020/021/022)",
+      "status": "Accepted"
+    },
+    {
+      "increment": "Task 2-R",
+      "commit": "6682c83",
+      "focus": "corrective events increment (T2-F01..T2-F05); EVENT-012 -> Partial",
+      "status": "Accepted"
+    },
+    {
+      "increment": "Task 2-R1",
+      "commit": "bc30c0f",
+      "focus": "evidence reconciliation (T2-R-F01)",
+      "status": "Accepted & closed"
+    },
+    {
+      "increment": "Task 3",
+      "commit": "693aaca",
+      "focus": "public stale async guard (LIFECYCLE-005); Missing -> Partial",
+      "status": "Accepted & closed"
+    },
+    {
+      "increment": "Task 4",
+      "commit": "THIS_COMMIT",
+      "focus": "closure + reconciliation",
+      "status": "Submitted"
+    }
+  ],
+  "lineageLinear": true,
+  "scopeContracts": [
+    "API-032",
+    "API-060",
+    "API-061",
+    "API-062",
+    "EVENT-004",
+    "EVENT-005",
+    "EVENT-006",
+    "EVENT-008",
+    "EVENT-012",
+    "EVENT-020",
+    "EVENT-021",
+    "EVENT-022",
+    "LIFECYCLE-005"
+  ],
+  "scopeContractCount": 13,
+  "testInventory": {
+    "jsdom": [
+      {
+        "spec": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts",
+        "tests": 25,
+        "contracts": ["API-032", "API-060", "API-061", "API-062"]
+      },
+      {
+        "spec": "packages/core/tests/w1-p1-5-t2-async-data-loading-events.spec.ts",
+        "tests": 19,
+        "contracts": ["EVENT-004", "EVENT-005", "EVENT-006", "EVENT-008", "EVENT-012", "EVENT-020", "EVENT-021", "EVENT-022"]
+      },
+      {
+        "spec": "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts",
+        "tests": 6,
+        "contracts": ["LIFECYCLE-005"]
+      }
+    ],
+    "chromium": [],
+    "totalTests": 50,
+    "jsdomOnly": true
+  },
+  "publicSurfaceOnly": true,
+  "privateSeamsUsed": "NONE across all P1.5 specs (no _state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/_asyncGeneration/*ForTest/as-any access)",
+  "finalCoverage": {
+    "API-032": "Existing",
+    "API-060": "Existing",
+    "API-061": "Existing",
+    "API-062": "Partial",
+    "EVENT-004": "Existing",
+    "EVENT-005": "Missing",
+    "EVENT-006": "Partial",
+    "EVENT-008": "Existing",
+    "EVENT-012": "Partial",
+    "EVENT-020": "Partial",
+    "EVENT-021": "Existing",
+    "EVENT-022": "Existing",
+    "LIFECYCLE-005": "Partial"
+  },
+  "finalCoverageTally": {
+    "Existing": 7,
+    "Partial": 5,
+    "Missing": 1,
+    "Diagnostic": 0,
+    "total": 13
+  },
+  "coverageTransitions": {
+    "baselineAtP15Start": {
+      "API-032": "Diagnostic",
+      "API-060": "Diagnostic",
+      "API-061": "Existing",
+      "API-062": "Diagnostic",
+      "EVENT-004": "Diagnostic",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Diagnostic",
+      "EVENT-012": "Diagnostic",
+      "EVENT-020": "Diagnostic",
+      "EVENT-021": "Diagnostic",
+      "EVENT-022": "Diagnostic",
+      "LIFECYCLE-005": "Missing"
+    },
+    "final": {
+      "API-032": "Existing",
+      "API-060": "Existing",
+      "API-061": "Existing",
+      "API-062": "Partial",
+      "EVENT-004": "Existing",
+      "EVENT-005": "Missing",
+      "EVENT-006": "Partial",
+      "EVENT-008": "Existing",
+      "EVENT-012": "Partial",
+      "EVENT-020": "Partial",
+      "EVENT-021": "Existing",
+      "EVENT-022": "Existing",
+      "LIFECYCLE-005": "Partial"
+    },
+    "netMovement": {
+      "upgradedToExisting": ["API-032", "API-060", "EVENT-004", "EVENT-008", "EVENT-021", "EVENT-022", "API-061(kept Existing)"],
+      "movedToPartial": ["API-062", "EVENT-012", "EVENT-020", "LIFECYCLE-005"],
+      "preservedPartial": ["EVENT-006"],
+      "preservedMissing": ["EVENT-005"]
+    }
+  },
+  "matrixDistribution": {
+    "beforeP15": { "Existing": 56, "Partial": 30, "Diagnostic": 22, "Missing": 4, "total": 112 },
+    "afterT2R": { "Existing": 62, "Partial": 33, "Diagnostic": 13, "Missing": 4, "total": 112 },
+    "final": { "Existing": 62, "Partial": 34, "Diagnostic": 13, "Missing": 3, "total": 112 }
+  },
+  "residualGapsCarriedForward": [
+    {
+      "id": "API-062",
+      "class": "Partial",
+      "gap": "cursor-depth resource-limit subpath not publicly triggerable (maxCursorPages is an internal-only coordinator field; rejected by validateDataLoadingConfig). Characterized: five-status terminal matrix + async projection + cursor-token-size resource-limit + rejection non-mutation.",
+      "disposition": "Preserved Partial; cursor-depth OUTSTANDING. Not force-covered via internals."
+    },
+    {
+      "id": "EVENT-005",
+      "class": "Missing",
+      "gap": "pageLoaded declared-only (no dispatch site); bounded runtime negative + source inspection.",
+      "disposition": "Preserved Missing; DEVIATION-02 ADR candidate. Future decision not authorized."
+    },
+    {
+      "id": "EVENT-006",
+      "class": "Partial",
+      "gap": "async server-failure error shape + error-before-onError characterized; broader async error sources outstanding.",
+      "disposition": "Preserved Partial (co-owned with P1.2)."
+    },
+    {
+      "id": "EVENT-012",
+      "class": "Partial",
+      "gap": "resource-limit diagnostic pinned (payload, snapshot mirror, per-result replay); acknowledgedProjectionFailed diagnostic not publicly characterizable.",
+      "disposition": "Preserved Partial (Existing -> Partial per T2-R). Not force-covered via private failure-injection."
+    },
+    {
+      "id": "EVENT-020",
+      "class": "Partial",
+      "gap": "dataProjection complete pinned; failed-projection variant has no deterministic public trigger.",
+      "disposition": "Preserved Partial."
+    },
+    {
+      "id": "LIFECYCLE-005",
+      "class": "Partial",
+      "gap": "supersession/stale-failure/disconnect/acknowledged-stale+unknown characterized and proven discriminating; cursor/page concurrency and load-more interleavings outstanding.",
+      "disposition": "Preserved Partial (Missing -> Partial)."
+    }
+  ],
+  "deferredResidualsNotAbsorbed": [
+    { "id": "EVENT-009", "class": "Partial", "origin": "P1.2/P1.4" },
+    { "id": "CONFIG-001", "class": "Partial", "origin": "P1.4" },
+    { "id": "CONFIG-003", "class": "Partial", "origin": "P1.4" },
+    { "id": "CONFIG-004", "class": "Partial", "origin": "P1.4" },
+    { "id": "CONFIG-026", "class": "Partial", "origin": "P1.4" },
+    { "id": "PART-009", "class": "Partial", "origin": "P1.4 gap" },
+    { "id": "ATTR-023", "class": "Diagnostic", "origin": "P1.4 gap" },
+    { "id": "CONFIG-023", "class": "Missing", "origin": "P1.4 gap" },
+    { "id": "KBD-001..012", "class": "Partial", "origin": "P1.3 residual" },
+    { "id": "P1.3-D01", "class": "deferred design", "origin": "P1.3" }
+  ],
+  "limitations": [
+    "No browser parity claim: W1-P1.5 is jsdom-only; async detail/snapshot contracts are DOM-independent.",
+    "No comprehensive async-safety claim across every concurrency path.",
+    "No implementation-completeness claim.",
+    "Mutation/discriminator evidence and regression counts are developer-executed on the local harness (jsdom; vitest 4.1.12), reported not independent."
+  ],
+  "gates": {
+    "p15Specs": "25 + 19 + 6 = 50 passing (carried; unchanged by this closure)",
+    "coreRegression": "1012 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; unique; locators in bounds; LIFECYCLE-005 + all others resolve; byCoverage 62/34/13/3)",
+    "productionIsolation": "empty (git diff 693aaca -- packages/core/src packages/core/engine packages/core/adapters)",
+    "acceptedPriorTestsChanged": "none",
+    "checksums": "SHA256SUMS refreshed; all files verify"
+  },
+  "boundaries": {
+    "documentationOnly": true,
+    "noProductionChange": true,
+    "noTestAddedOrModified": true,
+    "noReclassificationBeyondTasks1to3": true,
+    "noBrowserParityClaim": true,
+    "noImplementationCompletenessClaim": true
+  },
+  "closureStatement": "W1-P1.5 characterized all 13 targeted contracts on a jsdom public-surface basis: Existing 7, Partial 5, Missing 1. Full-matrix distribution 62/34/13/3 = 112. No production source changed; no accepted behavioral test modified; traceability reconciled and not overstated. W1-P1.5 remains open until this Task 4 commit receives independent acceptance. W1-P1.6, W1-P2 Extraction, and Angular Wave 2 remain NO-GO until then."
+}

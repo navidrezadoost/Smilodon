@@ -892,3 +892,36 @@ The production guards (`_loadSelectedItemsByValues` generation/disconnect guard;
 - Note: the pre-existing P1.2 supersession test resolves its stale fetch to an **empty** array (benign) and cannot by itself distinguish a working guard; T3 closes that gap with non-benign stale payloads.
 
 _End of W1-P1.5 Task 3. Task 4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until Task 3 is independently accepted._
+
+## 23. W1-P1.5 Task 4 — increment closure (acknowledged / asynchronous data-loading)
+
+Task 4 is the **documentation-only** closure of W1-P1.5: it consolidates Tasks 1–3 into a single closure report (`W1-P1.5-CLOSURE-REPORT.md`) and machine-readable evidence (`W1-P1.5-CLOSURE-EVIDENCE.json`). **No production source changed; no behavioral test added or modified; no classification changed beyond what Tasks 1–3 already committed.**
+
+### 23.1 Lineage (ancestry-verified, linear)
+
+`73cd954` (T1) → `84b760a` (T1-R) → `3dff949` (T2) → `6682c83` (T2-R) → `bc30c0f` (T2-R1) → `693aaca` (T3) → this (T4).
+
+### 23.2 Final coverage of the 13 P1.5 contracts
+
+| Contract | Final class | Contract | Final class |
+| --- | --- | --- | --- |
+| API-032 | Existing | EVENT-008 | Existing |
+| API-060 | Existing | EVENT-012 | **Partial** |
+| API-061 | Existing | EVENT-020 | **Partial** |
+| API-062 | **Partial** | EVENT-021 | Existing |
+| EVENT-004 | Existing | EVENT-022 | Existing |
+| EVENT-005 | **Missing** | LIFECYCLE-005 | **Partial** |
+| EVENT-006 | **Partial** | | |
+
+**13-target disposition: Existing 7 · Partial 5 · Missing 1.** Preserved gaps: API-062 (cursor-depth), EVENT-005 (declared-only, DEVIATION-02), EVENT-006 (broader error sources), EVENT-012 (`acknowledgedProjectionFailed`), EVENT-020 (`failed`-projection), LIFECYCLE-005 (concurrency interleavings).
+
+### 23.3 Reconciliation & integrity
+
+- **112 records** (no ID added/removed). Distribution **Existing 62 · Partial 34 · Diagnostic 13 · Missing 3 = 112** — unchanged by this closure (Tasks 1–3 already set it; T4 does not reclassify).
+- `verify_traceability.py` **PASS** (112 unique; locators in bounds; testIds resolve).
+- Core regression **1012 passed | 1 skipped**; P1.5 specs **50 passing** (25 + 19 + 6). All jsdom (async `detail`/snapshot contracts are DOM-independent).
+- Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `693aaca`; accepted prior tests unchanged; no test files touched.
+- Deferred residuals **not absorbed** (unchanged prior classes): EVENT-009, CONFIG-001/003/004/026 (P1.4 residuals); PART-009, ATTR-023, CONFIG-023 (P1.4 gaps); KBD-001..012, P1.3-D01 (P1.3 residuals).
+- **Limitations preserved:** no browser-parity claim; no comprehensive async-safety claim; no implementation-completeness claim.
+
+_End of W1-P1.5 Task 4 closure. W1-P1.5 remains open until this closure commit is independently accepted. W1-P1.6, W1-P2 Extraction, Angular Wave 2 remain NO-GO until then._
