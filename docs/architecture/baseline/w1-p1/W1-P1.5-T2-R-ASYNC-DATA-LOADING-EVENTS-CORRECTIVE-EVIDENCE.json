@@ -7,6 +7,12 @@
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "branch": "codex/w1-p1-3-keyboard-characterization",
   "authorization": "T2 reviewed as CONDITIONALLY ACCEPTED at 3dff949 by Technical Lead; T2-R authorized GO (findings T2-F01..T2-F05). Task 3 remains NO-GO until T2-R is independently accepted.",
+  "authority": "AUTHORITATIVE for EVENT-008 / EVENT-012 / EVENT-021 test-title references. This T2-R artifact supersedes the original W1-P1.5-T2-ASYNC-DATA-LOADING-EVENTS-EVIDENCE.json for those references; that earlier artifact is retained as a HISTORICAL record of the 3dff949 submission and its (now superseded) test titles and regression count must not be treated as the current state.",
+  "supersedesTestTitleReferences": {
+    "EVENT-008": "original T2 title 'emits an acknowledged loadMore event with the request kind after a page is available' is superseded by the T2-R title (see testIdChanges.EVENT-008)",
+    "EVENT-012": "original T2 title 'emits a single bounded diagnostic (source \"event\") for a cursor resource-limit and not more' is superseded by the T2-R title (see testIdChanges.EVENT-012)",
+    "EVENT-021": "original T2 title 'emits dataRequestCancel with reason \"query-changed\" ...' is superseded for traceability by the T2-R title 'emits dataRequestCancel with reason \"config-changed\" ...' (see testIdChanges.EVENT-021)"
+  },
   "scopeContracts": [
     "EVENT-004",
     "EVENT-005",
@@ -141,7 +147,7 @@
   "gates": {
     "jsdom": "19/19 T2-R passed",
     "chromium": "not required (event detail contracts observable in jsdom; no layout parity claimed)",
-    "coreRegression": "1004 passed | 1 skipped",
+    "coreRegression": "1006 passed | 1 skipped",
     "traceability": "PASS (112 IDs; testIds resolve to existing spec files; byCoverage 62/33/13/4)",
     "eslint": "clean",
     "harnessIntegrity": "no private seam access (_state/_dataRequestCoordinator/_handleSearch/_loadMoreItems/*ForTest/as-any) in T2-R spec",

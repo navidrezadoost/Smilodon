@@ -263,7 +263,9 @@ describe('W1-P1.5-T2 async data-loading public event characterization', () => {
       // The emitted page derives from the request's own page-mode position.
       expect(detail.page).toBe(2);
       expect(detail.request.position).toEqual({ mode: 'page', page: 2 });
-      // The event's request is the same object the snapshot reports as active.
+      // The event's request correlates with the request the snapshot reports as
+      // active, by (immutable) request identifier and query generation. This
+      // asserts correlation, not object reference identity.
       expect(detail.request.requestId).toBe(active!.requestId);
       expect(detail.request.queryGeneration).toBe(active!.queryGeneration);
     });
