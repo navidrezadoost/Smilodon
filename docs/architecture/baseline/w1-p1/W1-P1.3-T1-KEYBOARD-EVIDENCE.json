@@ -1,0 +1,75 @@
+{
+  "increment": "W1-P1.3 Task 1",
+  "title": "Keyboard Navigation and Focus/ARIA Chronology — characterization",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "testFile": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts",
+  "publicInterfaceOnly": true,
+  "drivingSurface": {
+    "keyboard": "KeyboardEvent('keydown', {key, ctrlKey, metaKey, shiftKey, altKey, bubbles, cancelable}) dispatched on [part=\"input\"] (the combobox)",
+    "programmatic": "public open() / close()",
+    "attributes": "host setAttribute('aria-label'|'aria-description'|'aria-busy', ...)"
+  },
+  "observationSurface": {
+    "roles": "combobox / listbox / option",
+    "aria": "aria-expanded and aria-activedescendant read from the combobox; active option resolved via shadowRoot.getElementById(aria-activedescendant)",
+    "events": "open / close CustomEvent.detail and onOpen / onClose",
+    "dom": "data-open on host, data-placement on dropdown, dir on host, shadowRoot.activeElement"
+  },
+  "forbidden": [
+    "_handleKeydown",
+    "_moveActive",
+    "_handleOpen",
+    "_handleClose",
+    "_setInitialActiveOption",
+    "_selectAll",
+    "_handleTypeAhead",
+    "engine dispatch",
+    "private _state/_engine access",
+    "arbitrary sleeps",
+    "CSS-animation completion dependence"
+  ],
+  "testRun": {
+    "config": "packages/core/vitest.config.ts",
+    "task1": "45 passed",
+    "fullCoreSuite": "922 passed + 1 skipped (877 baseline + 45 new; no regressions)"
+  },
+  "coverageChange": {
+    "KBD-001..012": "Diagnostic -> Partial (keyboard paths characterized; real-browser conformance + pointer parity outstanding; NOT upgraded to Existing)",
+    "distribution_before": {"Existing": 38, "Partial": 17, "Diagnostic": 53, "Missing": 4},
+    "distribution_after": {"Existing": 38, "Partial": 29, "Diagnostic": 41, "Missing": 4},
+    "total": 112
+  },
+  "kbdContracts": {
+    "KBD-001": "ArrowDown/ArrowUp/Enter open the popup; open:{}->onOpen; no initial active-descendant; no duplicate open",
+    "KBD-002": "ArrowDown/ArrowUp move one selectable step, skip disabled, clamp at boundaries (no wrap)",
+    "KBD-003": "End -> last selectable; Home -> first selectable",
+    "KBD-004": "PageDown/PageUp move +/-10 selectable steps; clamp at end",
+    "KBD-005": "Enter/Space activate; Space on searchable input is a no-op",
+    "KBD-006": "Escape closes; close:{}->onClose; detail carries no reason (P1.3-D01)",
+    "KBD-007": "Tab closes when open",
+    "KBD-008": "Ctrl/Cmd+A select-all only in multi && !searchable",
+    "KBD-009": "Disabled option never becomes active via keyboard",
+    "KBD-010": "Unmodified printable char moves active (type-ahead); modified char does not",
+    "KBD-011": "Focus stays on combobox input; active option expressed via aria-activedescendant",
+    "KBD-012": "aria-expanded false/true/false; aria-activedescendant null->set->cleared across open/move/close"
+  },
+  "existingP13ContractsCharacterized": [
+    "API-030", "API-031", "EVENT-002", "EVENT-003",
+    "ATTR-010", "ATTR-011", "ATTR-020", "ATTR-001", "ATTR-002", "ATTR-003", "LIFECYCLE-006"
+  ],
+  "existingP13ContractsCharacterizedCount": 11,
+  "existingP13ContractsDeferred": {
+    "deferred": ["API-040", "API-041"],
+    "reason": "T1-R / T1-F01: error-state behavior already characterized by P1.2-T3-R error-state evidence; no duplicate assertions added in Task 1. Both remain Partial; no traceability distribution change."
+  },
+  "reconciliationNotes": {
+    "T1-F01": "Task 1 exercised 11 of 13 existing P1.3-owned contracts; API-040 (setError) / API-041 (clearError) deferred to P1.2-T3-R evidence.",
+    "T1-F02": "LIFECYCLE-006 is characterized as an observable equal-value stability check (set same value twice, read same value); it does NOT prove the internal attributeChangedCallback early-return branch was taken. No private-state instrumentation."
+  },
+  "deviationCandidatesObserved": [
+    {"id": "P1.3-D01", "observed": "close event detail is {}; Escape and Tab indistinguishable from the event alone", "disposition": "promoted to W1-P1-DEVIATIONS.md as observed public-contract limitation; design decision deferred"},
+    {"id": "P1.3-D02", "observed": "no aria-busy attribute written to the listbox element on host aria-busy change (jsdom)", "disposition": "retained as Diagnostic; pending browser-level a11y check"},
+    {"id": "P1.3-D03", "observed": "open with no selection assigns no initial aria-activedescendant; first ArrowDown materializes first selectable", "disposition": "accepted as observation, not a defect; pending real-browser/APG assessment"}
+  ],
+  "productionSourceUnchanged": true
+}

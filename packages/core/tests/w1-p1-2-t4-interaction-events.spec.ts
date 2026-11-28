@@ -371,7 +371,7 @@ describe('W1-P1.2 Task 4 (T4-04) — exact select and change payloads', () => {
     rec.stop();
   });
 
-  it('onSelect callback receives the select detail (without `multi`); onChange receives (items, values)', () => {
+  it('onSelect callback receives the select detail (including `multi`); onChange receives (items, values)', () => {
     el = mount();
     el.open();
     const rec = record(el);

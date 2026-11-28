@@ -1,0 +1,222 @@
+{
+  "artifactId": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE",
+  "increment": "W1-P1.4",
+  "task": "Task 2 — Public Attribute and State-Marker Characterization",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "startingCommit": "c174876d3bb11d3b68dd976a4885a34d37f8dbdb",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Technical Lead W1-P1.4 Task 2 GO (starting commit c174876)",
+  "scopeContracts": [
+    "ATTR-012",
+    "ATTR-013",
+    "ATTR-021",
+    "ATTR-022",
+    "ATTR-023"
+  ],
+  "surfaces": {
+    "jsdom": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts",
+    "chromium": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts"
+  },
+  "testCounts": {
+    "jsdom": 9,
+    "chromium": 5,
+    "total": 14
+  },
+  "renderingModel": {
+    "shadowDom": "open",
+    "observation": "host attributes/display; open shadowRoot element attributes (part=\"button\", part=\"listbox\")",
+    "driving": "public methods (setItems/updateConfig/open/close), public config, public light-DOM arrow-slot assignment"
+  },
+  "contractEvidence": {
+    "ATTR-012": {
+      "marker": "host [data-custom-arrow=\"true\"]",
+      "jsdomTest": "ATTR-012: assigning a custom arrow element sets data-custom-arrow=\"true\" on the host",
+      "browserTest": "ATTR-012: custom arrow assignment via real slots toggles data-custom-arrow",
+      "observable": "host lacks data-custom-arrow with the built-in arrow; setting one when a light-DOM child with slot=\"arrow\" is assigned; marker lives on host (not in shadow tree)",
+      "positivePaths": [
+        "assign custom arrow (slot=\"arrow\") -> data-custom-arrow=\"true\"",
+        "replace custom arrow -> still \"true\" (exactly one assigned arrow)",
+        "real browser slot flattening confirms assignment -> \"true\""
+      ],
+      "negativePaths": [
+        "no custom arrow -> attribute absent (null)",
+        "remove custom arrow -> attribute removed",
+        "unassign via browser helper -> attribute removed"
+      ],
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2041-2049"
+        }
+      ],
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "ATTR-013": {
+      "marker": "host style.display = 'block' (inline)",
+      "jsdomTest": "ATTR-013: connecting forces inline style.display=\"block\" on the host",
+      "browserTest": "ATTR-013: host display:block is forced on connect and re-asserted on reconnect",
+      "observable": "host inline style.display becomes \"block\" on connection; re-connection overwrites a caller-supplied conflicting value back to \"block\"",
+      "positivePaths": [
+        "connect: display \"\" -> \"block\" (jsdom)",
+        "connect: display \"block\" (browser)",
+        "reconnect after caller writes inline-block: re-asserted to \"block\" (jsdom + browser — browser now sets the conflicting value before reconnect)"
+      ],
+      "negativePaths": [
+        "before connect, inline display is empty (jsdom)"
+      ],
+      "deviation": "DEVIATION-05 (Angular-workaround): characterized, NOT endorsed; ADR decision still open",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "598"
+        }
+      ],
+      "coverageAttribution": "jsdom + browser-confirmed (override of conflicting caller value proven in both)"
+    },
+    "ATTR-021": {
+      "marker": "dropdown [data-motion=\"closing\"] on part=\"listbox\"",
+      "browserTest": "ATTR-021: close() sets data-motion=\"closing\" during exit then removes it",
+      "negativeBrowserTest": "ATTR-021: opening does not carry data-motion=\"closing\" (negative)",
+      "observable": "public close() sets data-motion=\"closing\" on the popup synchronously; the real computed dropdownExit animation (160ms) keeps the panel display:block during exit; once the animation completes (animationend / fallback timer) data-motion is removed and display becomes none",
+      "positivePaths": [
+        "close() -> data-motion=\"closing\" (captured synchronously in the close() turn)",
+        "after exit completes -> data-motion removed and display none (polled)"
+      ],
+      "negativePaths": [
+        "open popup -> no data-motion (not closing)"
+      ],
+      "determinism": "Uses the real default --select-dropdown-exit-animation (dropdownExit 160ms) resolved by Chromium; no private method, no fixed sleeps — observed via public close() + getComputedStyle-derived animation, asserted with expect.poll for removal",
+      "whyBrowserOnly": "jsdom does not resolve stylesheet-derived animation-name -> computed duration 0 -> data-motion is set then immediately cleared (never observable at rest)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4710-4728"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "2970-2985"
+        }
+      ],
+      "coverageAttribution": "browser-confirmed"
+    },
+    "ATTR-022": {
+      "marker": "input-container (part=\"button\") [data-multi-scroll-mode] / [data-drag-scroll]",
+      "jsdomTest": "ATTR-022: multi-select defaults to data-multi-scroll-mode=\"wrap\" and data-drag-scroll=\"false\"",
+      "observable": "attributes reflect selection.mode + multiSelectDisplay.mode/.dragScroll on the input container",
+      "positivePaths": [
+        "multi default -> data-multi-scroll-mode=\"wrap\", data-drag-scroll=\"false\"",
+        "multi + horizontal -> \"horizontal\", \"true\"",
+        "multi + horizontal + dragScroll:false -> \"horizontal\", \"false\""
+      ],
+      "negativePaths": [
+        "single-select -> neither attribute present",
+        "multi->single switch -> both attributes removed"
+      ],
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1768-1815"
+        }
+      ],
+      "coverageAttribution": "jsdom-confirmed"
+    },
+    "ATTR-023": {
+      "marker": "[data-virtual-spacer] (position top|bottom)",
+      "browserTest": "ATTR-023: no data-virtual-spacer renders on the public surface for a large list (gap)",
+      "classification": "Diagnostic",
+      "gap": "data-virtual-spacer is NOT reachable through the public surface in the current build. The guarded virtualizer that emits spacers (_createGuardedSpacer) is created only inside _ensureGuardedVirtualizer; every entered caller requires _guardedVirtualizer/_guardedVirtualizationRequested to already be established. The only setter of _guardedVirtualizationRequested=true is the private _updateGuardedVirtualWindow, which has NO callers in src; the existing accepted spacer tests (enhanced-select-virtualization-integration.spec.ts, selected-options-virtualization.spec.ts) drive it via the private helper setGuardedWindow -> _updateGuardedVirtualWindow. No public config/method (incl. dataLoading.protocol='acknowledged' + startDataLoading, or virtualize:true) establishes the window. A 2000-item virtualizable list renders options with 0 spacers in real Chromium. NEGATIVE-ONLY coverage recorded: the browser test asserts safe, deterministic absence rather than positive spacer behavior. Remains Diagnostic (private/test-seam reachable only), analogous to PART-009's documented gap; deferred, not forced with a private stub.",
+      "positivePaths": [],
+      "negativePaths": [
+        "BOUNDED to 2,000 items + virtualize:true via public methods: at the settled completed-render checkpoint (all 2,000 [part=\"option\"] rendered) there are 0 [data-virtual-spacer]; a subsequent options scroll cycle keeps the render complete and still 0 spacers"
+      ],
+      "activationSeams": {
+        "privateOnly": [
+          "_updateGuardedVirtualWindow",
+          "_enableAcknowledgedDataLoadingForTest",
+          "setGuardedWindow (test helper)"
+        ],
+        "publicAttempted": [
+          "config.virtualize",
+          "config.dataLoading.protocol='acknowledged'",
+          "startDataLoading()"
+        ]
+      },
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7503-7512"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8058-8067"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "8606,8700"
+        }
+      ],
+      "coverageAttribution": "browser-negative-only (public-unobservable gap)",
+      "synchronization": "No arbitrary sleep: synchronized on the observable completed-render state (expect.poll until exactly BIG.length options render), then a public scroll gesture followed by re-synchronization on the same completed-render state before reading spacer count. Bounded claim: absence at this tested public configuration/checkpoint, not universal unreachability."
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "ATTR-012": "Diagnostic",
+      "ATTR-013": "Diagnostic",
+      "ATTR-021": "Diagnostic",
+      "ATTR-022": "Diagnostic",
+      "ATTR-023": "Diagnostic"
+    },
+    "to": {
+      "ATTR-012": "Existing",
+      "ATTR-013": "Existing",
+      "ATTR-021": "Existing",
+      "ATTR-022": "Existing",
+      "ATTR-023": "Diagnostic"
+    },
+    "rationale": "ATTR-012/013/021/022 fully characterized on the public surface (positive + negative) -> Existing. ATTR-023 remains Diagnostic: only privately reachable; negative browser coverage recorded, positive spacer behavior still outstanding (documented gap).",
+    "distributionAfter": {
+      "Existing": 51,
+      "Partial": 30,
+      "Diagnostic": 27,
+      "Missing": 4
+    }
+  },
+  "gates": {
+    "jsdom": "9/9 passed (unchanged test bodies)",
+    "chromium": "5/5 attribute-state passed (12/12 full T2 suite)",
+    "coreRegression": "947 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; testId titles unchanged — ATTR-013/023 browser titles stable)",
+    "eslint": "clean",
+    "productionIsolation": "0 files changed vs 7ae3193 (src/engine/adapters)",
+    "acceptedPriorTestsUnchanged": "0 files changed vs 7ae3193",
+    "checksums": "sha256sum -c SHA256SUMS OK (21 entries incl. new T2 evidence)"
+  },
+  "boundaries": {
+    "publicSurfaceOnly": true,
+    "noPrivateMethodsOrFieldsInAcceptedTests": true,
+    "productionUnchanged": true,
+    "acceptedPriorTestsUnchanged": true,
+    "schemaConvention": "testId is the authoritative executable pointer; evidence kept as string"
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "ATTR-021 determinism: observed via public close() with the real default dropdownExit 160ms animation; no private method and no fixed sleep in the assertions (removal confirmed via expect.poll).",
+    "ATTR-023: the guarded virtualizer / data-virtual-spacer is only reachable via a private test seam; unlike ATTR-021 there is no public activation path, so it cannot be promoted without a production seam (out of scope). Kept Diagnostic with a NEGATIVE-ONLY browser assertion as the safely-testable public surface.",
+    "Dev server consumed a stale packages/core/dist; the core package was rebuilt (gitignored build artifact) so the browser spec exercises current src. No production source changed."
+  ],
+  "correction": "W1-P1.4-T2-R (T2-F01/F02)",
+  "correctiveStartingCommit": "7ae3193de2fa632b54f3814989b4eb7d94a3203b",
+  "corrections": [
+    {
+      "id": "T2-F01",
+      "finding": "Arbitrary page.waitForTimeout(50) in the ATTR-023 test; AC-4 requires deterministic tests without arbitrary delays, and a 50ms probe does not establish a settled lifecycle.",
+      "resolution": "Removed the fixed wait. The test now synchronizes on the observable completed-render state (expect.poll until exactly 2,000 [part=\"option\"] render), reads spacers, drives a public scroll cycle, re-synchronizes on the same completed-render state, and re-asserts 0 spacers. Claim explicitly bounded to the tested 2,000-item + virtualize:true configuration and checkpoint (no universal-unreachability claim)."
+    },
+    {
+      "id": "T2-F02",
+      "finding": "The browser ATTR-013 test reconnected without first writing a conflicting caller display, so it only showed display stays 'block', not that Chromium overwrites a conflicting caller value (jsdom proved the override).",
+      "resolution": "Browser test now sets a conflicting inline display ('inline-block') before reconnect and asserts it is overwritten back to 'block' after reconnection — the override is proven in Chromium as well as jsdom. Attribution updated to jsdom + browser-confirmed override."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "w1-p1-traceability/v2",
-  "increment": "W1-P1.1-R",
-  "correction": "Inventory and traceability reconciliation (documentation only; no production changes)",
+  "increment": "W1-P1.2-R",
+  "correction": "W1-P1.2 Task 5 — selection characterization closure and evidence reconciliation (documentation-only reconciliation of Task 1-4 evidence; T4-F01/T4-F02 errata corrected; no production changes). W1-P1.2-T5-R added documentary notes only (T5-F01/F02/F03); no contract record, coverage class, source locator, or testId changed. W1-P1.3 Addendum (documentation-only, committed before any P1.3 test): introduced KBD-001..012 keyboard/focus/ARIA contracts (target P1.3, coverage Diagnostic, unassigned) and split P1.3 into Task 1 (keyboard navigation + focus/ARIA chronology). Total records 100 -> 112; KBD family = 12; P1.3 target 13 -> 25; Diagnostic 41 -> 53. No existing record, coverage class, or production source changed. W1-P1.3 Task 1 (keyboard navigation + focus/ARIA chronology): the 12 KBD contracts now reference w1-p1-3-t1-keyboard-navigation.spec.ts and are promoted Diagnostic -> Partial (keyboard paths only; not Existing). Coverage distribution 41/17 -> Diagnostic 41 / Partial 29 (Existing 38 / Missing 4 unchanged; total 112). No behavior, source, or contract ID changed.",
   "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
   "branch": "codex/w1-p1-characterization-7e3adf7",
   "supersedes": "W1-P1-TRACEABILITY.json (74-record skeleton, commit c8f0db6)",
@@ -14,7 +14,7 @@
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
-    "totalRecords": 100,
+    "totalRecords": 112,
     "byFamily": {
       "API": 27,
       "EVENT": 15,
@@ -22,18 +22,19 @@
       "PART": 11,
       "SLOT": 4,
       "LIFECYCLE": 6,
-      "CONFIG": 26
+      "CONFIG": 26,
+      "KBD": 12
     },
     "byCoverage": {
-      "Existing": 38,
-      "Partial": 17,
-      "Diagnostic": 41,
+      "Existing": 56,
+      "Partial": 30,
+      "Diagnostic": 22,
       "Missing": 4
     },
     "byTargetIncrement": {
       "P1.1": 4,
       "P1.2": 14,
-      "P1.3": 13,
+      "P1.3": 25,
       "P1.4": 56,
       "P1.5": 13
     },
@@ -58,11 +59,22 @@
       "Missing"
     ],
     "deviationsReferenced": [
+      "DEVIATION-04",
+      "DEVIATION-06",
       "DEVIATION-07",
       "DEVIATION-08",
       "DEVIATION-09",
       "DEVIATION-10"
-    ]
+    ],
+    "p12SpecInventory": {
+      "w1-p1-2-set-selected-values-ordering.spec.ts": 19,
+      "w1-p1-2-identity-policy-matrix.spec.ts": 21,
+      "w1-p1-2-t2r-identity-evidence.spec.ts": 8,
+      "w1-p1-2-t3-state-validation-clear.spec.ts": 26,
+      "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
+      "w1-p1-2-t4-interaction-events.spec.ts": 34,
+      "total": 116
+    }
   },
   "duplicateIds": 0,
   "missingIds": 0,
@@ -87,10 +99,10 @@
       "id": "API-002",
       "behavior": "groupHeaderRenderer get/set",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#API-002: default is undefined; setting a renderer is returned by the getter and drives group headers",
       "status": "Observed",
-      "evidence": "styling-contract",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -232,7 +244,7 @@
       "coverage": "Partial",
       "testId": "packages/core/tests/w1-p1-2-identity-policy-matrix.spec.ts#setItems replacement/reorder/detached/duplicate-key(dev)",
       "status": "Observed",
-      "evidence": "smoke",
+      "evidence": "smoke (dev-only projection asserts: DEVIATION-06)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -272,6 +284,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6733-6735"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#API-030: open() is idempotent — double open emits `open` once"
       ]
     },
     {
@@ -287,6 +302,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "6740-6742"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#API-031: close() is idempotent — double close emits `close` once"
       ]
     },
     {
@@ -570,6 +588,9 @@
           "file": "packages/core/src/types.ts",
           "lines": "49"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#EVENT-002: open event detail is exactly {}"
       ]
     },
     {
@@ -589,6 +610,9 @@
           "file": "packages/core/src/types.ts",
           "lines": "50"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#EVENT-003: close event detail is exactly {} (no reason; P1.3-D01)"
       ]
     },
     {
@@ -744,10 +768,10 @@
       "id": "EVENT-011",
       "behavior": "emptyStateChange",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#EVENT-011: searching to no results emits {context:{query,reason:no-results}} and exposes it via getEmptyStateContext",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -860,6 +884,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "637-646"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-001: aria-label set on the host is reflected to the combobox"
       ]
     },
     {
@@ -879,6 +906,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "637-646"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-002: aria-description set on the host is reflected to the combobox"
       ]
     },
     {
@@ -902,6 +932,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "4405"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-003: setting aria-busy on the host does not disrupt the combobox (baseline: no observable listbox aria-busy; P1.3-D02)"
       ]
     },
     {
@@ -921,6 +954,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "1730-1735"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-010: dir defaults to ltr on the host after connect"
       ]
     },
     {
@@ -940,16 +976,19 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "4416"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-011: data-open is \"true\" while open and absent when closed"
       ]
     },
     {
       "id": "ATTR-012",
       "behavior": "data-custom-arrow",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-012: assigning a custom arrow element sets data-custom-arrow=\"true\" on the host",
       "status": "Observed",
-      "evidence": "custom-arrow-slot",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; custom-arrow-slot",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -969,10 +1008,10 @@
       "id": "ATTR-013",
       "behavior": "style.display forced",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-013: connecting forces inline style.display=\"block\" on the host",
       "status": "Observed",
-      "evidence": "DEVIATION-05",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; DEVIATION-05",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -997,16 +1036,19 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "4418"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ATTR-020: dropdown/listbox carries data-placement (bottom by default)"
       ]
     },
     {
       "id": "ATTR-021",
       "behavior": "data-motion closing",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts#ATTR-021: close() sets data-motion=\"closing\" during exit then removes it",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1022,10 +1064,10 @@
       "id": "ATTR-022",
       "behavior": "data-multi-scroll-mode/data-drag-scroll",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts#ATTR-022: multi-select defaults to data-multi-scroll-mode=\"wrap\" and data-drag-scroll=\"false\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1042,9 +1084,9 @@
       "behavior": "data-virtual-spacer",
       "targetIncrement": "P1.4",
       "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "testId": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts#ATTR-023: no data-virtual-spacer renders on the public surface for a large list (gap)",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T2-ATTR-ATTRIBUTE-STATE-EVIDENCE; gap:public-unobservable",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1056,10 +1098,10 @@
       "id": "PART-001",
       "behavior": "part button (token: button)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-001: the input container carries part=\"button\" and lives in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1071,10 +1113,10 @@
       "id": "PART-002",
       "behavior": "part input (token: input)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-002: the text field carries part=\"input\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1086,10 +1128,10 @@
       "id": "PART-003",
       "behavior": "part listbox (token: listbox)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-003: the popup carries part=\"listbox\" and is distinct from the input",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1116,10 +1158,10 @@
       "id": "PART-005",
       "behavior": "part clear-button (token: clear-button)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1131,10 +1173,10 @@
       "id": "PART-006",
       "behavior": "part clear-icon (token: clear-icon)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1146,10 +1188,10 @@
       "id": "PART-007",
       "behavior": "part option (token: option)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-007: each rendered option carries part=\"option\" when the popup is open",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1169,10 +1211,10 @@
       "id": "PART-008",
       "behavior": "part group-header (token: group-header)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-008: grouped items render one part=\"group-header\" per group (flat list renders none — T1-03)",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1184,10 +1226,10 @@
       "id": "PART-009",
       "behavior": "chip parts (tokens: chip, chip-label, chip-remove, chip-remove-icon, chip-exiting)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-009: a selected multi value renders chip + chip-label + chip-remove + chip-remove-icon",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts; GAP: chip-exiting transition not reliably observable via public surface (exit animation default none; public removal synchronously finishes) — T1-F01",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1223,10 +1265,10 @@
       "id": "PART-010",
       "behavior": "part no-results (token: no-results)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-010: an empty result set renders part=\"no-results\"",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1238,10 +1280,10 @@
       "id": "PART-011",
       "behavior": "loading parts (tokens: loading, loading-content, loading-icon, loading-message, loading-spinner)",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-011: an active busy state renders loading + loading-icon/loading-message/loading-content/loading-spinner",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1356,10 +1398,10 @@
       "id": "LIFECYCLE-002",
       "behavior": "connected resource attach",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-002: after connect an outside pointerdown closes an open popup (document-listener effect)",
       "status": "Observed",
-      "evidence": "lifecycle; memory-lifecycle",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1371,10 +1413,10 @@
       "id": "LIFECYCLE-003",
       "behavior": "disconnected resource release",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-003: after disconnect the detached element remains closed and detached on outside input",
       "status": "Observed",
-      "evidence": "memory-lifecycle; phase-4 lifecycle",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1386,10 +1428,10 @@
       "id": "LIFECYCLE-004",
       "behavior": "reconnect invariant",
       "targetIncrement": "P1.4",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-004: after reconnect outside input still closes the popup, once per open (observable invariant)",
       "status": "Observed",
-      "evidence": "phase-4 lifecycle (W1-P0.2B invariant)",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1433,6 +1475,9 @@
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "637-646"
         }
+      ],
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#LIFECYCLE-006: re-setting an equal aria-label value leaves the reflected value stable (observable stability; not proof of the internal early-return)"
       ]
     },
     {
@@ -1785,9 +1830,9 @@
       "behavior": "expandable",
       "targetIncrement": "P1.4",
       "coverage": "Missing",
-      "testId": "unassigned",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#CONFIG-023: expandable.enabled=true renders no expand/collapse UI and exposes no public expand control",
       "status": "Documented",
-      "evidence": "-",
+      "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (unwired — gap; negative characterization only)",
       "sourceLocators": [
         {
           "file": "packages/core/src/config/global-config.ts",
@@ -1840,6 +1885,246 @@
         }
       ],
       "coverageNote": "onSelect (receives select.detail incl. multi), onChange (items, values) and onClear (clearedSelection/clearedSearch) characterized for interaction + programmatic paths. Remaining callbacks: onOpen, onClose, onSearch, onLoadMore, onError."
+    },
+    {
+      "id": "KBD-001",
+      "behavior": "Keyboard-open triggers (ArrowDown/ArrowUp/Enter) open popup; no initial active-descendant from keyboard alone when no selection",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ArrowDown on a closed popup opens it (data-open + aria-expanded=true) with no initial active descendant",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5059-5074"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5121-5136"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4359-4404"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5524-5552"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-002",
+      "behavior": "ArrowDown/ArrowUp move active option by one selectable step; clamps at first/last; skips disabled",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#ArrowDown skips disabled options and clamps at the last selectable option (no wrap)",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5059-5074"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5163-5221"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-003",
+      "behavior": "Home/End move active option to first/last selectable option",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#End moves the active option to the last selectable option",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5075-5119"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-004",
+      "behavior": "PageDown/PageUp move active option by +/-10 selectable steps (clamped)",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#PageDown advances by 10 selectable options (from the first, lands on the 11th)",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5119-5140"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5163-5221"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-005",
+      "behavior": "Enter/Space activate: open when closed, else select active; Space skipped when searchable and target is input",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#Enter on an open popup selects the active option and closes",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5121-5136"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-006",
+      "behavior": "Escape dismisses tooltip first, else closes open popup with engine reason escape",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#Escape closes an open popup (data-open removed, aria-expanded=false)",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5050-5057"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5137-5139"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4406-4427"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-007",
+      "behavior": "Tab closes popup when open (no selection change)",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#Tab closes an open popup",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5141-5144"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-008",
+      "behavior": "Ctrl/Cmd+A select-all only when multi and not searchable",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#Ctrl+A in multi (non-searchable) selects all selectable options",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5145-5152"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5466-5500"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-009",
+      "behavior": "Disabled options skipped by active movement and cannot become active via keyboard",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#a disabled option can never become active via keyboard",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5403-5430"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5182-5209"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-010",
+      "behavior": "Printable single char with no modifiers delegates to type-ahead search",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#a printable single character with no modifiers moves the active option (type-ahead)",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5154-5158"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "5433-5460"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-011",
+      "behavior": "Focus model: DOM focus stays on combobox input; active option expressed via aria-activedescendant",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#DOM focus stays on the combobox input across open + movement",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "1908-1910"
+        },
+        {
+          "file": "packages/core/src/platform/web/accessibility-effects.ts",
+          "lines": "41-62"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "KBD-012",
+      "behavior": "Combobox ARIA chronology: aria-expanded + aria-activedescendant transition across open/move/close",
+      "targetIncrement": "P1.3",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#aria-activedescendant is null on open, set on move, and cleared on close",
+      "status": "Observed",
+      "evidence": "-",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/platform/web/accessibility-effects.ts",
+          "lines": "41-62"
+        },
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "4359-4427"
+        }
+      ],
+      "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
     }
   ]
 }

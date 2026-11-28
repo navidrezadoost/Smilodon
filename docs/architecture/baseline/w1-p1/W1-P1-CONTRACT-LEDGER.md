@@ -9,6 +9,14 @@
 
 > **W1-P1.1-R note.** This revision reconciles the inventory counts to a single counting convention, completes the configuration-default inventory, and gives **every** contract ID a precise source locator. The machine-readable matrix `W1-P1-TRACEABILITY.json` now carries **one record per ledger ID (100 records)**. See section 11 for the reconciliation counts. No production source was modified.
 
+> **W1-P1.2-R note (Task 5 closure).** Sections 3-9 carry the accumulated W1-P1.2 coverage annotations. Section 8 now summarizes **all ten** deviations with owner + status; sections 13-14 consolidate the accepted Task 1-4 selection characterization into a single reviewable contract and record the W1-P1.2 closure summary (including the T4-F01/T4-F02 errata corrections). The coverage distribution is unchanged at Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**; no `Partial` was upgraded without full path coverage, and no production source was modified.
+
+> **W1-P1.2-T5-R note (documentation-only).** The final closure review required three corrections. (T5-F03) The programmatic-vs-interaction statements in §13.1 and §13.4 are now **scoped to the characterized `setSelectedValues()` and `clear()` paths and the characterized interaction surfaces**; they are no longer phrased as a universal guarantee. (T5-F02) DEVIATION-08's value-based reattachment claim is marked superseded in `W1-P1-DEVIATIONS.md`; key-based reattachment is authoritative. (T5-F01) The closure report's increment-to-commit table now carries complete, ancestry-verified SHAs. Follow-up review amendments (T5-R-F01/F02) further bound the §13.1 consolidated rules to the characterized operations and synchronize the evidence JSON lineage with the closure report. No executable code, test, or contract ID changed.
+
+> **W1-P1.3 Addendum note (documentation-only; addendum precedes characterization tests).** W1-P1.3 is split into two tasks. **Task 1** is *keyboard navigation and focus/ARIA chronology*; it is scoped to the thirteen existing **P1.3-owned** contract IDs (API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006) **plus** the new **KBD-001..012** contract IDs introduced in §15. Per the Technical Lead's directive this Addendum is committed **before** any W1-P1.3 characterization test is written, so the ledger matches the planned test surface. This increment **does not** modify production source, does **not** repair any observed behavior, and does **not** upgrade any coverage class (all new KBD IDs enter as `Diagnostic`). §15 records the Task-1 scope, the KBD contract table, the empirically observed baseline behavior captured during authoring, and the resulting deviation candidates (P1.3-D01..D03).
+
+> **W1-P1.3-T1-R note (documentation/comment-only reconciliation).** Technical Lead review conditionally accepted Task 1 and directed a narrow evidence reconciliation (**T1-R**). (T1-F01) Task 1 exercised **eleven** of the thirteen existing P1.3-owned IDs; **API-040 (`setError`) / API-041 (`clearError`) were deliberately NOT exercised** — their error-state behavior is already characterized by the P1.2-T3-R error-state evidence, and no duplicate assertions were added. §15.2, §15.5, and §15.6 are reconciled accordingly. (T1-F02) The `LIFECYCLE-006` case asserts **observable equal-value stability**, not proof of the internal `attributeChangedCallback` early-return branch (no private-state instrumentation). (Deviations) **P1.3-D01** is promoted into `W1-P1-DEVIATIONS.md` as an *observed public-contract limitation* (characterized; design decision deferred); **P1.3-D02** is retained as `Diagnostic` pending a browser a11y check; **P1.3-D03** is accepted as an **observation, not a defect**, pending a real-browser/APG assessment. No assertion logic, production source, or traceability distribution (112 records) changed; the 45 characterization tests and all P1.2 specs remain intact.
+
 ## 0. Purpose and reading rules
 
 This ledger is a source-grounded inventory of every externally observable contract of the `EnhancedSelect` custom element and the public surfaces that surround it. It lets W1-P1.2-P1.6 write black-box characterization tests against a known list instead of re-discovering the surface each time.
@@ -287,16 +295,20 @@ Source: `defaultConfig` - `packages/core/src/config/global-config.ts:335-439`. D
 
 ## 8. Known deviations
 
-Full detail in `W1-P1-DEVIATIONS.md`. Summary (all six preserved by W1-P1.1-R; DEVIATION-01 extended with the archival note - R-07):
+Full detail in `W1-P1-DEVIATIONS.md`. Summary (**all ten** — 01-10 — reconciled at W1-P1.2 Task 5; DEVIATION-01 extended with the archival note - R-07). **Status** is the disposition state at P1.2 closure; **Owner** is the increment that must eventually resolve it.
 
-| ID | Finding (short) | Class | Target | Disposition |
+| ID | Finding (short) | Class | Owner | Status at P1.2 closure |
 | --- | --- | --- | --- | --- |
-| DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.1 | Superseded; archival note in provenance (section 1, 12). |
-| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Characterize; ADR candidate. |
-| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Pin both payloads. |
-| DEVIATION-04 | `setSelectedValues` async ordering not asserted by current tests. | Unknown | P1.2 | Lock via black-box test. |
-| DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | Characterize; ADR if blocking. |
-| DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | Drive via public API only. |
+| DEVIATION-01 | Prior W1-P0 ledger was uncommitted/absent on this branch; archival reference only. | Internal (process) | P1.6 | Closed-for-P1.1; archival note in provenance (section 1, 12). |
+| DEVIATION-02 | `pageLoaded` declared in event map but never emitted; omitted from capabilities. | Unknown | P1.5 | Open — characterize; ADR candidate. (matrix `EVENT-005`/`API-054` = Missing.) |
+| DEVIATION-03 | `search` payload shape (local vs acknowledged) not pinned. | Unknown | P1.5 | Open — pin both payloads. (matrix `EVENT-004` = Diagnostic.) |
+| DEVIATION-04 | `setSelectedValues` async ordering not asserted by prior tests. | Unknown | P1.2 | **Characterized** — local + server-fetch success/failure/superseded/disconnected ordering locked by black-box tests (`w1-p1-2-set-selected-values-ordering`, T1-R chronology). Not a defect. |
+| DEVIATION-05 | `connectedCallback` forces `style.display='block'`. | Internal (quirk) | P1.4 | **Characterized** (W1-P1.4-T2) — host inline `display:block` forced on connect *and* re-connect re-asserts it (black-box, jsdom + Chromium). Characterized, not endorsed; ADR still open. (matrix `ATTR-013` = Existing.) |
+| DEVIATION-06 | Dev-only projection asserts can throw if tests manipulate legacy projections directly. | Internal | P1.2 | **Guidance-only, honored** — all P1.2 tests drive public API only; no legacy projection is manipulated. Not a behavioral finding to repair. |
+| DEVIATION-07 | `setSelectedValues` in single mode collapses to first registry-eligible value. | Unknown (mode-dependent) | P1.2 | **Characterized** — registry-order governs (not request order); recorded, not classified a defect; design disposition open. |
+| DEVIATION-08 | Detached selected items are retained after removal from loaded data; reattach is key-based. | Observed | P1.2 | **Characterized** — pruning (clear/`setSelectedValues([])`) and key-based reattachment confirmed; design disposition open. |
+| DEVIATION-09 | Detached selection visible to getters but not to `validate()`. | Observed | P1.6 / forms | **Characterized; ADR candidate** — getter/validator inconsistency; validation design decision deferred past W1-P1. |
+| DEVIATION-10 | Clear-control reports `clearedSelection: true` while `required` preserves the selection. | Observed | W1-P1.2 Task 4 / forms | **Characterized; ADR candidate** — clear-control reporting design decision deferred past W1-P1. |
 
 ---
 
@@ -308,9 +320,24 @@ The machine-readable matrix is `W1-P1-TRACEABILITY.json`. Coverage classes: `Exi
 | --- | --- |
 | P1.1 | API-050..053 |
 | P1.2 | API-001, 004, 010, 011, 012, 013, 014, 020, 042, 043, 054; EVENT-001, 007, 010 |
-| P1.3 | API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006 |
+| P1.3 | API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006; **KBD-001..012** (§15) |
 | P1.4 | API-002, 003, 021, 055; EVENT-009, 011; ATTR-012, 013, 021, 022, 023; PART-001..011; SLOT-001..004; LIFECYCLE-001..004; CONFIG-001..026 |
 | P1.5 | API-032, 060, 061, 062; EVENT-004, 005, 006, 008, 012, 020, 021, 022; LIFECYCLE-005 |
+
+**P1.2 closure view (W1-P1.2 Task 5).** The 14 P1.2-owned contracts and their coverage class at closure. `Partial` is retained where interaction/state paths are characterized but other contract paths remain outstanding — **no `Partial` is upgraded to `Existing`** without full path coverage.
+
+| ID | Coverage | Characterized by |
+| --- | --- | --- |
+| API-001, API-004 | Existing | (pre-existing round-trip; `verify`) |
+| API-010, API-011 | Partial | identity matrix (single/multi/reorder/detached; grouping left to P1.4) |
+| API-012 | Existing | `setSelectedValues` local + server-fetch ordering (DEVIATION-04) |
+| API-013 | Partial | `clear()` change-only; acknowledged path → P1.5 |
+| API-014 | Diagnostic | `clearSearch` local via `search-ctrl-a`; acknowledged → P1.5 |
+| API-020 | Partial | `setItems` replace/reorder/detached/duplicate-key; grouping → P1.4 |
+| API-042, API-043 | Partial | `setRequired` + `validate()` matrix; detached-selection edge (DEVIATION-09) |
+| API-054 | Missing | capabilities truthfulness (`pageLoaded`; DEVIATION-02) → P1.5 |
+| EVENT-001, EVENT-007 | Partial | payload + order (pointer/keyboard/remove/clear/programmatic); full APG nav → P1.3 |
+| EVENT-010 | Partial | clear-control active-selection paths; active-search clear semantics outstanding |
 
 ---
 
@@ -448,3 +475,330 @@ The historical `W1-P0-CONTRACT-LEDGER.md` (baseline `c49d5add`, 7,284-line compo
 ---
 
 _End of ledger. Reconciled under W1-P1.1-R; one record per ID in `W1-P1-TRACEABILITY.json`._
+
+---
+
+## 13. W1-P1.2 consolidated selection contract (Task 5 closure)
+
+This section consolidates the accepted Task 1-4 characterization into a single reviewable statement of the **public selection contract** as observed at baseline `7e3adf7`. It is a consolidation, **not** an approval of normative behavior: quirks and inconsistencies remain recorded as deviations. All statements are evidenced through public surface only (public methods, rendered shadow DOM, emitted `CustomEvent.detail`, registered callbacks, and public getters `getSelectedValues()`/`getSelectedItems()`/`validate()`).
+
+### 13.1 Event and callback chronology (interaction vs. programmatic)
+
+All events are `CustomEvent(name, { detail, bubbles: true, composed: true })`. Callbacks are registered via `updateConfig({ callbacks })`. The consolidated chronology per operation:
+
+| Operation | Emitted events (order) | Callbacks (order) | Full sequence | Detail notes |
+| --- | --- | --- | --- | --- |
+| Pointer/Enter select (single or multi) | `select` → `change` | `onChange` → `onSelect` | `select → change → onChange → onSelect` | `select.detail = { item, index, value, label, selected, multi }` (post-dispatch state); `change.detail = { selectedItems, selectedValues, selectedIndices }` |
+| Multi toggle off | `select` → `change` | `onChange` → `onSelect` | same | `select.detail.selected = false`, `multi = true` |
+| Single deselect (allowDeselect) | `select` → `change` | `onChange` → `onSelect` | same | `select.detail.selected = false`; `change.detail` reports emptied selection |
+| Chip / option-level remove | `change` → `remove` | `onChange` (no `onSelect`) | `change → onChange → remove` | `remove.detail = { item, index }`, `index` = **source registry index**; **no `select`** |
+| Clear-control activation (selection present) | `change` → `clear` | `onChange` → `onClear` | `change → onChange → clear → onClear` | `clear.detail = { clearedSelection, clearedSearch }`; **DEVIATION-10** under `required` |
+| Programmatic `setSelectedValues()` | `change` | `onChange` | `change → onChange` | **no `select`**, no `onSelect`; local and server-fetch paths; Promise settles after `change` |
+| Programmatic `clear()` | `change` | `onChange` | `change → onChange` | **no `clear`**, no `onClear` |
+| Rejected (disabled-blocked / `maxSelections`) | none | none | — | no state change; no event/callback |
+| Single re-select, `allowDeselect:false` | `select` → `change` | `onChange` → `onSelect` | same | **no state change but events STILL fire** (compatibility finding) |
+
+**Consolidated rules.** All rules below are **bounded to the characterized operations in the chronology table above** (the interaction surfaces and the programmatic `setSelectedValues()` / `clear()` paths exercised in P1.2); they are not universal guarantees for every public method, asynchronous path, or configuration.
+
+- On the characterized operations, `change` carries exactly three keys and preserves **selection insertion order** (not registry order) in `selectedValues`/`selectedItems`/`selectedIndices` — verified: selecting `c` then `a` yields `['c','a']` / indices `[2,0]`.
+- `select` fires only on user-driven activation. On the **characterized** programmatic operations — `setSelectedValues()` (local and server-fetch) and `clear()` (local), plus chip/option-level removal — no `select` is emitted. This is asserted only for those operations; it is **not** a universal guarantee for every public method, asynchronous path, or configuration (uncovered programmatic paths remain owned by later increments — see §13.4).
+- `onSelect` receives the **same detail object** as the `select` event, **including `multi`** (T4-F02 errata: earlier title mis-worded this as "without `multi`"; assertion and behavior were always correct).
+- Interaction sequences bubble and are `composed` (observable on a light-DOM ancestor).
+- `select`/`change`/`clear`/`remove` payload shapes are exactly as tabled; exact-key assertions live in `w1-p1-2-t4-interaction-events.spec.ts` (T4-04).
+
+### 13.2 Selection identity, required, and validation contract
+
+| Aspect | Observed contract | Evidence |
+| --- | --- | --- |
+| Identity unit | Registry **key** (default `= id`), not value equality. Two records with the same value but distinct keys are two identities. | identity matrix; T2-R F01 |
+| Single-mode replace | `setSelectedValues([v1,v2,…])` keeps the **first eligible value in registry order** (not request order). | identity matrix (DEVIATION-07) |
+| Multi-mode replace | Keeps all eligible values (capped by `maxSelections`); order = selection insertion order. | ordering spec; T4-04 |
+| Detached retention | Removing a selected item from `setItems()` retains the selection (getters still report it). | identity matrix; DEVIATION-08 |
+| Key-based reattachment | Re-adding an item with the same **key** (new instance) re-attaches (getters return the new instance); same **value** under a different key does **not** migrate. | T2-R F03; DEVIATION-08 |
+| Pruning path | `clear()` / `setSelectedValues([])` prunes detached selections. | T3 spec; DEVIATION-08 |
+| `required` + `clear()` | `clear()` **preserves** the selection when `required`; `setSelectedValues([])` also preserves. | T3 spec |
+| `validate()` | Returns false for empty-required and for a **detached** selection (getters report it but `validate()` rejects it). | T3 spec; DEVIATION-09 |
+| Disabled-option policy | `selectable:false` blocks selection (no event); `selectable:true` allows full selection sequence. | identity matrix; T4-08 |
+| `maxSelections` | Additional selection beyond the cap is rejected with no state/event. | T4-08 |
+
+### 13.3 Error and validation surface (characterized, not repaired)
+
+`setError(message)` sets error state reflected to `aria-invalid`/`aria-describedby` and error text; `clearError()` removes them and is idempotent. Mode-switch selection state is deterministic. These are `Partial` (P1.3 owns full a11y/error coverage). See `w1-p1-2-t3r-error-state-evidence.spec.ts`.
+
+### 13.4 Programmatic vs interaction — authoritative distinction
+
+The single most important P1.2 boundary, **scoped to the characterized paths**: on the programmatic paths exercised in P1.2 — `setSelectedValues()` (local, server-fetch success/failure/superseded/disconnected) and `clear()` (local) — the component emits only `change` (+`onChange`) and **no `select`/`remove`/`clear`**. On the characterized interaction surfaces (pointer/Enter select, multi toggle off, single deselect, chip/option remove, clear-control), interaction adds the driving event (`select`, `remove`, `clear`) and its dedicated callback.
+
+**Scope limitation (T5-F03).** This is a characterization of the paths tested in P1.2, not a universal guarantee. It does **not** certify every public method, every asynchronous path, or every configuration (for example the acknowledged/`dataProjection` path, active-search clear semantics, and keyboard/APG-driven selection remain outstanding — see §9 and the closure report §8). Later extraction (engine/adapter) must preserve this behavior on the characterized paths and must extend characterization before relying on the same boundary elsewhere.
+
+## 14. W1-P1.2 closure summary (Task 5)
+
+| Item | Statement |
+| --- | --- |
+| Increments reconciled | Task 1 (DEVIATION-04 ordering) · Task 2 + T2-R (identity) · Task 3 + T3-R (state/validation/error) · Task 4 (interaction events) — all accepted, all re-verified consistent. |
+| P1.2 test inventory | 6 specs, **116** interaction/characterization tests (19+21+8+26+8+34). |
+| Coverage distribution | Existing 38 · Partial 17 · Diagnostic 41 · Missing 4 = **100**. Unchanged in count by reconciliation; class assignments audited, `Partial` retained where paths remain outstanding. |
+| Deviations | DEVIATION-04, 07, 08, 10 characterized in P1.2; 06 guidance honored; 09 ADR candidate; 01/02/03/05 owned by later increments. |
+| Outstanding (P1.3-P1.5) | Full select-all/range paths, acknowledged/server events, active-search clear-control semantics, post-removal animation/focus ownership, comprehensive keyboard/APG navigation — **not** silently upgraded. |
+| Production source | **Byte-identical** to baseline `7e3adf7` (verified `git diff 7e3adf7 -- packages/core/src packages/core/engine packages/core/adapters` = empty). |
+| Errata | T4-F01 (full-suite count 876→**877**) and T4-F02 (`onSelect` title now "including `multi`") corrected; no accepted assertions changed. |
+
+_End of W1-P1.2. Next: P1.2 final closure review._
+
+---
+
+## 15. W1-P1.3 Addendum — Keyboard Navigation and Focus/ARIA Chronology (Task 1 scope)
+
+This addendum, committed **before** any W1-P1.3 characterization test, defines Task 1 of W1-P1.3. It (a) fixes the Task-1 scope, (b) enumerates the thirteen existing **P1.3-owned** contract IDs Task 1 must characterize, (c) introduces the new **KBD-001..012** contract IDs for keyboard/APG behavior together with their source locators and their empirically observed baseline behavior, and (d) records the deviation candidates the authoring probe surfaced. All behavior below is **`Observed`** at baseline `7e3adf7`; nothing here is approved, repaired, or locked as normative. Every KBD ID enters the matrix at coverage **`Diagnostic`** and target **`P1.3`** (test `unassigned`) until the Task-1 specs are written and accepted.
+
+> **Provenance of the "observed behavior" column.** Recorded during authoring from a throwaway jsdom probe (deleted before this commit) that drove the component through public surface only — dispatching `keydown` on the `[part="input"]` element, reading rendered shadow DOM (`role="combobox"`, `role="listbox"`, `aria-expanded`, `aria-activedescendant`), and listening for `open`/`close` `CustomEvent`s. No production code was touched. These observations seed the Task-1 assertions; they are **characterization targets, not certifications**.
+
+### 15.1 Task-1 scope
+
+- **In scope (Task 1).** Keyboard-driven open/close and active-option movement; Enter/Space/Escape/Tab/Home/End/PageDown/PageUp/Ctrl-Cmd-A/type-ahead; the resulting **focus model** (where DOM focus stays, how `aria-activedescendant` tracks the active option); the **ARIA chronology** of `aria-expanded` and `aria-activedescendant` across open→move→close; `open`/`close` event chronology and their empty `detail`; the observed interaction and effect of `ARIA-*` attribute resync, `dir`, `data-open`, and `data-placement` **as they pertain to the keyboard flow**; and the `attributeChangedCallback` equal-value early-return. Disabled-option skipping and selection-policy interaction (single/multi) are exercised **only** to the extent the keyboard path reaches them.
+- **Out of scope (deferred to a later W1-P1.3 task or increment).** Real-browser (Chromium) WAI-ARIA combobox conformance; pointer-driven movement parity; full APG verbatim conformance where it diverges from observed behavior; `maxSelections`/`allowDeselect` policy matrices beyond the minimal keyboard-path checks; acknowledged/`dataProjection` keyboard interactions (P1.5).
+- **Constraints.** No production change; no speculative remediation; preserve all P1.2 tests; any observed inconsistency is recorded as a deviation (see §15.4), not fixed.
+
+### 15.2 Existing P1.3-owned contracts exercised by Task 1
+
+These thirteen IDs already exist in the matrix (§9). Task 1 characterizes **eleven** of them **through the keyboard path** (API-030/031, EVENT-002/003, ATTR-001/002/003/010/011/020, LIFECYCLE-006); **API-040/041 are deferred** to their existing P1.2-T3-R error-state evidence (see below). All remain `Diagnostic`/`Partial` as recorded until the Task-1 specs are accepted (no silent upgrade).
+
+| ID | Behavior (ledger §) | Task-1 keyboard relevance |
+| --- | --- | --- |
+| API-030 | `open()` idempotency + emit (§2.4) | Programmatic-open parity for KBD-001; double-`open()` emits once (observed). |
+| API-031 | `close()` (§2.4) | Programmatic-close parity for KBD-006/007; double-`close()` emits once (observed). |
+| API-040 | `setError()` (§2.5) | **Deferred (T1-R / T1-F01).** Error-state behavior is characterized by the P1.2-T3-R error-state evidence; Task 1 adds no duplicate assertions. Remains `Partial`. |
+| API-041 | `clearError()` (§2.5) | **Deferred (T1-R / T1-F01).** As above; characterized in P1.2-T3-R evidence; no new Task-1 assertions. Remains `Partial`. |
+| EVENT-002 | `open` event + `{}` detail (§3.1) | Emitted **before** `onOpen`, detail empty (observed: `open:{}`). |
+| EVENT-003 | `close` event + `{}` detail (§3.1) | Emitted **before** `onClose`, detail empty — **no reason** in public detail (observed: `close:{}`); see P1.3-D01. |
+| ATTR-001 | `aria-label` resync (§4.1) | Observed applied to combobox + listbox. |
+| ATTR-002 | `aria-description` resync (§4.1) | Observed applied to combobox. |
+| ATTR-003 | `aria-busy` resync (§4.1) | Observed on host → `_syncListboxAccessibility`; **`aria-busy` not observed on the listbox element** in the probe — see P1.3-D02. |
+| ATTR-010 | `dir` reflection (§4.2) | Observed `dir="ltr"` on host after connect. |
+| ATTR-011 | `data-open"true"` reflection (§4.3) | `true` while open, absent when closed (observed). |
+| ATTR-020 | `data-placement` on dropdown (§4.3) | Observed `bottom` on the listbox/dropdown. |
+| LIFECYCLE-006 | `attributeChangedCallback` equal-value early-return (§6) | Equal `aria-*` set is a no-op (not re-synced). |
+
+### 15.3 New KBD contracts (KBD-001..012)
+
+All KBD contracts target **P1.3**, coverage **`Diagnostic`**, status **`Observed`**, test **`unassigned`**. `sourceLocators` are pinned to baseline `7e3adf7`; `_handleKeydown` is `enhanced-select.ts:5049-5159`.
+
+| ID | Behavior | Primary source locator(s) | Observed baseline behavior (probe) |
+| --- | --- | --- | --- |
+| KBD-001 | Keyboard-open triggers: ArrowDown/ArrowUp/Enter (and Space when enabled & not searchable-input) open the popup when closed; opening assigns **no** active-descendant from keyboard alone when there is no existing selection. | `_handleKeydown` 5059-5074, 5121-5136; `_handleOpen` 4359-4404; `_setInitialActiveOption` 5524-5552 | ArrowDown-on-closed → `data-open="true"`, `aria-expanded="true"`, `aria-activedescendant=null`; `open:{}` then `onOpen`. Enter-on-closed → opens, no selection, no active-descendant. |
+| KBD-002 | ArrowDown/ArrowUp move the active option by one **selectable** step; movement clamps at the first/last selectable option (no wrap). | `_handleKeydown` 5059-5074; `_moveActive` 5163-5221 | Items `a,b(disabled),c,d`: down sequence `a→c→d→d→d` (from null first move lands on `a`, skips `b`); up sequence `c→a→a→a`. No wrap. |
+| KBD-003 | Home/End move the active option to the first/last **selectable** option (selected-first projection deferred to visual-boundary path). | `_handleKeydown` 5075-5119 (Home 5075, End 5092) | From active `c`: End→`d`, Home→`a`. |
+| KBD-004 | PageDown/PageUp move the active option by ±10 selectable steps (clamped). | `_handleKeydown` `PageDown`/`PageUp` (between 5119 and 5140); `_moveActive` 5163-5221 | Delegates to `_moveActive(±10)`; clamps like KBD-002 (not separately re-probed beyond ±1). |
+| KBD-005 | Enter/Space activate: when closed they open (KBD-001); when open they select the active option; **Space is ignored when `searchable` and the event target is the input**. | `_handleKeydown` 5121-5136; `_selectOption` via engine | Open + Enter on active `a` → selects `a` (`getSelectedValues()=['a']`), closes. Searchable + Space on input → **no selection** (0 `select` events). |
+| KBD-006 | Escape: first dismisses the selected-label tooltip if visible; otherwise closes an open popup with engine reason `'escape'`. | `_handleKeydown` 5050-5057 (tooltip), 5137-5139 (close); `_handleClose` 4406-4427 | Escape-on-open → `close:{}`, `data-open` removed, `aria-expanded="false"`. Public `close` detail carries **no reason** (P1.3-D01). |
+| KBD-007 | Tab: closes the popup when open (does not otherwise change selection). | `_handleKeydown` 5141-5144 | Tab-on-open → `close:{}`, popup closed. |
+| KBD-008 | Ctrl/Cmd+A selects all **only** when `selection.mode==='multi'` and **not** `searchable`; otherwise ignored. | `_handleKeydown` 5145-5152; `_selectAll` 5466 | Guarded by mode + `!searchable`; default suppress; delegate to `_selectAll`. |
+| KBD-009 | Disabled options are skipped by active movement (KBD-002..004) and cannot become active via keyboard. | `_getSelectableOptionIndices` 5403-5430; `_moveActive` 5182-5209 | Confirmed: disabled `b` never becomes active in either direction. |
+| KBD-010 | A printable single character (no Ctrl/Alt/Meta) with no earlier match delegates to type-ahead search. | `_handleKeydown` default case 5154-5158; `_handleTypeAhead` 5433 | Single-char no-modifier keys route to `_handleTypeAhead(char)`. |
+| KBD-011 | Focus model: DOM focus stays on the combobox `<input>`; option elements are not focus targets; the active option is expressed via `aria-activedescendant` referencing the active option element id. | input `part="input"` (1908); `activeKey` derived in `_handleKeydown`; `web/accessibility-effects.ts` 60 | After open+move, `shadowRoot.activeElement` is the input; the active element is the option with `id === aria-activedescendant`. |
+| KBD-012 | Combobox ARIA chronology: `aria-expanded` and `aria-activedescendant` transition consistently across open→move→close (`expanded=true` + activedescendant on move; `expanded=false` + activedescendant cleared on close). | `web/accessibility-effects.ts` 45, 60 (`setBooleanAttribute` expanded, `setOptionalAttribute` activedescendant); `_handleOpen`/`_handleClose` | Open: `expanded=true`, `ad=null`; move: `ad=<option id>`; close: `expanded=false`, `ad=null`. |
+
+### 15.4 Deviation candidates surfaced while authoring the addendum (not repaired)
+
+These are **recorded for the Technical Lead**, not fixed. If accepted they will be promoted to `W1-P1-DEVIATIONS.md` in the corresponding Task-1 characterization increment; if not, they remain observations only.
+
+| Candidate | Observation | Risk |
+| --- | --- | --- |
+| **P1.3-D01** | The public `close` event detail is `{}` (`CloseEventDetail` is an empty interface, `types.ts:50`). The engine carries a `CloseReason` (`engine/contracts.ts:3`, values `escape`/`outside-pointer`/`selection`/`blur`/`programmatic`/`disabled`/`disconnect`) but it is **not** surfaced on the public event. Keyboard Escape and Tab therefore emit an indistinguishable `close:{}`. | Consumers cannot distinguish keyboard-close vs selection-close from the event alone; `EVENT-003` was described as "close reasons" but reasons are not publicly observable. Characterization must not assume a reason is present in `detail`. |
+| **P1.3-D02** | `attributeChangedCallback('aria-busy', …)` routes to `_syncListboxAccessibility` (637-646), but the authoring probe observed **no** `aria-busy` attribute written to the listbox element and no change when toggling `aria-busy="true"`→`"false"`. The resync is wired but the observable effect is unconfirmed at baseline. | `ATTR-003` may be a no-op in jsdom; Task 1 must characterize the **actual** observable effect rather than the wiring intent. |
+| **P1.3-D03** | `open` assigns no initial `aria-activedescendant` when there is no selection (by design, per `_setInitialActiveOption` 5536-5540); the first ArrowDown then materializes the first selectable option. This differs from some APG examples that pre-activate the first option on open. | It is intentional (code comment) but a conformance nuance; recorded so Task 1 locks the **observed** behavior without asserting the APG default. |
+
+### 15.5 Task-1 acceptance gate (planned)
+
+1. Addendum committed **before** any Task-1 test (this commit).
+2. Task-1 specs drive the public surface only (keydown on `[part="input"]`, shadow-DOM reads, event listeners) and cover KBD-001..012 plus the keyboard path of the thirteen existing P1.3 IDs.
+3. KBD IDs remain `Diagnostic` until their spec is accepted; on acceptance each moves to `Partial` (keyboard paths only) — never `Existing` without real-browser coverage.
+4. Production source stays byte-identical to `7e3adf7`; the full core suite stays green (carried forward: 877 passed + 1 skipped).
+
+_End of W1-P1.3 Addendum. Task-1 characterization tests are written only after this addendum is accepted._
+
+### 15.6 Task-1 characterization outcome (W1-P1.3 Task 1 tests)
+
+Task 1 is characterized by `packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts` (**45 tests**), driving only the public surface listed in §15 header. Outcome:
+
+| Area | Tests | Result |
+| --- | --- | --- |
+| KBD-001 (open triggers) | 5 | Open on ArrowDown/ArrowUp/Enter; `open:{}`→`onOpen`; no initial active-descendant; no duplicate open. |
+| KBD-002 / KBD-009 (movement + disabled skip) | 4 | One-step movement, disabled `b` skipped in both directions, clamp at boundaries, disabled never active. |
+| KBD-003 (Home/End) | 2 | End→last selectable, Home→first selectable. |
+| KBD-004 (PageDown/PageUp) | 3 | ±10 selectable steps; clamp at end. |
+| KBD-005 (Enter/Space) | 3 | Enter/Space activate; searchable-Space-on-input is a no-op. |
+| KBD-006 / KBD-007 (Escape/Tab) | 5 | Escape & Tab close; `close:{}`→`onClose`; indistinguishable close detail (**P1.3-D01**); closed-state no-op. |
+| KBD-008 (Ctrl/Cmd+A) | 4 | Select-all only in multi && !searchable; Ctrl and Meta. |
+| KBD-010 (type-ahead) | 2 | Unmodified char moves active; modified char does not. |
+| KBD-011 (focus model) | 2 | Focus stays on the input; active option via `aria-activedescendant`, not focus. |
+| KBD-012 (ARIA chronology) | 3 | `aria-expanded` false/true/false; `aria-activedescendant` null→set→cleared; tracks movement. |
+| Existing P1.3 contracts via keyboard | 11 | API-030/031 idempotency; EVENT-002/003 `{}` detail; ATTR-010 dir, ATTR-011 data-open, ATTR-020 data-placement, ATTR-001/002 aria resync, ATTR-003 aria-busy no observable listbox effect (**P1.3-D02**), LIFECYCLE-006 equal-value **observable stability** (not proof of the internal early-return; **T1-F02**). API-040/041 **deferred** to P1.2-T3-R evidence (**T1-F01**). |
+
+All 45 pass; the full core suite is **922 passed + 1 skipped** (877 + 45 new; no regressions). The 12 KBD contracts move **Diagnostic → Partial** (keyboard paths characterized; real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — **not** upgraded to `Existing`). Coverage distribution across the **112** records is **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4 = 112** (unchanged by T1-R). Deviation disposition after T1-R review: **P1.3-D01** promoted to `W1-P1-DEVIATIONS.md` as an *observed public-contract limitation* (characterized; design decision deferred); **P1.3-D02** retained as `Diagnostic` pending a browser a11y check; **P1.3-D03** accepted as an *observation, not a defect*, pending a real-browser/APG assessment. Production source remains **byte-identical** to baseline `7e3adf7`.
+
+_End of W1-P1.3 Task 1._
+
+---
+
+## 16. W1-P1.3 Task 2 — real-browser keyboard and accessibility verification
+
+Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through **real trusted input in Chromium** (Playwright `locator.press`/`focus`, plus CDP `Accessibility.getFullAXTree`), rather than jsdom synthetic events. It characterizes browser behavior; it **does not repair** anything and **does not** change any coverage class (the record count stays **112**).
+
+> **W1-P1.3-T2-R note (correction).** Technical Lead review conditionally accepted Task 2 and directed a bounded correction (**T2-R**) that re-establishes three claims against the corrected evidence. (T2-F01, blocking) The original Tab test appended its reference button **before** the select, so the "no focus advance" result was merely end-of-document fallback and never asserted the destination — it was invalid. The corrected test mounts a genuinely-tabbable button **after** the select (plus a closed-combobox control case) and asserts the actual focus destination; in real Chromium **Tab advances focus normally** (closed → next tabbable; open → closes then advances). **P1.3-D04 is therefore WITHDRAWN** — the real behavior is standard and no deviation exists. (T2-F02) The "jsdom artifact" attribution for D03 is corrected to **withhold the cause**: the browser observation (first-option pre-activation on open) is preserved, but "why jsdom differed" is not asserted. (T2-F03) The D02 AX claim is now backed by an assertion on the Chromium AX tree (`listbox.busy`) — or the claim is narrowed to DOM. (Reproducibility) The suite enforces the recorded browser version for a certification run and distinguishes any override run. Final matrix: **32 tests, all PASS**.
+
+- **Harness.** `tests/e2e/w1-p1-3-t2/playwright.config.ts` (npm script `test:e2e:p13-t2`), spec `keyboard-accessibility.t2.spec.ts` (**32 tests**), helpers `harness.ts`. Deterministic single-project Chromium, workers=1, retries=0, headless. Browser: **Google Chrome for Testing 156.0.8078.4** (Playwright pinned Chromium-1248; the 1.59.1 default Chromium-1217 is geo-blocked on this environment's CDN — recorded in the config and evidence). The suite **enforces** this certified version for a certification run (`CERTIFIED_CHROMIUM`); any override executable is flagged as such in the results.
+- **System under test.** The vanilla demo (`http://localhost:5173/vanilla-demo.html`), demo's own static selects purged so the AX tree contains only the suite instances.
+- **Input model.** Genuine trusted keyboard events — **not** synthetic `KeyboardEvent` dispatch. Assertions read public-observable DOM (combobox `aria-*`, `aria-activedescendant` resolution, host `data-open`, DOM focus, `open`/`close` events) and the Chromium AX tree.
+- **Evidence.** `docs/architecture/baseline/w1-p1/W1-P1.3-T2-BROWSER-EVIDENCE.json`.
+
+### 16.1 Per-matrix outcome (all PASS)
+
+| Matrix | Tests | Result (Chromium 156) |
+| --- | --- | --- |
+| T2-01 browser harness | 2 | Version reported `156.0.8078.4`; initial mount closed, no active-descendant. |
+| T2-02 keyboard navigation | 6 | ArrowDown-open **pre-activates** first option; one-step move skips disabled; clamp (no wrap); Home/End first/last; PageDown/PageUp ±10; Enter/Space activate. |
+| T2-03 popup dismissal | 5 | Escape closes; **Tab from a closed combobox advances to the next tabbable** (control); **Tab from an open combobox closes it AND advances focus to the next tabbable** (normal browser behavior; **P1.3-D04 WITHDRAWN**); Escape/Tab both `close:{}` (indistinguishable; **P1.3-D01**); closed-state no-op. |
+| T2-04 DOM focus | 3 | DOM focus on host; shadow active = `input(part="input")`; stays on input across move/Escape; active option is not focus. |
+| T2-05 ARIA relationships | 3 | `aria-controls` == listbox id; `aria-expanded` reflects state; AX combobox `hasPopup=listbox` + `controls`. |
+| T2-06 disabled options | 2 | Disabled option never becomes active; `aria-disabled` + AX `disabled` state. |
+| T2-07 selection policies | 4 | Single Enter selects+closes; multi+allowDeselect toggles; `maxSelections` caps; listbox `aria-multiselectable=true`. |
+| T2-08 accessibility representation | 3 | Selected option AX `selected=true` (name suffixed `Remove option` — chip affordance); combobox name from host `aria-label`; `aria-activedescendant` reported as idref. |
+| T2-09 deviation reassessment | 3 | D01 confirmed; **D02 resolved (DOM + AX)**; **D03 reassessed (observation accepted; cause withheld)**. |
+| T2-10 harness integrity | 1 | Full open→move→select cycle via keyboard on public surface only. |
+
+### 16.2 Deviation reassessment (browser evidence)
+
+| ID | Task-1 status | Task-2 (browser) status | Meaning |
+| --- | --- | --- | --- |
+| P1.3-D01 | Observed public-contract limitation | **Confirmed** | `close` detail is `{}`; Escape and Tab indistinguishable in Chromium. Design decision still deferred. |
+| P1.3-D02 | Diagnostic (pending browser check) | **Resolved (DOM + AX; not a defect)** | **Reflection target = the listbox**; it receives `aria-busy="true"` when genuinely busy (public load-more → `_setBusy(true)`), and the Chromium **AX** listbox node reports `busy=true` (T2-F03: DOM and AX both asserted). The legacy host `aria-busy` is intentionally inert. The jsdom "missing" was the inert legacy attribute, **not** a limitation. |
+| P1.3-D03 | Observation (pending browser check) | **Observation accepted; cause withheld** | Opening **pre-activates the first option** across all three browser paths (focus-open, closed-and-focused keyboard reopen, pointer-open). The behavior observation is preserved; *why* jsdom previously showed no initial active is **not** attributed (T2-F02). Observation, not a defect. |
+| P1.3-D04 | — (new) | **Withdrawn (T2-F01)** | The original "Tab closes but does not advance focus" was an **invalid test** (reference button mounted before the select → BODY was end-of-document fallback). With a correctly-ordered next tabbable, Tab **advances focus normally** (closed → next; open → closes then advances). No deviation exists. |
+
+**Scope note (screen readers).** These assessments rest on the **Chromium AX tree** only; they establish that the AX *representation* (roles/names/states/relationships) is correct and do **not** assert screen-reader (NVDA/JAWS/VoiceOver) compatibility, which remains out of scope for W1-P1.
+
+**Browser finding vs. jsdom (T2-F02).** A real keyboard open **pre-activates the first selectable option** (single mode) across all observed open paths. The earlier Task-2 wording that labeled this a "jsdom artifact" is **corrected**: the browser observation stands, but the *cause* of the differing jsdom reading is **not** attributed. This is a characterization-basis clarification, not a behavior change.
+
+**Tab focus correction (T2-F01).** The original P1.3-D04 Tab observation is **withdrawn**; with a correctly-ordered next tabbable, Tab advances focus normally in Chromium (see 16.2 and `W1-P1-DEVIATIONS.md`).
+
+_End of W1-P1.3 Task 2 (T2-R). No production source was modified. The 32-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. P1.3-P2 remain NO-GO until T2-R is independently reviewed._
+
+---
+
+## 17. W1-P1.3 Task 3 — keyboard selection edge cases and accessibility contract reconciliation
+
+Task 3 extends the accepted real-Chromium harness (Task 2) to keyboard **selection** edges: range selection (Shift+Arrow, Shift+Home/End, Ctrl/Cmd+Shift), Select-All (Ctrl/Cmd+A), selected-first ordering, disabled-in-range, maxSelections, and the ARIA + event chronology of range interactions. It **does not repair** anything and **does not** change the coverage distribution (the record count stays **112**). Two new **observation candidates** (P1.3-D05, P1.3-D06) are recorded; neither authorizes a production change.
+
+- **Harness.** `tests/e2e/w1-p1-3-t3/playwright.config.ts` (npm script `test:e2e:p13-t3`), spec `keyboard-selection.t3.spec.ts` (**23 tests**), helpers `harness.t3.ts` (re-exports the Task-2 harness + adds option-DOM-order, event-log, and `change`-payload readers). Deterministic single-project Chromium, workers=1, retries=0, headless. Browser: **Google Chrome for Testing 156.0.8078.4** (same pinned build as Task 2; version **enforced** for a certification run, override flagged).
+- **Input model.** Genuine trusted keyboard events (`Shift+`/`Control+`/`Meta+` chords), **not** synthetic dispatch. Assertions read public DOM (combobox `aria-*`, `aria-activedescendant` resolution, option `aria-selected`, rendered option DOM order) and public `select`/`change` events + `onSelect`/`onChange` callbacks. No private methods invoked directly; no private state read.
+- **Evidence.** `docs/architecture/baseline/w1-p1/W1-P1.3-T3-KEYBOARD-SELECTION-EVIDENCE.json`.
+
+### 17.1 Per-matrix outcome (all PASS)
+
+| Matrix | Tests | Result (Chromium 156) |
+| --- | --- | --- |
+| T3-00 browser harness | 1 | Certified version `156.0.8078.4` recorded and enforced. |
+| T3-01 Shift+Arrow range | 3 | Empty multi opens no-active; 1st Shift+Down selects landing option + anchor; each step extends contiguous range; order ascending registry; plain Arrow moves active without selecting. |
+| T3-02 Shift+Home/End | 3 | **Endpoint-only**: Shift+End → `['f']`, Shift+Home → `['a']` (not a contiguous range). **P1.3-D05.** |
+| T3-03 Ctrl/Cmd+Shift | 3 | Additive (Ctrl or Meta); plain Shift **replaces** a pre-existing selection. |
+| T3-04 Ctrl/Cmd+A | 3 | Select-all emits **only `change`** (no `select`), payload `[a..f]` / `[0..5]`; ignored in single mode. |
+| T3-05 selected-first | 2 | DOM order and navigation stay **registry order** (not reordered). **P1.3-D06.** |
+| T3-06 disabled in range | 2 | Disabled excluded from range fill by default; included when `disabledOptionBehavior.selectable=true`. |
+| T3-07 maxSelections | 1 | Range clamps at the cap. |
+| T3-08 ARIA chronology | 2 | `aria-expanded` stays true; `aria-activedescendant` tracks the moving endpoint; filled options expose `aria-selected=true`. |
+| T3-09 event chronology | 2 | Range emits `select → change → onChange → onSelect`; no `open`/`close`. |
+| T3-10 harness integrity | 1 | Full range flow via public surface only. |
+
+### 17.2 New observation candidates (browser evidence)
+
+| ID | Observation | Meaning |
+| --- | --- | --- |
+| P1.3-D05 | Shift+Home/End selects only the endpoint | Not a contiguous extend-to-boundary range (contrast Shift+Arrow). Characterized; design decision deferred; not repaired. |
+| P1.3-D06 | selected-first does not reorder DOM/navigation | Both remain registry order at this configuration. Characterized; intent to confirm; not repaired. |
+
+**Scope note (screen readers).** These assessments rest on the DOM + public events only; they do **not** assert screen-reader compatibility, which is out of scope for W1-P1.
+
+_End of W1-P1.3 Task 3. No production source was modified. The 23-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. Follow-on P1.3 tasks and P1.4+ remain NO-GO until Task 3 is independently reviewed._
+
+---
+
+## 18. W1-P1.3 closure — keyboard, focus, and accessibility characterization
+
+Task 4 closes W1-P1.3 by reconciling Tasks 1/1-R/2/2-R/3 into one statement of the keyboard/focus/accessibility contract for `EnhancedSelect`. **No production source changed; no accepted behavioral test was modified.** The authoritative closure is `W1-P1.3-CLOSURE-REPORT.md` + `W1-P1.3-CLOSURE-EVIDENCE.json`; this section is the ledger-side summary.
+
+- **Increments reconciled.** Addendum `0859ea9` · Task 1 `242a262` (jsdom, 45 tests) · Task 1-R `5ad506c` · Task 2 `a4c9e26` (Chromium, 31→32) · Task 2-R `b15b71f` · Task 3 `0236512` (Chromium, 23). Lineage linear.
+- **Test inventory.** 100 P1.3 characterization tests: 45 jsdom (`w1-p1-3-t1-keyboard-navigation.spec.ts`), 32 Chromium (`keyboard-accessibility.t2.spec.ts`), 23 Chromium (`keyboard-selection.t3.spec.ts`). Public surface only.
+- **Bases.** jsdom (dispatched `keydown`) vs certified Chromium 156.0.8078.4 (genuine trusted input + CDP AX tree). The initial-active-on-open and `aria-busy` differences between the two bases are documented; the jsdom/Chromium cause is withheld (P1.3-D03).
+
+### 18.1 Consolidated behavior (observed; not normative)
+
+| Area | Observed contract | Evidence |
+| --- | --- | --- |
+| Open/close | Keyboard opens; `open:{}`/`onOpen`; Escape/Tab close; Chromium Tab advances focus; `close:{}` (no reason). | KBD-001/006/007; T2-02/03 |
+| Navigation | One selectable step; disabled skipped; clamp (no wrap); Home/End; Page ±10; type-ahead; Ctrl/Cmd+A guarded. | KBD-002..010; T2-02; T3-04 |
+| Range | Shift+Arrow contiguous (anchor=landing); Shift+Home/End **endpoint-only** (D05); Ctrl/Cmd+Shift additive, plain Shift replaces; disabled excluded unless selectable; maxSelections clamps. | T3-01/02/03/06/07 |
+| Payloads | Ctrl/Cmd+A `change`-only; Shift range `select→change→onChange→onSelect`, no open/close. | T3-04/09 |
+| Focus/ARIA | Focus stays on input; active via `aria-activedescendant`; `aria-expanded` reflects state; `aria-busy` reflects on listbox (DOM+AX); selected-first does not reorder (D06). | KBD-011/012; T2-04/05/09; T3-05/08 |
+
+### 18.2 Deviation finalization (P1.3-D01..D06)
+
+| ID | Final status | Future design owner |
+| --- | --- | --- |
+| P1.3-D01 | Confirmed public-contract limitation (no close reason) | Future public-contract (event-detail) design |
+| P1.3-D02 | Resolved (DOM + AX; not a defect) | Closed |
+| P1.3-D03 | Browser observation accepted; cause unassigned | Future a11y conformance review |
+| P1.3-D04 | Withdrawn (invalid comparison) | Closed |
+| P1.3-D05 | Accepted observed, mode-specific; intent open | Future selection-semantics design |
+| P1.3-D06 | Accepted bounded observation (tested configuration) | Future rendering/projection design |
+
+No deviation authorizes a production change or an ADR during W1-P1.
+
+### 18.3 Traceability & limitations
+
+- **112 records unchanged**; coverage **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4**. KBD-001..012 remain **`Partial`** (real-browser conformance, pointer parity, and cross-browser outstanding) — **not** upgraded to `Existing`. API-040/041 remain deferred to P1.2-T3-R evidence.
+- **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); AX-tree-only accessibility findings (NVDA/JAWS/VoiceOver out of scope); Ctrl/Cmd+A callback-count and D06 configuration generality are explicit coverage boundaries.
+
+_End of W1-P1.3 (Task 4 closure). W1-P1.3 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom 45 (carried), Chromium 55/55, core 922+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._
+
+---
+
+## 19. W1-P1.4 closure — contract-wiring characterization
+
+Task 4 closes W1-P1.4 by reconciling Tasks 1/1-R/2/2-R/3/3-R into one statement of the wiring-completeness contract for `EnhancedSelect`. **No production source changed; no accepted behavioral test was modified; no test added by this closure.** The authoritative closure is `W1-P1.4-CLOSURE-REPORT.md` + `W1-P1.4-CLOSURE-EVIDENCE.json`; this section is the ledger-side summary.
+
+- **Increments reconciled.** Task 1 `0cbb58b` · Task 1-R `c174876` · Task 2 `7ae3193` · Task 2-R `9b10f0b` · Task 3 `5b31f44` · Task 3-R `490cb77`. Lineage linear.
+- **Test inventory.** 52 P1.4 characterization tests: 40 jsdom (`w1-p1-4-t1-contract-wiring.spec.ts` 16, `w1-p1-4-t2-attribute-state.spec.ts` 9, `w1-p1-4-t3-api-event-lifecycle.spec.ts` 15) and 12 Chromium (`attribute-state.t2.spec.ts` 5, `contract-wiring.t2.spec.ts` 7). Public surface only.
+- **Bases.** jsdom (dispatched public-input events) + certified Chromium 156.0.8078.4 (genuine trusted input). ATTR-021 (motion) and ATTR-013 (override) are Chromium-confirmed; ATTR-023 spacer is Chromium-negative-only.
+
+### 19.1 The 21 targeted contracts — final classification
+
+| Group | Contracts | Final class |
+| --- | --- | --- |
+| Part tokens | PART-001/002/003/005/006/007/008/010/011 | Existing (9) |
+| Part tokens | PART-009 (chip) | **Partial** — 4 stable tokens characterized; `chip-exiting` unobserved |
+| Attributes | ATTR-012/013/021/022 | Existing (4) |
+| Attributes | ATTR-023 (virtual spacer) | **Diagnostic** — not publicly reachable |
+| API / Event | API-002, EVENT-011 | Existing (2) |
+| Lifecycle | LIFECYCLE-002/003/004 | Existing (3) — observable behavior |
+| Config | CONFIG-023 (`expandable`) | **Missing** — declared/defaulted, not consumed |
+
+**21-target disposition: Existing 18 · Partial 1 · Diagnostic 1 · Missing 1.**
+
+### 19.2 Gap dispositions (preserved)
+
+| Contract | Class | Disposition | Owner |
+| --- | --- | --- | --- |
+| **PART-009** | `Partial` | 4 stable chip tokens characterized; `chip-exiting` transient not publicly reachable — **unobserved transient, not a confirmed defect**. Upgrade deferred to a future increment that can observe the exit deterministically. | Future chip-exit observation design |
+| **ATTR-023** | `Diagnostic` | Public 2,000-item list renders 0 `data-virtual-spacer` at tested checkpoints; spacer reachable only via private seams. **Characterization gap** — positive behavior not forced with a private stub. | Future virtualization public-API design |
+| **CONFIG-023** | `Missing` | `expandable` declared/defaulted but not consumed; no public effect. **Future Product Decision required:** (a) implement in a separately authorized production increment, **or** (b) deprecate/remove via a separately authorized API-contract decision. | Future product/API-contract decision |
+
+None authorizes a production change, removal, or ADR during W1-P1.
+
+### 19.3 Traceability & limitations
+
+- **112 records.** Distribution **Existing 56 · Partial 30 · Diagnostic 22 · Missing 4**. `verify_traceability.py` PASS (112, unique, locators in bounds). All 21 P1.4-targeted `testId` references resolve to literal `it()` titles. 52 concrete-ref records all cite existing files; 15 pre-existing P1.2 label-style records are unchanged since before P1.4 and out of Task 4 scope (not rewritten).
+- **Deferred out of upgrade scope:** EVENT-009, CONFIG-001, CONFIG-003, CONFIG-004, CONFIG-026 remain `Partial`.
+- **Preserved limitations:** Chromium-only real-browser evidence (no Firefox/WebKit/mobile parity claimed); LIFECYCLE results are observable-only (no internal listener-cardinality/cleanup claim); no implementation-completeness claim.
+
+_End of W1-P1.4 (Task 4 closure). W1-P1.4 remains open until Task 4 is independently accepted. No production source modified; integrity gates: jsdom P1.4 40 (carried), Chromium P1.4 12/12, core 962+1 skipped, traceability PASS (112), production isolation empty, SHA256SUMS refreshed._

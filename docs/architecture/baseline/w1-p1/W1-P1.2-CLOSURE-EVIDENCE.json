@@ -1,0 +1,159 @@
+{
+  "increment": "W1-P1.2 Task 5",
+  "title": "Selection Characterization Closure and Evidence Reconciliation",
+  "startingCommit": "8b1131750f281cf853095a9e9e4620bc785a7bed",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-characterization-7e3adf7",
+  "nature": "reconciliation + certification-readiness; documentation-only; no production behavior changed",
+  "reconciledIncrements": [
+    { "increment": "Task 1", "commit": "832431c27253014a4288b035dc98d59b6e44c68d", "parent": "4b02cd10a9aad4406e656bd0357457c91f19ed1b", "focus": "setSelectedValues async ordering (DEVIATION-04)", "status": "Accepted" },
+    { "increment": "Task 1-R", "commit": "b0b3c942e73ac03e12c51baac650043b0a5511ea", "parent": "832431c27253014a4288b035dc98d59b6e44c68d", "focus": "deterministic chronology; supersession/disconnection settlement", "status": "Accepted" },
+    { "increment": "Task 2", "commit": "95f3f5747800ec20bbbe93a426fa8759a2930ae5", "parent": "b0b3c942e73ac03e12c51baac650043b0a5511ea", "focus": "selection identity/limits (DEVIATION-07)", "status": "Accepted" },
+    { "increment": "Task 2-R", "commit": "b394b907017135cca2a9343eb21d9555b5aaa891", "parent": "95f3f5747800ec20bbbe93a426fa8759a2930ae5", "focus": "identity/grouping/reattachment (T2-R F01/F02/F03)", "status": "Accepted" },
+    { "increment": "Task 3", "commit": "e26136905d56de58cee933f2c749f5e50a7c7409", "parent": "b394b907017135cca2a9343eb21d9555b5aaa891", "focus": "state/validation/clear matrix (DEVIATION-08/09)", "status": "Accepted" },
+    { "increment": "Task 3-R", "commit": "001d9d3661e3ab373cc6c0dac854526ee81de94d", "parent": "e26136905d56de58cee933f2c749f5e50a7c7409", "focus": "error-state and mode-switch (T3-R F01/F02)", "status": "Accepted" },
+    { "increment": "Task 4", "commit": "8b1131750f281cf853095a9e9e4620bc785a7bed", "parent": "001d9d3661e3ab373cc6c0dac854526ee81de94d", "focus": "interaction-driven event ordering (DEVIATION-10)", "status": "Accepted" },
+    { "increment": "Task 5", "commit": "21b5c7605efcd487fb40646b4bc287a396c7359d", "parent": "8b1131750f281cf853095a9e9e4620bc785a7bed", "focus": "closure + evidence reconciliation", "status": "Accepted (conditional on W1-P1.2-T5-R)" }
+  ],
+  "testInventory": {
+    "w1-p1-2-set-selected-values-ordering.spec.ts": 19,
+    "w1-p1-2-identity-policy-matrix.spec.ts": 21,
+    "w1-p1-2-t2r-identity-evidence.spec.ts": 8,
+    "w1-p1-2-t3-state-validation-clear.spec.ts": 26,
+    "w1-p1-2-t3r-error-state-evidence.spec.ts": 8,
+    "w1-p1-2-t4-interaction-events.spec.ts": 34,
+    "total": 116
+  },
+  "coverageDistribution": {
+    "Existing": 38,
+    "Partial": 17,
+    "Diagnostic": 41,
+    "Missing": 4,
+    "total": 100,
+    "note": "Unchanged in count by reconciliation; no Partial upgraded to Existing."
+  },
+  "traceabilityIntegrity": {
+    "records": 100,
+    "unique": 100,
+    "ledgerMatrixReconcile": true,
+    "allConcreteTestIdsResolve": true,
+    "deviationsReferenced": ["DEVIATION-04", "DEVIATION-06", "DEVIATION-07", "DEVIATION-08", "DEVIATION-09", "DEVIATION-10"],
+    "p12SpecInventorySum": 116
+  },
+  "consolidatedContracts": {
+    "eventChronology": {
+      "interaction_select": "select -> change -> onChange -> onSelect",
+      "multi_toggle_off": "select -> change -> onChange -> onSelect (selected=false, multi=true)",
+      "single_deselect": "select -> change -> onChange -> onSelect (selected=false)",
+      "remove": "change -> onChange -> remove (no select; index=source registry index)",
+      "clear_control": "change -> onChange -> clear -> onClear (DEVIATION-10 under required)",
+      "programmatic_setSelectedValues": "change -> onChange (no select)",
+      "programmatic_clear": "change -> onChange (no clear)",
+      "rejected_noop": "none",
+      "reselect_allowDeselect_false": "select -> change -> onChange -> onSelect, NO state change"
+    },
+    "identityRequiredValidation": {
+      "identityUnit": "registry key (default = id), not value equality",
+      "singleModeReplace": "first eligible value in registry order (not request order)",
+      "multiModeReplace": "all eligible values, capped by maxSelections; insertion order",
+      "detachedRetention": "retained after setItems removal; getters still report",
+      "reattachment": "by key only; same value under different key does not migrate",
+      "pruning": "clear() / setSelectedValues([])",
+      "requiredClear": "clear() preserves selection when required",
+      "validateDetached": "returns false for detached selection (DEVIATION-09)",
+      "disabledPolicy": "selectable:false blocks (no event); selectable:true allows full sequence"
+    },
+    "programmaticVsInteraction": "On the characterized programmatic paths (setSelectedValues() local + server-fetch; clear() local) the component emits only change (+onChange) and no select/remove/clear; the characterized interaction surfaces add the driving event and callback. Scope-limited characterization: NOT a universal guarantee for every public method, asynchronous path, or configuration (see scopeLimitation).",
+    "scopeLimitation": "Bounded to paths exercised by P1.2 (T5-F03). Acknowledged/dataProjection paths, active-search clear-control semantics, and keyboard/APG-driven selection remain outstanding under later increments and are not certified by this statement."
+  },
+  "deviationDispositions": {
+    "DEVIATION-04": { "status": "Resolved-for-P1.2", "owner": "P1.2 (closed)", "evidence": "w1-p1-2-set-selected-values-ordering.spec.ts" },
+    "DEVIATION-06": { "status": "Honored", "owner": "P1.2 (closed)", "evidence": "all P1.2 specs (public-API-only)" },
+    "DEVIATION-07": { "status": "Characterized; design disposition open", "owner": "P1.2 recorded / P1.4+", "evidence": "w1-p1-2-identity-policy-matrix.spec.ts" },
+    "DEVIATION-08": { "status": "Characterized; design disposition open", "owner": "P1.2 recorded / forms", "evidence": "identity matrix + T2-R F03 + t3 state/validation/clear" },
+    "DEVIATION-09": { "status": "Characterized; ADR candidate", "owner": "P1.6 / forms", "evidence": "w1-p1-2-t3-state-validation-clear.spec.ts" },
+    "DEVIATION-10": { "status": "Characterized; ADR candidate", "owner": "Task 4 / forms", "evidence": "w1-p1-2-t4-interaction-events.spec.ts (T4-06)" }
+  },
+  "closedByThisReconciliation": ["DEVIATION-04", "DEVIATION-06"],
+  "errata": {
+    "T4-F01": "Full-suite count corrected 876 -> 877 in W1-P1.2-T4-INTERACTION-EVENTS-EVIDENCE.json (877 = Task 3 843 + 34 new T4 tests); re-executed full core suite confirms 877 passed + 1 skipped (61 files).",
+    "T4-F02": "T4-04 test title corrected from '... (without `multi`)' to '... (including `multi`)'. Description-only; assertion unchanged."
+  },
+  "gates": {
+    "focusedP12": "116 passed (6 specs)",
+    "coreFullSuite": "877 passed + 1 skipped (61 files)",
+    "typecheck": "tsc --noEmit -p packages/core/tsconfig.build.json -> exit 0",
+    "validator": "PASS (100 IDs reconcile)",
+    "productionIsolation": "git diff 7e3adf7 -- packages/core/src packages/core/engine packages/core/adapters = empty (byte-identical)"
+  },
+  "provenance": {
+    "nodeVersion": "v24.13.1",
+    "vitestVersion": "4.1.12",
+    "platform": "linux-x64",
+    "testEnvironment": "jsdom (no real-browser run in P1.2)"
+  },
+  "remainingCertificationGaps": [
+    "full select-all/range paths (P1.3+)",
+    "acknowledged/server-side event behavior incl. search/dataProjection/dataRequestCancel and acknowledged change (P1.5)",
+    "active-search clear-control semantics; search-only and combined selection+search clearing (EVENT-010 Partial outstanding)",
+    "post-removal animation/focus ownership (P1.4)",
+    "comprehensive keyboard/WAI-ARIA APG navigation and real-browser accessibility (P1.3)",
+    "pageLoaded truthfulness (DEVIATION-02; API-054/EVENT-005 Missing) (P1.5)"
+  ],
+  "t5GateTrace": {
+    "T5-01": "reconciledIncrements",
+    "T5-02": "traceabilityIntegrity.allConcreteTestIdsResolve + p12SpecInventorySum=116",
+    "T5-03": "coverageDistribution (no Partial->Existing)",
+    "T5-04": "deviationDispositions",
+    "T5-05": "consolidatedContracts.eventChronology",
+    "T5-06": "consolidatedContracts.identityRequiredValidation",
+    "T5-07": "errata",
+    "T5-08": "gates",
+    "T5-09": "gates.productionIsolation",
+    "T5-10": "this evidence + W1-P1.2-CLOSURE-REPORT.md; single commit"
+  },
+  "productionChanges": "none",
+  "precedingCommit": "8b11317",
+  "correctiveIncrement": {
+    "increment": "W1-P1.2-T5-R",
+    "incorporates": "Task 5 final closure review (conditional acceptance) corrections",
+    "startingCommit": "21b5c7605efcd487fb40646b4bc287a396c7359d",
+    "nature": "documentation-only correction; no executable code, no characterization spec, no production source changed",
+    "findings": {
+      "T5-F01": {
+        "status": "Corrected",
+        "detail": "Closure-report §1 increment-to-commit table repaired (full SHAs, verified parent column, placeholders and the e261369 Task 2-R mis-assignment removed) AND the evidence JSON reconciledIncrements array synchronized with it: every entry now carries commit + parent, including Task 5, with ancestry re-verified from git (T5-R-F01).",
+        "location": "W1-P1.2-CLOSURE-REPORT.md §1; reconciledIncrements"
+      },
+      "T5-F02": {
+        "status": "Corrected",
+        "detail": "DEVIATION-08 value-based reattachment clause labeled SUPERSEDED; retention clause preserved; key-based reattachment (T2-R F03, Task 3) authoritative.",
+        "location": "W1-P1-DEVIATIONS.md DEVIATION-08 + Task 5 reconciliation note"
+      },
+      "T5-F03": {
+        "status": "Corrected",
+        "detail": "Programmatic-vs-interaction statements scoped to characterized setSelectedValues() and clear() paths and characterized interaction surfaces: ledger §13.4, ledger §13.1 consolidated rules, closure report §4 and §10, and consolidatedContracts.scopeLimitation. Universal wording removed (T5-R-F02).",
+        "location": "W1-P1-CONTRACT-LEDGER.md §13.1/§13.4; W1-P1.2-CLOSURE-REPORT.md §4/§10; consolidatedContracts.scopeLimitation"
+      },
+      "T5-R-F01": {
+        "status": "Corrected",
+        "detail": "reconciledIncrements entries now include commit + parent (Task 1..Task 5) and incrementLineageVerified records the ancestry check; Task 5 entry carries 21b5c76 / parent 8b11317.",
+        "location": "W1-P1.2-CLOSURE-EVIDENCE.json reconciledIncrements + incrementLineageVerified"
+      },
+      "T5-R-F02": {
+        "status": "Corrected",
+        "detail": "Ledger §13.1 consolidated rules now bounded to the characterized chronology operations (\"change always...\" and \"select fires only...\") and closure-report §4 programmatic-vs-interaction sentence now carries the scope limitation inline.",
+        "location": "W1-P1-CONTRACT-LEDGER.md §13.1; W1-P1.2-CLOSURE-REPORT.md §4"
+      }
+    },
+    "acceptanceGateTrace": {
+      "provenanceVerified": "T5-F01: every SHA in reconciledIncrements is the direct parent of the next (git log -1 --format='%H %P').",
+      "traceabilityValidator": "PASS (100 IDs reconcile) - re-run after edits",
+      "checksumVerification": "sha256sum -c SHA256SUMS -> all OK (refreshed in this commit)",
+      "productionIsolation": "git diff 21b5c76 -- packages/core/src packages/core/engine packages/core/adapters = empty; git diff 7e3adf7 21b5c76 -- (same paths) = empty",
+      "testsNotRerun": "No executable code changed; full-core regression 877 passed + 1 skipped carried forward from accepted Task 5 evidence (not re-run for T5-R)."
+    },
+    "productionChanges": "none"
+  },
+  "incrementLineageVerified": "Verified via `git rev-parse <commit>^` for every entry on 2026-11-28: each reconciledIncrements[].commit is the direct parent of the next entry; Task 1 (832431c) directly follows the W1-P1.1-R reconciliation commit 4b02cd1, and Task 5 (21b5c76) is the head of the chain. Task 2-R is b394b90 with parent 95f3f57 (e261369 is a Task 3 commit). Corrected under W1-P1.2-T5-R (T5-F01) and synchronized with the closure report §1 table under T5-R-F01."
+}

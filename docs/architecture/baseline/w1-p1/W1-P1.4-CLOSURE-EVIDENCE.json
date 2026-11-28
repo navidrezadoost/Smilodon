@@ -1,0 +1,134 @@
+{
+  "artifactId": "W1-P1.4-CLOSURE-EVIDENCE",
+  "increment": "W1-P1.4 — Contract-Wiring Black-Box Characterization",
+  "task": "Task 4 — Contract-Wiring Characterization Closure and Evidence Reconciliation",
+  "startingCommit": "490cb771d43b56ebd05e8ede00fcfa40e3110a38",
+  "baselineOfRecord": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "generatedAt": "2026-11-28T11:40:00.000Z",
+  "recordedOn": "2026-11-28",
+  "nature": "Reconciliation and closure. Documentation only. No production source changed. No behavioral test added or modified. Adds closure report + this file + ledger section 19 + deviation dispositions; refreshes integrity checksums.",
+  "lineage": [
+    { "increment": "Task 1", "commit": "0cbb58b", "focus": "part-token wiring PART-001/002/003/005/006/007/008/009/010/011", "status": "Accepted" },
+    { "increment": "Task 1-R", "commit": "c174876", "focus": "chip-exiting gap + evidence/header corrections (T1-F01/F02/F03)", "status": "Accepted" },
+    { "increment": "Task 2", "commit": "7ae3193", "focus": "attribute/state markers ATTR-012/013/021/022/023", "status": "Accepted" },
+    { "increment": "Task 2-R", "commit": "9b10f0b", "focus": "deterministic ATTR-023 sync + browser ATTR-013 override (T2-F01/F02)", "status": "Accepted & closed" },
+    { "increment": "Task 3", "commit": "5b31f44", "focus": "API/event/lifecycle/config API-002/EVENT-011/LIFECYCLE-002/003/004/CONFIG-023", "status": "Accepted (conditional)" },
+    { "increment": "Task 3-R", "commit": "490cb77", "focus": "narrow lifecycle evidence to observed behavior (T3-F01/F02)", "status": "Accepted & closed" },
+    { "increment": "Task 4", "commit": "THIS_COMMIT", "focus": "closure + reconciliation", "status": "Submitted" }
+  ],
+  "lineageLinear": true,
+  "scopeContracts": [
+    "PART-001", "PART-002", "PART-003", "PART-005", "PART-006", "PART-007", "PART-008", "PART-009", "PART-010", "PART-011",
+    "ATTR-012", "ATTR-013", "ATTR-021", "ATTR-022", "ATTR-023",
+    "API-002", "EVENT-011",
+    "LIFECYCLE-002", "LIFECYCLE-003", "LIFECYCLE-004",
+    "CONFIG-023"
+  ],
+  "scopeContractCount": 21,
+  "testInventory": {
+    "w1-p1-4-t1-contract-wiring.spec.ts": { "runner": "jsdom (vitest)", "path": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts", "tests": 16 },
+    "w1-p1-4-t2-attribute-state.spec.ts": { "runner": "jsdom (vitest)", "path": "packages/core/tests/w1-p1-4-t2-attribute-state.spec.ts", "tests": 9 },
+    "attribute-state.t2.spec.ts": { "runner": "Chromium (Playwright)", "path": "tests/e2e/w1-p1-4-t2/attribute-state.t2.spec.ts", "tests": 5 },
+    "contract-wiring.t2.spec.ts": { "runner": "Chromium (Playwright)", "path": "tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts", "tests": 7 },
+    "w1-p1-4-t3-api-event-lifecycle.spec.ts": { "runner": "jsdom (vitest)", "path": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts", "tests": 15 },
+    "total": 52,
+    "jsdom": 40,
+    "chromium": 12
+  },
+  "consolidatedContract": {
+    "PART-001": "Existing", "PART-002": "Existing", "PART-003": "Existing", "PART-005": "Existing",
+    "PART-006": "Existing", "PART-007": "Existing", "PART-008": "Existing", "PART-009": "Partial",
+    "PART-010": "Existing", "PART-011": "Existing",
+    "ATTR-012": "Existing", "ATTR-013": "Existing", "ATTR-021": "Existing", "ATTR-022": "Existing", "ATTR-023": "Diagnostic",
+    "API-002": "Existing", "EVENT-011": "Existing",
+    "LIFECYCLE-002": "Existing", "LIFECYCLE-003": "Existing", "LIFECYCLE-004": "Existing",
+    "CONFIG-023": "Missing"
+  },
+  "consolidatedDistribution": {
+    "Existing": 18,
+    "Partial": 1,
+    "Diagnostic": 1,
+    "Missing": 1,
+    "total": 21
+  },
+  "classificationDiscipline": {
+    "Observed": "Established by public-surface black-box tests at baseline 7e3adf7.",
+    "Diagnostic": "Only privately reachable; public-surface characterization negative/inconclusive (ATTR-023).",
+    "Missing": "Declared but consumes nothing observable on the public surface (CONFIG-023).",
+    "FutureDesignDecision": "Product/contract decision requiring separate authorization (CONFIG-023 disposition; PART-009 chip-exiting intent).",
+    "privateSourceNotBehavioralProof": "Source locators inform but never upgrade a contract to Existing; no private-source inspection is presented as black-box behavioral proof."
+  },
+  "gaps": {
+    "PART-009": {
+      "class": "Partial",
+      "preserved": true,
+      "characterized": ["chip", "chip-label", "chip-remove", "chip-remove-icon"],
+      "unverified": "chip-exiting transient (not reachable through the public surface; renders only during an exit transition black-box tests cannot deterministically observe)",
+      "distinction": "Preserved as an UNOBSERVED transient — explicitly NOT a confirmed implementation defect.",
+      "upgradePath": "Future increment able to observe the exit transient deterministically (or a wired public observation point).",
+      "productionAuthorized": false
+    },
+    "ATTR-023": {
+      "class": "Diagnostic",
+      "preserved": true,
+      "observed": "2,000-item public virtualizable list renders zero data-virtual-spacer at tested settled-render checkpoints (Chromium negative).",
+      "reachability": "Guarded virtualizer/spacer emitters reachable only via private test seams; no public config/method establishes the window.",
+      "distinction": "Existing private-seam evidence does NOT establish publicly reachable spacer behavior; preserved as a characterization gap.",
+      "notForced": "Positive spacer behavior not forced with a private stub (out of scope).",
+      "productionAuthorized": false
+    },
+    "CONFIG-023": {
+      "class": "Missing",
+      "preserved": true,
+      "observation": "expandable (enabled/collapsedHeight/expandedHeight/expandLabel/collapseLabel) is declared and defaulted in global-config but not consumed by the component; enable/toggle produce no UI, no expand part token, byte-identical DOM.",
+      "futureProductDecision": {
+        "required": true,
+        "options": [
+          "Implement the declared capability in a separately authorized production increment",
+          "Deprecate/remove the unsupported configuration through a separately authorized API-contract decision"
+        ],
+        "authorizedNow": false
+      },
+      "productionAuthorized": false
+    }
+  },
+  "deferredOutOfScope": {
+    "p14PartialResiduals": ["EVENT-009", "CONFIG-001", "CONFIG-003", "CONFIG-004", "CONFIG-026"],
+    "note": "Kept Partial; out of this closure's upgrade scope (deferred to a separate selection/config increment). EVENT-009/CONFIG-026 sit outside the 21-target set; CONFIG-001/003/004 are historically P1.4-targeted Partial residuals deliberately not upgraded."
+  },
+  "traceabilityAudit": {
+    "totalRecords": 112,
+    "coverage": { "Existing": 56, "Partial": 30, "Diagnostic": 22, "Missing": 4 },
+    "missingIds": 0,
+    "orphanedJsonIds": 0,
+    "duplicateIds": 0,
+    "verifyTraceability": "PASS (112 IDs, unique, locators in bounds)",
+    "p14TargetedTestIdsResolveToLiteralTitles": true,
+    "p14TargetedCount": 21,
+    "concreteRefRecords": 52,
+    "concreteRefFilesExist": 52,
+    "preExistingLabelStyleRecords": 15,
+    "preExistingLabelStyleIds": ["API-010", "API-011", "API-012", "API-013", "API-020", "API-040", "API-041", "API-042", "API-043", "EVENT-001", "EVENT-006", "EVENT-007", "EVENT-009", "EVENT-010", "CONFIG-026"],
+    "preExistingLabelStyleNote": "P1.2 records whose # fragment is a human description/anchor, unchanged since before P1.4 (identical at 7ae3193); audited (target file exists) but NOT rewritten — rewriting accepted P1.2 testIds would be an unauthorized change to accepted characterization and is out of Task 4 scope.",
+    "coverageOverstated": false
+  },
+  "limitationsPreserved": {
+    "browserParity": "Chromium (Chrome-for-Testing 156.0.8078.4) only; no Firefox/WebKit/mobile parity claimed.",
+    "lifecycleResourceCleanup": "LIFECYCLE-002/003/004 characterize observable behavior only; no claim of internal listener cardinality, resource counts, or leak-free cleanup.",
+    "implementationCompleteness": "Characterization covers tested scenarios only; not a claim that all source wiring is exposed or that nothing is missing.",
+    "intentionalGapObservations": "PART-009 (chip-exiting), ATTR-023 (spacer), CONFIG-023 (unwired) preserved.",
+    "ariaConformance": "Inherited from W1-P1.3; not re-litigated here."
+  },
+  "integrityGates": {
+    "jsdomP14": "16 + 9 + 15 = 40 passing (carried; unchanged)",
+    "chromiumP14": "5 + 7 = 12/12 passing (Chrome-for-Testing 156.0.8078.4)",
+    "fullCoreSuite": "962 passed + 1 skipped",
+    "traceability": "PASS (112 IDs, unique, locators in bounds)",
+    "productionIsolation": "empty (no packages/core/src|engine|adapters change vs 490cb77)",
+    "acceptedBehavioralTestsChanged": "none",
+    "sha256sums": "refreshed; all files verify",
+    "runtimeBasis": "local execution on certification harness; reported, not independent"
+  },
+  "closureStatement": "W1-P1.4 wiring-completeness characterized for all 21 targeted contracts across jsdom and certified Chromium; final 21-target classification Existing 18 / Partial 1 / Diagnostic 1 / Missing 1 (gaps PART-009, ATTR-023, CONFIG-023 preserved). Full matrix 56/30/22/4 = 112, no unauthorized upgrades, 5 deferred Partial residuals out of scope. No production change; no accepted behavioral test modified; traceability reconciled and not overstated. W1-P1.4 remains OPEN until Task 4 is independently accepted. W1-P1.5-P1.6, W1-P2, Angular Wave 2 remain NO-GO."
+}

@@ -1,0 +1,170 @@
+{
+  "artifactId": "W1-P1.3-T3-KEYBOARD-SELECTION-EVIDENCE",
+  "increment": "W1-P1.3",
+  "task": "Task 3 — Keyboard Selection Edge Cases and Accessibility Contract Reconciliation",
+  "startingCommit": "b15b71f88eaba0ca32a1a22bb3ae3b368058e3b3",
+  "generatedAt": "2026-11-28T10:15:00.000Z",
+  "recordedOn": "2026-11-28",
+  "scope": "Characterization only. No production change. Genuine trusted keyboard input via Playwright; assertions read public-observable DOM (combobox aria-*, aria-activedescendant resolution, option aria-selected, rendered option DOM order) and public `select`/`change` events plus `onSelect`/`onChange` callbacks. Unusual selection semantics are recorded as deviation/observation candidates, NOT normalized to a presumed WAI-ARIA model, and NOT repaired.",
+  "t3Note": "Task 3 extends the accepted Task-2 real-Chromium harness to keyboard *selection* edges: range selection (Shift+Arrow, Shift+Home/End, Ctrl/Cmd+Shift), Select-All (Ctrl/Cmd+A), selected-first ordering, disabled-in-range, maxSelections, and the ARIA + event chronology of range interactions. Two notable observations are raised as new deviation/observation candidates: P1.3-D05 (Shift+Home/End selects only the boundary endpoint, not the contiguous range) and P1.3-D06 (selectedOptions.placement='selected-first' does not reorder the rendered option list or keyboard navigation, which remain registry order).",
+  "harness": {
+    "runner": "@playwright/test",
+    "config": "tests/e2e/w1-p1-3-t3/playwright.config.ts",
+    "npmScript": "test:e2e:p13-t3",
+    "spec": "tests/e2e/w1-p1-3-t3/keyboard-selection.t3.spec.ts",
+    "helpers": "tests/e2e/w1-p1-3-t3/harness.t3.ts (re-exports tests/e2e/w1-p1-3-t2/harness.ts and adds optionDomOrder / event-log / change-payload readers)",
+    "browser": {
+      "engine": "Chromium",
+      "product": "Google Chrome for Testing 156.0.8078.4",
+      "reportedVersionInTest": "156.0.8078.4",
+      "certifiedVersion": "156.0.8078.4",
+      "executablePath": "~/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "overrideEnv": "SMILODON_T2_CHROMIUM (shared with Task 2 so one override pins both harnesses)",
+      "versionEnforcement": "T3-00 asserts the engine version EXACTLY equals the recorded build (156.0.8078.4) for a certification run. If SMILODON_T2_CHROMIUM is set the run is treated as an explicit override run (version recorded, not silently certified).",
+      "determinism": "single project (chromium), workers=1, fullyParallel=false, retries=0, headless=true"
+    },
+    "nodeVersion": "v24.13.1",
+    "systemUnderTest": "vanilla-demo (http://localhost:5173/vanilla-demo.html) with enhanced-select / select-option custom elements; demo's own static selects purged so only suite-mounted instances exist",
+    "inputModel": "Playwright locator.press delivers genuine trusted keyboard events (NOT synthetic event dispatch); modifiers via 'Shift+', 'Control+', 'Meta+' key chords",
+    "proxyNote": "NO_PROXY for localhost/127.0.0.1/::1 is enforced in-config so webServer probes do not traverse the developer outbound proxy"
+  },
+  "result": {
+    "total": 23,
+    "passed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "durationMs": 6944,
+    "resultsJson": "tests/e2e/w1-p1-3-t3/test-results/w1-p1-3-t3/results.json"
+  },
+  "matrix": {
+    "T3-00": {
+      "title": "Browser harness (version certification)",
+      "tests": 1,
+      "status": "PASS",
+      "findings": [
+        "Chromium engine version reported 156.0.8078.4 and enforced to equal the recorded build for certification; override runs are flagged."
+      ]
+    },
+    "T3-01": {
+      "title": "Shift+Arrow range selection",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "An empty multi combobox opens with NO active option; the first Shift+ArrowDown selects the landing option 'a' (anchor = landing), setting active to 'a'.",
+        "Each subsequent Shift+ArrowDown/Up extends the contiguous range by one and fills it (a -> a,b -> a,b,c).",
+        "Shift+Up extends upward from the current active.",
+        "Plain (non-Shift) Arrow moves the active option WITHOUT changing the selection.",
+        "Selection is reported in ascending registry order in selectedValues."
+      ]
+    },
+    "T3-02": {
+      "title": "Shift+Home / Shift+End boundary semantics",
+      "tests": 3,
+      "status": "PASS",
+      "observation": "P1.3-D05 (candidate)",
+      "findings": [
+        "Shift+End from active 'b' moves active to 'f' and selects ONLY ['f'] — it does NOT select the contiguous range a..f.",
+        "Shift+Home from active 'b' moves active to 'a' and selects ONLY ['a'] — it does NOT select the range a..b.",
+        "Shift+Home then Shift+End reports ['a'] then ['f'] (each boundary is endpoint-only; each replaces the prior).",
+        "Recorded as P1.3-D05 (endpoint-only boundary range). This differs from a typical spreadsheet-style 'extend to boundary' range. Characterized, not repaired."
+      ]
+    },
+    "T3-03": {
+      "title": "Ctrl/Cmd+Shift additive range",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "Ctrl+Shift+ArrowDown extends the range additively and preserves prior members: [a] -> a,b -> a,b,c.",
+        "Meta (Cmd)+Shift+ArrowDown behaves identically (additive).",
+        "Plain Shift (without Ctrl/Cmd) REPLACES a pre-existing selection (clear=on): existing {e}, shift from 'f' yields ['f']."
+      ]
+    },
+    "T3-04": {
+      "title": "Ctrl/Cmd+A select-all payload",
+      "tests": 3,
+      "status": "PASS",
+      "findings": [
+        "Ctrl+A selects all and emits ONLY a `change` event (no `select`) with selectedValues [a..f] and selectedIndices [0,1,2,3,4,5] in registry order.",
+        "Cmd (Meta)+A selects all identically.",
+        "Ctrl+A is ignored in single mode (selection unchanged)."
+      ]
+    },
+    "T3-05": {
+      "title": "selected-first projection ordering",
+      "tests": 2,
+      "status": "PASS",
+      "observation": "P1.3-D06 (candidate)",
+      "findings": [
+        "With selectedOptions.placement='selected-first' and a prior selection {e,c}, the rendered option DOM order remains registry order ['a','b','c','d','e','f'] — NOT reordered selected-first.",
+        "Keyboard navigation follows registry order: open lands on 'c' (first selected in registry order), ArrowDown -> 'd' -> 'e'.",
+        "placement='original' behaves identically (registry order + registry navigation) — baseline comparison.",
+        "Recorded as P1.3-D06: the selected-first projection does not manifest as a DOM reorder or a navigation reorder at this configuration. Characterized, not repaired."
+      ]
+    },
+    "T3-06": {
+      "title": "disabled options in ranges",
+      "tests": 2,
+      "status": "PASS",
+      "findings": [
+        "Default disabledOptionBehavior (selectable:false): a disabled option is skipped in the range fill. Range from 'a' moving to 'c' with disabled 'b' yields ['a','c'] (b excluded), active lands 'c'.",
+        "disabledOptionBehavior.selectable=true: the disabled option becomes a range member (['a','b'])."
+      ]
+    },
+    "T3-07": {
+      "title": "maxSelections during keyboard range",
+      "tests": 1,
+      "status": "PASS",
+      "findings": [
+        "With maxSelections=2, a Shift range clamps at the cap: building a,b then extending further (Shift+ArrowDown, Shift+End) keeps ['a','b']."
+      ]
+    },
+    "T3-08": {
+      "title": "ARIA chronology during range selection",
+      "tests": 2,
+      "status": "PASS",
+      "findings": [
+        "aria-expanded stays 'true' throughout a range; aria-activedescendant tracks the moving endpoint and changes across each Shift step; the popup stays open (host data-open present).",
+        "After a range a..b, option elements 'a' and 'b' expose aria-selected='true' and 'c' exposes 'false'."
+      ]
+    },
+    "T3-09": {
+      "title": "event chronology during keyboard range",
+      "tests": 2,
+      "status": "PASS",
+      "findings": [
+        "Each Shift extension emits, in order: `select` (detail = moving endpoint record, selected=true, multi=true) -> `change` -> `onChange` -> `onSelect`. (The range path emits `select` first, then _emitChange fires `change`+`onChange`, then the handler invokes `onSelect` last.)",
+        "A range does NOT emit `open`/`close`; the popup stays open across the range."
+      ]
+    },
+    "T3-10": {
+      "title": "harness integrity",
+      "tests": 1,
+      "status": "PASS",
+      "findings": [
+        "A full keyboard range flow (open empty multi, build a..d via four Shift+ArrowDown) drives state via public surface only: getSelectedValues()==[a,b,c,d], active 'd', popup open."
+      ]
+    }
+  },
+  "deviationCandidates": {
+    "P1.3-D05": {
+      "title": "Shift+Home / Shift+End selects only the boundary endpoint",
+      "status": "Observation (candidate)",
+      "evidence": "T3-02",
+      "meaning": "Shift+Home/End move the active option to the first/last selectable option and select ONLY that endpoint, not the contiguous range from the anchor to the boundary. This differs from spreadsheet-style 'extend-to-boundary' range selection. Characterized, not repaired; design decision deferred."
+    },
+    "P1.3-D06": {
+      "title": "selectedOptions.placement='selected-first' does not reorder DOM or navigation",
+      "status": "Observation (candidate)",
+      "evidence": "T3-05",
+      "meaning": "At this configuration, selected-first placement does not manifest as a DOM option reorder nor a keyboard navigation reorder; both follow registry order. Characterized, not repaired; design intent to be confirmed before W1-P1 closure."
+    }
+  },
+  "coverageImplications": "Keyboard range/selection edge paths for the P1.3-owned selection surface are now characterized in real Chromium. The traceability matrix (112 records) is unchanged — no record is upgraded to `Existing` without full path coverage. P1.3-D05/D06 are recorded as observations pending Technical Lead disposition.",
+  "verification": {
+    "focusedChromiumSuite": "23/23 passed (Chrome-for-Testing 156.0.8078.4)",
+    "coreSuite": "922 passed, 1 skipped (production byte-identical; no production change in this increment)",
+    "traceability": "112 records, unchanged (verify_traceability.py PASS)",
+    "productionIsolation": "git diff b15b71f^ b15b71f -- packages/core/src packages/core/engine packages/core/adapters = empty"
+  }
+}

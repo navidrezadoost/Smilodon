@@ -1,0 +1,157 @@
+{
+  "artifactId": "W1-P1.4-T1-PART-TOKEN-EVIDENCE",
+  "increment": "W1-P1.4",
+  "task": "Task 1 — Public Part-Token Characterization",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "startingCommit": "ff9989219e9e76f0bc3c3b4930aba62874584f19",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Technical Lead W1-P1.4 Task 1 GO (starting commit ff99892)",
+  "scopeContracts": [
+    "PART-001",
+    "PART-002",
+    "PART-003",
+    "PART-005",
+    "PART-006",
+    "PART-007",
+    "PART-008",
+    "PART-009",
+    "PART-010",
+    "PART-011"
+  ],
+  "surfaces": {
+    "jsdom": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts",
+    "chromium": "tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts"
+  },
+  "testCounts": {
+    "jsdom": 16,
+    "chromium": 7,
+    "total": 23
+  },
+  "renderingModel": {
+    "shadowDom": "open",
+    "partLocation": "shadowRoot (not mirrored into host light DOM)",
+    "ownershipAssertedBy": "T1-04 (jsdom + browser)"
+  },
+  "contractEvidence": {
+    "PART-001": {
+      "token": "button",
+      "jsdomTest": "PART-001: the input container carries part=\"button\" and lives in the shadow root",
+      "browserTest": "PART-001/002/003 structural parts render in the shadow root and not in light DOM",
+      "observable": "shadow part=\"button\" present on input container; absent from light DOM",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-002": {
+      "token": "input",
+      "jsdomTest": "PART-002: the text field carries part=\"input\"",
+      "browserTest": "PART-001/002/003 structural parts render in the shadow root and not in light DOM",
+      "observable": "shadow INPUT with part=\"input\"",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-003": {
+      "token": "listbox",
+      "jsdomTest": "PART-003: the popup carries part=\"listbox\" and is distinct from the input",
+      "browserTest": "PART-001/002/003 structural parts render in the shadow root and not in light DOM",
+      "observable": "shadow part=\"listbox\" distinct from input",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-005": {
+      "token": "clear-button",
+      "jsdomTest": "PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
+      "browserTest": "n/a (jsdom primary)",
+      "observable": "shadow BUTTON part=\"clear-button\"; structurally present always, hidden when disabled; visible when enabled+selection",
+      "negativePath": "hidden=true when clearControl disabled; hidden until selection when enabled (hideWhenEmpty)",
+      "coverageAttribution": "jsdom-only (browser spec does not exercise this token)"
+    },
+    "PART-006": {
+      "token": "clear-icon",
+      "jsdomTest": "PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
+      "browserTest": "n/a (jsdom primary)",
+      "observable": "span part=\"clear-icon\" nested inside clear-button",
+      "coverageAttribution": "jsdom-only (browser spec does not exercise this token)"
+    },
+    "PART-007": {
+      "token": "option",
+      "jsdomTest": "PART-007: each rendered option carries part=\"option\" when the popup is open",
+      "browserTest": "PART-007 one rendered option carries part=\"option\" per item when open",
+      "observable": "one part=\"option\" per item when open (dom + browser count)",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-008": {
+      "token": "group-header",
+      "jsdomTest": "PART-008: grouped items render one part=\"group-header\" per group (flat list renders none — T1-03)",
+      "browserTest": "PART-008 one rendered part=\"group-header\" per group when open",
+      "observable": "one part=\"group-header\" per group; zero for flat list (negative)",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-009": {
+      "token": "chip, chip-label, chip-remove, chip-remove-icon, chip-exiting",
+      "jsdomTest": "PART-009: a selected multi value renders chip + chip-label + chip-remove + chip-remove-icon",
+      "browserTest": "PART-009 a selected multi value renders chip + chip-label + chip-remove + chip-remove-icon",
+      "observable": "chip family on multi selection; absent for single (negative); chip-exiting transient/absent at rest",
+      "classification": "Partial",
+      "gap": "chip-exiting transition not reliably observable through the public surface in the current build: exit keyframe gated behind consumer var --select-badge-exit-animation (default none); with a consumer animation set, public removal synchronously finishes the chip in Chromium (no live chip-exiting node). Deferred, not forced with a private stub.",
+      "browserConfirmedTokens": [
+        "chip",
+        "chip-label",
+        "chip-remove",
+        "chip-remove-icon"
+      ],
+      "unprovenTokens": [
+        "chip-exiting"
+      ]
+    },
+    "PART-010": {
+      "token": "no-results",
+      "jsdomTest": "PART-010: an empty result set renders part=\"no-results\"",
+      "browserTest": "PART-010 an empty data set renders part=\"no-results\"",
+      "observable": "part=\"no-results\" on empty set; absent for populated list (negative)",
+      "coverageAttribution": "jsdom + browser-confirmed"
+    },
+    "PART-011": {
+      "token": "loading, loading-content, loading-icon, loading-message, loading-spinner",
+      "jsdomTest": "PART-011: an active busy state renders loading + loading-icon/loading-message/loading-content/loading-spinner",
+      "browserTest": "n/a (jsdom primary; busy via pending fetch)",
+      "observable": "loading family while busy; absent when idle (negative)",
+      "busyTrigger": "public serverSide.fetchSelectedItems pending promise (no _setBusy)",
+      "coverageAttribution": "jsdom-only (browser spec does not exercise this token)"
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "PART-001..011": "Diagnostic"
+    },
+    "to": {
+      "PART-001..003,005..008,010,011": "Existing",
+      "PART-009": "Partial"
+    },
+    "rationale": "T1-F01: PART-009 retained Partial — chip-exiting transition not publicly observable; deferred with documented gap.",
+    "distributionAfter": {
+      "Existing": 47,
+      "Partial": 30,
+      "Diagnostic": 31,
+      "Missing": 4
+    }
+  },
+  "gates": {
+    "jsdom": "16/16 passed",
+    "chromium": "7/7 passed",
+    "coreRegression": "938 passed | 1 skipped",
+    "traceability": "PASS (112 IDs, unique)",
+    "eslint": "clean"
+  },
+  "boundaries": {
+    "publicSurfaceOnly": true,
+    "noPrivateMethodsOrFields": true,
+    "productionUnchanged": true,
+    "acceptedPriorTestsUnchanged": true,
+    "schemaConvention": "testId is the authoritative executable pointer; evidence kept as string",
+    "headerCorrectionT1F02": "Spec header corrected: clear-button/-icon are always structurally present (visibility is the contract), not absent when disabled."
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "clear-button/clear-icon are always present in the shadow DOM; their observable contract is the hidden/aria-hidden visibility state, which the tests characterize (positive + negative + enabled+selection).",
+    "Parallel sibling work uses separate files; this task did not touch Task 2 scope."
+  ],
+  "correction": "W1-P1.4-T1-R (T1-F01/F02/F03)",
+  "correctiveStartingCommit": "0cbb58b155c88e16662420e2487ea64790dea689"
+}
