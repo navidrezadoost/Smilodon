@@ -1,0 +1,101 @@
+{
+  "artifactId": "W1-P1.6-T3-SSR-IMPORT-SAFETY-EVIDENCE",
+  "increment": "W1-P1.6",
+  "task": "Task 3 — SSR / import-time safety characterization (no-DOM Node)",
+  "startingCommit": "44dc148cbe9866fe5930cb13da3631fb8df2c507",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "W1-P1.6 Task 3 GO from Lead final acceptance review of T2-R1 (44dc148). Scope: core package import-time safety and deferred-DOM-access characterization in a genuine Node environment; public surface only. T4 (closure) and everything downstream remain NO-GO.",
+  "scopeContracts": [
+    "API-075",
+    "API-076"
+  ],
+  "environment": {
+    "runner": "vitest 4.1.12",
+    "environment": "node (real Node process — // @vitest-environment node in the spec, and `environment: 'node'` in vitest.ssr.config.ts)",
+    "nodeVersion": "v24.13.1",
+    "documentGlobal": "undefined (asserted at test start before any import)",
+    "windowGlobal": "undefined (asserted at test start before any import)",
+    "htmlElementGlobal": "undefined (asserted)",
+    "isolatedProject": "packages/core/vitest.ssr.config.ts — NO setupFiles (the shared tests/setup.ts imports the web components, which extend HTMLElement and throw at import in a no-DOM process). The spec is EXCLUDED from packages/core/vitest.config.ts so the jsdom suite never picks it up.",
+    "runCommand": "npx vitest run --config packages/core/vitest.ssr.config.ts"
+  },
+  "publicImportTarget": {
+    "packageEntry": "packages/core/src/index.ts (via specifier ../src/index.js)",
+    "utilityModules": [
+      "packages/core/src/utils/security.ts (../src/utils/security.js)",
+      "packages/core/src/utils/csp-styles.ts (../src/utils/csp-styles.js)"
+    ],
+    "note": "The package ENTRY is the mandatory target (API-075). The two utility modules are additionally imported to characterize WHICH modules are import-safe and to drive the deferred-call-time proof (API-076)."
+  },
+  "testCounts": {
+    "node": 6,
+    "jsdom": 0,
+    "total": 6
+  },
+  "observedResults": {
+    "precondition": "typeof document === 'undefined', typeof window === 'undefined', typeof HTMLElement === 'undefined' — proven at test start.",
+    "securityModuleImport": "OK — imports without touching document/window at module-evaluation time; escapeHTML and sanitizeHTML are functions.",
+    "cspStylesModuleImport": "OK — imports without DOM; applyClasses is a function; shadowDOMStyles is a string; defaultTheme is an object.",
+    "packageEntryImport": "THROWS ReferenceError (HTMLElement is not defined). The entry re-exports web components whose class declarations `extend HTMLElement` (evaluated at import). This is a genuine import-time browser dependency — recorded as a LIMITATION, NOT claimed as SSR-safe.",
+    "deferredDomAccess": "escapeHTML('<b>x</b>') and createElement('div') throw ReferenceError / 'document is not defined' at CALL time (deferred), while import succeeds — proving DOM access happens at call time, not import time.",
+    "nonDomUtilities": "escapeAttribute, containsSuspiciousPatterns, defaultTheme/shadowDOMStyles, and duck-typed applyClasses/hasOverflowHiddenAncestor operate normally in a no-DOM process."
+  },
+  "contractEvidence": [
+    {
+      "id": "API-075",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the package ENTRY import THROWS in no-DOM Node (limitation recorded, not claimed safe)",
+      "asserts": "The pure utility modules (security.ts, csp-styles.ts) import without a DOM (no top-level browser access); the package ENTRY (index.ts) import THROWS a ReferenceError on HTMLElement in a no-DOM Node process. Precondition asserts no document/window/HTMLElement before import.",
+      "negativePath": "The package entry import is observably NOT safe (throws ReferenceError) — recorded, not claimed safe. Utility modules ARE import-safe.",
+      "limitation": "Package entry import-safety is NOT satisfied today: index.ts re-exports components whose class declarations extend HTMLElement at module-evaluation time. Fixing this is a PRODUCTION change and is OUT OF SCOPE for this characterization (Task 3 makes no production edits).",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: runs without document/window before any import (precondition)",
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the security utility module imports without a DOM (no top-level browser access)",
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the csp-styles utility module imports without a DOM (no top-level browser access)"
+      ]
+    },
+    {
+      "id": "API-076",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: DOM-dependent helpers throw ReferenceError at CALL time (deferred, not import)",
+      "asserts": "Utility modules import successfully in no-DOM Node (deferred); calling a document-dependent helper (escapeHTML, createElement) throws a ReferenceError at call time, not at import; non-DOM helpers and duck-typed element operations work normally without a global DOM.",
+      "negativePath": "DOM-dependent calls fail observably at call time (ReferenceError: document is not defined) — no silent failure, no import-time failure.",
+      "limitation": "Scope is the utility modules (security.ts, csp-styles.ts) reachable without the package entry. The package entry itself cannot be imported in no-DOM Node today (see API-075); its deferred-access behavior is therefore characterized via the utility modules it re-exports.",
+      "supplementaryTests": [
+        "packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: non-DOM helpers operate normally in a no-DOM process (facilities they need are present)"
+      ]
+    }
+  ],
+  "coverageChanges": {
+    "before": {
+      "Existing": 76,
+      "Partial": 35,
+      "Diagnostic": 13,
+      "Missing": 3,
+      "total": 127
+    },
+    "after": {
+      "Existing": 77,
+      "Partial": 36,
+      "Diagnostic": 13,
+      "Missing": 1,
+      "total": 129
+    },
+    "note": "2 new P1.6 contracts (Path A) added from the two planned Missing SSR contracts (SEC/API-m, SEC/API-n). API-075 (import-time safety) is classified Partial: the utility modules import safely, but the mandatory package ENTRY does NOT — import-time safety is only partially satisfied and the entry limitation is recorded. API-076 (deferred DOM access) is classified Existing: import succeeds and DOM access is deferred to call time (observed). No prior contract reclassified. API 39->41; P1.6 15->17. Missing 3->1 (the two planned Missing SSR contracts are now characterized)."
+  },
+  "gates": {
+    "ssrSpec": "6 passed (vitest.ssr.config.ts, environment=node)",
+    "coreRegression": "1063 passed | 1 skipped (unchanged; the SSR spec is EXCLUDED from vitest.config.ts and run separately under node)",
+    "ac1PublicImportOnly": "PASS — imports ../src/index.js and ../src/utils/*.js (public re-export paths); no `as any` in executable code, no private access, no ForTest; typed via PublicShape casts.",
+    "isolation": "PASS — the shared jsdom setup.ts is NOT run for the SSR spec (would throw on component import); the no-DOM precondition is asserted before each import."
+  },
+  "boundaries": {
+    "productionIsolation": "0 files changed under packages/core/src / packages/core/engine / packages/core/adapters vs 44dc148",
+    "acceptedPriorTestsUnchanged": "csp.spec.ts, w1-p1-1..5 specs, w1-p1-6-t1/t2 specs untouched. vitest.config.ts changed only to EXCLUDE the new SSR spec (JSdom suite never runs it).",
+    "deferredNotAbsorbed": "No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed. No adapter hydration, no Angular integration, no production CSP remediation."
+  },
+  "deviationsRaised": [],
+  "notes": "Two contract families align with plan §2.3 (SEC/API-m -> API-075, SEC/API-n -> API-076). Testing only the utils would be insufficient (boundary #3); the package entry is the mandatory target and its import FAILURE is recorded (boundary #7). Fixing the entry import failure is a production change and OUT OF SCOPE. T4 (closure) and P1.6 closure are NOT claimed.",
+  "corrections": []
+}

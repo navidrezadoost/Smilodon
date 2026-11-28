@@ -982,3 +982,30 @@ W1-P1.6 Task 2 certifies the `packages/core/src/utils/csp-styles.ts` public surf
 **Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
 
 _End of W1-P1.6 Task 2. W1-P1.6-T2-R (T2-F01..F04) strengthened characterization (API-071 prefix asymmetry, API-073 parent-chain/detached, CONFIG-029 full 13-entry map) and evidence precision; coverage counts unchanged (127; 76/35/13/3). Tasks 3–4 remain NO-GO pending independent T2-R acceptance; P1.6 closure not yet claimed._
+
+---
+
+## 26. W1-P1.6 Task 3 — SSR / import-time safety (no-DOM Node) characterization
+
+W1-P1.6 Task 3 characterizes the core package's behavior in a **genuine Node process with no `document`/`window`/`HTMLElement`**. It runs via `packages/core/vitest.ssr.config.ts` (`environment: 'node'`, **no** shared setup) — the shared `tests/setup.ts` imports the web components, which `extend HTMLElement` at class-declaration time and throw on import without a DOM, so it is intentionally not run here. The SSR spec is **excluded** from `vitest.config.ts` so the jsdom suite never picks it up. This is the plan §2.3 pair of contracts (SEC/API-m → API-075, SEC/API-n → API-076), both previously **Missing**. The package entry is the mandatory target (boundary #3); a caught import-time exception is recorded as a limitation, not claimed as safety (boundary #7).
+
+**Environment (proven, not assumed):** `typeof document === 'undefined'`, `typeof window === 'undefined'`, `typeof HTMLElement === 'undefined'` asserted before every dynamic import.
+
+**Key observed finding:** the **utility modules** (`security.ts`, `csp-styles.ts`) import without a DOM and defer `document` access to **call time** — but the **package entry** (`index.ts`) **throws** `ReferenceError: HTMLElement is not defined` at import, because it re-exports components whose class declarations `extends HTMLElement` (e.g. `native-select.ts:17`). Package-entry import-safety is therefore **not satisfied today** (recorded limitation; fixing it is a production change and out of scope for this characterization).
+
+| Contract ID | Behavior | Source | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-075 | Import-time safety (no-DOM Node): utility modules import without top-level `document`/`window` access; package ENTRY **throws** `ReferenceError` (HTMLElement) because exported components `extend HTMLElement` at import. Import-safety only partially satisfied — **entry limitation recorded, not claimed safe** | `index.ts:1-92`; `components/native-select.ts:17`; `security.ts:1-295`; `csp-styles.ts:1-238` | Partial | `w1-p1-6-t3-ssr-import-safety.spec.ts#API-075: the package ENTRY import THROWS in no-DOM Node (limitation recorded, not claimed safe)` |
+| API-076 | Deferred DOM access: utility modules import successfully; calling DOM-dependent helpers (`escapeHTML`, `createElement`) throws `ReferenceError: document is not defined` at **call time**, not import; non-DOM helpers (`escapeAttribute`, `containsSuspiciousPatterns`, `defaultTheme`/`shadowDOMStyles`) and duck-typed `applyClasses`/`hasOverflowHiddenAncestor` work without a global DOM | `security.ts:78-169`; `csp-styles.ts:10-226` | Existing | `w1-p1-6-t3-ssr-import-safety.spec.ts#API-076: DOM-dependent helpers throw ReferenceError at CALL time (deferred, not import)` |
+
+**Totals:** 2 new P1.6 contracts: **1 Existing (API-076) + 1 Partial (API-075)**. Distribution after T3: **Existing 77 · Partial 36 · Diagnostic 13 · Missing 1 = 129** (was 76/35/13/3 = 127 after T2-R1). API 39→41; P1.6 15→17. The two planned **Missing** SSR contracts (SEC/API-m, SEC/API-n) are now characterized, so Missing 3→1.
+
+**Characterized limitations (documented, not defects):** (1) **Package-entry import-safety is NOT satisfied** — `index.ts` import throws in a no-DOM process because web-component classes extend `HTMLElement` at module-evaluation time (API-075). Consumers needing SSR import-safety must import the utility modules directly, not the entry. (2) The deferred-access proof (API-076) is exercised via the utility modules reachable without the entry.
+
+**Test harness note:** the SSR spec is run separately (`npx vitest run --config packages/core/vitest.ssr.config.ts`, 6 tests) and excluded from the jsdom config; the main core suite remains **1063 passed | 1 skipped** unchanged.
+
+**Out of scope for T3:** Task 4 (reconciliation + closure docs + checksums) and any production fix of the package-entry import failure. No adapter hydration, no Angular integration, no production CSP remediation, no DEVIATION-09.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; production source and the frozen `csp.spec.ts` unchanged.
+
+_End of W1-P1.6 Task 3. W1-P1.6-T3 characterizes SSR import-time safety (API-075, Partial — package-entry limitation recorded) and deferred DOM access (API-076, Existing). Coverage 76/35/13/3 → 77/36/13/1 = 129. Task 4 (closure) and P1.6 closure remain NO-GO pending independent T3 acceptance._
