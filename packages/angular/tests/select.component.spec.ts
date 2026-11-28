@@ -416,7 +416,7 @@ describe('SmilodonSelectComponent — async value ordering (S2-F03)', () => {
     }
   });
 
-  it('latest value wins and a stale rejection is swallowed (deterministic ordering)', async () => {
+  it('latest error state wins: a stale rejection is swallowed (adapter-level supersession)', async () => {
     h = createHarness();
     configure(h.cmp, {
       items: [
@@ -461,7 +461,7 @@ describe('SmilodonSelectComponent — async value ordering (S2-F03)', () => {
     expect(h.cmp.lastValueError).toBeNull();
   });
 
-  it('records the rejection when the newest application fails after an older success', async () => {
+  it('records the rejection when the newest application fails after an older success (adapter-level)', async () => {
     h = createHarness();
     configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
     h.cmp.ngAfterViewInit();
@@ -492,6 +492,135 @@ describe('SmilodonSelectComponent — async value ordering (S2-F03)', () => {
     await settle();
 
     expect(h.cmp.lastValueError).toBe(newestError);
+  });
+});
+
+// ── S2-R2-F01: destruction safety for pending value applications ────────────────
+// A pending `setSelectedValues()` that settles AFTER `ngOnDestroy()` must not
+// mutate adapter state. `ngOnDestroy()` bumps `valueGeneration`, so every
+// outstanding completion fails its liveness check. These tests are deterministic:
+// completion is controlled via captured promise handles and settles only after
+// teardown has been invoked.
+describe('SmilodonSelectComponent — value application survives destroy (S2-R2-F01)', () => {
+  let h: Harness;
+
+  afterEach(() => {
+    h?.cmp.ngOnDestroy();
+    h?.wrap.remove();
+    vi.restoreAllMocks();
+  });
+
+  const settle = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await flush();
+  };
+
+  /** Capture controllable completion handles for every `setSelectedValues()` call. */
+  function deferredApplications(el: Harness['el']) {
+    const handles: Array<{ resolve: () => void; reject: (e: unknown) => void }> = [];
+    vi.spyOn(el, 'setSelectedValues').mockImplementation(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          handles.push({ resolve, reject });
+        }),
+    );
+    return handles;
+  }
+
+  /** Drive a ready component through one value change to start an async application. */
+  async function startApplication(harness: Harness, value: unknown[]): Promise<void> {
+    configure(harness.cmp, { value });
+    harness.cmp.ngOnChanges({
+      value: { currentValue: value, previousValue: null, firstChange: false, isFirstChange: () => false },
+    });
+    await settle();
+  }
+
+  it('ignores a LATE RESOLVE that lands after ngOnDestroy()', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    // Prior to the pending application there is no error state.
+    expect(h.cmp.lastValueError).toBeNull();
+
+    const handles = deferredApplications(h.el);
+    await startApplication(h, ['a']);
+    expect(handles.length).toBe(1);
+
+    // Tear down while the application is still in flight.
+    h.cmp.ngOnDestroy();
+
+    // Late success: must NOT touch adapter state.
+    handles[0].resolve();
+    await settle();
+
+    expect(h.cmp.lastValueError).toBeNull();
+  });
+
+  it('ignores a LATE REJECTION that lands after ngOnDestroy()', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    expect(h.cmp.lastValueError).toBeNull();
+
+    const handles = deferredApplications(h.el);
+    await startApplication(h, ['a']);
+    expect(handles.length).toBe(1);
+
+    const lateError = new Error('late failure after destroy');
+
+    // Track unhandled rejections: the adapter must swallow the late rejection.
+    const onUnhandled = vi.fn();
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      h.cmp.ngOnDestroy();
+
+      // Late rejection: must NOT surface as error state NOR go unhandled.
+      handles[0].reject(lateError);
+      await settle();
+
+      expect(h.cmp.lastValueError).toBeNull();
+      expect(onUnhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  it('does not overwrite existing error state when a rejection lands after destroy', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    // First application rejects while alive → records a genuine error.
+    const firstError = new Error('first failure');
+    vi.spyOn(h.el, 'setSelectedValues').mockRejectedValueOnce(firstError);
+    configure(h.cmp, { value: ['a'] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: ['a'], previousValue: null, firstChange: false, isFirstChange: () => false },
+    });
+    await settle();
+    expect(h.cmp.lastValueError).toBe(firstError);
+
+    // Second application is pending, then destroy, then a late rejection lands.
+    const handles = deferredApplications(h.el);
+    await startApplication(h, []);
+    expect(handles.length).toBe(1);
+
+    h.cmp.ngOnDestroy();
+    handles[0].reject(new Error('late failure after destroy'));
+    await settle();
+
+    // The pre-destroy error is preserved; the late rejection is discarded.
+    expect(h.cmp.lastValueError).toBe(firstError);
   });
 });
 

@@ -135,12 +135,13 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
   /** Set when init fails, so we surface it without throwing into Angular. */
   private initError: unknown = null;
   /**
-   * Monotonic counter incremented on every selection application. The element's
-   * `setSelectedValues()` is async (it may fetch selected items server-side), so
-   * a slow earlier call could resolve after a later one. We tag each request and
-   * only treat the LATEST request as authoritative for error surfacing, so a
-   * stale rejection cannot clobber the current value error and a stale success
-   * cannot resurrect an outdated selection.
+   * Monotonic counter incremented on every selection application AND on destroy.
+   * The element's `setSelectedValues()` is async (it may fetch selected items
+   * server-side), so a slow earlier call could settle after a later one or after
+   * teardown. Each request is tagged; only the LATEST tag on a still-live
+   * component is authoritative for adapter error state — a stale rejection cannot
+   * clobber the current value error, a stale success cannot resurrect an outdated
+   * selection, and a post-destroy settle cannot mutate adapter state.
    */
   private valueGeneration = 0;
   /** Set when the most recent selection application rejected. */
@@ -169,6 +170,11 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
     // Invalidate any in-flight init so it does not configure a torn-down view.
     this.destroyed = true;
     this.initGeneration += 1;
+    // Invalidate any in-flight selection application too. `setSelectedValues()`
+    // may still be pending (e.g. a server-backed fetch); bumping the generation
+    // makes every outstanding completion fail its `generation === valueGeneration`
+    // check, so a late resolve/reject cannot mutate adapter state after teardown.
+    this.valueGeneration += 1;
   }
 
   /** Exposed for tests/inspection: true once the element is ready. */
@@ -280,25 +286,40 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
   /**
    * Apply a controlled selection to the element under a generation guard.
    *
-   * `setSelectedValues()` is asynchronous. Two hazards this method closes:
+   * `setSelectedValues()` is asynchronous. This method closes three adapter-side
+   * hazards (it does NOT re-implement selection ordering — the engine owns that):
    *  1. Rejection: the returned promise is `.catch`-ed so it never becomes an
    *     unhandled rejection; the error is recorded in `valueError`.
-   *  2. Ordering: rapid input changes can start overlapping async calls. Each
-   *     call is tagged; only the LATEST tag may write `valueError`, so a stale
-   *     rejection is swallowed and does not overwrite the current error state.
+   *  2. Destroy-safety: any completion (resolve or reject) that settles after
+   *     `ngOnDestroy` is ignored, so a late settle cannot mutate adapter state.
+   *  3. Adapter-level error supersession: rapid input changes can start
+   *     overlapping async calls. Each call is tagged; only the LATEST live tag
+   *     may write `valueError`, so a stale rejection is swallowed and does not
+   *     overwrite the current error state.
    *
-   * Element-side, core re-resolves the selection synchronously for the non-server
-   * path and guards its own async fetches by `isConnected` + `_asyncGeneration`,
-   * so the element always reflects the most recent call once settled.
+   * Scope of the "latest wins" guarantee: this method guarantees that the
+   * ADAPTER's error state reflects the latest request. SELECTION supersession —
+   * which selection ultimately lands in the element — is owned by the engine:
+   * the non-server `setSelectedValues()` path applies the replacement
+   * synchronously, and the server-backed fetch path guards its own completion
+   * with `isConnected` + a private `_asyncGeneration`, so a superseded fetch is
+   * discarded. The adapter relies on (and does not duplicate) that behavior.
    */
   private applySelectedValues(element: EnhancedSelectElement, values: unknown[]): void {
     const generation = ++this.valueGeneration;
+
+    // Only the current, non-destroyed generation may mutate adapter state. A
+    // completion is stale when the component was destroyed or a newer value
+    // was requested; both cases are rejected here so late settle-ups (resolve
+    // or reject) after teardown are ignored.
+    const isCurrent = (): boolean => !this.destroyed && generation === this.valueGeneration;
+
     let result: Promise<void>;
     try {
       result = element.setSelectedValues(values);
     } catch (error) {
       // Defensive: a synchronous throw must not escape into Angular.
-      if (generation === this.valueGeneration) {
+      if (isCurrent()) {
         this.valueError = error;
       }
       return;
@@ -306,13 +327,14 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
 
     Promise.resolve(result).then(
       () => {
-        if (generation === this.valueGeneration) {
+        if (isCurrent()) {
           this.valueError = null;
         }
       },
       (error) => {
-        // Only the latest application reports its failure; stale ones are ignored.
-        if (generation === this.valueGeneration) {
+        // Only the latest, live application reports its failure; stale or
+        // post-destroy ones are ignored.
+        if (isCurrent()) {
           this.valueError = error;
         }
       },
