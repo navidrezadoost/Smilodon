@@ -43,14 +43,16 @@ import type { HTMLSanitizer } from '../src/index.js';
  *     for the remainder of the file; tests that need the pristine default are
  *     consolidated ABOVE that point.
  *  3. `identitySanitizer` restores identity *behaviour* (not the private
- *     NoOpSanitizer class), so post-setter tests assert against known custom
- *     behaviour rather than the default.
+ *     NoOpSanitizer class). As the FINAL step of this file the identity
+ *     sanitizer is explicitly reinstalled via the public setter and its
+ *     reference AND behaviour are verified (T1-R1), so post-setter tests assert
+ *     against a known, explicitly-established identity behaviour.
  *
- * CONSEQUENCE (documented limitation): after this file, the process-global
- * sanitizer is left as `identitySanitizer`, NOT the pristine private default.
- * Any future test that needs the pristine default MUST run in a separate
- * module/worker boundary (e.g. its own spec file) or install its own sanitizer
- * explicitly. We do NOT import the private `resetHTMLSanitizer`.
+ * CONSEQUENCE (documented limitation): after this file, identity *behaviour*
+ * is restored via the public setter — NOT the pristine private default, which
+ * cannot be recreated. Any future test that needs the pristine default MUST run
+ * in a separate module/worker boundary (e.g. its own spec file). We do NOT
+ * import the private `resetHTMLSanitizer`.
  */
 const identitySanitizer: HTMLSanitizer = { sanitize: (html) => html };
 
@@ -364,20 +366,34 @@ describe('CONFIG-028: detectEnvironment snapshot', () => {
 });
 
 /**
- * T1-F02 — Bounded isolation post-condition. This file leaves the
- * PROCESS-GLOBAL sanitizer as the identity-behaviour sanitizer installed by the
- * last setter above (NOT the pristine private NoOpSanitizer default, which
- * cannot be restored via the public surface). This assertion pins the actual
- * end-of-file state so the leak is explicit and any future change is visible.
+ * T1-F02 — Bounded isolation RESTORATION (T1-R1). This file leaves the
+ * PROCESS-GLOBAL sanitizer restored to identity *behaviour* via the PUBLIC
+ * setter (NOT the pristine private NoOpSanitizer default, which cannot be
+ * recreated through the public surface).
+ *
+ * The end-of-file state is established EXPLICITLY, not inferred: this block
+ * reinstalls `identitySanitizer` (the preceding API-064 test leaves an
+ * uppercase-transforming sanitizer installed) and asserts its reference
+ * identity AND its behaviour. A getter-only check could not distinguish an
+ * identity sanitizer from one that transforms input, so both are verified.
  */
-describe('T1-F02: sanitizer process-global state at end of file', () => {
-  it('T1-F02: process-global sanitizer is identity-behaviour (not the pristine private default)', () => {
-    // The last setter in this file installs behaviour; sanitizeHTML must
-    // reflect a non-default (custom) sanitizer path, proving the global is not
-    // the pristine NoOpSanitizer any more.
-    const current = getHTMLSanitizer();
-    expect(typeof current.sanitize).toBe('function');
-    // A getter-returned sanitizer is the same object subsequent lookups see.
-    expect(getHTMLSanitizer()).toBe(current);
+describe('T1-F02: sanitizer process-global state restored to identity at end of file', () => {
+  it('T1-F02: reinstalls identity sanitizer via the public setter and asserts reference + behaviour', () => {
+    // Explicitly restore identity BEHAVIOUR (the private NoOpSanitizer instance
+    // cannot be recreated; only the behaviour is what we can restore publicly).
+    setHTMLSanitizer(identitySanitizer);
+
+    // (a) Reference identity: the getter returns the exact installed instance.
+    expect(getHTMLSanitizer()).toBe(identitySanitizer);
+
+    // (b) Behaviour: sanitizeHTML returns input unchanged (NOT transformed) —
+    // this is what a getter-only assertion could not prove.
+    expect(sanitizeHTML('<b>MixedCase</b>')).toBe('<b>MixedCase</b>');
+
+    // (c) validateTemplate does NOT emit the pristine-default warning, proving
+    // a sanitizer IS configured (identity behaviour, not the pristine default).
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(validateTemplate('<div>x</div>', 'unit-test')).toBe('<div>x</div>');
+    expect(warn).not.toHaveBeenCalled();
   });
 });
