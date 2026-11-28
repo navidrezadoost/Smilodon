@@ -19,6 +19,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts'],
+    include: [
+      'packages/core/tests/w1-p1-6-t3-ssr-import-safety.spec.ts',
+      // W1-P2 Task 1: framework-independence proof for the pure selection engine.
+      'packages/core/tests/w1-p2-t1-engine-framework-independence.spec.node.ts',
+    ],
   },
 });
