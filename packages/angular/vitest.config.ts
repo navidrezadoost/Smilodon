@@ -32,6 +32,9 @@ export default defineConfig({
       // driven by playwright.ssr.config.ts, not vitest. It uses Playwright's `test`
       // runner, so it must not be collected here.
       'packages/angular/tests/ssr/**',
+      // S5-Q: Playwright real-browser CSR qualification suite lives under tests/csr
+      // and is driven by playwright.csr.config.ts, not vitest.
+      'packages/angular/tests/csr/**',
     ],
   },
   resolve: {
