@@ -232,3 +232,30 @@ Technical Lead review conditionally accepted Task 2 and directed a bounded corre
 **Screen-reader note.** The accessibility assessments here are based on the **Chromium accessibility (AX) tree** only (roles, names, states, `aria-*` relationships). They establish that the AX *representation* is correct; they do **not** assert screen-reader compatibility (NVDA/JAWS/VoiceOver), which is out of scope for W1-P1.
 
 **Coverage.** No deviation is closed as "defective". D02 is resolved (DOM + AX); D03 is accepted as a browser observation with the jsdom cause withheld; D01 is confirmed; **D04 is withdrawn**. The traceability record count (112) is unchanged; only D01/D02/D03 narrative notes are clarified.
+
+---
+
+## W1-P1.3 Task 3 — keyboard selection edge-case observations (P1.3-D05 / P1.3-D06)
+
+Recorded during W1-P1.3 Task 3 keyboard *selection* characterization (Chromium 156.0.8078.4; evidence: `tests/e2e/w1-p1-3-t3/keyboard-selection.t3.spec.ts`, `W1-P1.3-T3-KEYBOARD-SELECTION-EVIDENCE.json`). **No behavior was repaired; no production code changed; no record was upgraded.** These are new candidate observations raised by Task 3, pending Technical Lead disposition. Neither authorizes a production change during W1-P1; no ADR is opened.
+
+### P1.3-D05 — `Shift+Home` / `Shift+End` selects only the boundary endpoint (not the contiguous range)
+
+- **Observation.** In a multi-select combobox, pressing `Shift+Home` moves the active option to the first selectable option and selects **only that endpoint**; `Shift+End` likewise selects **only the last option**. Neither extends the selection to the full range from the anchor to the boundary. Example (items a..f, active 'b'): `Shift+End` → active 'f', selection `['f']` (**not** `['a'..'f']` or `['b'..'f']`); `Shift+Home` from 'b' → active 'a', selection `['a']`.
+- **Contrast.** `Shift+Arrow` *does* extend the contiguous range (T3-01); only the boundary keys collapse to the endpoint. This differs from spreadsheet-style "extend-to-boundary" semantics.
+- **Status.** Observation (candidate). Characterized in real Chromium; not classified a defect; design intent to be confirmed. No production change.
+- **Evidence.** `keyboard-selection.t3.spec.ts` — T3-02 "Shift+End from a mid option selects only the last option (endpoint-only)", "Shift+Home from a mid option selects only the first option (endpoint-only)", "Shift+Home then Shift+End reports each endpoint".
+
+### P1.3-D06 — `selectedOptions.placement='selected-first'` does not reorder the rendered options or keyboard navigation
+
+- **Observation.** With `selectedOptions.placement:'selected-first'` and a prior selection (e.g. `{e,c}`), the rendered option DOM order remains **registry order** (`a,b,c,d,e,f`) — it is **not** reordered selected-first. Keyboard navigation also follows registry order: open lands on the first selected key in registry order ('c'), then `ArrowDown` → 'd' → 'e'. `placement:'original'` behaves identically (baseline comparison).
+- **Scope.** Characterizes the observed configuration only; the `selected-first` projection does not manifest as a DOM reorder or a navigation reorder at this configuration. If a different path (e.g. a distinct projection render) is intended, it is not exercised by keyboard navigation here.
+- **Status.** Observation (candidate). Characterized; not repaired; intent to be confirmed before W1-P1 closure. No production change.
+- **Evidence.** `keyboard-selection.t3.spec.ts` — T3-05 "selected-first keeps DOM option order at registry order with a selection", "original placement also navigates registry order (baseline comparison)".
+
+| ID | Class | Disposition (Task 3) | Owner |
+| --- | --- | --- | --- |
+| P1.3-D05 | Observation (candidate) | Endpoint-only boundary range; characterized, design decision deferred | P1.3 recorded / future selection-design |
+| P1.3-D06 | Observation (candidate) | selected-first does not reorder DOM/navigation; intent to confirm | P1.3 recorded / future rendering-design |
+
+**Coverage.** Task 3 adds real-Chromium keyboard-selection characterization (T3-01..T3-10). No deviation is closed as "defective"; D05/D06 are new observations pending review. The traceability record count (112) is unchanged.

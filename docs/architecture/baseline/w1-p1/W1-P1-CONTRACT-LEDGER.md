@@ -683,3 +683,40 @@ Task 2 drives the same public keyboard/focus/ARIA surface as Task 1, but through
 **Tab focus correction (T2-F01).** The original P1.3-D04 Tab observation is **withdrawn**; with a correctly-ordered next tabbable, Tab advances focus normally in Chromium (see 16.2 and `W1-P1-DEVIATIONS.md`).
 
 _End of W1-P1.3 Task 2 (T2-R). No production source was modified. The 32-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. P1.3-P2 remain NO-GO until T2-R is independently reviewed._
+
+---
+
+## 17. W1-P1.3 Task 3 — keyboard selection edge cases and accessibility contract reconciliation
+
+Task 3 extends the accepted real-Chromium harness (Task 2) to keyboard **selection** edges: range selection (Shift+Arrow, Shift+Home/End, Ctrl/Cmd+Shift), Select-All (Ctrl/Cmd+A), selected-first ordering, disabled-in-range, maxSelections, and the ARIA + event chronology of range interactions. It **does not repair** anything and **does not** change the coverage distribution (the record count stays **112**). Two new **observation candidates** (P1.3-D05, P1.3-D06) are recorded; neither authorizes a production change.
+
+- **Harness.** `tests/e2e/w1-p1-3-t3/playwright.config.ts` (npm script `test:e2e:p13-t3`), spec `keyboard-selection.t3.spec.ts` (**23 tests**), helpers `harness.t3.ts` (re-exports the Task-2 harness + adds option-DOM-order, event-log, and `change`-payload readers). Deterministic single-project Chromium, workers=1, retries=0, headless. Browser: **Google Chrome for Testing 156.0.8078.4** (same pinned build as Task 2; version **enforced** for a certification run, override flagged).
+- **Input model.** Genuine trusted keyboard events (`Shift+`/`Control+`/`Meta+` chords), **not** synthetic dispatch. Assertions read public DOM (combobox `aria-*`, `aria-activedescendant` resolution, option `aria-selected`, rendered option DOM order) and public `select`/`change` events + `onSelect`/`onChange` callbacks. No private methods invoked directly; no private state read.
+- **Evidence.** `docs/architecture/baseline/w1-p1/W1-P1.3-T3-KEYBOARD-SELECTION-EVIDENCE.json`.
+
+### 17.1 Per-matrix outcome (all PASS)
+
+| Matrix | Tests | Result (Chromium 156) |
+| --- | --- | --- |
+| T3-00 browser harness | 1 | Certified version `156.0.8078.4` recorded and enforced. |
+| T3-01 Shift+Arrow range | 3 | Empty multi opens no-active; 1st Shift+Down selects landing option + anchor; each step extends contiguous range; order ascending registry; plain Arrow moves active without selecting. |
+| T3-02 Shift+Home/End | 3 | **Endpoint-only**: Shift+End → `['f']`, Shift+Home → `['a']` (not a contiguous range). **P1.3-D05.** |
+| T3-03 Ctrl/Cmd+Shift | 3 | Additive (Ctrl or Meta); plain Shift **replaces** a pre-existing selection. |
+| T3-04 Ctrl/Cmd+A | 3 | Select-all emits **only `change`** (no `select`), payload `[a..f]` / `[0..5]`; ignored in single mode. |
+| T3-05 selected-first | 2 | DOM order and navigation stay **registry order** (not reordered). **P1.3-D06.** |
+| T3-06 disabled in range | 2 | Disabled excluded from range fill by default; included when `disabledOptionBehavior.selectable=true`. |
+| T3-07 maxSelections | 1 | Range clamps at the cap. |
+| T3-08 ARIA chronology | 2 | `aria-expanded` stays true; `aria-activedescendant` tracks the moving endpoint; filled options expose `aria-selected=true`. |
+| T3-09 event chronology | 2 | Range emits `select → change → onChange → onSelect`; no `open`/`close`. |
+| T3-10 harness integrity | 1 | Full range flow via public surface only. |
+
+### 17.2 New observation candidates (browser evidence)
+
+| ID | Observation | Meaning |
+| --- | --- | --- |
+| P1.3-D05 | Shift+Home/End selects only the endpoint | Not a contiguous extend-to-boundary range (contrast Shift+Arrow). Characterized; design decision deferred; not repaired. |
+| P1.3-D06 | selected-first does not reorder DOM/navigation | Both remain registry order at this configuration. Characterized; intent to confirm; not repaired. |
+
+**Scope note (screen readers).** These assessments rest on the DOM + public events only; they do **not** assert screen-reader compatibility, which is out of scope for W1-P1.
+
+_End of W1-P1.3 Task 3. No production source was modified. The 23-test browser matrix passes on Chrome-for-Testing 156.0.8078.4. Follow-on P1.3 tasks and P1.4+ remain NO-GO until Task 3 is independently reviewed._
