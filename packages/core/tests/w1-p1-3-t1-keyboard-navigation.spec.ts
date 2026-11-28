@@ -651,12 +651,16 @@ describe('W1-P1.3 Task 1 — existing P1.3 contracts via keyboard', () => {
     expect(lb!.getAttribute('aria-busy')).toBeNull();
   });
 
-  // LIFECYCLE-006 — attributeChangedCallback equal-value early-return
-  it('LIFECYCLE-006: re-setting an equal aria-label value is a no-op (early-return)', () => {
+  // LIFECYCLE-006 — attributeChanged equal-value observable stability.
+  // T1-R / T1-F02: this is an *observable equal-value stability* check only. It
+  // does NOT prove the internal attributeChangedCallback early-return branch was
+  // taken (that would require private-state instrumentation, not authorized).
+  it('LIFECYCLE-006: re-setting an equal aria-label value leaves the reflected value stable', () => {
     el = mount();
     el.setAttribute('aria-label', 'Same');
     expect(combobox(el).getAttribute('aria-label')).toBe('Same');
-    // Setting the identical value again must not throw and must keep the value.
+    // Setting the identical value again must not throw and must keep the value
+    // (observable stability; not proof of an internal early-return).
     el.setAttribute('aria-label', 'Same');
     expect(combobox(el).getAttribute('aria-label')).toBe('Same');
   });

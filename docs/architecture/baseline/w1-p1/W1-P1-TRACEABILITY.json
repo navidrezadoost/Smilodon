@@ -1477,7 +1477,7 @@
         }
       ],
       "supplementaryTests": [
-        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#LIFECYCLE-006: re-setting an equal aria-label value is a no-op (early-return)"
+        "packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts#LIFECYCLE-006: re-setting an equal aria-label value leaves the reflected value stable (observable stability; not proof of the internal early-return)"
       ]
     },
     {

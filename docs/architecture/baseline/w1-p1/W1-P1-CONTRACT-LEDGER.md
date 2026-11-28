@@ -15,6 +15,8 @@
 
 > **W1-P1.3 Addendum note (documentation-only; addendum precedes characterization tests).** W1-P1.3 is split into two tasks. **Task 1** is *keyboard navigation and focus/ARIA chronology*; it is scoped to the thirteen existing **P1.3-owned** contract IDs (API-030, 031, 040, 041; EVENT-002, 003; ATTR-001..003, 010, 011, 020; LIFECYCLE-006) **plus** the new **KBD-001..012** contract IDs introduced in §15. Per the Technical Lead's directive this Addendum is committed **before** any W1-P1.3 characterization test is written, so the ledger matches the planned test surface. This increment **does not** modify production source, does **not** repair any observed behavior, and does **not** upgrade any coverage class (all new KBD IDs enter as `Diagnostic`). §15 records the Task-1 scope, the KBD contract table, the empirically observed baseline behavior captured during authoring, and the resulting deviation candidates (P1.3-D01..D03).
 
+> **W1-P1.3-T1-R note (documentation/comment-only reconciliation).** Technical Lead review conditionally accepted Task 1 and directed a narrow evidence reconciliation (**T1-R**). (T1-F01) Task 1 exercised **eleven** of the thirteen existing P1.3-owned IDs; **API-040 (`setError`) / API-041 (`clearError`) were deliberately NOT exercised** — their error-state behavior is already characterized by the P1.2-T3-R error-state evidence, and no duplicate assertions were added. §15.2, §15.5, and §15.6 are reconciled accordingly. (T1-F02) The `LIFECYCLE-006` case asserts **observable equal-value stability**, not proof of the internal `attributeChangedCallback` early-return branch (no private-state instrumentation). (Deviations) **P1.3-D01** is promoted into `W1-P1-DEVIATIONS.md` as an *observed public-contract limitation* (characterized; design decision deferred); **P1.3-D02** is retained as `Diagnostic` pending a browser a11y check; **P1.3-D03** is accepted as an **observation, not a defect**, pending a real-browser/APG assessment. No assertion logic, production source, or traceability distribution (112 records) changed; the 45 characterization tests and all P1.2 specs remain intact.
+
 ## 0. Purpose and reading rules
 
 This ledger is a source-grounded inventory of every externally observable contract of the `EnhancedSelect` custom element and the public surfaces that surround it. It lets W1-P1.2-P1.6 write black-box characterization tests against a known list instead of re-discovering the surface each time.
@@ -559,14 +561,14 @@ This addendum, committed **before** any W1-P1.3 characterization test, defines T
 
 ### 15.2 Existing P1.3-owned contracts exercised by Task 1
 
-These thirteen IDs already exist in the matrix (§9). Task 1 characterizes them **through the keyboard path**; they remain `Diagnostic`/`Partial` as recorded until the Task-1 specs are accepted (no silent upgrade).
+These thirteen IDs already exist in the matrix (§9). Task 1 characterizes **eleven** of them **through the keyboard path** (API-030/031, EVENT-002/003, ATTR-001/002/003/010/011/020, LIFECYCLE-006); **API-040/041 are deferred** to their existing P1.2-T3-R error-state evidence (see below). All remain `Diagnostic`/`Partial` as recorded until the Task-1 specs are accepted (no silent upgrade).
 
 | ID | Behavior (ledger §) | Task-1 keyboard relevance |
 | --- | --- | --- |
 | API-030 | `open()` idempotency + emit (§2.4) | Programmatic-open parity for KBD-001; double-`open()` emits once (observed). |
 | API-031 | `close()` (§2.4) | Programmatic-close parity for KBD-006/007; double-`close()` emits once (observed). |
-| API-040 | `setError()` (§2.5) | Error announcement is combobox-level; verified not to disrupt focus (Task-1 boundary only). |
-| API-041 | `clearError()` (§2.5) | As above; idempotence. |
+| API-040 | `setError()` (§2.5) | **Deferred (T1-R / T1-F01).** Error-state behavior is characterized by the P1.2-T3-R error-state evidence; Task 1 adds no duplicate assertions. Remains `Partial`. |
+| API-041 | `clearError()` (§2.5) | **Deferred (T1-R / T1-F01).** As above; characterized in P1.2-T3-R evidence; no new Task-1 assertions. Remains `Partial`. |
 | EVENT-002 | `open` event + `{}` detail (§3.1) | Emitted **before** `onOpen`, detail empty (observed: `open:{}`). |
 | EVENT-003 | `close` event + `{}` detail (§3.1) | Emitted **before** `onClose`, detail empty — **no reason** in public detail (observed: `close:{}`); see P1.3-D01. |
 | ATTR-001 | `aria-label` resync (§4.1) | Observed applied to combobox + listbox. |
@@ -631,8 +633,8 @@ Task 1 is characterized by `packages/core/tests/w1-p1-3-t1-keyboard-navigation.s
 | KBD-010 (type-ahead) | 2 | Unmodified char moves active; modified char does not. |
 | KBD-011 (focus model) | 2 | Focus stays on the input; active option via `aria-activedescendant`, not focus. |
 | KBD-012 (ARIA chronology) | 3 | `aria-expanded` false/true/false; `aria-activedescendant` null→set→cleared; tracks movement. |
-| Existing P1.3 contracts via keyboard | 12 | API-030/031 idempotency; EVENT-002/003 `{}` detail; ATTR-010 dir, ATTR-011 data-open, ATTR-020 data-placement, ATTR-001/002 aria resync, ATTR-003 aria-busy no observable listbox effect (**P1.3-D02**), LIFECYCLE-006 equal-value no-op. |
+| Existing P1.3 contracts via keyboard | 11 | API-030/031 idempotency; EVENT-002/003 `{}` detail; ATTR-010 dir, ATTR-011 data-open, ATTR-020 data-placement, ATTR-001/002 aria resync, ATTR-003 aria-busy no observable listbox effect (**P1.3-D02**), LIFECYCLE-006 equal-value **observable stability** (not proof of the internal early-return; **T1-F02**). API-040/041 **deferred** to P1.2-T3-R evidence (**T1-F01**). |
 
-All 45 pass; the full core suite is **922 passed + 1 skipped** (877 + 45 new; no regressions). The 12 KBD contracts move **Diagnostic → Partial** (keyboard paths characterized; real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — **not** upgraded to `Existing`). Coverage distribution across the **112** records is now **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4 = 112**. The three deviation candidates (P1.3-D01..D03) are **observed and recorded, not repaired**; promotion to `W1-P1-DEVIATIONS.md` is deferred to Technical Lead review. Production source remains **byte-identical** to baseline `7e3adf7`.
+All 45 pass; the full core suite is **922 passed + 1 skipped** (877 + 45 new; no regressions). The 12 KBD contracts move **Diagnostic → Partial** (keyboard paths characterized; real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — **not** upgraded to `Existing`). Coverage distribution across the **112** records is **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4 = 112** (unchanged by T1-R). Deviation disposition after T1-R review: **P1.3-D01** promoted to `W1-P1-DEVIATIONS.md` as an *observed public-contract limitation* (characterized; design decision deferred); **P1.3-D02** retained as `Diagnostic` pending a browser a11y check; **P1.3-D03** accepted as an *observation, not a defect*, pending a real-browser/APG assessment. Production source remains **byte-identical** to baseline `7e3adf7`.
 
 _End of W1-P1.3 Task 1._

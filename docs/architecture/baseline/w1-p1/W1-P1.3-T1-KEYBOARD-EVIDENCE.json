@@ -57,10 +57,19 @@
     "API-030", "API-031", "EVENT-002", "EVENT-003",
     "ATTR-010", "ATTR-011", "ATTR-020", "ATTR-001", "ATTR-002", "ATTR-003", "LIFECYCLE-006"
   ],
+  "existingP13ContractsCharacterizedCount": 11,
+  "existingP13ContractsDeferred": {
+    "deferred": ["API-040", "API-041"],
+    "reason": "T1-R / T1-F01: error-state behavior already characterized by P1.2-T3-R error-state evidence; no duplicate assertions added in Task 1. Both remain Partial; no traceability distribution change."
+  },
+  "reconciliationNotes": {
+    "T1-F01": "Task 1 exercised 11 of 13 existing P1.3-owned contracts; API-040 (setError) / API-041 (clearError) deferred to P1.2-T3-R evidence.",
+    "T1-F02": "LIFECYCLE-006 is characterized as an observable equal-value stability check (set same value twice, read same value); it does NOT prove the internal attributeChangedCallback early-return branch was taken. No private-state instrumentation."
+  },
   "deviationCandidatesObserved": [
-    {"id": "P1.3-D01", "observed": "close event detail is {}; Escape and Tab indistinguishable from the event alone"},
-    {"id": "P1.3-D02", "observed": "no aria-busy attribute written to the listbox element on host aria-busy change (jsdom)"},
-    {"id": "P1.3-D03", "observed": "open with no selection assigns no initial aria-activedescendant; first ArrowDown materializes first selectable"}
+    {"id": "P1.3-D01", "observed": "close event detail is {}; Escape and Tab indistinguishable from the event alone", "disposition": "promoted to W1-P1-DEVIATIONS.md as observed public-contract limitation; design decision deferred"},
+    {"id": "P1.3-D02", "observed": "no aria-busy attribute written to the listbox element on host aria-busy change (jsdom)", "disposition": "retained as Diagnostic; pending browser-level a11y check"},
+    {"id": "P1.3-D03", "observed": "open with no selection assigns no initial aria-activedescendant; first ArrowDown materializes first selectable", "disposition": "accepted as observation, not a defect; pending real-browser/APG assessment"}
   ],
   "productionSourceUnchanged": true
 }

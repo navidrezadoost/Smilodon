@@ -165,3 +165,37 @@ Reconciliation of DEVIATION-04 and 06–10 at P1.2 closure (the specific items t
 | DEVIATION-10 | `w1-p1-2-t4-interaction-events.spec.ts` (T4-06 required-preservation case) | **Characterized; ADR candidate** — clear-control payload/state inconsistency recorded. | W1-P1.2 Task 4 recorded / forms (clear-control reporting design). |
 
 **No deviation is closed by this reconciliation except DEVIATION-04 and DEVIATION-06, which are P1.2-owned and fully resolved/honored.** DEVIATION-07/08 remain characterized with open *design* dispositions; DEVIATION-09/10 are ADR candidates deferred past W1-P1. None authorizes a production change during W1-P1.
+
+---
+
+## W1-P1.3 Task 1 — deviation candidates (T1-R disposition)
+
+Recorded during W1-P1.3 Task 1 keyboard/focus characterization (evidence: `packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts`, `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`, ledger §15.4). Per Technical Lead T1-R review: **P1.3-D01 is promoted here** as an *observed public-contract limitation*; **P1.3-D02** is retained as a `Diagnostic` guard (not a defect) pending a browser-level accessibility check; **P1.3-D03** is accepted as an *observation, not a defect*, pending a real-browser/APG assessment. **None authorizes a production change during W1-P1; no ADR is opened.**
+
+### P1.3-D01 — public `close` event detail is empty (`{}`); no close reason is surfaced
+
+- **Observation.** The public `close` event detail is `{}`: `CloseEventDetail` (`types.ts:50`) is an empty interface. The engine carries a `CloseReason` (`engine/contracts.ts:3`, values `escape`/`outside-pointer`/`selection`/`blur`/`programmatic`/`disabled`/`disconnect`) but it is **never surfaced** on the public `close` event. Keyboard Escape and Tab therefore emit an indistinguishable `close:{}` (asserted in Task 1: "Escape emits an indistinguishable close detail from Tab (both {})").
+- **Evidence.** `packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts` — KBD-006/KBD-007 indistinguishable-detail case and EVENT-003 detail-is-`{}` case; `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`.
+- **Class:** Observed public-contract limitation.
+- **Risk.** Consumers cannot distinguish keyboard-close from selection-close (or any other close path) from the event alone; `EVENT-003` was historically described as carrying "close reasons" but reasons are not publicly observable.
+- **Disposition.** **Characterized; design decision deferred.** Promotion to this file records the limitation as an accepted observation of the public contract. Whether to surface a close reason in `detail` is a deliberate design decision **deferred** past W1-P1; characterization/tests must not assume a reason is present. **No production change; no ADR.**
+
+### P1.3-D02 — `aria-busy` host resync has no confirmed observable effect on the listbox (retained as `Diagnostic`)
+
+- **Observation.** `attributeChangedCallback('aria-busy', …)` routes to `_syncListboxAccessibility` (637-646), but the jsdom probe observed **no** `aria-busy` written to the listbox element and no change when toggling `aria-busy="true"`→`"false"`. The resync is wired; the observable effect is unconfirmed at baseline.
+- **Evidence.** Task 1 ATTR-003 case (asserts the observed non-effect); `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`.
+- **Class:** Diagnostic (jsdom-observed; pending browser a11y confirmation).
+- **Disposition.** **Retained as `Diagnostic`, not a defect.** A real-browser accessibility check may confirm or refute the effect; the Task-1 assertion pins the observed baseline (non-)effect so a future change is caught. **No production change; no ADR.**
+
+### P1.3-D03 — opening with no selection assigns no initial `aria-activedescendant` (observation, not a defect)
+
+- **Observation.** `open` assigns no initial `aria-activedescendant` when there is no selection (by design, per `_setInitialActiveOption` 5536-5540); the first ArrowDown then materializes the first selectable option. This differs from some APG examples that pre-activate the first option on open.
+- **Evidence.** Task 1 KBD-001 open-without-initial-active case; `W1-P1.3-T1-KEYBOARD-EVIDENCE.json`.
+- **Class:** Observation (intentional, per source comment).
+- **Disposition.** **Accepted as an observation, not a defect**, pending a real-browser/APG assessment. Task 1 locks the *observed* behavior without asserting any APG default. **No production change; no ADR.**
+
+| ID | Class | Disposition (T1-R) | Owner of the eventual decision |
+| --- | --- | --- | --- |
+| P1.3-D01 | Observed public-contract limitation | Characterized; design decision deferred | P1.3 recorded / future public-contract design |
+| P1.3-D02 | Diagnostic | Retained as Diagnostic pending browser a11y check | P1.3 / P1.4+ a11y verification |
+| P1.3-D03 | Observation (not a defect) | Accepted as observation pending real-browser/APG assessment | P1.3 / future a11y conformance |
