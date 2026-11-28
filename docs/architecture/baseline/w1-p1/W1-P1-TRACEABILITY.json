@@ -14,19 +14,19 @@
   },
   "testIdConvention": "'verify' = existing referenced suite; 'unassigned' = characterization test not yet implemented (explicitly unassigned).",
   "reconciliation": {
-    "totalRecords": 112,
+    "totalRecords": 121,
     "byFamily": {
-      "API": 27,
+      "API": 34,
       "EVENT": 15,
       "ATTR": 11,
       "PART": 11,
       "SLOT": 4,
       "LIFECYCLE": 6,
-      "CONFIG": 26,
+      "CONFIG": 28,
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 62,
+      "Existing": 71,
       "Partial": 34,
       "Diagnostic": 13,
       "Missing": 3
@@ -36,8 +36,10 @@
       "P1.2": 14,
       "P1.3": 25,
       "P1.4": 56,
-      "P1.5": 13
+      "P1.5": 13,
+      "P1.6": 9
     },
+    "p16Task1Note": "W1-P1.6 Task 1 (Path A) added 9 P1.6 contracts for the security/CSP utility public surface previously documented-only (ledger section 10 line 353, section 12 line 469): API-063..069 (security.ts helpers) and CONFIG-027..028 (CSPFeatures/detectEnvironment). Total 112 -> 121; API 27 -> 34; CONFIG 26 -> 28; Existing 62 -> 71; P1.6 = 9. All characterized to Existing by packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts (public import only).",
     "apiIds": 27,
     "apiMethodAccessorSignatures": 30,
     "attributeIds": 11,
@@ -2125,6 +2127,141 @@
         }
       ],
       "coverageNote": "Keyboard paths characterized by W1-P1.3 Task 1 (w1-p1-3-t1-keyboard-navigation.spec.ts); real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — not upgraded to Existing."
+    },
+    {
+      "id": "API-063",
+      "behavior": "HTML sanitizer registry: default is a no-op identity sanitizer; setHTMLSanitizer installs a custom sanitizer returned by getHTMLSanitizer and used by sanitizeHTML. resetHTMLSanitizer exists in source but is NOT a public package export.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "19-69"
+        }
+      ]
+    },
+    {
+      "id": "API-064",
+      "behavior": "validateTemplate warns only while the pristine default no-op sanitizer is active (message names the source) and returns sanitized output; under a custom sanitizer it does not warn and returns that sanitizer's output.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-064: warns and returns sanitized output under the pristine default no-op sanitizer",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "248-259"
+        }
+      ]
+    },
+    {
+      "id": "API-065",
+      "behavior": "createElement applies safe attributes and textContent; blocks on* event-handler attributes and the inline style attribute (not set) with a console.warn per blocked attribute.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-065: blocks on* and style attributes (not set) and warns once per blocked attribute",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "99-128"
+        }
+      ]
+    },
+    {
+      "id": "API-066",
+      "behavior": "setCSSProperties sets only --prefixed CSS custom properties; non-custom keys are skipped with a console.warn and never applied.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-066: warns and skips non-custom properties without applying them",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "130-138"
+        }
+      ]
+    },
+    {
+      "id": "API-067",
+      "behavior": "createTextNode and setTextContent build/assign literal text without HTML parsing (no element creation from markup).",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-067: setTextContent assigns literal text (no element parsing)",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "76-95"
+        }
+      ]
+    },
+    {
+      "id": "API-068",
+      "behavior": "escapeHTML encodes markup via textContent; escapeAttribute encodes the five HTML-significant characters & \" ' < >.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-068: escapeAttribute encodes & \" ' < >",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "279-295"
+        }
+      ]
+    },
+    {
+      "id": "API-069",
+      "behavior": "containsSuspiciousPatterns returns true for <script, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns and false for safe markup/plain text.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#API-069: flags <script>, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "262-274"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-027",
+      "behavior": "CSPFeatures detection family: hasInlineScripts/hasEval/hasSharedArrayBuffer/hasWorkers/isSandboxed each return a boolean without throwing; getCSPDirectives reads content values from meta[http-equiv=Content-Security-Policy] and returns [] when none present.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-027: getCSPDirectives reads content values from CSP meta tags",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "143-216"
+        }
+      ]
+    },
+    {
+      "id": "CONFIG-028",
+      "behavior": "detectEnvironment returns the six-field EnvironmentCapabilities object (canUseWorkers, canUseSharedArrayBuffer, canUseInlineScripts, canUseEval, isSandboxed, cspDirectives[]) whose fields agree with the individual CSPFeatures predicates.",
+      "targetIncrement": "P1.6",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-6-t1-security-utilities.spec.ts#CONFIG-028: fields agree with the individual CSPFeatures predicates",
+      "status": "Observed",
+      "evidence": "W1-P1.6-T1-SECURITY-UTILITIES-EVIDENCE (jsdom; public import)",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/utils/security.ts",
+          "lines": "233-242"
+        }
+      ]
     }
   ]
 }

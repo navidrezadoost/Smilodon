@@ -925,3 +925,33 @@ Task 4 is the **documentation-only** closure of W1-P1.5: it consolidates Tasks 1
 - **Limitations preserved:** no browser-parity claim; no comprehensive async-safety claim; no implementation-completeness claim.
 
 _End of W1-P1.5 Task 4 closure. W1-P1.5 remains open until this closure commit is independently accepted. W1-P1.6, W1-P2 Extraction, Angular Wave 2 remain NO-GO until then._
+
+---
+
+## 24. W1-P1.6 Task 1 — Security utilities (public surface) characterization
+
+W1-P1.6 is the SSR/security increment named in §10 (line 353, "SSR/security … P1.6") and §12 (line 469, security/CSP utilities "Documented-only per section 10; not certified"). These surfaces carried **zero** contract IDs; this section defines and certifies them through the **public package import only** (`packages/core/src/index.ts`). The utilities are imported by no component — they are a standalone public utility surface.
+
+**Family mapping:** the `security.ts` HTML-safety helpers are encoded as `API-0xx` (package API); the `CSPFeatures`/`detectEnvironment` capability surface as `CONFIG-0xx`.
+
+**Public-boundary finding (API-063):** `resetHTMLSanitizer` exists in `security.ts` but is **NOT** re-exported from the package entry; only `setHTMLSanitizer` is public. Tests restore identity behavior through the public setter. The genuine default `NoOpSanitizer` is a private, unexported class and cannot be recreated; the pristine-default assertions (API-063 identity, API-064 warning) therefore run before any setter call.
+
+| Contract ID | Behavior | Source (`security.ts`) | Coverage | testId |
+| --- | --- | --- | --- | --- |
+| API-063 | Sanitizer registry: default no-op identity; set→get round-trip; sanitizeHTML delegates; `resetHTMLSanitizer` NOT a public export | 19-69 | Existing | `w1-p1-6-t1-security-utilities.spec.ts#API-063: default sanitizer is a no-op identity that returns input unchanged` |
+| API-064 | `validateTemplate` warns only under pristine default no-op (message names source) and returns sanitized output; silent under custom sanitizer | 248-259 | Existing | `...#API-064: warns and returns sanitized output under the pristine default no-op sanitizer` |
+| API-065 | `createElement` applies safe attrs + textContent; blocks `on*`/`style` (not set) with a warn per blocked attr | 99-128 | Existing | `...#API-065: blocks on* and style attributes (not set) and warns once per blocked attribute` |
+| API-066 | `setCSSProperties` sets only `--` custom properties; non-`--` keys skipped with warn, never applied | 130-138 | Existing | `...#API-066: warns and skips non-custom properties without applying them` |
+| API-067 | `createTextNode`/`setTextContent` build/assign literal text without HTML parsing | 76-95 | Existing | `...#API-067: setTextContent assigns literal text (no element parsing)` |
+| API-068 | `escapeHTML` encodes via textContent; `escapeAttribute` encodes `& " ' < >` | 279-295 | Existing | `...#API-068: escapeAttribute encodes & " ' < >` |
+| API-069 | `containsSuspiciousPatterns` flags `<script`/`javascript:`/`on*=`/`eval(`/`Function(`/`setTimeout(`/`setInterval(`; false for safe markup | 262-274 | Existing | `...#API-069: flags <script>, javascript:, on*=, eval(, Function(, setTimeout(, setInterval( patterns` |
+| CONFIG-027 | `CSPFeatures` family: capability predicates return boolean without throwing; `getCSPDirectives` reads CSP meta-tag content, `[]` when none | 143-216 | Existing | `...#CONFIG-027: getCSPDirectives reads content values from CSP meta tags` |
+| CONFIG-028 | `detectEnvironment` returns 6-field `EnvironmentCapabilities` agreeing with individual predicates | 233-242 | Existing | `...#CONFIG-028: fields agree with the individual CSPFeatures predicates` |
+
+**Totals:** 9 new P1.6 contracts, all **Existing** (public-import, deterministic, negative paths included). Distribution after T1: **Existing 71 · Partial 34 · Diagnostic 13 · Missing 3 = 121** (was 62/34/13/3 = 112). API 27→34; CONFIG 26→28; P1.6 = 9.
+
+**Out of scope for T1 (deferred to T2/T3 within P1.6):** `utils/csp-styles.ts` helpers (applyClasses/toggleClass/custom-property family/defaultTheme/shadowDOMStyles/injectShadowStyles/hasOverflowHiddenAncestor/warnCSPViolation) and SSR import-time/deferred-DOM safety.
+
+**Non-absorption:** no P1.3/P1.4/P1.5 residual or DEVIATION-09 is absorbed; those remain with their owners.
+
+_End of W1-P1.6 Task 1. Tasks 2–4 remain pending; P1.6 closure not yet claimed._
