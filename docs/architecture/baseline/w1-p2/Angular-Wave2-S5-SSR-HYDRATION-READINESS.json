@@ -1,0 +1,130 @@
+{
+  "artifactId": "Angular-Wave2-S5-SSR-HYDRATION-READINESS",
+  "increment": "Angular Wave 2",
+  "slice": "S5 — SSR/Hydration Readiness Assessment (READ-ONLY)",
+  "acceptedBaselineCommit": "2a9bd9985315507cefc215d30dbebf0c286466c4",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S5 readiness directive at 2a9bd99: bounded, read-only assessment of Angular SSR/hydration readiness. Establish server import safety, server-rendered HTML, hydration boundaries, lifecycle ordering, risk prioritization, and smallest implementation slices (adapter vs core). No SSR production changes authorized. Distinguish import safety / successful SSR rendering / hydration correctness.",
+  "assessmentType": "read-only",
+  "productionChanges": false,
+  "testChanges": false,
+  "dependencyChanges": false,
+  "areas": {
+    "serverImportSafety": {
+      "status": "PASS",
+      "class": "verified",
+      "evidence": [
+        "dist FESM has no static @smilodon/core import; only dynamic import('@smilodon/core')",
+        "core-loader.ts guards dynamic import with isBrowserEnvironment()",
+        "dist/package.json: only tslib dependency; @angular/core, @angular/forms, @smilodon/core are peers; sideEffects:false",
+        "ssr-import-safety.ssr.spec.ts: 4 tests pass in genuine Node (no DOM, no core eval)",
+        "no DOM access in constructor/field initializers; DOM use only post-browser-guard or optional-chained"
+      ],
+      "caveat": "SSR import-safety test loads @angular/compiler (setup.ssr.ts) as a JIT fallback so partial-compiled @angular/* FESMs import in bare Node. Test-only; defines no DOM, imports no core. Proves import safety, NOT real Angular SSR render."
+    },
+    "ssrMarkup": {
+      "status": "HYPOTHESIS",
+      "class": "unverified",
+      "template": "<enhanced-select #host></enhanced-select>",
+      "serverGuard": "ngAfterViewInit returns early when isBrowserEnvironment() is false; no core import, no element touch; inputs not applied server-side",
+      "derivedPlaceholder": "<smilodon-select><enhanced-select></enhanced-select></smilodon-select>",
+      "verificationGap": "No @angular/platform-server installed; no SSR render performed anywhere; exact serialization + hydration markers unverified"
+    },
+    "hydrationBoundaries": {
+      "status": "RISK_FRAMING",
+      "class": "source-verified; correctness unverified",
+      "angularOwned": "host <smilodon-select> + light-DOM <enhanced-select> placeholder",
+      "customElementOwned": "shadow root internals (combobox, popup, chips, listbox, ARIA) built in EnhancedSelect constructor (enhanced-select.ts:512-572)",
+      "boundary": "Angular owns light shell; core owns shadow DOM created post-hydration; shadow reconciliation not needed in principle",
+      "mismatchSurface": "only the empty <enhanced-select> placeholder must match server<->client pre-upgrade (stable static template)"
+    },
+    "deferredUpgrade": {
+      "status": "VERIFIED_ORDERING",
+      "class": "race needs real-browser check",
+      "ordering": [
+        "Angular hydrates light DOM shell",
+        "ngAfterViewInit (browser): attachEventListeners -> provenance probes -> focus tracking -> initialize",
+        "initialize: ensureEnhancedSelectDefined (dynamic import if not defined) -> defines enhanced-select + smilodon-select + select-option -> whenDefined",
+        "ready -> applyInputs"
+      ]
+    },
+    "inputsAndEvents": {
+      "status": "PASS",
+      "class": "CSR source-verified",
+      "listeners": "attached in ngAfterViewInit (browser only) on stable @ViewChild('host', static) <enhanced-select> ref; survive host upgrade",
+      "reconciliation": "inputs applied only after ready; pre-ready changes held and folded in at init; pre-ready ngOnChanges is a no-op"
+    },
+    "forms": {
+      "status": "PASS",
+      "class": "CSR source-verified",
+      "writeValue": "pre-ready stored in pendingFormValue, applied at init; never calls onChange (anti-echo)",
+      "initialReconcileIsUserEdit": false,
+      "touched": "only at focus-loss boundary, never on init/hydration",
+      "disabled": "pre-ready folds into config; post-ready single config write; no onChange",
+      "ssrWatchpoint": "if hydration re-runs writeValue, re-applies via generation-guarded async path (safe, no echo); call-count timing unverified"
+    },
+    "browserCompatibility": {
+      "status": "GAP",
+      "class": "unverified",
+      "angularRealBrowserTests": false,
+      "ssrHydrationE2e": false,
+      "angularWebkitProject": false,
+      "note": "playwright angular-chromium/firefox projects grep /@angular|@all/ but @all specs are vanilla-core scenarios, not the Angular component"
+    },
+    "api075": {
+      "status": "PASS",
+      "class": "strategy verified; remediation NOT AUTHORIZED",
+      "throwSource": "enhanced-select.ts:218 extends HTMLElement + :9107 unguarded customElements.get; native-select.ts:562; select-option.ts:632",
+      "strategyInForce": "T2 Option A: no static core import; dynamic import only inside isBrowserEnvironment -> server never evaluates core",
+      "remediationNecessary": false,
+      "remediationSufficientForElementRender": false,
+      "note": "constructor builds shadow DOM (:512-572) so true server element render needs separate headless path"
+    },
+    "tagCollision": {
+      "status": "NEW_RISK",
+      "class": "jsdom-confirmed; unverified in browsers",
+      "detail": "Angular component selector 'smilodon-select' collides with core NativeSelectElement defined as 'smilodon-select' (native-select.ts:562-563)",
+      "observed": "When deferred import('@smilodon/core') runs, the Angular <smilodon-select> host is upgraded (attachShadow) by NativeSelectElement; foreign shadow root attached",
+      "existingTestsStillPassBecause": "all tests query child via light DOM host.querySelector('enhanced-select'); the <enhanced-select> child remains a light child after host upgrade",
+      "empiricalProbe": "read-only jsdom probe against built package: before=null/false -> after shadowRoot=true, smilodon-select defined=true, inner still light child=true"
+    }
+  },
+  "readinessMatrix": [
+    { "area": "Angular server import", "finding": "no static core import; tslib only; peers; sideEffects:false; 4 SSR import tests pass", "class": "PASS (verified)" },
+    { "area": "SSR markup", "finding": "template placeholder derived; no real SSR render", "class": "HYPOTHESIS / gap" },
+    { "area": "Hydration", "finding": "light=Angular, shadow=core; favorable boundary in CSR", "class": "RISK FRAMING (source-verified); correctness unverified" },
+    { "area": "Deferred upgrade", "finding": "deterministic CSR order; host gains foreign shadow root when core loads", "class": "verified ordering; race needs real-browser check" },
+    { "area": "Inputs & events", "finding": "listeners browser-only on stable ref; inputs post-ready; upgrade does not disturb child", "class": "PASS (CSR)" },
+    { "area": "Forms", "finding": "pre-ready writeValue deferred; programmatic init never echoes; touched on focus-loss only", "class": "PASS (CSR)" },
+    { "area": "Browser compatibility", "finding": "no Angular real-browser test; no SSR/hydration e2e; no WebKit", "class": "GAP" },
+    { "area": "API-075", "finding": "sidestepped via Option A; remediation not needed for import safety", "class": "PASS (strategy); remediation NOT AUTHORIZED" },
+    { "area": "Tag collision smilodon-select", "finding": "core defines smilodon-select; Angular host upgraded with foreign shadow root (jsdom-confirmed)", "class": "NEW RISK (unverified in browsers)" }
+  ],
+  "riskPrioritization": {
+    "coveredNotBlockers": ["server import safety", "CSR inputs/events/forms/touched/provenance"],
+    "genuineBlockersToClaimingSSR": [
+      "B-S5-1 no real SSR render + no hydration e2e (verification gap, not proven defect)",
+      "B-S5-2 tag-name collision smilodon-select: Angular host upgraded to NativeSelectElement; benignity under real-browser hydration unverified (highest technical risk)"
+    ],
+    "hypothesesNeedBrowser": [
+      "H1 foreign host shadow root causes no visible artifact / no Angular hydration mismatch",
+      "H2 hydration does not re-run writeValue in a way that changes observable selection timing",
+      "H3 SSR serialization shape matches derived placeholder exactly"
+    ],
+    "nonRisksForThinCSR": ["API-075 import throw sidestepped by Option A", "shadow-DOM reconciliation not needed"]
+  },
+  "recommendation": {
+    "s5ImplementationDecision": "NO-GO",
+    "rationale": "adapter server-import strategy is sound and already implements T2 Option A; remaining unknowns are verification, not proven implementation blockers",
+    "recommendedNextGO": "narrowly scoped verification pass (SSR-render probe + real-browser hydration e2e Chrome/Firefox/WebKit), test-only / dev-only, separate authorization",
+    "smallestSubsequentS5Implementation": "adapter-only: resolve smilodon-select tag collision (selector rename or avoid host custom-element upgrade) behind the gate; validate against hydration e2e",
+    "coreRemediation": "S6, optional, NOT AUTHORIZED"
+  },
+  "compliance": {
+    "productionChanges": false,
+    "testChanges": false,
+    "dependencyChanges": false,
+    "headUnchanged": "2a9bd99",
+    "probes": "throwaway scripts, deleted; read-only jsdom observation"
+  }
+}
