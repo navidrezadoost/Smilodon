@@ -1,0 +1,203 @@
+{
+  "artifactId": "W1-P1.5-T1-ACKNOWLEDGED-DATA-LOADING-API-EVIDENCE",
+  "increment": "W1-P1.5",
+  "task": "Task 1 — Public Acknowledged Data-Loading API Characterization",
+  "baselineCommit": "7e3adf77545f8e1b2b4f85949684d7d91b84456b",
+  "startingCommit": "810ae6513960ee286b21729e1e091dd68151f1db",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Technical Lead W1-P1.5 Task 1 GO (starting commit 810ae65)",
+  "scopeContracts": [
+    "API-032",
+    "API-060",
+    "API-061",
+    "API-062"
+  ],
+  "surfaces": {
+    "jsdom": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts",
+    "chromium": null
+  },
+  "testCounts": {
+    "jsdom": 18,
+    "chromium": 0,
+    "total": 18
+  },
+  "renderingModel": {
+    "shadowDom": "open",
+    "observation": "public CustomEvents (search, diagnostic, dataLoadingConfigError), the public API return values (completeDataRequest results), and the detached state snapshots from getDataLoadingState()",
+    "driving": "public methods (updateConfig, startDataLoading, completeDataRequest, getDataLoadingState), the public search input (part=\"input\") value + input event, and connect via appendChild",
+    "noBrowserSurface": "All four contracts are observably fully characterized on the jsdom public surface: synchronous return classifications, event payloads/callback ordering, dedup boundaries, and detached state snapshots. No browser-only oracle was identified (no real rendering/scroll/trust/animation is exercised by these method-result and event-payload contracts). Chrome-for-Testing was conditionally authorized but not required."
+  },
+  "contractEvidence": {
+    "API-032": {
+      "behavior": "updateConfig invalid data-loading emission",
+      "jsdomTests": [
+        "emits dataLoadingConfigError with structured issues when the dataLoading candidate is invalid",
+        "invokes onDataLoadingConfigError callback with the same detail object emitted on the event",
+        "deduplicates identical invalid candidates but re-emits after a valid config resets the signature",
+        "does not emit dataLoadingConfigError for a valid dataLoading update"
+      ],
+      "observable": "updateConfig({dataLoading:{protocol:'bogus'}}) emits exactly one public `dataLoadingConfigError` CustomEvent whose detail is {issues:[{path:'protocol',code:'invalid-value',message:...}]}; the onDataLoadingConfigError callback receives the SAME detail reference as the event; a repeated identical invalid candidate emits nothing; an intervening valid dataLoading update resets the dedup signature so the same invalid candidate re-emits; a valid update emits no config error",
+      "positivePaths": [
+        "invalid candidate -> exactly one dataLoadingConfigError event with issues[0] {path:'protocol', code:'invalid-value'}",
+        "callback invoked once with the same detail object reference as the event"
+      ],
+      "negativePaths": [
+        "identical invalid candidate repeated -> NO second emission (deduplicated by signature)",
+        "valid dataLoading update -> NO dataLoadingConfigError"
+      ],
+      "dedupBoundary": "Dedup distinguishes a repeated (signature-identical) invalid candidate from a genuine new invalid state: emitting the same invalid candidate twice yields exactly one event; a valid update resets the dedup state so the same invalid candidate emits again afterwards.",
+      "distinctionFromBroaderInvalidConfig": "This contract is scoped to the `dataLoading` candidate only. The verification drives invalid `dataLoading` explicitly (protocol:'bogus'); it does not assert on unrelated legacy-config validation paths, so the characterized boundary is the data-loading config-error channel.",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6747-6950"
+        }
+      ],
+      "coverageAttribution": "jsdom-confirmed (public surface)"
+    },
+    "API-060": {
+      "behavior": "startDataLoading deferred readiness",
+      "jsdomTests": [
+        "defers the initial search until connected when startDataLoading is called before mounting",
+        "emits exactly one initial search when startDataLoading is called repeatedly after connect",
+        "is a no-op for the legacy protocol and leaves idle state",
+        "emits a search request observable through both the event and the state snapshot"
+      ],
+      "observable": "calling startDataLoading() before appendChild does NOT emit a search; the first public `search` event fires only after the element is connected; repeated startDataLoading() calls after connect emit exactly ONE `search` (idempotent); the emitted search is observable both as the `search` event detail.request and as getDataLoadingState().activeRequest (matching requestId + queryGeneration, status 'loading', busy true); for legacy protocol startDataLoading is a no-op and the state stays idle",
+      "positivePaths": [
+        "start before connect -> 0 search -> appendChild -> exactly 1 search; activeRequest.requestId matches the event request",
+        "start after connect x3 -> exactly 1 search (idempotent repeated start)",
+        "active request observable via BOTH the public search event AND getDataLoadingState (separate boundaries asserted separately)"
+      ],
+      "negativePaths": [
+        "startDataLoading with legacy protocol -> 0 search; state idle, busy false, activeRequest null"
+      ],
+      "boundariesSeparated": "Public start() and async projection are separate boundaries: repeated-start idempotence is driven purely by the public search event count and the state snapshot, and deliberately does NOT infer internal scheduling from a final snapshot alone.",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6960-6991"
+        }
+      ],
+      "coverageAttribution": "jsdom-confirmed (public surface)"
+    },
+    "API-061": {
+      "behavior": "getDataLoadingState",
+      "jsdomTests": [
+        "reports an idle snapshot before startDataLoading is called",
+        "reports an active snapshot while a request is outstanding and a completed snapshot after acceptance",
+        "returns detached snapshots so mutating one does not affect internal state"
+      ],
+      "observable": "before startDataLoading: status 'idle', busy false, activeRequest null, error null; while a request is outstanding: status 'loading' with activeRequest matching the emitted request; after a matching completion is accepted: projectionPending true synchronously then, after a microtask/task flush, status settles (busy false, activeRequest null); the returned snapshot is detached — mutating a returned activeRequest.position.page or status does NOT affect a subsequent getDataLoadingState() call",
+      "positivePaths": [
+        "idle snapshot before start (status idle, activeRequest null)",
+        "active snapshot (status loading, activeRequest.requestId matches)",
+        "completed snapshot after acceptance settles asynchronously (busy false, activeRequest null)"
+      ],
+      "negativePaths": [
+        "mutation of a returned snapshot (position.page=999, status='tampered') does not leak into a fresh snapshot"
+      ],
+      "classificationNote": "Existing preserved. Per the Lead directive API-061 was already classified Existing. This task preserves that classification while adding an explicit public detached-snapshot mutation-safety test and idle/active/completed snapshot coverage; no reclassification was warranted.",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "6993-7042"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "161"
+        }
+      ],
+      "coverageAttribution": "jsdom-confirmed (public surface)"
+    },
+    "API-062": {
+      "behavior": "completeDataRequest completion matrix",
+      "jsdomTests": [
+        "returns \"invalid\" for malformed completion envelopes",
+        "returns \"unknown-request\" for an unrecognized requestId and does not mutate state",
+        "returns \"stale\" when completing a superseded request after a newer search advances the generation",
+        "accepts a matching completion synchronously while projecting the result asynchronously",
+        "returns \"resource-limit\" and emits a diagnostic for an oversized cursor token",
+        "returns \"invalid\" without projecting items for an unrecognized status",
+        "without an acknowledged coordinator validates shape and returns invalid/unknown-request only"
+      ],
+      "observable": "completeDataRequest returns a synchronous DataRequestCompletionResult: 'invalid' for malformed envelopes and unrecognized completion status; 'unknown-request' for an unrecognized requestId (and state/DOM unchanged); 'stale' when the active request was superseded by a newer search that advanced queryGeneration; 'accepted' for a matching completion — projectionPending true synchronously then settles asynchronously (e.g. 'exhausted' status after flush); 'resource-limit' for an oversized cursor token with a public `diagnostic` event (name 'acknowledgedDataLoadingResourceLimit', detail.reason 'cursor-token-size') and getDataLoadingState().resourceLimit populated; without a coordinator (legacy) it validates shape and returns only 'invalid'/'unknown-request'",
+      "positivePaths": [
+        "accepted matching completion -> synchronous 'accepted' + projectionPending true -> async settle",
+        "resource-limit via oversized cursor token -> 'resource-limit' + diagnostic event + state.resourceLimit.reason 'cursor-token-size'",
+        "stale via a newer search superseding the active request -> 'stale'"
+      ],
+      "negativePaths": [
+        "malformed envelope ({}, null) -> 'invalid'",
+        "unknown requestId -> 'unknown-request' AND no state mutation (status/activeRequest unchanged) AND no option-node DOM change",
+        "unrecognized status ('bogus') -> 'invalid' AND no option-node DOM change",
+        "legacy (no coordinator) -> shape-invalid 'invalid', shape-valid 'unknown-request'"
+      ],
+      "syncAcceptanceVsAsyncProjection": "Synchronous acceptance is classified by the RETURN value (~'accepted'), whereas async projection is observed separately via projectionPending then the settled snapshot. A returned 'accepted' is explicitly NOT treated as DOM projection: the test asserts projectionPending true immediately after acceptance and settlement only after a flush. Negative paths verify both the return classification AND the absence of unintended state/DOM mutation (not just the returned string).",
+      "resourceLimitScope": "Cursor resource-limits are exercised only via public config + completion: paginationMode:'cursor' config plus a completion returning an oversized nextCursor produces a public 'resource-limit' return, a public `diagnostic` event, and a populated state.resourceLimit — so the resource-limit path IS publicly observable without private access; no gap remained for this branch.",
+      "sourceLocators": [
+        {
+          "file": "packages/core/src/components/enhanced-select.ts",
+          "lines": "7044-7120"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "97"
+        },
+        {
+          "file": "packages/core/src/data-loading/public-types.ts",
+          "lines": "134"
+        }
+      ],
+      "coverageAttribution": "jsdom-confirmed (public surface)"
+    }
+  },
+  "coverageChanges": {
+    "from": {
+      "API-032": "Diagnostic",
+      "API-060": "Diagnostic",
+      "API-061": "Existing",
+      "API-062": "Diagnostic"
+    },
+    "to": {
+      "API-032": "Existing",
+      "API-060": "Existing",
+      "API-061": "Existing",
+      "API-062": "Existing"
+    },
+    "rationale": "API-032/API-060/API-062 are now fully characterized on the public surface (positive + negative + boundary) and are upgraded Diagnostic -> Existing. API-061 preserves its existing Existing classification while gaining an explicit public detached-snapshot and idle/active/completed characterization. Distribution: Existing 56->59, Diagnostic 22->19, Partial 30 unchanged, Missing 4 unchanged (total 112 unchanged).",
+    "distributionAfter": {
+      "Existing": 59,
+      "Partial": 30,
+      "Diagnostic": 19,
+      "Missing": 4
+    }
+  },
+  "gates": {
+    "jsdom": "18/18 T1 passed",
+    "chromium": "not required (no browser-only oracle for these method-result/event-payload contracts)",
+    "coreRegression": "980 passed | 1 skipped",
+    "traceability": "PASS (112 IDs; 4 T1 testId literals verified present in spec; byCoverage 59/30/19/4)",
+    "eslint": "clean",
+    "productionIsolation": "0 files changed in packages/core/src (or engine/adapters) vs 810ae65",
+    "acceptedPriorTestsUnchanged": "0 files changed vs 810ae65 (phase-2e-*, phase-2f-*, data-loading/*, public-config-integration)",
+    "checksums": "sha256sum -c SHA256SUMS OK (incl. updated ledger + traceability + new T1 evidence)"
+  },
+  "boundaries": {
+    "publicSurfaceOnly": true,
+    "noPrivateMethodsOrFieldsInAcceptedTests": true,
+    "productionUnchanged": true,
+    "acceptedPriorTestsUnchanged": true,
+    "schemaConvention": "testId is the authoritative executable pointer; evidence kept as string",
+    "noTask2Work": true
+  },
+  "deviationsRaised": [],
+  "notes": [
+    "API-062 negative paths assert both the return classification AND the absence of unintended state/DOM mutation (state snapshot unchanged, option-node count unchanged), not merely the returned string.",
+    "API-062 distinguishes synchronous acceptance (return value) from asynchronous projection (projectionPending -> settled snapshot); a returned 'accepted' is not treated as DOM projection.",
+    "The resource-limit branch (cursor-token-size) is reachable via public config + completion (paginationMode:'cursor' plus an oversized nextCursor), so it is characterized without private access; no observability gap remains for it.",
+    "The 'stale' result is produced through a purely public path: a second search typed into input[part=\"input\"] advances queryGeneration, making the first request's completion classify as 'stale'.",
+    "API-060 tests the public start() boundary (search-event count + state snapshot) separately from async projection, avoiding inference of internal scheduling from a final snapshot alone.",
+    "Chromium was conditionally authorized but not added: the four contracts are method-result/event-payload/state-snapshot surfaces fully observable under jsdom; no real rendering/scroll/trust/animation is involved."
+  ]
+}

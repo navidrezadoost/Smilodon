@@ -99,7 +99,7 @@ All members reachable on an `EnhancedSelect` instance unless noted. `HTMLElement
 | --- | --- | --- | --- | --- | --- |
 | API-030 | `open(): void` - opens popup. | 6733-6735 | `interaction`, `dropdown-open-scroll` | Observed | No (verify idempotency + emit) |
 | API-031 | `close(): void` | 6740-6742 | `interaction` | Observed | No |
-| API-032 | `updateConfig(config: SelectInstanceConfig): void` - validates `dataLoading`/`selectedOptions`/`scrollToSelected`; may emit `dataLoadingConfigError`; handles mode/enabled changes. | 6747-6950 | `public-config-integration`, `phase-2e-*` | Observed | **Yes** (invalid-config emission timing) |
+| API-032 | `updateConfig(config: SelectInstanceConfig): void` - validates `dataLoading`/`selectedOptions`/`scrollToSelected`; may emit `dataLoadingConfigError`; handles mode/enabled changes. | 6747-6950 | `public-config-integration`, `phase-2e-*`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (invalid-config emission timing, dedup, callback) |
 
 ### 2.5 Error / validation API
 
@@ -125,9 +125,9 @@ All members reachable on an `EnhancedSelect` instance unless noted. `HTMLElement
 
 | Contract ID | Behavior | Source | Existing evidence | Status | New test |
 | --- | --- | --- | --- | --- | --- |
-| API-060 | `startDataLoading(): void` - deferred until connected if needed. | 6960-6991 | `phase-2e-acknowledged-data-loading` | Observed | Yes (deferred start) |
-| API-061 | `getDataLoadingState(): DataLoadingStateSnapshot` | 6993-7042 | `phase-2e-*`, `phase-2f-*` | Observed | No |
-| API-062 | `completeDataRequest(completion): DataRequestCompletionResult` - **sync** return; validates shape; projects accepted snapshots async. | 7044-7120 | `phase-2e-acknowledged-data-loading` | Observed | **Yes** (return matrix + async projection) |
+| API-060 | `startDataLoading(): void` - deferred until connected if needed. | 6960-6991 | `phase-2e-acknowledged-data-loading`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (deferred start, repeated-start idempotence) |
+| API-061 | `getDataLoadingState(): DataLoadingStateSnapshot` | 6993-7042 | `phase-2e-*`, `phase-2f-*`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (idle/active/completed, detached snapshot) |
+| API-062 | `completeDataRequest(completion): DataRequestCompletionResult` - **sync** return; validates shape; projects accepted snapshots async. | 7044-7120 | `phase-2e-acknowledged-data-loading`, `w1-p1-5-t1-acknowledged-data-loading-api` | Observed | Yes (return matrix + async projection + resource-limit) |
 
 > Request/response payload types for the acknowledged path live in `data-loading/public-types.ts`: `SearchDataRequest:70`, `LoadMoreDataRequest:75`, `DataRequestCompletion:97`, `DataRequestCompletionResult:134`, `DataLoadingStateSnapshot:161`.
 
