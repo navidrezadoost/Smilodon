@@ -27,9 +27,9 @@
     },
     "byCoverage": {
       "Existing": 62,
-      "Partial": 33,
+      "Partial": 34,
       "Diagnostic": 13,
-      "Missing": 4
+      "Missing": 3
     },
     "byTargetIncrement": {
       "P1.1": 4,
@@ -1447,10 +1447,10 @@
       "id": "LIFECYCLE-005",
       "behavior": "stale async guard",
       "targetIncrement": "P1.5",
-      "coverage": "Missing",
-      "testId": "unassigned",
+      "coverage": "Partial",
+      "testId": "packages/core/tests/w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts#applies only the newest of two superseded fetches even when the stale fetch resolves last",
       "status": "Observed",
-      "evidence": "-",
+      "evidence": "W1-P1.5-T3-LIFECYCLE-STALE-ASYNC-GUARD-EVIDENCE (public supersession + disconnect + acknowledged stale-completion; discriminating — 6/6 fail with guard neutralized)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",

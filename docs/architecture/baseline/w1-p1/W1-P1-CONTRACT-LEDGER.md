@@ -246,7 +246,7 @@ Status: `Observed`. Existing evidence: `custom-arrow-slot`, `empty-state-slot`, 
 | LIFECYCLE-002 | `connectedCallback`: register instance, CONNECT dispatch, **create `AbortController`**, attach document `pointerdown` (via signal) **and `_inputContent` scroll + window resize/scroll listeners** (W1-P0.2B fix), sync direction, re-render if items present, emit `onOpen` if configured. | 572-635 | `lifecycle`, `memory-lifecycle`, phase-4 lifecycle | Observed | **Yes** (black-box reconnect + listener ownership) |
 | LIFECYCLE-003 | `disconnectedCallback`: coordinator disconnect, unregister, close if open, DISCONNECT dispatch, **abort connection controller**, **remove scroll listener**, bump `_asyncGeneration`, cancel rafs/timers, destroy guarded virtualizer, remove option/spacer children, disconnect observers, teardown global-style mirroring. | 648-768 | `memory-lifecycle`, phase-4 lifecycle | Observed | **Yes** (resource cleanup) |
 | LIFECYCLE-004 | Reconnection restores connection-scoped resources deterministically; disconnection releases them. | connect/disconnect | phase-4 lifecycle | Observed | **Yes** (the W1-P0.2B invariant) |
-| LIFECYCLE-005 | Stale async work guarded by `_asyncGeneration` + `isConnected`. | guards in 6668-6695, 7078-7120, etc. | partial | Observed | Yes (P1.5) |
+| LIFECYCLE-005 | Stale async work guarded by `_asyncGeneration` + `isConnected`; superseded/disconnected `setSelectedValues` results and stale/unknown acknowledged completions are dropped (not applied, not projected). | guards in 6668-6695, 7078-7120, etc.; `_loadSelectedItemsByValues` + `completeDataRequest` | `w1-p1-5-t3-lifecycle-stale-async-guard` (6 discriminating tests) | Observed | **Yes** (P1.5 T3; Partial) |
 | LIFECYCLE-006 | `attributeChangedCallback` early-returns on equal values. | 637-646 | - | Observed | Yes |
 
 > **Invariant to preserve (accepted W1-P0.2B):** a connected component owns its connection-scoped resources; disconnection releases them deterministically. Binding constraint on all future extraction (LIFECYCLE-004).
@@ -861,3 +861,34 @@ T2-R responds to the independent review of `3dff949` (CONDITIONALLY ACCEPTED; fi
 - Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `3dff949`; accepted prior tests unchanged; no probe files remain.
 
 _End of W1-P1.5 Task 2 (T2-R). Tasks 3–4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until T2-R is independently accepted._
+
+## 22. W1-P1.5 Task 3 — lifecycle stale async result guard (LIFECYCLE-005)
+
+Task 3 characterizes the single authorized contract **LIFECYCLE-005** (stale asynchronous result guard) on the public surface only: **6** new jsdom tests in `w1-p1-5-t3-lifecycle-stale-async-guard.spec.ts`. No production source changed; no prior test modified; no private seam; no fixed sleeps.
+
+### 22.1 Discriminating scenarios
+
+Every superseded/disconnected/unknown operation is resolved with a **non-benign payload that would change observable state/events if the guard were absent**, and supersession resolves **newer-before-older** so a missing guard would visibly overwrite the current result or emit an unintended follow-on event.
+
+| # | Scenario | Public surface | Non-benign result |
+| --- | --- | --- | --- |
+| 1 | Two overlapping `setSelectedValues` server fetches; stale resolves last | `setSelectedValues`, `getSelectedValues`, `change` | stale `'first'` must not overwrite newer `'second'`; exactly one `change` |
+| 2 | Stale success resolving after a newer success | value + `change` non-mutation | stale distinct item dropped |
+| 3 | Stale **failure** after newer success | `error` absent; selection retained | stale rejection swallowed |
+| 4 | Disconnect mid-flight with a real resolved item | remove before resolve | detached non-benign item dropped; 0 events |
+| 5 | Acknowledged stale completion after supersession | `startDataLoading`, `completeDataRequest`, `getDataLoadingState`, `dataProjection` | stale returns `'stale'`; no projection; status stays `loading`; current then `'accepted'` + single `complete` |
+| 6 | Acknowledged completion with unknown request identity | `completeDataRequest`, `getDataLoadingState` | not `'accepted'`; no projection; status stays `loading` |
+
+### 22.2 Discriminator proof
+
+The production guards (`_loadSelectedItemsByValues` generation/disconnect guard; `completeDataRequest` inactive/unknown routing to `classifyInactiveRequest`) were **temporarily neutralized locally**: **all 6 tests FAIL** with the guards broken and **all 6 PASS** with them intact. Production source was restored (0 remnants; `git diff` vs `bc30c0f` on `packages/core/src` empty). This empirically demonstrates the tests discriminate a working guard from one that applies obsolete results; no benign "nothing changed" observation is used as evidence.
+
+### 22.3 Reconciliation & integrity
+
+- **112 records** (no ID added/removed). Distribution **Existing 62 · Partial 34 · Diagnostic 13 · Missing 3 = 112** — from 62/33/13/4 after T2-R (LIFECYCLE-005 only, Missing → Partial). LIFECYCLE-005 is classified **Partial**, not Existing, because cursor/page concurrency and load-more interleavings are not exhaustively characterized.
+- `verify_traceability.py` **PASS** (112 unique; locators in bounds; LIFECYCLE-005 testId resolves to the first scenario title).
+- Core regression **1012 passed | 1 skipped** (1006 + 6 new); ESLint clean.
+- Production isolation **0** files in `packages/core/src` (or engine/adapters) vs `bc30c0f`; accepted prior tests unchanged; no probe files remain.
+- Note: the pre-existing P1.2 supersession test resolves its stale fetch to an **empty** array (benign) and cannot by itself distinguish a working guard; T3 closes that gap with non-benign stale payloads.
+
+_End of W1-P1.5 Task 3. Task 4, P1.6, P1-P2, Angular Wave 2 remain NO-GO until Task 3 is independently accepted._
