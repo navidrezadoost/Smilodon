@@ -1,0 +1,127 @@
+{
+  "artifact": "Angular-Wave2-S5P1R-TEST-HARNESS-CORRECTION",
+  "increment": "Angular Wave 2 - S5-P1R Packed-Install Test-Harness Correction",
+  "startingCommit": "d65c4d80cbee32de61e519b7399261a864b135f9",
+  "startingCommitDescription": "S5-P1 packaging correction (accepted production metadata; verification weaknesses F01/F02/repeat-pack found)",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "scope": "bounded test-only correction: harden packed-install regression test; no production/core/dependency/version change; no publish",
+  "published": false,
+  "releaseDecision": "S5-P1R COMPLETE - test harness hardened; ready for S5-P1 COMPLETE acceptance (test-evidence portion); publication remains separately gated",
+  "environment": {
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "ngPackagr": "21.2.7",
+    "angular": "21.2.26"
+  },
+  "changedFiles": [
+    {
+      "path": "packages/angular/tests/packed-install/run-packed-install.mjs",
+      "change": "hardened runner: in-consumer AOT source (P1R-01); ngc --traceResolution provenance proof (P1R-02); negative-control sabotage gate (P1R-03); explicit resolution-vs-runtime classification (P1R-04); consumable repeat-pack install+resolve (P1R-05); maxBuffer fix for >1MB trace",
+      "authorizedArea": "packed-install regression test (test-only)"
+    }
+  ],
+  "runnerSha256": "fcb7c89d3fb37510d54fe017467424e0d39301a0ce3e4f49a7333d1c46ad430b",
+  "diffStat": "1 file changed, 348 insertions(+), 201 deletions(-)",
+  "notChanged": {
+    "angularRuntimeOrComponentImplementation": false,
+    "coreSource": false,
+    "packageVersion": "1.13.0 (unchanged)",
+    "dependencies": false,
+    "registryAction": false
+  },
+  "weaknessesCorrected": [
+    {
+      "id": "F01",
+      "severity": "HIGH",
+      "weakness": "AOT compiled the component from the repo source dir, so compile-time resolution could pick the workspace dist (via the S4 symlink) rather than the installed tarball",
+      "correction": "Copy component into the isolated consumer's src/; add --traceResolution and assert resolution provenance (installed node_modules vs repo dist)"
+    },
+    {
+      "id": "F02",
+      "severity": "MEDIUM",
+      "weakness": "ESM import catch swallowed any exception (only ERR_MODULE_NOT_FOUND flagged)",
+      "correction": "Separate resolution (hard assert) from runtime; runtime must be full success or a SPECIFIC known Angular-JIT error matched by message"
+    },
+    {
+      "id": "RepeatPack",
+      "severity": "LOW",
+      "weakness": "2nd tarball only checked 3 manifest fields, not actual consumability",
+      "correction": "Install 2nd tarball into a fresh consumer and resolve it; also assert each export target exists inside it"
+    }
+  ],
+  "harnessFix": {
+    "issue": "ngc --traceResolution emits >1MB on stdout; Node spawnSync default maxBuffer (1MB) SIGTERM-killed the child mid-write, producing a spurious non-zero status and a missing output file (which cascaded into a boot failure).",
+    "evidence": "Isolated repro: spawnSync default buffer -> status=null, signal=SIGTERM, no .aot-out emitted; with maxBuffer=256MB -> status=0, .aot-out/consumer-app.component.js emitted, boot OK.",
+    "fix": "run() helper sets maxBuffer to 256 * 1024 * 1024"
+  },
+  "provenanceProof": {
+    "method": "component copied to <consumer>/src; tsconfig inside consumer (rootDir ./src); ngc -p tsconfig --traceResolution run with cwd=consumer",
+    "assertContains": [
+      "<consumer>/node_modules/@smilodon/angular",
+      "<consumer>/node_modules/@smilodon/angular/dist/types/smilodon-angular.d.ts"
+    ],
+    "assertNotContains": [
+      "packages/angular/dist"
+    ]
+  },
+  "negativeControl": {
+    "method": "copy installed package to scratch consumer; remove dist/types; delete exports/types/module from manifest; run identical ngc compile",
+    "expected": "ngc status !== 0 (compile fails)",
+    "observed": "compile failed (status !== 0)",
+    "purpose": "prove the AOT gate is sensitive to losing the package's exports/declarations and is not a false positive"
+  },
+  "resolutionVsRuntime": {
+    "resolution": "import.meta.resolve and require.resolve must both succeed and point at the INSTALLED tarball (.../consumer/node_modules/@smilodon/angular/...), never repo dist — hard assertions",
+    "runtime": "structured result; runtime must be IMPORTED_KEYS=… (full success) OR THREW:… matching KNOWN_JIT = /needs to be compiled using the JIT compiler|@angular\\/compiler/i; any other exception fails the gate"
+  },
+  "repeatPackConsumable": {
+    "checks": [
+      "2nd manifest carries exports/module/types",
+      "every export target physically exists inside the 2nd tarball",
+      "2nd tarball installed into a fresh consumer and import.meta.resolve succeeds"
+    ]
+  },
+  "acceptanceCriteria": [
+    { "id": "P1R-01", "requirement": "AOT source resides INSIDE the isolated consumer project", "verdict": "PASS", "evidence": "component copied to <consumer>/src/; tsconfig inside consumer; rootDir ./src" },
+    { "id": "P1R-02", "requirement": "ngc --traceResolution proves declarations come from installed tarball (not repo/dist)", "verdict": "PASS", "evidence": "trace contains installed node_modules + installed .d.ts; does NOT contain repo dist" },
+    { "id": "P1R-03", "requirement": "Removing installed exports/declarations makes the AOT gate FAIL (negative control)", "verdict": "PASS", "evidence": "sabotage copy (declarations removed, exports stripped) -> ngc status != 0" },
+    { "id": "P1R-04", "requirement": "ESM success/failure distinguished without broad exception suppression", "verdict": "PASS", "evidence": "resolution hard-asserted; runtime = full success OR specific JIT error only" },
+    { "id": "P1R-05", "requirement": "Repeated packing produces verified CONSUMABLE artifact (install + resolve)", "verdict": "PASS", "evidence": "2nd pack: entry points + targets exist + fresh install resolves" },
+    { "id": "P1R-06", "requirement": "Original packaging fix + regression gates remain intact", "verdict": "PASS", "evidence": "see gateResults (identical to S5-P1 baseline)" },
+    { "id": "P1R-07", "requirement": "No production/core/dependency/version changes", "verdict": "PASS", "evidence": "git diff --stat = only run-packed-install.mjs (348+/201-); version 1.13.0; no src/ or core .ts" }
+  ],
+  "packedInstallAssertions": {
+    "total": 38,
+    "passed": 38,
+    "exitCode": 0,
+    "summary": "packed tarball resolves + imports + serves a real AOT consumer, resolution provenance proven, negative control fails, repeat-pack consumable"
+  },
+  "gateResults": {
+    "packedInstallHardened": "PASSED (38/38 assertions)",
+    "aotConsumerExisting": "PASSED",
+    "angularUnit": "62 passed",
+    "angularSSR": "4 passed",
+    "angularTsc": "0 errors",
+    "eslint": "0 errors",
+    "coreUnit": "1071 passed / 1 skipped",
+    "coreSSR": "10 passed",
+    "coreTsc": "44 (pre-existing, unchanged)",
+    "traceability": "129/129 PASS"
+  },
+  "scopeGuardrails": {
+    "testOnly": true,
+    "angularRuntimeUntouched": true,
+    "coreSourceUntouched": true,
+    "dependenciesUnchanged": true,
+    "packageVersionUnchanged": "1.13.0",
+    "npmPublication": "not performed (NO-GO)"
+  },
+  "preservedLimitations": {
+    "L-01": "WebKit unverified on build host; disclosed in README",
+    "L-02": "Async provenance accepted limitation; disclosed in README",
+    "L-03": "Multi init empty change (core behavior); disclosed in README",
+    "L-04": "Core tsc 44 pre-existing, S6 NO-GO scope",
+    "L-05": "Developer-reported gates, disclosure retained"
+  },
+  "recommendation": "The three Lead-identified verification weaknesses (F01, F02, repeat-pack) are corrected; the gate is demonstrated provenance-correct (compiles from installed tarball) and sensitive (negative control fails). Production packaging fix untouched; all regression gates green and identical to S5-P1 baseline. S5-P1 COMPLETE acceptance (test-evidence portion) ready. Post-correction publication preflight and npm publication remain PENDING / NO-GO."
+}
