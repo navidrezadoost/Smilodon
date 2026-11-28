@@ -1014,9 +1014,9 @@ _End of W1-P1.6 Task 3. W1-P1.6-T3 characterizes SSR import-time safety (API-075
 
 ## 27. W1-P1.6 Task 4 — Closure (reconciliation & closure evidence, documentation only)
 
-W1-P1.6 Task 4 consolidates the accepted P1.6 increments (Tasks 1, 1-R, 1-R1, 2, 2-R, 2-R1, 3, 3-R) into the final closure package. **Documentation only:** no production source changed, no behavioral test added or modified, no reclassification beyond what Tasks 1–3 committed, no verifier change. This section adds no contract ID and preserves the **129-record** inventory; it records the final P1.6 coverage, the reconciliation, and the outstanding limitations. Machine-readable detail is in `W1-P1.6-CLOSURE-EVIDENCE.json`; narrative in `W1-P1.6-CLOSURE-REPORT.md`. **This section does not claim W1-P1.6 is formally closed** — that is gated on independent Task 4 acceptance.
+W1-P1.6 Task 4 consolidates the accepted P1.6 increments (Tasks 1, 1-R, 1-R1, 2, 2-R, 2-R1, 3, 3-R) into the final closure package. **Documentation only:** no production source changed, no behavioral test added or modified, no reclassification beyond what Tasks 1–3 committed, no verifier change. This section adds no contract ID and preserves the **129-record** inventory; it records the final P1.6 coverage, the reconciliation, and the outstanding limitations. Machine-readable detail is in `W1-P1.6-CLOSURE-EVIDENCE.json`; narrative in `W1-P1.6-CLOSURE-REPORT.md`. Task 4 was submitted at `975fb6c`; the corrective increment **Task 4-R** (`52a4013`) fixed T4-F01 (API-075 recorded as a NEWLY REGISTERED Partial, not a Missing→Partial reclassification; only API-065 remains a reclassification) and T4-F02 (API-063 row: `resetHTMLSanitizer` is NOT a public export). **Task 4-R was accepted; W1-P1.6 Task 4 is formally closed.**
 
-**Lineage (linear):** `116707f` (T1) → `7183165` (T1-R) → `e598e5c` (T1-R1) → `dc1131f` (T2) → `61ebba0` (T2-R) → `44dc148` (T2-R1) → `98935ca` (T3) → `e6b89fa` (T3-R) → this Task 4 closure.
+**Lineage (linear):** `116707f` (T1) → `7183165` (T1-R) → `e598e5c` (T1-R1) → `dc1131f` (T2) → `61ebba0` (T2-R) → `44dc148` (T2-R1) → `98935ca` (T3) → `e6b89fa` (T3-R) → `975fb6c` (T4) → `52a4013` (T4-R).
 
 ### 27.1 P1.6 test inventory
 
@@ -1063,10 +1063,10 @@ P1.6 added 17 contracts (API +14, CONFIG +3); Existing +15, Partial +2 (API-065 
 
 ### 27.5 Findings resolved (all CLOSED)
 
-T1-F01, T1-F02, T1-R-F01, T2-F01, T2-F02, T2-F03, T2-F04, T2-R-F01, T3-F01, T3-F02, T3-F03. The API-065 and API-075 deficiencies remain **open production limitations** (recorded, not remediated).
+T1-F01, T1-F02, T1-R-F01, T2-F01, T2-F02, T2-F03, T2-F04, T2-R-F01, T3-F01, T3-F02, T3-F03, T4-F01, T4-F02. The API-065 and API-075 deficiencies remain **open production limitations** (recorded, not remediated).
 
 ### 27.6 Disposition / non-absorption
 
 No P1.3/P1.4/P1.5 residual or DEVIATION-09 absorbed; the three Missing records and all residuals retain their original owners. **DEVIATION-09** ("P1.6 / forms") is a forms/validation decision, **excluded** from the security/SSR scope.
 
-_End of W1-P1.6 Task 4 (closure preparation). Documentation only; 129-record inventory preserved; P1.6 coverage 15 Existing / 2 Partial = 17; whole-matrix 77/36/13/3 = 129. W1-P1.6 overall closure and W1-P2/Angular remain NO-GO pending independent Task 4 acceptance. No production source, behavioral test, verifier, adapter, or previously-accepted artifact changed._
+_End of W1-P1.6 Task 4 (closure). Accepted & closed via Task 4-R `52a4013` (T4-F01, T4-F02). Documentation only; 129-record inventory preserved; P1.6 coverage 15 Existing / 2 Partial = 17; whole-matrix 77/36/13/3 = 129. W1-P1.6 Task 4 is formally closed; W1-P2/Angular remain NO-GO (separately gated). No production source, behavioral test, verifier, adapter, or previously-accepted artifact changed._

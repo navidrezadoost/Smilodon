@@ -17,7 +17,8 @@
     {"increment": "Task 2-R1", "commit": "44dc148", "focus": "correct API-073 exclusivity wording (T2-R-F01)", "status": "Accepted & closed (final)"},
     {"increment": "Task 3", "commit": "98935ca", "focus": "SSR import-time safety + deferred DOM access (API-075 Partial, API-076 Existing)", "status": "Accepted (conditional; corrected by T3-R)"},
     {"increment": "Task 3-R", "commit": "e6b89fa", "focus": "correct coverage summary 77/36/13/3, no-DOM guards, verifier evidence (T3-F01..F03)", "status": "Accepted & closed (final)"},
-    {"increment": "Task 4", "commit": "(this closure commit)", "focus": "closure + reconciliation + checksums", "status": "Submitted for independent acceptance"}
+    {"increment": "Task 4", "commit": "975fb6c", "focus": "closure + reconciliation + checksums", "status": "Accepted (conditional; corrected by T4-R)"},
+    {"increment": "Task 4-R", "commit": "52a4013", "focus": "correct API-075 newly-registered status + sanitizer reset wording (T4-F01, T4-F02)", "status": "Accepted & closed (final)"}
   ],
   "lineageLinear": true,
   "scopeContracts": [
@@ -109,7 +110,9 @@
     {"id": "T2-R-F01", "contract": "API-073", "severity": "Low", "status": "CLOSED", "resolution": "Replaced 'only a parentless element returns false' exclusive claim with canonical parent-chain wording."},
     {"id": "T3-F01", "contract": "traceability", "severity": "High", "status": "CLOSED", "resolution": "Corrected coverage summary 77/36/13/3 (was 77/36/13/1); Missing records unchanged."},
     {"id": "T3-F02", "contract": "harness", "severity": "Low", "status": "CLOSED", "resolution": "assertNoDom() called immediately before every dynamic import (both API-076 tests)."},
-    {"id": "T3-F03", "contract": "verification", "severity": "Medium", "status": "CLOSED", "resolution": "Exact verifier command/output reported; verifier does NOT validate reconciliation.byCoverage (gap identified, not fixed)."}
+    {"id": "T3-F03", "contract": "verification", "severity": "Medium", "status": "CLOSED", "resolution": "Exact verifier command/output reported; verifier does NOT validate reconciliation.byCoverage (gap identified, not fixed)."},
+    {"id": "T4-F01", "contract": "evidence", "severity": "Medium", "status": "CLOSED", "resolution": "Corrected: API-075 is a NEWLY REGISTERED Partial (a new record), not a Missing->Partial reclassification. reclassifications now lists only API-065; a newlyRegistered array (16) records the other P1.6 contracts at first-classified coverage. Three pre-existing Missing records unchanged."},
+    {"id": "T4-F02", "contract": "report", "severity": "Low", "status": "CLOSED", "resolution": "API-063 row corrected: resetHTMLSanitizer exists in security.ts but is NOT a public package export; described public setHTMLSanitizer/getHTMLSanitizer + sanitizeHTML delegation; reset-to-no-op reachable only by installing an identity sanitizer via the public setter. No new test."}
   ],
   "outstandingLimitations": [
     {"item": "API-065 — case-sensitive on*/style attribute filtering", "disposition": "Open production security limitation", "detail": "createElement blocks key.startsWith('on') || key === 'style' case-sensitively; ONCLICK/OnLoad/Style/STYLE bypass to live handler/inline style. Characterized only; remediation requires separate production authorization."},
@@ -171,5 +174,5 @@
       "Compiled production artifact behavior (source-conditioned only)."
     ]
   },
-  "closureStatement": "W1-P1.6 characterized all 17 targeted contracts on a public-surface basis: Existing 15, Partial 2 (API-065 case-sensitive filter, API-075 package-entry SSR import failure), Diagnostic 0, Missing 0. Coverage 77/36/13/3 = 129 total (the three pre-existing Missing records API-054/EVENT-005/CONFIG-023 remain untouched). Gates: Node SSR 6 passed, core jsdom 1063 passed | 1 skipped, ESLint clean, verifier PASS + independent arithmetic reconciliation, SHA256SUMS OK. Outstanding production limitations (API-065 case-sensitive filter, API-075 entry import failure) are recorded, NOT remediated. Browser CSP and adapter hydration are not certified. This submission does NOT claim W1-P1.6 is formally closed; that decision is gated on independent Task 4 acceptance."
+  "closureStatement": "W1-P1.6 characterized all 17 targeted contracts on a public-surface basis: Existing 15, Partial 2 (API-065 case-sensitive filter, API-075 package-entry SSR import failure), Diagnostic 0, Missing 0. Coverage 77/36/13/3 = 129 total (the three pre-existing Missing records API-054/EVENT-005/CONFIG-023 remain untouched). Gates: Node SSR 6 passed, core jsdom 1063 passed | 1 skipped, ESLint clean, verifier PASS + independent arithmetic reconciliation, SHA256SUMS OK. Outstanding production limitations (API-065 case-sensitive filter, API-075 entry import failure) are recorded, NOT remediated. Browser CSP and adapter hydration are not certified. Task 4 was submitted at 975fb6c and, after the corrective increment Task 4-R at 52a4013 (T4-F01 API-075 newly-registered correction; T4-F02 API-063 sanitizer-reset wording correction), ACCEPTED: W1-P1.6 Task 4 is FORMALLY CLOSED. This is not production sign-off; W1-P2 and Angular Wave 2 remain separately gated."
 }
