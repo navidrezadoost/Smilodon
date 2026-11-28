@@ -259,3 +259,239 @@ describe('SmilodonSelectComponent — non-browser guard', () => {
     wrap.remove();
   });
 });
+
+// ── S2-F02: controlled-value clearing semantics ─────────────────────────────────
+describe('SmilodonSelectComponent — controlled value clearing (S2-F02)', () => {
+  let h: Harness;
+
+  const ITEMS = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'B' },
+    { value: 'c', label: 'C' },
+  ];
+
+  afterEach(() => {
+    h?.cmp.ngOnDestroy();
+    h?.wrap.remove();
+    vi.restoreAllMocks();
+  });
+
+  it('clears the previous selection when value changes ["a"] → null', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: ITEMS, value: ['a'] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+    expect(h.el.getSelectedValues()).toEqual(['a']);
+
+    // Explicit clear via null (a null binding is "empty selection", not "ignore").
+    configure(h.cmp, { value: null });
+    h.cmp.ngOnChanges({
+      value: { currentValue: null, previousValue: ['a'], firstChange: false, isFirstChange: () => false },
+    });
+    await flush();
+
+    expect(h.el.getSelectedValues()).toEqual([]);
+    expect(h.cmp.lastValueError).toBeNull();
+  });
+
+  it('clears the previous selection when value changes to an empty array', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: ITEMS, value: ['a', 'b'], multiple: true });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+    expect(h.el.getSelectedValues().sort()).toEqual(['a', 'b']);
+
+    configure(h.cmp, { value: [] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: [], previousValue: ['a', 'b'], firstChange: false, isFirstChange: () => false },
+    });
+    await flush();
+
+    expect(h.el.getSelectedValues()).toEqual([]);
+  });
+
+  it('does NOT touch selection when value is omitted (undefined) at init', async () => {
+    h = createHarness();
+    // No `value` supplied at all — selection must be left untouched (empty here),
+    // and crucially setSelectedValues must not be called.
+    configure(h.cmp, { items: ITEMS });
+    const spy = vi.spyOn(h.el, 'setSelectedValues');
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(h.el.getSelectedValues()).toEqual([]);
+  });
+
+  it('does NOT clear when an unrelated input changes and value stays undefined', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: ITEMS, value: ['b'] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+    expect(h.el.getSelectedValues()).toEqual(['b']);
+
+    // Set value back to undefined (unbind) + change an unrelated flag.
+    configure(h.cmp, { value: undefined, searchable: true });
+    h.cmp.ngOnChanges({
+      searchable: { currentValue: true, previousValue: false, firstChange: false, isFirstChange: () => false },
+    });
+    await flush();
+
+    // Unbinding value must not silently clear a live selection.
+    expect(h.el.getSelectedValues()).toEqual(['b']);
+    expect(h.el._config.searchable).toBe(true);
+  });
+
+  it('distinguishes an omitted initial value from an explicit null clear', async () => {
+    // Case A: omitted (undefined) → no call, no clear.
+    const a = createHarness();
+    configure(a.cmp, { items: ITEMS });
+    const spyA = vi.spyOn(a.el, 'setSelectedValues');
+    a.cmp.ngAfterViewInit();
+    await a.cmp.whenReady();
+    await flush();
+    expect(spyA).not.toHaveBeenCalled();
+    a.cmp.ngOnDestroy();
+    a.wrap.remove();
+
+    // Case B: explicit null → clear is applied (setSelectedValues called with []).
+    const b = createHarness();
+    configure(b.cmp, { items: ITEMS, value: null });
+    const spyB = vi.spyOn(b.el, 'setSelectedValues');
+    b.cmp.ngAfterViewInit();
+    await b.cmp.whenReady();
+    await flush();
+    expect(spyB).toHaveBeenCalledWith([]);
+    expect(b.el.getSelectedValues()).toEqual([]);
+    b.cmp.ngOnDestroy();
+    b.wrap.remove();
+  });
+});
+
+// ── S2-F03: async value application — rejection + latest-value ordering ─────────
+describe('SmilodonSelectComponent — async value ordering (S2-F03)', () => {
+  let h: Harness;
+
+  afterEach(() => {
+    h?.cmp.ngOnDestroy();
+    h?.wrap.remove();
+    vi.restoreAllMocks();
+  });
+
+  /** Await all pending microtasks + a macrotask so settled promises flush. */
+  const settle = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await flush();
+  };
+
+  it('records a rejection from setSelectedValues without an unhandled rejection', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    const boom = new Error('selection failed');
+    vi.spyOn(h.el, 'setSelectedValues').mockRejectedValueOnce(boom);
+
+    // An unhandled rejection would fail the process; capture it explicitly.
+    const onUnhandled = vi.fn();
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      configure(h.cmp, { value: ['a'] });
+      h.cmp.ngOnChanges({
+        value: { currentValue: ['a'], previousValue: null, firstChange: false, isFirstChange: () => false },
+      });
+      await settle();
+
+      expect(h.cmp.lastValueError).toBe(boom);
+      expect(onUnhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  it('latest value wins and a stale rejection is swallowed (deterministic ordering)', async () => {
+    h = createHarness();
+    configure(h.cmp, {
+      items: [
+        { value: 'a', label: 'A' },
+        { value: 'b', label: 'B' },
+      ],
+    });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    // Two overlapping applications with controllable completion. The FIRST
+    // (older) application is delayed and rejects; the SECOND (newer) resolves.
+    // The stale rejection must not overwrite the current error state.
+    const resolvers: Array<{ resolve: () => void; reject: (e: unknown) => void }> = [];
+    vi.spyOn(h.el, 'setSelectedValues').mockImplementation(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          resolvers.push({ resolve, reject });
+        }),
+    );
+
+    // Application 1 (old): value ['a']
+    configure(h.cmp, { value: ['a'] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: ['a'], previousValue: null, firstChange: false, isFirstChange: () => false },
+    });
+    // Application 2 (new): value ['b'] — supersedes application 1.
+    configure(h.cmp, { value: ['b'] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: ['b'], previousValue: ['a'], firstChange: false, isFirstChange: () => false },
+    });
+
+    expect(resolvers.length).toBe(2);
+
+    // Resolve the NEWEST first (success), then reject the OLDER (stale).
+    resolvers[1].resolve();
+    resolvers[0].reject(new Error('stale failure'));
+    await settle();
+
+    // The newer success is authoritative: no lingering error.
+    expect(h.cmp.lastValueError).toBeNull();
+  });
+
+  it('records the rejection when the newest application fails after an older success', async () => {
+    h = createHarness();
+    configure(h.cmp, { items: [{ value: 'a', label: 'A' }] });
+    h.cmp.ngAfterViewInit();
+    await h.cmp.whenReady();
+    await flush();
+
+    const resolvers: Array<{ resolve: () => void; reject: (e: unknown) => void }> = [];
+    vi.spyOn(h.el, 'setSelectedValues').mockImplementation(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          resolvers.push({ resolve, reject });
+        }),
+    );
+
+    configure(h.cmp, { value: ['a'] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: ['a'], previousValue: null, firstChange: false, isFirstChange: () => false },
+    });
+    configure(h.cmp, { value: ['b'] });
+    h.cmp.ngOnChanges({
+      value: { currentValue: ['b'], previousValue: ['a'], firstChange: false, isFirstChange: () => false },
+    });
+
+    const newestError = new Error('newest failure');
+    // Older resolves later (stale success must not clear a genuine newest error).
+    resolvers[0].resolve();
+    resolvers[1].reject(newestError);
+    await settle();
+
+    expect(h.cmp.lastValueError).toBe(newestError);
+  });
+});
+

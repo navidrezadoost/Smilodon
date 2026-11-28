@@ -57,6 +57,23 @@ Inputs are applied through the element's **imperative API**, never as HTML
 attributes — only `aria-*` are observed by the element, so attribute binding
 would silently no-op.
 
+### Controlled `value` semantics
+
+`setSelectedValues()` is async, so `value` has an explicit contract:
+
+| `value` | Effect |
+| --- | --- |
+| `undefined` (default / never bound) | Do **not** touch selection (no spurious clear). |
+| `[]` | Explicit empty selection (clears). |
+| `null` | Explicit empty selection (clears). |
+| `['a', 'b']` | Apply that selection. |
+
+This preserves the distinction between "no value supplied" and "explicitly
+clear". Async applications are **generation-guarded**: a stale `setSelectedValues`
+rejection (superseded by a newer value) is swallowed and never surfaces, and the
+latest value always wins. Rejections from the current selection are exposed via
+`lastValueError` rather than becoming unhandled promise rejections.
+
 ### Lifecycle
 
 `ngAfterViewInit` (browser only) → `ensureEnhancedSelectDefined()` (dynamic
@@ -67,9 +84,16 @@ pending init is ignored after `ngOnDestroy`.
 ### Tests
 
 ```bash
-npm test -w @smilodon/angular        # jsdom integration (component + loader)
+npm test -w @smilodon/angular         # jsdom integration (component + loader)
 npm run test:ssr -w @smilodon/angular # no-DOM Node: entry import-safety (API-075)
+npm run test:consumer -w @smilodon/angular # real AOT consumer vs the built dist
 ```
+
+`test:consumer` is the packaging qualification gate: it AOT-compiles a minimal
+application component (`ngc`, full compilation) that imports the **built**
+`@smilodon/angular` artifact, boots it through the Angular `TestBed` under
+jsdom, and verifies that `[items]`, `[value]`, and config bindings actually
+reach the real `<enhanced-select>` element.
 
 ## Design (adopted Wave 2 architecture)
 
@@ -101,8 +125,29 @@ without reintroducing the no-DOM import throw. Do not add a value import of
 npm run build -w @smilodon/angular
 ```
 
-Produces `dist/index.js` (ESM), `dist/index.cjs` (CJS), and `dist/types/index.d.ts`.
-`@smilodon/core` and `@angular/core` are externalized (peer dependencies).
+The package is built by **ng-packagr** in **partial (Ivy) compilation mode**
+(`ngc`). It produces an Angular-library layout:
+
+```
+dist/
+  fesm2022/smilodon-angular.mjs   # partial-compiled ESM (FESM) bundle
+  types/smilodon-angular.d.ts     # flattened declarations
+  package.json                    # generated manifest (exports/types/main)
+```
+
+`@angular/core` and `@smilodon/core` are externalized (peer dependencies), so a
+consuming application links the partial artifact with its own Angular version
+(AOT). `@smilodon/core` is only ever reached through the browser-deferred
+dynamic `import()`, never a static import.
+
+### Supported Angular versions
+
+The partial-compiled artifact declares an Ivy `minVersion` of `14.0.0`, and the
+component uses only APIs available since Angular 14 (standalone components,
+`inject`, `CUSTOM_ELEMENTS_SCHEMA`). CI currently certifies consumption against
+**Angular 21.2.26** only; the peer range is therefore narrowed to
+`>=21.0.0 <22.0.0` until additional versions are verified in CI. Widening the
+range requires multi-version AOT-consumer evidence.
 
 ## License
 

@@ -22,6 +22,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
   Input,
   OnChanges,
@@ -77,6 +78,9 @@ interface EnhancedSelectElement extends HTMLElement {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<enhanced-select #host></enhanced-select>',
+  // `<enhanced-select>` is a custom element owned by @smilodon/core (not an
+  // Angular component), so the schema must permit unknown elements for AOT.
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   styles: [':host { display: block; } :host enhanced-select { display: block; }'],
 })
 export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDestroy {
@@ -84,8 +88,22 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
   @Input() items: SmilodonSelectItem[] | null = null;
   /** Grouped items; takes precedence over `items` when provided. */
   @Input() groupedItems: CoreGroupedItem[] | null = null;
-  /** Selected values. Applied via `setSelectedValues()`. */
-  @Input() value: Array<string | number> | null = null;
+  /**
+   * Selected values. Applied via the async `setSelectedValues()`.
+   *
+   * Contract for controlled value:
+   *  - an ARRAY (including `[]`) is an explicit selection request, so `[]`
+   *    clears the selection;
+   *  - `null` is an EXPLICIT empty selection (clears the selection) once the
+   *    input has actually been bound at least once;
+   *  - an `undefined` (or never-assigned) value means the adapter should NOT
+   *    touch selection — this preserves the distinction between "no value
+   *    supplied" and "explicitly clear".
+   *
+   * The default is `undefined` (not `null`) precisely so a consumer that never
+   * binds `[value]` does not get a spurious clear.
+   */
+  @Input() value: Array<string | number> | null | undefined = undefined;
   /** Multi-select toggle. Maps to `selection.mode`. */
   @Input() multiple = false;
   /** Enable the search box. */
@@ -116,6 +134,17 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
   private initPromise: Promise<void> | null = null;
   /** Set when init fails, so we surface it without throwing into Angular. */
   private initError: unknown = null;
+  /**
+   * Monotonic counter incremented on every selection application. The element's
+   * `setSelectedValues()` is async (it may fetch selected items server-side), so
+   * a slow earlier call could resolve after a later one. We tag each request and
+   * only treat the LATEST request as authoritative for error surfacing, so a
+   * stale rejection cannot clobber the current value error and a stale success
+   * cannot resurrect an outdated selection.
+   */
+  private valueGeneration = 0;
+  /** Set when the most recent selection application rejected. */
+  private valueError: unknown = null;
 
   private readonly element: ElementRef<HTMLElement> = inject(ElementRef);
 
@@ -150,6 +179,15 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
   /** Exposed for tests/inspection: any initialization error, if one occurred. */
   get initializationError(): unknown {
     return this.initError;
+  }
+
+  /**
+   * Exposed for tests/inspection: the rejection from the most recent
+   * `setSelectedValues()` application, if it failed. Stale rejections (superseded
+   * by a newer value) are swallowed rather than surfaced here.
+   */
+  get lastValueError(): unknown {
+    return this.valueError;
   }
 
   /** Await the in-flight initialization (or resolve immediately once ready). */
@@ -228,11 +266,57 @@ export class SmilodonSelectComponent implements AfterViewInit, OnChanges, OnDest
       element.clearError();
     }
 
-    // 4. Selected values (async in core). Fire-and-forget; core guards against
-    //    post-disconnect application internally.
-    if (this.value) {
-      void element.setSelectedValues(this.value as unknown[]);
+    // 4. Selected values (async in core). This is a CONTROLLED input:
+    //    - `undefined`  → no selection binding supplied; leave selection alone.
+    //    - array / `[]` → apply as-is (empty array clears).
+    //    - `null`       → explicit clear (empty selection).
+    //    The async promise is awaited under a generation guard so a stale
+    //    rejection can't surface and a stale success can't win a race.
+    if (this.value !== undefined) {
+      this.applySelectedValues(element, (this.value ?? []) as unknown[]);
     }
+  }
+
+  /**
+   * Apply a controlled selection to the element under a generation guard.
+   *
+   * `setSelectedValues()` is asynchronous. Two hazards this method closes:
+   *  1. Rejection: the returned promise is `.catch`-ed so it never becomes an
+   *     unhandled rejection; the error is recorded in `valueError`.
+   *  2. Ordering: rapid input changes can start overlapping async calls. Each
+   *     call is tagged; only the LATEST tag may write `valueError`, so a stale
+   *     rejection is swallowed and does not overwrite the current error state.
+   *
+   * Element-side, core re-resolves the selection synchronously for the non-server
+   * path and guards its own async fetches by `isConnected` + `_asyncGeneration`,
+   * so the element always reflects the most recent call once settled.
+   */
+  private applySelectedValues(element: EnhancedSelectElement, values: unknown[]): void {
+    const generation = ++this.valueGeneration;
+    let result: Promise<void>;
+    try {
+      result = element.setSelectedValues(values);
+    } catch (error) {
+      // Defensive: a synchronous throw must not escape into Angular.
+      if (generation === this.valueGeneration) {
+        this.valueError = error;
+      }
+      return;
+    }
+
+    Promise.resolve(result).then(
+      () => {
+        if (generation === this.valueGeneration) {
+          this.valueError = null;
+        }
+      },
+      (error) => {
+        // Only the latest application reports its failure; stale ones are ignored.
+        if (generation === this.valueGeneration) {
+          this.valueError = error;
+        }
+      },
+    );
   }
 
   /** Build a single config object from the flags + passthrough config. */
