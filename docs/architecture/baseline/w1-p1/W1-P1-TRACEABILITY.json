@@ -1399,7 +1399,7 @@
       "behavior": "connected resource attach",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-002: after connect the element owns document listeners — outside pointerdown closes an open popup",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-002: after connect an outside pointerdown closes an open popup (document-listener effect)",
       "status": "Observed",
       "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
@@ -1414,7 +1414,7 @@
       "behavior": "disconnected resource release",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-003: disconnecting closes an open popup and releases rendered options from the shadow tree",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-003: after disconnect the detached element remains closed and detached on outside input",
       "status": "Observed",
       "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [
@@ -1429,7 +1429,7 @@
       "behavior": "reconnect invariant",
       "targetIncrement": "P1.4",
       "coverage": "Existing",
-      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-004: reconnecting re-renders each item exactly once (no duplicated render effects)",
+      "testId": "packages/core/tests/w1-p1-4-t3-api-event-lifecycle.spec.ts#LIFECYCLE-004: after reconnect outside input still closes the popup, once per open (observable invariant)",
       "status": "Observed",
       "evidence": "W1-P1.4-T3-API-EVENT-LIFECYCLE-EVIDENCE (jsdom)",
       "sourceLocators": [

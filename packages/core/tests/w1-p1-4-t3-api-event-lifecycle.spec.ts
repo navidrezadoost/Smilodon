@@ -8,9 +8,16 @@
  *                  preserving assignment, replacement, and rendered effects;
  *   EVENT-011      public `emptyStateChange` event: exact frozen payload,
  *                  real state transitions, and duplicate-event boundaries;
- *   LIFECYCLE-002  resource attachment + public behavior after connect;
- *   LIFECYCLE-003  resource release + public behavior after disconnect;
- *   LIFECYCLE-004  reconnect invariants — no duplicated observable effects;
+ *   LIFECYCLE-002  public behavior after connect (document-listener effect +
+ *                  onOpen callback on connect);
+ *   LIFECYCLE-003  public behavior after disconnect (popup closes, rendered
+ *                  options released, element detached and inert to outside
+ *                  input) — the OBSERVED effects only; this does not prove
+ *                  listener removal or resource cardinality internally;
+ *   LIFECYCLE-004  reconnect invariant (rendering restored without
+ *                  duplication; outside-input close still works across cycles)
+ *                  — an OBSERVABLE invariant, not proof of exactly one
+ *                  internal document listener;
  *   CONFIG-023     public `expandable` config — established UNWIRED (no public
  *                  effect); kept Missing with an explicit gap.
  *
@@ -79,6 +86,12 @@ function onOpenCount(node: EnhancedSelect): { count: () => number } {
 const outsidePointerDown = (): void => {
   document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 0 }));
 };
+
+function closeEventCounter(node: EnhancedSelect): { count: () => number } {
+  const counter = { n: 0 };
+  node.addEventListener('close', () => { counter.n += 1; });
+  return { count: () => counter.n };
+}
 
 afterEach(() => {
   el?.remove();
@@ -255,7 +268,7 @@ describe('W1-P1.4 T3 — EVENT-011 (emptyStateChange payload, transitions, dupli
 // ===========================================================================
 
 describe('W1-P1.4 T3 — LIFECYCLE-002/-003/-004 (attach / release / reconnect)', () => {
-  it('LIFECYCLE-002: after connect the element owns document listeners — outside pointerdown closes an open popup', async () => {
+  it('LIFECYCLE-002: after connect an outside pointerdown closes an open popup (document-listener effect)', async () => {
     const node = mount();
     node.open();
     await flush();
@@ -293,19 +306,28 @@ describe('W1-P1.4 T3 — LIFECYCLE-002/-003/-004 (attach / release / reconnect)'
     expect(node.shadowRoot!.querySelectorAll('[part="option"]').length).toBe(0);
   });
 
-  it('LIFECYCLE-003: after disconnect the document listener no longer acts on the detached element', async () => {
+  it('LIFECYCLE-003: after disconnect the detached element remains closed and detached on outside input', async () => {
     const node = mount();
     node.open();
     await flush();
+    expect(node.getAttribute('data-open')).toBe('true');
+
     node.remove();
     el = undefined;
     await flush();
 
-    // A detached element must not start reacting to document pointerdown.
+    // Disconnect already closed the popup; record that pre-condition so the
+    // post-input assertion is meaningful (it is not vacuous only because the
+    // element was never open).
+    expect(node.getAttribute('data-open')).toBeNull();
+
+    // Outside input after disconnect does not re-open the detached element and
+    // produces no unexpected state change. NOTE: this asserts OBSERVED behavior
+    // of the detached element; it does NOT (and cannot, black-box) prove that a
+    // document listener was removed — see evidence T3-F01.
     outsidePointerDown();
     await flush();
     expect(node.getAttribute('data-open')).toBeNull();
-    // It is genuinely detached.
     expect(node.isConnected).toBe(false);
   });
 
@@ -325,30 +347,37 @@ describe('W1-P1.4 T3 — LIFECYCLE-002/-003/-004 (attach / release / reconnect)'
     expect(labels).toEqual(['a', 'b']);
   });
 
-  it('LIFECYCLE-004: after reconnect the document listener is restored but not duplicated (one outside press closes once)', async () => {
+  it('LIFECYCLE-004: after reconnect outside input still closes the popup, once per open (observable invariant)', async () => {
     const node = mount();
     node.remove();
     document.body.appendChild(node);
     await flush();
     el = node;
 
+    const closes = closeEventCounter(node);
+
     node.open();
     await flush();
     expect(node.getAttribute('data-open')).toBe('true');
 
-    // A single outside pointerdown closes the popup; a duplicated listener
-    // would be a no-op on an already-closed popup but must not error/re-open.
+    // A single outside pointerdown closes the popup and emits exactly one
+    // public `close` event for this open. NOTE: this is an OBSERVABLE close
+    // count, not proof that exactly one internal document listener exists —
+    // duplicate listeners encountering an already-closed popup would observe
+    // the same single close (see evidence T3-F02).
     outsidePointerDown();
     await flush();
     expect(node.getAttribute('data-open')).toBeNull();
+    expect(closes.count()).toBe(1);
 
-    // Reopen and verify it still closes deterministically after a second cycle.
+    // A second open/close cycle still yields exactly one close per open.
     node.open();
     await flush();
     expect(node.getAttribute('data-open')).toBe('true');
     outsidePointerDown();
     await flush();
     expect(node.getAttribute('data-open')).toBeNull();
+    expect(closes.count()).toBe(2);
   });
 });
 

@@ -90,62 +90,77 @@
       "coverageAttribution": "jsdom-confirmed (public surface)"
     },
     "LIFECYCLE-002": {
-      "behavior": "connected resource attach",
+      "behavior": "connected behavior (public behavior after connect)",
       "jsdomTests": [
-        "LIFECYCLE-002: after connect the element owns document listeners — outside pointerdown closes an open popup",
+        "LIFECYCLE-002: after connect an outside pointerdown closes an open popup (document-listener effect)",
         "LIFECYCLE-002: connecting fires the public onOpen lifecycle callback once"
       ],
-      "observable": "after connect the element has attached its document listener: with the popup open (host data-open=\"true\") an outside document pointerdown closes it (data-open removed); connecting fires the public callbacks.onOpen exactly once",
+      "observable": "after connect, with the popup open (host data-open=\"true\"), an outside document pointerdown closes it (data-open removed); connecting fires the public callbacks.onOpen exactly once",
       "positivePaths": [
-        "connect -> open() -> data-open=\"true\" -> outside pointerdown -> data-open removed (document listener attached)",
+        "connect -> open() -> data-open=\"true\" -> outside pointerdown -> data-open removed (document-listener effect observed)",
         "connect -> onOpen callback invoked exactly once"
       ],
       "negativePaths": [],
-      "scopeNote": "Characterizes OBSERVABLE ownership (listener effect + callback), not private resource counts. onOpen fires on both connect and open(); the once-on-connect assertion drives a single connect without an intervening open, isolating connect.",
+      "scopeNote": "Characterizes the OBSERVED public effects of connection (document-listener effect + onOpen callback). It does not claim any internal ownership/registration detail beyond the observable effect. onOpen fires on both connect and open(); the once-on-connect assertion drives a single connect without an intervening open, isolating connect.",
+      "claimsNotEstablished": [
+        "Does not prove a specific number of internal document listeners or their registration identity — only that outside input closes the open popup after connect."
+      ],
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "572-635"
         }
       ],
-      "coverageAttribution": "jsdom-confirmed (public surface)"
+      "coverageAttribution": "jsdom-confirmed (public behavior)"
     },
     "LIFECYCLE-003": {
-      "behavior": "disconnected resource release",
+      "behavior": "disconnected behavior (public behavior after disconnect)",
       "jsdomTests": [
         "LIFECYCLE-003: disconnecting closes an open popup and releases rendered options from the shadow tree",
-        "LIFECYCLE-003: after disconnect the document listener no longer acts on the detached element"
+        "LIFECYCLE-003: after disconnect the detached element remains closed and detached on outside input"
       ],
-      "observable": "on remove(): an open popup closes (data-open removed), rendered option nodes are released from the shadow tree (0 [part=\"option\"]), and the detached element is no longer driven by the document listener; the element reports isConnected=false",
+      "observable": "on remove() while open: the popup closes (data-open removed) and rendered option nodes are released from the shadow tree (0 [part=\"option\"]); after disconnect the element reports isConnected=false and, on a subsequent outside pointerdown, remains closed (no unexpected state change / no re-open)",
       "positivePaths": [
-        "remove() while open -> data-open removed AND 0 rendered [part=\"option\"] (release)",
-        "after remove() -> outside pointerdown does nothing (listener aborted / detached); isConnected=false"
+        "remove() while open -> data-open removed AND 0 rendered [part=\"option\"] (released)",
+        "after remove() -> element is detached (isConnected=false) and remains closed on outside pointerdown"
       ],
-      "negativePaths": [],
-      "scopeNote": "Characterizes observable release (rendered nodes gone, listener inert) rather than private resource counters.",
+      "negativePaths": [
+        "outside pointerdown after disconnect does not re-open the detached element"
+      ],
+      "scopeNote": "Narrowed per T3-F01. Characterizes only the OBSERVED public effects of disconnection: popup closure, rendered-option release, detached state, and no unexpected state change on outside input. The test records the post-disconnect closed pre-condition before dispatching input so the post-input assertion is not vacuous.",
+      "claimsNotEstablished": [
+        "Does NOT prove that a document event listener was removed/aborted — the popup is already closed post-disconnect, so remaining closed after outside input is consistent with either removed listeners or an already-closed component.",
+        "Does NOT prove internal resource/cardinality release beyond what is externally observable (popup closed + zero rendered [part=\"option\"] + detached)."
+      ],
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
           "lines": "648-768"
         }
       ],
-      "coverageAttribution": "jsdom-confirmed (public surface)"
+      "coverageAttribution": "jsdom-confirmed (public behavior)"
     },
     "LIFECYCLE-004": {
-      "behavior": "reconnect invariant",
+      "behavior": "reconnect invariant (observable)",
       "jsdomTests": [
         "LIFECYCLE-004: reconnecting re-renders each item exactly once (no duplicated render effects)",
-        "LIFECYCLE-004: after reconnect the document listener is restored but not duplicated (one outside press closes once)"
+        "LIFECYCLE-004: after reconnect outside input still closes the popup, once per open (observable invariant)"
       ],
-      "observable": "remove()+appendChild re-renders each item exactly once (option count equals item count, data-value ['a','b'] — not doubled); the document listener is restored so an outside pointerdown closes the popup deterministically, and repeated open/close cycles remain a single deterministic close (no duplicated externally observable effects)",
+      "observable": "remove()+appendChild re-renders each item exactly once (option count equals item count, data-value ['a','b'] — not doubled); after reconnect an outside pointerdown closes the popup emitting exactly one public `close` event per open, and a second open/close cycle likewise emits exactly one close per open",
       "positivePaths": [
         "reconnect -> option count == item count (not doubled); distinct nodes with data-value ['a','b']",
-        "reconnect -> open() -> outside pointerdown -> closed; a second open/close cycle also closes deterministically (listener not duplicated)"
+        "reconnect -> open() -> outside pointerdown -> closed with exactly one `close` event; second cycle -> exactly one more `close` event"
       ],
       "negativePaths": [
-        "reconnect does NOT double the rendered options"
+        "reconnect does NOT double the rendered options",
+        "close events do NOT accumulate beyond one per open across cycles"
       ],
-      "invariant": "Reconnection restores behavior without duplicating externally observable effects. Duplicated listeners would manifest as non-deterministic or repeated closures across cycles; the repeated-cycle test guards the invariant.",
+      "invariant": "Observable reconnection invariant: reconnection restores rendering (no duplicated option nodes) and outside-input closing still works with exactly one public `close` event per open across repeated cycles.",
+      "scopeNote": "Narrowed per T3-F02. This is an OBSERVABLE invariant, strengthened with a public `close`-event count, not a proof of exactly one internal document listener. Two internal listeners could produce the same single `close` observable if the second handler encounters an already-closed component, so listener cardinality is explicitly NOT claimed.",
+      "claimsNotEstablished": [
+        "Does NOT prove exactly one internal document listener exists after reconnect (duplicate listeners facing an already-closed popup would observe the same single `close`).",
+        "The public `close`-event count strengthens the behavioral contract but does not establish internal listener uniqueness."
+      ],
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -156,7 +171,7 @@
           "lines": "648-768"
         }
       ],
-      "coverageAttribution": "jsdom-confirmed (public surface)"
+      "coverageAttribution": "jsdom-confirmed (public behavior)"
     },
     "CONFIG-023": {
       "behavior": "expandable",
@@ -209,7 +224,7 @@
       "LIFECYCLE-004": "Existing",
       "CONFIG-023": "Missing"
     },
-    "rationale": "API-002/EVENT-011/LIFECYCLE-002/003/004 are now fully characterized on the public surface (positive + negative) -> Existing. CONFIG-023 remains Missing: the expandable config is unwired (no public effect to characterize); an explicit negative characterization and gap are recorded, with the gap deferred for closure reconciliation.",
+    "rationale": "API-002/EVENT-011/LIFECYCLE-002/003/004 are fully characterized on the public surface (positive + negative) -> Existing. For the lifecycle contracts, Existing means coverage of their declared EXTERNALLY OBSERVABLE paths (document-listener effect, popup closure, rendered-option release, detached state, public close count) — NOT proof of private resource ownership or listener cardinality. CONFIG-023 remains Missing: the expandable config is unwired (no public effect to characterize); an explicit negative characterization and gap are recorded, with the gap deferred for closure reconciliation.",
     "distributionAfter": {
       "Existing": 56,
       "Partial": 30,
@@ -218,7 +233,7 @@
     }
   },
   "gates": {
-    "jsdom": "15/15 T3 passed (962 passed | 1 skipped full core regression under packages/core/vitest.config.ts)",
+    "jsdom": "15/15 T3 passed (full core regression re-run under packages/core/vitest.config.ts)",
     "chromium": "12/12 full T2 suite unaffected (re-run to confirm; no T3 browser surface)",
     "coreRegression": "962 passed | 1 skipped",
     "traceability": "PASS (112 IDs; 6 T3 testId literals verified present in spec; byCoverage 56/30/22/4)",
@@ -241,6 +256,21 @@
     "EVENT-011 is driven through the public search input (input[part=\"input\"]) rather than the private _handleSearch used by the pre-existing empty-state-slot.spec.ts, preserving public-surface-only characterization while the accepted payload shape is asserted exactly.",
     "LIFECYCLE observations target observable ownership (listener effect, rendered-node release, callback invocations) rather than private resource counters. onOpen fires on both connect and open(); the once-on-connect test isolates a single connect.",
     "CONFIG-023: expandable is declared/defaulted only in global-config.ts and consumed nowhere — unwired. Kept Missing with a negative characterization and an explicit gap; production wiring is out of scope. Deferred for closure reconciliation.",
-    "No Chromium surface added: all six contracts are fully observable on jsdom; no browser-only oracle exists for these static DOM/event/lifecycle surfaces, matching the jsdom-only precedent of PART-005/006/011."
+    "No Chromium surface added: all six contracts are fully observable on jsdom; no browser-only oracle exists for these static DOM/event/lifecycle surfaces, matching the jsdom-only precedent of PART-005/006/011.",
+    "T3-R: lifecycle evidence narrowed to OBSERVED public behavior per Lead review T3-F01/T3-F02; no assertions removed (LIFECYCLE-004 strengthened with a public `close`-event count), coverage distribution unchanged (Existing 56 / Partial 30 / Diagnostic 22 / Missing 4)."
+  ],
+  "correction": "W1-P1.4-T3-R (T3-F01/F02)",
+  "correctiveStartingCommit": "5b31f443f9821f8ccefbb9c985c809146b7faa40",
+  "corrections": [
+    {
+      "id": "T3-F01",
+      "finding": "The LIFECYCLE-003 disconnect test dispatched a document pointerdown after disconnecting and asserted the component stayed closed, and the evidence claimed the document listener was 'no longer acting' / 'removed'. Because the component was already closed on disconnect, remaining closed does not independently prove listener removal. Characterization evidence must not substitute source inspection for public behavior.",
+      "resolution": "Narrowed the test title/comment and evidence to the observable assertions actually established: popup closure, rendered-option release (0 [part=\"option\"]), detached state (isConnected=false), and no unexpected state change on outside input. The test now records the post-disconnect closed pre-condition before dispatching input so the post-input assertion is not vacuous. Added explicit claimsNotEstablished stating listener removal is not black-box proven. Source inspection (controller abort) is NOT used as a substitute claim."
+    },
+    {
+      "id": "T3-F02",
+      "finding": "LIFECYCLE-004 asserted that a single outside press 'closes once' and the evidence claimed duplicate listeners would cause repeated/nondeterministic closures. Two document listeners could produce the same observable result if the first closes the popup and the second encounters an already-closed component, so internal listener uniqueness is not established.",
+      "resolution": "Retitled and rewrote the test as an observable reconnection invariant: after reconnect, rendering is restored without duplication and outside input closes the popup with exactly one public `close` event per open across two cycles. Added explicit claimsNotEstablished stating listener cardinality is not proven (the public close count strengthens the behavioral contract but does not establish internal listener uniqueness)."
+    }
   ]
 }
