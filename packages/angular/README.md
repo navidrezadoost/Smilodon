@@ -2,14 +2,15 @@
 
 Angular adapter for [Smilodon Select](https://github.com/navidrezadoost/smilodon).
 
-> **Status: S3 (Wave 2).** This package ships a **minimal standalone component**
+> **Status: S4 (Wave 2).** This package ships a **minimal standalone component**
 > (`SmilodonSelectComponent`) that hosts `<enhanced-select>` with
-> browser-deferred core loading, imperative input binding, and a **typed event
-> bridge** (S3 `@Output()`s forwarding the element's `CustomEvent`s). The
-> remaining slices are still pending: `ControlValueAccessor` (S4) and SSR
+> browser-deferred core loading, imperative input binding, a **typed event
+> bridge** (S3 `@Output()`s forwarding the element's `CustomEvent`s), and
+> **Angular forms integration** via a `ControlValueAccessor` (S4: `ngModel`,
+> `formControl`, `formControlName`). The remaining slice is SSR
 > rendering/hydration qualification (S5). APIs may change before S5.
 
-## Usage (S3)
+## Usage (S4)
 
 ```ts
 import { Component } from '@angular/core';
@@ -129,6 +130,46 @@ rejection (superseded by a newer value) is swallowed and never surfaces, and the
 latest value always wins. Rejections from the current selection are exposed via
 `lastValueError` rather than becoming unhandled promise rejections.
 
+### Angular forms (S4 — `ControlValueAccessor`)
+
+The component is a `ControlValueAccessor`, so it works out of the box with
+reactive forms (`[formControl]`, `formControlName`) and template-driven forms
+(`[(ngModel)]`). It requires `@angular/forms` (a non-optional peer dependency).
+
+```ts
+// Reactive
+readonly single = new FormControl<string | number | null>('b');
+readonly group = new FormGroup({ multi: new FormControl<Array<string | number>>(['a']) });
+```
+```html
+<!-- Reactive -->
+<smilodon-select [items]="items" [formControl]="single"></smilodon-select>
+
+<form [formGroup]="group">
+  <smilodon-select [items]="items" [multiple]="true" formControlName="multi"></smilodon-select>
+</form>
+
+<!-- Template-driven -->
+<smilodon-select [items]="items" [(ngModel)]="value" [ngModelOptions]="{ standalone: true }"></smilodon-select>
+```
+
+| Aspect | Behavior |
+| --- | --- |
+| **Forms value representation** | Identical to `[value]`: **single → scalar** (`string \| number \| null`); **multi → array** (`[]` when empty). |
+| **`writeValue`** | Applies the model value to the element. **Never** calls `onChange` (no echo). `undefined` is a no-op; `null`/`[]` clear. |
+| **`onChange`** | Fired **only** for genuine user selection edits, **exactly once** per edit — never for `writeValue`/init/reconcile. |
+| **`onTouched`** | Fired only at a user edit boundary — never on init render or `writeValue`. |
+| **`setDisabledState`** | Reconciled with the `disabled` input in a single config write; disabled state changes never emit `onChange`. |
+| **Selection authority** | While form-controlled (`writeValue` received), the **form model is the single source of truth** and `[value]` is ignored for reconciliation. Standalone, `[value]` behaves as documented above. |
+
+**Provenance.** Core emits `change` for both interaction and programmatic
+selection, and its internal `SelectionReason` is private (not in the payload).
+The adapter therefore establishes user-vs-programmatic provenance itself from
+capture-phase DOM gestures (option click, chip-remove, clear, or `Enter`/`Space`/`a`
+while open) plus programmatic-application windows — see
+`packages/angular/src/provenance.ts`. A full keyboard-reason mapping would
+require exposing core's `SelectionReason` (a core change, out of scope).
+
 ### Lifecycle
 
 `ngAfterViewInit` (browser only) attaches the event-bridge listeners, then
@@ -148,13 +189,19 @@ npm run test:consumer -w @smilodon/angular # real AOT consumer vs the built dist
 The jsdom suite includes focused S3 event-bridge tests (`tests/events.spec.ts`):
 payload parity (output value === core `CustomEvent.detail`), ordering,
 programmatic-vs-interaction, single-listener/no-double-delivery, destruction
-cleanup, and the `error`→`coreError` alias.
+cleanup, and the `error`→`coreError` alias. It also includes S4 forms tests:
+`tests/provenance.spec.ts` (the pure user-vs-programmatic model) and
+`tests/control-value-accessor.spec.ts` (writeValue never echoes, user edits fire
+`onChange` once with the correct single/multi representation, touched only on a
+user boundary, disabled reconciliation).
 
-`test:consumer` is the packaging qualification gate: it AOT-compiles a minimal
-application component (`ngc`, full compilation) that imports the **built**
+`test:consumer` is the packaging + forms qualification gate: it AOT-compiles a
+minimal application component (`ngc`, full compilation) that imports the **built**
 `@smilodon/angular` artifact, boots it through the Angular `TestBed` under
-jsdom, and verifies that `[items]`, `[value]`, and config bindings actually
-reach the real `<enhanced-select>` element.
+jsdom, and verifies that `[items]`, `[value]`, and config bindings reach the real
+`<enhanced-select>` element, that the S3 `(change)` output forwards, and that real
+`FormControl` / `formControlName` / `ngModel` values round-trip (init writeValue
+with no echo; a user click updates the model exactly once and marks it touched).
 
 ## Design (adopted Wave 2 architecture)
 
@@ -168,7 +215,9 @@ reach the real `<enhanced-select>` element.
   module top level, so the API-075 server-import limitation is not triggered.
 - **SSR:** hydration/SSR compatibility is a separate, later qualification gate
   (S5), not claimed by this scaffold.
-- **Forms:** `ControlValueAccessor` is a dedicated later slice (S4).
+- **Forms:** `ControlValueAccessor` (S4) — reactive + template-driven, `onChange`
+  only for genuine user edits, provenance established in-adapter (core's reason is
+  private).
 - **API-075 core remediation:** out of scope / not authorized.
 
 ## Import-safety discipline

@@ -1,0 +1,138 @@
+{
+  "artifactId": "Angular-Wave2-S4-FORMS-CVA-EVIDENCE",
+  "increment": "Angular Wave 2",
+  "slice": "S4 — Angular forms / ControlValueAccessor",
+  "startingCommit": "e9ecd45c1dd78525df9b7fb0da6dd02af7fac444",
+  "branch": "codex/w1-p1-3-keyboard-characterization",
+  "authorization": "Lead S4 directive at e9ecd45: implement ControlValueAccessor (writeValue/registerOnChange/registerOnTouched/setDisabledState); integrate reactive+template forms with no separate selection authority; call onChange for GENUINE user edits only; mark touched at a user boundary; reconcile disabled; prove via a real compiled Angular consumer. Preserve S3 bridge + cleanup + browser-deferred loading. One atomic commit. No SSR hydration/S5, no core refactor, no API-065/API-075, no core event-contract change.",
+  "package": "@smilodon/angular",
+  "version": "1.13.0",
+  "controlValueAccessor": {
+    "provider": "NG_VALUE_ACCESSOR via useExisting forwardRef(SmilodonSelectComponent), multi:true",
+    "writeValue": {
+      "echoesOnChange": false,
+      "marksFormControlled": true,
+      "recordsCurrentFormValue": true,
+      "appliesViaSameControlledPath": true,
+      "undefinedIsNoOp": true,
+      "nullClears": true,
+      "arraySets": true,
+      "deferredBeforeReady": "pendingFormValue, applied at init"
+    },
+    "registerOnChange": "stores fn; called only from the user-edit branch",
+    "registerOnTouched": "stores fn; called only from markTouched() at a user edit boundary",
+    "setDisabledState": {
+      "derivedState": "disabled = formDisabled || disabledInput (form wins while form-controlled)",
+      "singleConfigWrite": true,
+      "emitsOnChange": false
+    },
+    "onChangeFireRule": "ONLY for genuine user edits (provenance-classified); exactly once per user gesture; never for writeValue/init/reconcile/async",
+    "onTouchedRule": "only at a user edit boundary; never on init render or writeValue",
+    "valueRepresentation": {
+      "single": "scalar (string | number | null)",
+      "multi": "array (Array<string|number>, [] when empty)",
+      "sameAsValueInput": true,
+      "source": "element.getSelectedValues() (authoritative)"
+    }
+  },
+  "provenance": {
+    "whyCoreReasonUnreachable": "EnhancedSelect tracks SelectionReason privately (SELECTION_CHANGED effect -> _effectRunner only); it is not in the change payload, DOM, or any callback. Exposing it would be a core change (out of S4 scope).",
+    "model": "DOM-gesture probes + programmatic windows + gesture-sequence classification",
+    "probes": "capture-phase click/keydown listeners on the element's shadow root(s); count a gesture on option click / chip-remove click / clear-button click / selection key (Enter, Space, a) while the listbox is open",
+    "programmaticWindows": "openProgrammaticChange()/closeProgrammaticChange() around every adapter-initiated setSelectedValues (reason 'init'|'write')",
+    "classification": "user iff origin==='user' AND currentUserSeq > lastUserSeq (and not inside a synchronous programmatic window); gesture consumed so one gesture -> at most one user edit",
+    "newChangeListeners": false,
+    "pureHelper": "packages/angular/src/provenance.ts classifyChange()"
+  },
+  "selectionAuthority": {
+    "formControlled": "form model is the single source of truth; [value] ignored for reconciliation",
+    "standalone": "[value] behaves exactly as S2/S3",
+    "feedbackLoop": "none ([value] never written back from a forwarded change)"
+  },
+  "s3BoundaryPreserved": {
+    "classificationLocation": "inside the existing change listener, before stopPropagation()/emit",
+    "newEventListenerOwnership": false,
+    "newChangeSubscription": false,
+    "probesAreNotChangeListeners": true
+  },
+  "packaging": {
+    "staticCoreImportInFesm": false,
+    "dynamicCoreImport": "import('@smilodon/core') (browser-guarded)",
+    "angularFormsExternal": true,
+    "peerDependency": "@angular/forms >=21.0.0 <22.0.0 (non-optional)",
+    "ngPackagrBuild": "PASS"
+  },
+  "changeSummary": {
+    "newFiles": [
+      "packages/angular/src/provenance.ts",
+      "packages/angular/tests/provenance.spec.ts",
+      "packages/angular/tests/control-value-accessor.spec.ts",
+      "packages/angular/tests/setup.ssr.ts"
+    ],
+    "modifiedFiles": [
+      "packages/angular/src/select.component.ts",
+      "packages/angular/tests/consumer/consumer-app.component.ts",
+      "packages/angular/tests/consumer/run-consumer.mjs",
+      "packages/angular/vitest.ssr.config.ts",
+      "packages/angular/package.json",
+      "package-lock.json"
+    ],
+    "netDiff": "+816 / -90 across 6 tracked files (+ 4 new files)",
+    "coreTouched": false,
+    "coreEventContractTouched": false,
+    "publicApiAdditiveOnly": true
+  },
+  "testCounts": {
+    "angularJsdomBefore": 36,
+    "angularJsdomAfter": 56,
+    "provenanceTests": 6,
+    "cvaTests": 14,
+    "componentTests": 22,
+    "eventsTests": 10,
+    "loaderTests": 4,
+    "angularSsrBefore": 4,
+    "angularSsrAfter": 4,
+    "consumerAssertionsBefore": 9,
+    "consumerAssertionsAfter": 25
+  },
+  "gates": {
+    "R1_angularJsdom": { "command": "vitest run --config packages/angular/vitest.config.ts", "result": "PASS", "count": "56 (22 component + 10 events + 4 loader + 6 provenance + 14 CVA)" },
+    "R2_angularSsr": { "command": "vitest run --config packages/angular/vitest.ssr.config.ts", "result": "PASS", "count": "4" },
+    "R3_aotConsumer": { "command": "node packages/angular/tests/consumer/run-consumer.mjs", "result": "PASS", "count": "25/25 assertions" },
+    "R4_ngPackagrBuild": { "command": "npm run build:angular", "result": "PASS", "detail": "exit 0; no static @smilodon/core import; @angular/forms external" },
+    "R5_angularTsc": { "command": "tsc -p packages/angular/tsconfig.json --noEmit", "result": "PASS", "detail": "exit 0" },
+    "R6_coreJsdom": { "command": "vitest run --config packages/core/vitest.config.ts", "result": "PASS", "count": "1071 passed | 1 skipped (71 files)" },
+    "R7_coreSsr": { "command": "vitest run --config packages/core/vitest.ssr.config.ts", "result": "PASS", "count": "10" },
+    "R8_coreTsc": { "command": "tsc -p packages/core/tsconfig.json --noEmit", "result": "PASS", "detail": "44 pre-existing, none angular" },
+    "R9_eslint": { "command": "eslint packages/angular/src packages/angular/tests", "result": "PASS", "detail": "exit 0" },
+    "R10_traceability": { "command": "verify_traceability.py", "result": "PASS", "detail": "129/129 reconcile" }
+  },
+  "aotConsumerEvidence": {
+    "componentUsesRealForms": ["FormControl", "formControlName in a FormGroup", "ngModel", "[value]+(change) non-form"],
+    "initWriteValueReachesElement": true,
+    "initWriteValueEchoesToModel": false,
+    "userClickUpdatesFormControlOnce": true,
+    "userClickMarksTouched": true,
+    "singleIsScalar": true,
+    "multiIsArray": true,
+    "s3OutputStillForwards": true
+  },
+  "disclosedLimitations": [
+    "Provenance is DOM-gesture based (clicks + Enter/Space/a while open). A keyboard path that selects without one of those gestures would be classified programmatic; a complete mapping needs core's private SelectionReason (a core change, out of S4 scope).",
+    "44 pre-existing @smilodon/core TSC errors (none angular); unchanged.",
+    "Peer range >=21 <22 unchanged; @angular/forms added within that range.",
+    "Pre-existing unrelated contract-suite failures (test:contracts); unchanged.",
+    "SSR setup loads @angular/compiler so partial-compiled @angular/* FESMs (from the forms import) can JIT-fallback; no DOM/core introduced, spec no-DOM/no-core evidence intact."
+  ],
+  "nonGoals": [
+    "No SSR rendering/hydration certification (S5)",
+    "No core refactor",
+    "No core event-contract change",
+    "No API-065/API-075 remediation"
+  ],
+  "relationshipToPriorIncrements": {
+    "buildsOn": "Angular-Wave2-S3-EVENT-BRIDGE-EVIDENCE (e9ecd45)",
+    "authorizedBy": "Lead S4 directive at e9ecd45",
+    "effect": "Adds Angular forms integration; S5 (SSR hydration) remains NO-GO pending authorization."
+  }
+}

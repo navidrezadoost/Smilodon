@@ -16,6 +16,7 @@
   },
   "peerDependencies": {
     "@angular/core": ">=21.0.0 <22.0.0",
+    "@angular/forms": ">=21.0.0 <22.0.0",
     "@smilodon/core": "^1.13.0"
   },
   "dependencies": {
@@ -24,6 +25,9 @@
   "peerDependenciesMeta": {
     "@angular/core": {
       "optional": false
+    },
+    "@angular/forms": {
+      "optional": false
     }
   },
   "devDependencies": {
@@ -31,6 +35,7 @@
     "@angular/compiler": "21.2.26",
     "@angular/compiler-cli": "21.2.26",
     "@angular/core": "21.2.26",
+    "@angular/forms": "^21.2.26",
     "@angular/platform-browser": "21.2.26",
     "jsdom": "^24.0.0",
     "ng-packagr": "21.2.7",
