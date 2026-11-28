@@ -614,3 +614,25 @@ These are **recorded for the Technical Lead**, not fixed. If accepted they will 
 4. Production source stays byte-identical to `7e3adf7`; the full core suite stays green (carried forward: 877 passed + 1 skipped).
 
 _End of W1-P1.3 Addendum. Task-1 characterization tests are written only after this addendum is accepted._
+
+### 15.6 Task-1 characterization outcome (W1-P1.3 Task 1 tests)
+
+Task 1 is characterized by `packages/core/tests/w1-p1-3-t1-keyboard-navigation.spec.ts` (**45 tests**), driving only the public surface listed in §15 header. Outcome:
+
+| Area | Tests | Result |
+| --- | --- | --- |
+| KBD-001 (open triggers) | 5 | Open on ArrowDown/ArrowUp/Enter; `open:{}`→`onOpen`; no initial active-descendant; no duplicate open. |
+| KBD-002 / KBD-009 (movement + disabled skip) | 4 | One-step movement, disabled `b` skipped in both directions, clamp at boundaries, disabled never active. |
+| KBD-003 (Home/End) | 2 | End→last selectable, Home→first selectable. |
+| KBD-004 (PageDown/PageUp) | 3 | ±10 selectable steps; clamp at end. |
+| KBD-005 (Enter/Space) | 3 | Enter/Space activate; searchable-Space-on-input is a no-op. |
+| KBD-006 / KBD-007 (Escape/Tab) | 5 | Escape & Tab close; `close:{}`→`onClose`; indistinguishable close detail (**P1.3-D01**); closed-state no-op. |
+| KBD-008 (Ctrl/Cmd+A) | 4 | Select-all only in multi && !searchable; Ctrl and Meta. |
+| KBD-010 (type-ahead) | 2 | Unmodified char moves active; modified char does not. |
+| KBD-011 (focus model) | 2 | Focus stays on the input; active option via `aria-activedescendant`, not focus. |
+| KBD-012 (ARIA chronology) | 3 | `aria-expanded` false/true/false; `aria-activedescendant` null→set→cleared; tracks movement. |
+| Existing P1.3 contracts via keyboard | 12 | API-030/031 idempotency; EVENT-002/003 `{}` detail; ATTR-010 dir, ATTR-011 data-open, ATTR-020 data-placement, ATTR-001/002 aria resync, ATTR-003 aria-busy no observable listbox effect (**P1.3-D02**), LIFECYCLE-006 equal-value no-op. |
+
+All 45 pass; the full core suite is **922 passed + 1 skipped** (877 + 45 new; no regressions). The 12 KBD contracts move **Diagnostic → Partial** (keyboard paths characterized; real-browser WAI-ARIA conformance and pointer-movement parity remain outstanding — **not** upgraded to `Existing`). Coverage distribution across the **112** records is now **Existing 38 · Partial 29 · Diagnostic 41 · Missing 4 = 112**. The three deviation candidates (P1.3-D01..D03) are **observed and recorded, not repaired**; promotion to `W1-P1-DEVIATIONS.md` is deferred to Technical Lead review. Production source remains **byte-identical** to baseline `7e3adf7`.
+
+_End of W1-P1.3 Task 1._
