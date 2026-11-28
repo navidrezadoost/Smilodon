@@ -26,9 +26,9 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 56,
+      "Existing": 59,
       "Partial": 30,
-      "Diagnostic": 22,
+      "Diagnostic": 19,
       "Missing": 4
     },
     "byTargetIncrement": {
@@ -311,10 +311,10 @@
       "id": "API-032",
       "behavior": "updateConfig invalid emission",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#emits dataLoadingConfigError with structured issues when the dataLoading candidate is invalid",
       "status": "Observed",
-      "evidence": "public-config-integration; phase-2e-*",
+      "evidence": "public-config-integration; phase-2e-*; w1-p1-5-t1-acknowledged-data-loading-api",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -490,10 +490,10 @@
       "id": "API-060",
       "behavior": "startDataLoading deferred",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#emits exactly one initial search when startDataLoading is called repeatedly after connect",
       "status": "Observed",
-      "evidence": "phase-2e-acknowledged-data-loading",
+      "evidence": "phase-2e-acknowledged-data-loading; w1-p1-5-t1-acknowledged-data-loading-api",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -506,9 +506,9 @@
       "behavior": "getDataLoadingState",
       "targetIncrement": "P1.5",
       "coverage": "Existing",
-      "testId": "verify",
+      "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#returns detached snapshots so mutating one does not affect internal state",
       "status": "Observed",
-      "evidence": "phase-2e-*; phase-2f-*",
+      "evidence": "phase-2e-*; phase-2f-*; w1-p1-5-t1-acknowledged-data-loading-api",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -524,10 +524,10 @@
       "id": "API-062",
       "behavior": "completeDataRequest matrix",
       "targetIncrement": "P1.5",
-      "coverage": "Diagnostic",
-      "testId": "unassigned",
+      "coverage": "Existing",
+      "testId": "packages/core/tests/w1-p1-5-t1-acknowledged-data-loading-api.spec.ts#accepts a matching completion synchronously while projecting the result asynchronously",
       "status": "Observed",
-      "evidence": "phase-2e-acknowledged-data-loading",
+      "evidence": "phase-2e-acknowledged-data-loading; w1-p1-5-t1-acknowledged-data-loading-api",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
