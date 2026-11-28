@@ -25,9 +25,16 @@
  * root and are NOT reachable as light-DOM children of the host.
  *
  * Negative / removal paths (T1-03):
- *   - PART-005/006 clear-button/-icon absent unless clearControl.enabled;
+ *   - PART-005/006 clear-button/-icon are ALWAYS structurally present in the
+ *     shadow root; the observable contract is their visibility (hidden /
+ *     aria-hidden=true) which reflects clearControl.enabled + having something
+ *     to clear;
  *   - PART-008 group-header absent for a flat (non-grouped) list;
- *   - PART-009 chip family absent for a single-select;
+ *   - PART-009 chip family absent for a single-select. The transient
+ *     `chip-exiting` token is NOT reliably observable through the public
+ *     surface in the current build (see T1-F01 note on the chip-exiting test
+ *     and W1-P1.4-T1-R evidence): it therefore remains a documented gap and
+ *     PART-009 stays `Partial`;
  *   - PART-010 no-results absent while options render, present when empty;
  *   - PART-011 loading family absent while not busy.
  */
@@ -225,10 +232,17 @@ describe('W1-P1.4 T1 — PART-009 chip family (multi-select badges)', () => {
     expect(shadow(node, 'chip-label')).toBeNull();
   });
 
-  it('PART-009: part="chip-exiting" is not lingering at rest (transient exit-animation token)', () => {
-    // The chip-exiting token is applied transiently during the removal
-    // animation. At rest no exiting chip exists — a stable observable fact that
-    // would break if the token were ever left behind.
+  it('PART-009: part="chip-exiting" is not lingering at rest — the transition itself is a documented gap (T1-F01)', () => {
+    // The chip-exiting token is applied transiently during chip removal. In this
+    // build the exit keyframe is gated behind the consumer CSS custom property
+    // `--select-badge-exit-animation` (default `none`), and even when a consumer
+    // sets it, the public removal path was observed to remove the chip
+    // synchronously (no live `chip-exiting` node) in Chromium — i.e. the
+    // transient transition is NOT reliably observable through the public
+    // surface. Per the T1-R directive this is recorded as a documented gap and
+    // PART-009 is retained as `Partial` rather than forced with a private stub.
+    // This assertion pins the one stable, public fact: no chip-exiting leftover
+    // exists at rest (the token is not leaked into the steady state).
     const node = mount({
       selection: { mode: 'multi', showRemoveButton: true },
       multiSelectDisplay: { mode: 'horizontal' },

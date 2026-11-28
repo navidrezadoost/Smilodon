@@ -26,8 +26,8 @@
       "KBD": 12
     },
     "byCoverage": {
-      "Existing": 48,
-      "Partial": 29,
+      "Existing": 47,
+      "Partial": 30,
       "Diagnostic": 31,
       "Missing": 4
     },
@@ -1101,7 +1101,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-001: the input container carries part=\"button\" and lives in the shadow root",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1116,7 +1116,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-002: the text field carries part=\"input\"",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1131,7 +1131,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-003: the popup carries part=\"listbox\" and is distinct from the input",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1161,7 +1161,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1176,7 +1176,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-005/006: the clear button (with nested icon) carries its parts in the shadow root",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1191,7 +1191,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-007: each rendered option carries part=\"option\" when the popup is open",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1214,7 +1214,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-008: grouped items render one part=\"group-header\" per group (flat list renders none — T1-03)",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1226,10 +1226,10 @@
       "id": "PART-009",
       "behavior": "chip parts (tokens: chip, chip-label, chip-remove, chip-remove-icon, chip-exiting)",
       "targetIncrement": "P1.4",
-      "coverage": "Existing",
+      "coverage": "Partial",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-009: a selected multi value renders chip + chip-label + chip-remove + chip-remove-icon",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts; GAP: chip-exiting transition not reliably observable via public surface (exit animation default none; public removal synchronously finishes) — T1-F01",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1268,7 +1268,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-010: an empty result set renders part=\"no-results\"",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser-confirmed: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
@@ -1283,7 +1283,7 @@
       "coverage": "Existing",
       "testId": "packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts#PART-011: an active busy state renders loading + loading-icon/loading-message/loading-content/loading-spinner",
       "status": "Observed",
-      "evidence": "jsdom: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts; browser: tests/e2e/w1-p1-4-t2/contract-wiring.t2.spec.ts",
+      "evidence": "jsdom-only: packages/core/tests/w1-p1-4-t1-contract-wiring.spec.ts (not exercised in browser spec)",
       "sourceLocators": [
         {
           "file": "packages/core/src/components/enhanced-select.ts",
