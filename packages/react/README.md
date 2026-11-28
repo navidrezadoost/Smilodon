@@ -1677,11 +1677,25 @@ import TrashIcon from '@/generated/icons/Trash.icon';
 The React node is displayed inside Core's existing remove buttons in selected
 chips and selected dropdown options. Remove behavior, accessibility labels, and
 `chip-remove` / `chip-remove-icon` parts remain Core-owned. Strings still
-render as the legacy text or inline SVG markup. The prop supports React nodes,
+render as the legacy text or inline SVG markup. If the prop is omitted, Core's
+`configureSelect()` remove-icon default remains active; removing an instance
+string override restores the configured fallback. The prop supports React nodes,
 **not** a component function passed directly: use `<TrashIcon />`, not
 `TrashIcon`. When `config.selection.removeButtonIcon` is explicitly
 supplied, that Core string configuration takes precedence. React nodes are
 supported by the React adapter only, not Core or other framework adapters.
+
+For React-node icons, Core owns the button, icon target, and fallback subtree;
+React owns only the isolated portal root inside that target. Updating selected
+chips or recreating a selected dropdown option therefore cannot clear React's
+portal children. Switching to a string or the default icon releases the portal
+and restores Core's fallback. This ownership contract requires a Core build
+that exposes isolated React icon portal roots. Older Core builds are not a
+supported pairing for React-node icons: the adapter reports the missing
+capability and does not portal into Core-owned DOM. Before publishing this
+adapter change, publish the compatible Core release and set the React package's
+minimum Core peer version to that release. String and markup icons remain
+Core-owned.
 
 To style the icon separately from the round remove button, use the host `style` prop with these tokens:
 

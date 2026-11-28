@@ -17,6 +17,14 @@ Historical Angular-related changelog entries below are preserved for reference o
 
 ## [Unreleased]
 
+### Fixed
+
+- **React remove-icon configuration precedence ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** React now preserves the Core `configureSelect()` icon default when no instance override is supplied and restores that effective fallback after string or React-node icon transitions.
+
+### Fixed
+
+- **React remove-icon portal ownership ([#128](https://github.com/navidrezadoost/Smilodon/issues/128)):** Core now updates only its fallback icon subtree while React portals render into isolated roots for selected chips and dropdown options. Stable per-target portal identities preserve custom icons across selection updates, removals, and Core option refreshes.
+
 ## [1.21.0] - 2026-11-27
 
 Published Core-only release. Adapter package versions and source remain unchanged; their current `@smilodon/core` peer ranges accept Core 1.21.x. React Native is excluded because the native package embeds Core and Android/iOS runtime qualification is incomplete. Registry integrity, tarball provenance, and qualification are recorded in [the Core 1.21.0 release record](docs/releases/CORE-1.21.0-RELEASE.md).

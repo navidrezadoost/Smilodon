@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeAll } from 'vitest';
+import { configureSelect, resetSelectConfig } from '@smilodon/core';
 import { Select } from '../src/index';
 import type { SelectItem } from '../src/index';
 
@@ -69,6 +70,71 @@ describe('Select React Integration', () => {
     expect(element.querySelector('[slot="arrow"]')).toBeNull();
     expect(element.hasAttribute('data-custom-arrow')).toBe(false);
     expect(element.shadowRoot?.querySelector('slot[name="arrow"] [part="arrow"]')).toBeTruthy();
+  });
+
+  it('preserves configured remove-icon defaults across React icon transitions and local overrides', async () => {
+    configureSelect({ selection: { mode: 'multi', removeButtonIcon: '−' } });
+    const selected = ['1'];
+    const globalFallback = () => {
+      const host = container.querySelector('enhanced-select') as HTMLElement;
+      return host.shadowRoot?.querySelector('[part="chip-remove-icon"] [data-smilodon-fallback-icon]')?.textContent;
+    };
+    const { container, rerender } = render(
+      <Select items={testItems} multiple value={selected} />,
+    );
+
+    try {
+      await waitFor(() => expect(globalFallback()).toBe('−'));
+
+      rerender(
+        <Select
+          items={testItems}
+          multiple
+          value={selected}
+          selectionConfig={{ mode: 'multi', removeButtonIcon: 'selection-config' }}
+        />,
+      );
+      await waitFor(() => expect(globalFallback()).toBe('selection-config'));
+
+      rerender(
+        <Select
+          items={testItems}
+          multiple
+          value={selected}
+          config={{ selection: { mode: 'multi', removeButtonIcon: 'core-config' } }}
+        />,
+      );
+      await waitFor(() => expect(globalFallback()).toBe('core-config'));
+
+      rerender(
+        <Select items={testItems} multiple value={selected} removeButtonIcon="prop-string" />,
+      );
+      await waitFor(() => expect(globalFallback()).toBe('prop-string'));
+
+      rerender(<Select items={testItems} multiple value={selected} />);
+      await waitFor(() => expect(globalFallback()).toBe('−'));
+
+      rerender(
+        <Select
+          items={testItems}
+          multiple
+          value={selected}
+          removeButtonIcon={<span data-testid="react-remove-icon">React icon</span>}
+        />,
+      );
+      await waitFor(() => {
+        expect(globalFallback()).toBe('−');
+        expect((container.querySelector('enhanced-select') as HTMLElement).shadowRoot?.querySelector('[data-testid="react-remove-icon"]')).toBeTruthy();
+      });
+
+      rerender(<Select items={testItems} multiple value={selected} />);
+      await waitFor(() => {
+        expect(globalFallback()).toBe('−');
+        expect((container.querySelector('enhanced-select') as HTMLElement).shadowRoot?.querySelector('[data-testid="react-remove-icon"]')).toBeNull();
+      });
+    } finally {
+      resetSelectConfig();
+    }
   });
 
   it('should pass items prop to element', async () => {

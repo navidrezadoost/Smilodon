@@ -72,7 +72,7 @@ export default defineConfig({
             ? 'Desktop Firefox'
             : 'Desktop Safari'
       ] },
-      testMatch: /.*react-adapter\.spec\.ts/,
+      testMatch: /.*(?:react-adapter|react-remove-icon)\.spec\.ts/,
       grep: /@react-adapter/,
     })),
     

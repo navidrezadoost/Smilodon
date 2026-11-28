@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-const fixtureUrl = 'http://localhost:5173/vanilla-demo.html';
+const fixtureUrl = `${process.env.SMILODON_PLAYGROUND_URL ?? 'http://localhost:5173'}/vanilla-demo.html`;
 const itemData = [
   { value: 'alpha', label: 'Alpha Pharmaceutical Company' },
   { value: 'beta', label: 'Beta Medical Group' },

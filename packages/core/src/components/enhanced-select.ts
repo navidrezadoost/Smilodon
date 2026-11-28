@@ -571,6 +571,9 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
   connectedCallback(): void {
     this._hasEverConnected = true;
+    // Adapter capability marker without adding a field to the public class
+    // declaration. React-node remove icons require the isolated root contract.
+    this.setAttribute('data-smilodon-react-icon-portals', 'isolated-v1');
     // register instance
     EnhancedSelect._instances.add(this);
     this._runEngineEffects(this._engine.dispatch({ type: 'CONNECT' }));
@@ -1735,14 +1738,28 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
 
   private _setIconContent(target: HTMLElement, markup: string | undefined, fallback: string): void {
     const content = markup && markup.trim() ? markup : fallback;
-    target.innerHTML = '';
+    let fallbackTarget = target.querySelector<HTMLElement>(':scope > [data-smilodon-fallback-icon]');
+    if (!fallbackTarget) {
+      fallbackTarget = document.createElement('span');
+      fallbackTarget.setAttribute('data-smilodon-fallback-icon', '');
+      target.prepend(fallbackTarget);
+    }
+    if (!target.querySelector(':scope > [data-smilodon-react-icon-root]')) {
+      const portalRoot = document.createElement('span');
+      portalRoot.setAttribute('data-smilodon-react-icon-root', '');
+      target.append(portalRoot);
+    }
+
+    // Only Core's fallback subtree is replaceable. React may reconcile a
+    // separate portal root beneath this stable icon target.
+    fallbackTarget.replaceChildren();
 
     if (content.trim().startsWith('<')) {
-      target.innerHTML = content;
+      fallbackTarget.innerHTML = content;
       return;
     }
 
-    target.textContent = content;
+    fallbackTarget.textContent = content;
   }
 
   private _syncInputContainerMode(): void {
@@ -2455,6 +2472,15 @@ export class EnhancedSelect extends HTMLElement implements EnhancedSelectAcknowl
         transform: var(--select-badge-remove-icon-transform, none);
         opacity: var(--select-badge-remove-icon-opacity, 1);
         pointer-events: none;
+      }
+
+      .badge-remove-icon > [data-smilodon-fallback-icon],
+      .badge-remove-icon > [data-smilodon-react-icon-root] {
+        display: contents;
+      }
+
+      .badge-remove-icon[data-smilodon-icon-owner="react"] > [data-smilodon-fallback-icon] {
+        display: none;
       }
 
       .badge-remove-icon svg {
